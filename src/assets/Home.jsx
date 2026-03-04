@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "../supabase";
 
 // ════════════════════════════════════════════════════════════
 // TRANSLATIONS
@@ -587,6 +588,50 @@ const SubmitPage = ({ setPage, lang }) => {
   const t = T[lang].submit;
   const allUploaded = Object.values(uploaded).every(Boolean);
   const valid1 = form.title && form.description && form.hospital && form.amount;
+  const handleSubmit = async () => {
+  try {
+    // Upload image si elle existe
+    let photoUrl = null;
+
+    if (form.photo) {
+      const fileName = `${Date.now()}-${form.photo.name}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("medical-documents")
+        .upload(fileName, form.photo);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from("medical-documents")
+        .getPublicUrl(fileName);
+
+      photoUrl = data.publicUrl;
+    }
+
+    // Insert dans la table cases
+    const { error: insertError } = await supabase
+      .from("cases")
+      .insert([
+        {
+          full_name: form.title,        // on mappe title -> full_name
+          hospital: form.hospital,
+          amount: form.amount,
+          description: form.description,
+          photo_url: photoUrl,
+        },
+      ]);
+
+    if (insertError) throw insertError;
+
+    alert("Dossier soumis avec succès 🎉");
+    setPage("home");
+
+  } catch (error) {
+    console.error(error);
+    alert("Erreur lors de la soumission");
+  }
+};
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -662,10 +707,44 @@ const SubmitPage = ({ setPage, lang }) => {
                     <div className="font-semibold text-sm text-gray-900">{doc.title} <span className="text-red-400">*</span></div>
                     <div className="text-xs text-gray-500">{doc.desc}</div>
                   </div>
-                  <button onClick={() => setUploaded(u => ({...u,[doc.key]:true}))}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex-shrink-0 transition-colors ${uploaded[doc.key]?"bg-emerald-600 text-white":"bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
-                    {uploaded[doc.key] ? t.uploaded : t.upload}
-                  </button>
+                  <>
+  <input
+    type="file"
+    accept=".pdf,image/*"
+    className="hidden"
+    id={`file-${doc.key}`}
+    onChange={async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const fileName = `${Date.now()}-${file.name}`;
+
+        const { error } = await supabase.storage
+          .from("medical-documents")
+          .upload(fileName, file);
+
+        if (error) throw error;
+
+        setUploaded(u => ({ ...u, [doc.key]: true }));
+      } catch (err) {
+        alert("Erreur upload");
+        console.error(err);
+      }
+    }}
+  />
+
+  <label
+    htmlFor={`file-${doc.key}`}
+    className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
+      uploaded[doc.key]
+        ? "bg-emerald-600 text-white"
+        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+    }`}
+  >
+    {uploaded[doc.key] ? t.uploaded : t.upload}
+  </label>
+</>
                 </div>
               ))}
             </div>
@@ -676,7 +755,7 @@ const SubmitPage = ({ setPage, lang }) => {
             )}
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => setStep(1)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm hover:bg-gray-50">{t.back}</button>
-              <button onClick={() => setStep(3)} disabled={!allUploaded}
+              <button onClick={handleSubmit} disabled={!allUploaded}
                 className="bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 rounded-xl text-sm shadow-md">
                 {t.submit}
               </button>
