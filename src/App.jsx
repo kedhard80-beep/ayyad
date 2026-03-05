@@ -132,11 +132,17 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
   return (
     <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
       <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16 gap-4">
-        <button onClick={() => setPage("home")} className="flex items-center gap-2 flex-shrink-0">
-          <div className="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-black text-base shadow-md">A</div>
+        <button onClick={() => setPage("home")} className="flex items-center gap-3 flex-shrink-0">
+          <svg width="42" height="42" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
+            <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" stroke-width="2.5"/>
+            <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
+            <rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/>
+            <path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/>
+          </svg>
           <div className="hidden sm:block">
-            <span className="font-black text-xl text-gray-900">Ayyad</span>
-            <span className="text-xs text-gray-400 ml-1.5">{t.medicalFinancing}</span>
+            <div className="font-black text-xl text-gray-900 leading-tight" style={{fontFamily:"Georgia, serif", letterSpacing:"1px"}}>AYYAD</div>
+            <div className="text-xs text-amber-600 font-semibold" style={{letterSpacing:"1px"}}>Financement médical solidaire</div>
           </div>
         </button>
         <div className="hidden md:flex items-center gap-6">
@@ -500,7 +506,15 @@ const LoginPage = ({ setPage, setUser, lang }) => {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center px-4 py-16">
       <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-md p-8">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-emerald-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl mx-auto mb-4 shadow-lg">A</div>
+          <div className="flex justify-center mb-4">
+            <svg width="64" height="64" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
+              <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" stroke-width="2.5"/>
+              <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
+              <rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/>
+              <path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/>
+            </svg>
+          </div>
           <h1 className="text-2xl font-black text-gray-900">{t.title}</h1>
           <p className="text-gray-500 text-sm mt-1">{t.sub}</p>
         </div>
@@ -546,7 +560,15 @@ const RegisterPage = ({ setPage, setUser, lang }) => {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center px-4 py-16">
       <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-md p-8">
         <div className="text-center mb-6">
-          <div className="w-14 h-14 bg-emerald-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl mx-auto mb-4 shadow-lg">A</div>
+          <div className="flex justify-center mb-4">
+            <svg width="56" height="56" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
+              <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" stroke-width="2.5"/>
+              <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
+              <rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/>
+              <path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/>
+            </svg>
+          </div>
           <h1 className="text-2xl font-black text-gray-900">{t.title}</h1>
           <div className="flex justify-center gap-2 mt-3">{[1,2].map(s=><div key={s} className={`w-10 h-1.5 rounded-full transition-colors ${step>=s?"bg-emerald-500":"bg-gray-200"}`}/>)}</div>
         </div>
@@ -969,7 +991,7 @@ const Footer = ({ setPage, lang }) => {
     <footer className="bg-gray-950 text-white mt-16">
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
-          <div className="col-span-2 md:col-span-1"><div className="flex items-center gap-2 mb-4"><div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-black">A</div><span className="font-black text-xl">Ayyad</span></div><p className="text-gray-400 text-xs leading-relaxed">{t.tagline}</p></div>
+          <div className="col-span-2 md:col-span-1"><div className="flex items-center gap-2 mb-4"><svg width="36" height="36" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="35" cy="35" r="33" fill="#1a6b3a"/><circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" strokeWidth="2.5"/><rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/><rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/><path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/></svg><span className="font-black text-xl" style={{fontFamily:"Georgia, serif", letterSpacing:"1px"}}>AYYAD</span></div><p className="text-gray-400 text-xs leading-relaxed">{t.tagline}</p></div>
           {[[t.platform,t.platformLinks],[t.trust,t.trustLinks],[t.legal,t.legalLinks]].map(([title,links])=><div key={title}><div className="font-bold text-sm mb-4 text-gray-300">{title}</div><ul className="space-y-2.5">{links.map(l=><li key={l}><a href="#" className="text-gray-500 text-xs hover:text-emerald-400 transition-colors">{l}</a></li>)}</ul></div>)}
         </div>
         <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
