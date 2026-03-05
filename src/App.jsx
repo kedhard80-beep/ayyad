@@ -124,35 +124,102 @@ const LangToggle = ({ lang, setLang }) => (
 // ── Navbar ────────────────────────────────────────────────────
 const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
   const t = T[lang].nav;
+  const [dropdownOpen, setDropdownOpen] = useState(null);
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
     setPage("home");
   };
+
+  const AyyadLogo = () => (
+    <svg width="42" height="42" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
+      <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" strokeWidth="2.5"/>
+      <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
+      <rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/>
+      <path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/>
+    </svg>
+  );
+
   return (
-    <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
+    <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm" onClick={() => setDropdownOpen(null)}>
       <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16 gap-4">
+        {/* Logo */}
         <button onClick={() => setPage("home")} className="flex items-center gap-3 flex-shrink-0">
-          <svg width="42" height="42" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
-            <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" stroke-width="2.5"/>
-            <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
-            <rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/>
-            <path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/>
-          </svg>
+          <AyyadLogo />
           <div className="hidden sm:block">
             <div className="font-black text-xl text-gray-900 leading-tight" style={{fontFamily:"Georgia, serif", letterSpacing:"1px"}}>AYYAD</div>
-            <div className="text-xs text-amber-600 font-semibold" style={{letterSpacing:"1px"}}>Financement médical solidaire</div>
+            <div className="text-xs font-semibold" style={{color:"#C9A84C", letterSpacing:"1px"}}>Financement médical solidaire</div>
           </div>
         </button>
-        <div className="hidden md:flex items-center gap-6">
-          {[["home",t.collections],["how",t.how]].map(([p,label]) => (
-            <button key={p} onClick={() => setPage(p)} className={`text-sm font-medium transition-colors ${page===p?"text-emerald-600":"text-gray-600 hover:text-gray-900"}`}>{label}</button>
-          ))}
+
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-1">
+
+          {/* Je soutiens dropdown */}
+          <div className="relative" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setDropdownOpen(dropdownOpen==="support" ? null : "support")} className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${dropdownOpen==="support" ? "bg-emerald-50 text-emerald-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"}`}>
+              {lang==="fr" ? "Je soutiens" : "I support"} <span className="text-xs">{dropdownOpen==="support" ? "▲" : "▼"}</span>
+            </button>
+            {dropdownOpen==="support" && (
+              <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50">
+                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-100">
+                  <span className="text-lg">🤝</span>
+                  <span className="font-bold text-gray-700 text-sm">{lang==="fr" ? "Découvrez les collectes à soutenir" : "Discover campaigns to support"}</span>
+                </div>
+                <button onClick={() => { setPage("home"); setDropdownOpen(null); }} className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-emerald-50 transition-colors group">
+                  <div className="font-semibold text-gray-900 text-sm group-hover:text-emerald-700">{lang==="fr" ? "Collectes actives" : "Active campaigns"}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Parcourir par catégorie médicale" : "Browse by medical category"}</div>
+                </button>
+                <button onClick={() => { setPage("home"); setDropdownOpen(null); }} className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-red-50 transition-colors group">
+                  <div className="font-semibold text-gray-900 text-sm group-hover:text-red-700">🚨 {lang==="fr" ? "Cas urgents" : "Urgent cases"}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Interventions critiques sous 72h" : "Critical interventions within 72h"}</div>
+                </button>
+                <button onClick={() => { setPage("how"); setDropdownOpen(null); }} className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors group">
+                  <div className="font-semibold text-gray-900 text-sm">{lang==="fr" ? "Garantie Ayyad" : "Ayyad guarantee"}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Fonds versés directement à l'hôpital" : "Funds sent directly to hospital"}</div>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Soumettre dropdown */}
+          <div className="relative" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setDropdownOpen(dropdownOpen==="submit" ? null : "submit")} className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${dropdownOpen==="submit" ? "bg-emerald-50 text-emerald-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"}`}>
+              {lang==="fr" ? "Collecter des fonds" : "Raise funds"} <span className="text-xs">{dropdownOpen==="submit" ? "▲" : "▼"}</span>
+            </button>
+            {dropdownOpen==="submit" && (
+              <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50">
+                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-100">
+                  <span className="text-lg">💚</span>
+                  <span className="font-bold text-gray-700 text-sm">{lang==="fr" ? "Démarrez votre collecte" : "Start your fundraiser"}</span>
+                </div>
+                <button onClick={() => { setPage("submit"); setDropdownOpen(null); }} className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-emerald-50 transition-colors group">
+                  <div className="font-semibold text-gray-900 text-sm group-hover:text-emerald-700">{lang==="fr" ? "Soumettre un dossier" : "Submit a case"}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Rapport médical, devis, pièce d'identité" : "Medical report, quote, identity"}</div>
+                </button>
+                <button onClick={() => { setPage("how"); setDropdownOpen(null); }} className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors group">
+                  <div className="font-semibold text-gray-900 text-sm">{lang==="fr" ? "Comment ça marche" : "How it works"}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Guide étape par étape" : "Step by step guide"}</div>
+                </button>
+                <button onClick={() => { setPage("how"); setDropdownOpen(null); }} className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors group">
+                  <div className="font-semibold text-gray-900 text-sm">{lang==="fr" ? "La règle des 5%" : "The 5% rule"}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Totalement invisible pour vous" : "Completely invisible to you"}</div>
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button onClick={() => setPage("how")} className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${page==="how" ? "text-emerald-600 bg-emerald-50" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"}`}>
+            {lang==="fr" ? "À propos" : "About"}
+          </button>
+
           {user?.isAdmin && (
-            <button onClick={() => setPage("admin")} className={`text-sm font-medium transition-colors ${page==="admin"?"text-emerald-600":"text-gray-600 hover:text-gray-900"}`}>{t.admin}</button>
+            <button onClick={() => setPage("admin")} className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${page==="admin" ? "text-emerald-600 bg-emerald-50" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"}`}>{t.admin}</button>
           )}
         </div>
+
+        {/* Right side */}
         <div className="flex items-center gap-2">
           <LangToggle lang={lang} setLang={setLang} />
           {user ? (
@@ -164,7 +231,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
           ) : (
             <>
               <button onClick={() => setPage("login")} className="text-sm font-medium text-gray-600 hover:text-gray-900">{t.login}</button>
-              <button onClick={() => setPage("register")} className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm">{t.start}</button>
+              <button onClick={() => setPage("submit")} className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm">{lang==="fr" ? "Soumettre un dossier" : "Submit a case"}</button>
             </>
           )}
         </div>
@@ -660,7 +727,28 @@ const SubmitPage = ({ setPage, user, lang }) => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.amountField}</label><input value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})} type="number" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
-            <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.categoryField}</label><select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"><option value="">—</option>{t.cats.map(c=><option key={c}>{c}</option>)}</select></div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-600 mb-3 block">{t.categoryField}</label>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                {key:"Cardiologie", enKey:"Cardiology", icon:"🫀"},
+                {key:"Oncologie", enKey:"Oncology", icon:"🎗️"},
+                {key:"Neurologie", enKey:"Neurology", icon:"🧠"},
+                {key:"Orthopédie", enKey:"Orthopedics", icon:"🦾"},
+                {key:"Pédiatrie", enKey:"Pediatrics", icon:"👶"},
+                {key:"Gynécologie", enKey:"Gynecology", icon:"🌸"},
+                {key:"Néphrologie", enKey:"Nephrology", icon:"🫘"},
+                {key:"Autre", enKey:"Other", icon:"🏥"},
+              ].map(cat => (
+                <button key={cat.key} type="button"
+                  onClick={() => setForm({...form, category: cat.key})}
+                  className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all ${form.category===cat.key ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm" : "border-gray-200 hover:border-gray-300 text-gray-500 hover:bg-gray-50"}`}>
+                  <span className="text-xl">{cat.icon}</span>
+                  <span className="text-xs text-center leading-tight font-medium">{lang==="fr" ? cat.key : cat.enKey}</span>
+                </button>
+              ))}
+            </div>
           </div>
           <button onClick={()=>setStep(2)} disabled={!form.title||!form.description||!form.hospital||!form.amount} className="w-full bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">{t.next}</button>
         </div>}
@@ -699,18 +787,99 @@ const SubmitPage = ({ setPage, user, lang }) => {
 };
 
 // ── How Page ──────────────────────────────────────────────────
-const HowPage = ({ lang }) => {
+const HowPage = ({ lang, setPage }) => {
   const t = T[lang].howPage;
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <div className="text-center mb-12"><h1 className="text-3xl font-black text-gray-900 mb-3">{t.title}</h1><p className="text-gray-500">{t.sub}</p></div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-        {[t.forDonors,t.forBenef].map((s,i)=><div key={i} className={`bg-white border-2 rounded-2xl p-6 shadow-sm ${i===0?"border-emerald-200":"border-blue-200"}`}><div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl mb-5 border ${i===0?"bg-emerald-50 border-emerald-200":"bg-blue-50 border-blue-200"}`}><span className="text-xl">{s.icon}</span><span className="font-bold text-gray-900">{s.title}</span></div><ol className="space-y-3">{s.steps.map((step,j)=><li key={j} className="flex items-start gap-3 text-sm text-gray-700"><div className="w-6 h-6 bg-gray-900 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">{j+1}</div>{step}</li>)}</ol></div>)}
+    <div>
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-emerald-800 to-teal-700 text-white py-16 text-center px-4">
+        <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 mb-5 text-sm font-medium">
+          <span>💚</span> {lang==="fr" ? "Plateforme médicale vérifiée" : "Verified medical platform"}
+        </div>
+        <h1 className="text-4xl font-black mb-4">{t.title}</h1>
+        <p className="text-emerald-200 max-w-xl mx-auto">{t.sub}</p>
       </div>
-      <div className="bg-gray-900 rounded-3xl p-10 text-white text-center">
+
+      {/* Pour les donateurs */}
+      <div className="max-w-5xl mx-auto px-4 py-14">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl">💚</div>
+          <div>
+            <h2 className="text-2xl font-black text-gray-900">{t.forDonors.title}</h2>
+            <p className="text-gray-500 text-sm">{lang==="fr" ? "Comment faire un don sur Ayyad" : "How to donate on Ayyad"}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+          {t.forDonors.steps.map((step, i) => (
+            <div key={i} className="relative">
+              <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow h-full">
+                <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm font-black mb-3">{i+1}</div>
+                <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
+              </div>
+              {i < t.forDonors.steps.length-1 && <div className="hidden sm:block absolute top-6 -right-2 text-gray-300 text-lg z-10">→</div>}
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 text-center">
+          <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-xl shadow-md transition-colors">
+            {lang==="fr" ? "Voir les collectes →" : "See campaigns →"}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-gray-50 border-y border-gray-100">
+        {/* Pour les bénéficiaires */}
+        <div className="max-w-5xl mx-auto px-4 py-14">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-xl">🏥</div>
+            <div>
+              <h2 className="text-2xl font-black text-gray-900">{t.forBenef.title}</h2>
+              <p className="text-gray-500 text-sm">{lang==="fr" ? "Comment soumettre votre dossier médical" : "How to submit your medical case"}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            {t.forBenef.steps.map((step, i) => (
+              <div key={i} className="relative">
+                <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow h-full">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-black mb-3">{i+1}</div>
+                  <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
+                </div>
+                {i < t.forBenef.steps.length-1 && <div className="hidden sm:block absolute top-6 -right-2 text-gray-300 text-lg z-10">→</div>}
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 text-center">
+            <button onClick={() => setPage("submit")} className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-xl shadow-md transition-colors">
+              {lang==="fr" ? "Soumettre un dossier →" : "Submit a case →"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Garanties */}
+      <div className="max-w-5xl mx-auto px-4 py-14">
+        <h2 className="text-2xl font-black text-gray-900 text-center mb-2">{lang==="fr" ? "Les garanties Ayyad" : "Ayyad guarantees"}</h2>
+        <p className="text-gray-500 text-center text-sm mb-10">{lang==="fr" ? "Ce qui nous différencie des autres plateformes" : "What sets us apart from other platforms"}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          {[
+            {icon:"🏥", title:lang==="fr"?"Versement direct à l'hôpital":"Direct payment to hospital", desc:lang==="fr"?"Les fonds ne passent jamais par le patient. Chaque virement est traçable.":"Funds never go through the patient. Every transfer is traceable."},
+            {icon:"🔍", title:lang==="fr"?"Vérification sous 48h":"Verification within 48h", desc:lang==="fr"?"Notre équipe contacte l'hôpital partenaire pour valider chaque dossier.":"Our team contacts the partner hospital to validate each case."},
+            {icon:"🔒", title:lang==="fr"?"Données chiffrées AES-256":"AES-256 encrypted data", desc:lang==="fr"?"Tous vos documents médicaux sont chiffrés et stockés en sécurité.":"All your medical documents are encrypted and stored securely."},
+          ].map((g,i) => (
+            <div key={i} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm text-center hover:shadow-md transition-shadow">
+              <div className="text-4xl mb-4">{g.icon}</div>
+              <h3 className="font-bold text-gray-900 mb-2">{g.title}</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">{g.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Fee section */}
+      <div className="bg-gray-900 py-14 px-4 text-white text-center">
         <h2 className="text-2xl font-black mb-3">{t.feeTitle}</h2>
-        <p className="text-gray-300 mb-8 max-w-lg mx-auto">{t.feeSub}</p>
-        <div className="bg-white/10 rounded-2xl p-6 text-sm font-mono max-w-xs mx-auto border border-white/20">
+        <p className="text-gray-300 mb-8 max-w-lg mx-auto text-sm">{t.feeSub}</p>
+        <div className="bg-white/10 rounded-2xl p-6 text-sm max-w-xs mx-auto border border-white/20">
           <div className="text-gray-400 mb-1 text-xs uppercase tracking-wider">{t.youGive}</div>
           <div className="text-3xl font-black my-2">10 000 FCFA</div>
           <div className="border-t border-white/20 my-4"/>
@@ -1039,7 +1208,7 @@ export default function AyyadApp() {
       <main>
         {page==="home"&&<HomePage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
         {page==="case"&&selectedCase&&<CasePage c={selectedCase} setPage={setPage} lang={lang} />}
-        {page==="how"&&<HowPage lang={lang} />}
+        {page==="how"&&<HowPage lang={lang} setPage={setPage} />}
         {page==="login"&&<LoginPage setPage={setPage} setUser={setUser} lang={lang} />}
         {page==="register"&&<RegisterPage setPage={setPage} setUser={setUser} lang={lang} />}
         {page==="submit"&&<SubmitPage setPage={setPage} user={user} lang={lang} />}
