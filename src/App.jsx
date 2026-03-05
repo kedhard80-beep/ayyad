@@ -11,7 +11,7 @@ const supabase = createClient(
 const T = {
   fr: {
     nav: { collections: "Collectes", how: "Comment ça marche", admin: "Administration", login: "Connexion", start: "Démarrer", logout: "Déconnexion", medicalFinancing: "Financement médical" },
-    hero: { badge: "Plateforme vérifiée & sécurisée", title1: "Ensemble, nous finançons", title2: "des vies sauvées", sub: "Chaque don arrive directement à l'hôpital. Transparence totale, zéro frais cachés.", cta1: "Voir les collectes", cta2: "Soumettre un dossier" },
+    hero: { badge: "Plateforme vérifiée & sécurisée", title1: "Donner de la force à ceux", title2: "qui en ont besoin", sub: "Parce que soutenir une vie, c'est en sauver une. Ensemble, nous donnons de la force à ceux qui gardent encore espoir.", cta1: "Voir les collectes", cta2: "Soumettre un dossier" },
     stats: { patients: "Patients aidés", collected: "FCFA collectés", hospitals: "Hôpitaux partenaires" },
     collections: { title: "Collectes en cours", sub: "dossiers vérifiés actifs" },
     card: { donors: "donateurs", daysLeft: "j restants", funded: "Objectif atteint !", on: "sur" },
@@ -34,7 +34,10 @@ const T = {
       statusLabels: { PENDING:"En attente", APPROVED:"Approuvé", REJECTED:"Rejeté", COLLECTING:"En collecte", FUNDED:"Financé" },
       noAdmin: "Accès réservé aux administrateurs."
     },
-    badges: { verified: "✓ Dossier vérifié", collecting: "Actif", funded: "✓ Financé" },
+    badges: { verified: "✓ Dossier vérifié", collecting: "Actif", funded: "✓ Financé", urgent: "🚨 URGENT" },
+    urgent: { title: "🚨 Cas urgents", sub: "Ces patients ont besoin d'aide immédiate — intervention critique sous 72h", alert: "⚠️ Intervention requise sous 72h" },
+    supportAyyad: { title: "Soutenir Ayyad directement", sub: "Votre don aide à financer les opérations de la plateforme : vérification des dossiers, partenariats hospitaliers, et accompagnement des patients.", wave: "🌊 Payer via Wave", orange: "🟠 Payer via Orange Money", number: "+225 07 48 05 61 28", copied: "✓ Numéro copié !", copy: "Copier le numéro", thanks: "Merci pour votre soutien !", thanksSub: "Chaque contribution aide Ayyad à rester gratuit pour les patients.", directDonation: "Don direct à Ayyad" },
+    video: { title: "Message du patient", watch: "▶ Voir la vidéo", noVideo: "Aucune vidéo disponible pour ce dossier." },
     progress: { collected: "collectés sur", donors: "donateurs", daysLeft: "jours restants", intervention: "✓ Intervention planifiée", progressTitle: "Progression de la collecte", of: "de l'objectif" },
     back: "← Retour aux collectes",
     footer: { tagline: "Financer la santé pour tous en Afrique.", platform: "Plateforme", trust: "Confiance", legal: "Légal", platformLinks: ["Collectes actives","Comment ça marche","Soumettre un dossier"], trustLinks: ["Vérification dossiers","Sécurité des paiements","Rapport d'impact"], legalLinks: ["Mentions légales","Confidentialité","Conformité BCEAO"], rights: "© 2025 Ayyad CI — Tous droits réservés" },
@@ -42,7 +45,7 @@ const T = {
   },
   en: {
     nav: { collections: "Campaigns", how: "How it works", admin: "Administration", login: "Login", start: "Get started", logout: "Logout", medicalFinancing: "Medical funding" },
-    hero: { badge: "Verified & secure platform", title1: "Together, we fund", title2: "lives saved", sub: "Every donation goes directly to the hospital. Full transparency, zero hidden fees.", cta1: "See campaigns", cta2: "Submit a case" },
+    hero: { badge: "Verified & secure platform", title1: "Giving strength to those", title2: "who need it most", sub: "Because supporting a life means saving one. Together, we give strength to those who still hold on to hope.", cta1: "See campaigns", cta2: "Submit a case" },
     stats: { patients: "Patients helped", collected: "FCFA raised", hospitals: "Partner hospitals" },
     collections: { title: "Active campaigns", sub: "verified active cases" },
     card: { donors: "donors", daysLeft: "days left", funded: "Goal reached!", on: "of" },
@@ -65,7 +68,10 @@ const T = {
       statusLabels: { PENDING:"Pending", APPROVED:"Approved", REJECTED:"Rejected", COLLECTING:"Collecting", FUNDED:"Funded" },
       noAdmin: "Access restricted to administrators."
     },
-    badges: { verified: "✓ Case verified", collecting: "Active", funded: "✓ Funded" },
+    badges: { verified: "✓ Case verified", collecting: "Active", funded: "✓ Funded", urgent: "🚨 URGENT" },
+    urgent: { title: "🚨 Urgent cases", sub: "These patients need immediate help — critical intervention within 72h", alert: "⚠️ Intervention required within 72h" },
+    supportAyyad: { title: "Support Ayyad directly", sub: "Your donation helps fund platform operations: case verification, hospital partnerships, and patient support.", wave: "🌊 Pay via Wave", orange: "🟠 Pay via Orange Money", number: "+225 07 48 05 61 28", copied: "✓ Number copied!", copy: "Copy number", thanks: "Thank you for your support!", thanksSub: "Every contribution helps Ayyad stay free for patients.", directDonation: "Direct donation to Ayyad" },
+    video: { title: "Patient's message", watch: "▶ Watch video", noVideo: "No video available for this case." },
     progress: { collected: "raised out of", donors: "donors", daysLeft: "days left", intervention: "✓ Procedure scheduled", progressTitle: "Campaign progress", of: "of goal" },
     back: "← Back to campaigns",
     footer: { tagline: "Funding healthcare for all in Africa.", platform: "Platform", trust: "Trust", legal: "Legal", platformLinks: ["Active campaigns","How it works","Submit a case"], trustLinks: ["Case verification","Payment security","Impact report"], legalLinks: ["Legal notice","Privacy policy","BCEAO compliance"], rights: "© 2025 Ayyad CI — All rights reserved" },
@@ -75,12 +81,12 @@ const T = {
 
 // ── Static mock cases for homepage display ───────────────────
 const MOCK_CASES = [
-  { id:1, title:{fr:"Opération cardiaque urgente pour Aminata",en:"Urgent heart surgery for Aminata"}, beneficiary:"Aminata Koné", age:34, city:"Abidjan", hospital:"CHU de Cocody", category:{fr:"Cardiologie",en:"Cardiology"}, required:1800000, collected:1260000, donors:87, daysLeft:12, image:"🫀", desc:{fr:"Aminata souffre d'une cardiopathie valvulaire sévère nécessitant un remplacement de valve urgent. Sans cette intervention, son pronostic vital est engagé dans les 3 prochains mois.",en:"Aminata suffers from severe valvular heart disease requiring urgent valve replacement. Without this procedure, her life is at risk within 3 months."}, status:"COLLECTING" },
-  { id:2, title:{fr:"Dialyse rénale pour Kofi Asante",en:"Kidney dialysis for Kofi Asante"}, beneficiary:"Kofi Asante", age:52, city:"Bouaké", hospital:"Hôpital Régional de Bouaké", category:{fr:"Néphrologie",en:"Nephrology"}, required:950000, collected:712000, donors:45, daysLeft:21, image:"🫘", desc:{fr:"Kofi est en insuffisance rénale chronique terminale. Il a besoin de 3 séances de dialyse par semaine pendant 6 mois en attente de greffe.",en:"Kofi has end-stage chronic kidney failure. He needs 3 dialysis sessions per week for 6 months while awaiting a transplant."}, status:"COLLECTING" },
-  { id:3, title:{fr:"Chimiothérapie pour Fatou Diallo",en:"Chemotherapy for Fatou Diallo"}, beneficiary:"Fatou Diallo", age:28, city:"Abidjan", hospital:"Institut National d'Oncologie", category:{fr:"Oncologie",en:"Oncology"}, required:2400000, collected:480000, donors:31, daysLeft:45, image:"🎗️", desc:{fr:"Fatou, jeune maman de 2 enfants, a reçu un diagnostic de cancer du sein au stade II. Un protocole de chimiothérapie de 6 cycles est nécessaire.",en:"Fatou, a young mother of 2, was diagnosed with stage II breast cancer. A 6-cycle chemotherapy protocol is needed."}, status:"COLLECTING" },
-  { id:4, title:{fr:"Prothèse orthopédique pour Ibrahim",en:"Orthopedic prosthesis for Ibrahim"}, beneficiary:"Ibrahim Coulibaly", age:19, city:"Daloa", hospital:"CHR de Daloa", category:{fr:"Orthopédie",en:"Orthopedics"}, required:620000, collected:620000, donors:62, daysLeft:0, image:"🦾", desc:{fr:"Ibrahim a perdu sa jambe droite suite à un accident de la route. Grâce à votre générosité, l'objectif est atteint !",en:"Ibrahim lost his right leg in a road accident. Thanks to your generosity, the goal has been reached!"}, status:"FUNDED" },
-  { id:5, title:{fr:"Traitement neurologique pour Mariam",en:"Neurological treatment for Mariam"}, beneficiary:"Mariam Ouédraogo", age:41, city:"Abidjan", hospital:"CHU de Yopougon", category:{fr:"Cardiologie",en:"Cardiology"}, required:1100000, collected:330000, donors:22, daysLeft:33, image:"🧠", desc:{fr:"Mariam souffre d'une sclérose en plaques progressivement invalidante.",en:"Mariam suffers from progressively disabling multiple sclerosis."}, status:"COLLECTING" },
-  { id:6, title:{fr:"Opération de la vue pour Kouassi",en:"Eye surgery for Kouassi"}, beneficiary:"Kouassi Yao", age:67, city:"San-Pédro", hospital:"Clinique Vision CI", category:{fr:"Oncologie",en:"Oncology"}, required:380000, collected:285000, donors:41, daysLeft:8, image:"👁️", desc:{fr:"Kouassi souffre de glaucome bilatéral avancé. Sans une opération urgente, il risque de perdre définitivement la vue.",en:"Kouassi suffers from advanced bilateral glaucoma. Without urgent surgery, he risks permanently losing his sight."}, status:"COLLECTING" },
+  { id:1, title:{fr:"Opération cardiaque urgente pour Aminata",en:"Urgent heart surgery for Aminata"}, beneficiary:"Aminata Koné", age:34, city:"Abidjan", hospital:"CHU de Cocody", category:{fr:"Cardiologie",en:"Cardiology"}, required:1800000, collected:1260000, donors:87, daysLeft:12, image:"🫀", urgent:true, videoUrl:"https://www.youtube.com/embed/dQw4w9WgXcQ", desc:{fr:"Aminata souffre d'une cardiopathie valvulaire sévère nécessitant un remplacement de valve urgent. Sans cette intervention, son pronostic vital est engagé dans les 3 prochains mois.",en:"Aminata suffers from severe valvular heart disease requiring urgent valve replacement. Without this procedure, her life is at risk within 3 months."}, status:"COLLECTING" },
+  { id:2, title:{fr:"Dialyse rénale pour Kofi Asante",en:"Kidney dialysis for Kofi Asante"}, beneficiary:"Kofi Asante", age:52, city:"Bouaké", hospital:"Hôpital Régional de Bouaké", category:{fr:"Néphrologie",en:"Nephrology"}, required:950000, collected:712000, donors:45, daysLeft:21, image:"🫘", urgent:false, videoUrl:null, desc:{fr:"Kofi est en insuffisance rénale chronique terminale. Il a besoin de 3 séances de dialyse par semaine pendant 6 mois en attente de greffe.",en:"Kofi has end-stage chronic kidney failure. He needs 3 dialysis sessions per week for 6 months while awaiting a transplant."}, status:"COLLECTING" },
+  { id:3, title:{fr:"Chimiothérapie pour Fatou Diallo",en:"Chemotherapy for Fatou Diallo"}, beneficiary:"Fatou Diallo", age:28, city:"Abidjan", hospital:"Institut National d'Oncologie", category:{fr:"Oncologie",en:"Oncology"}, required:2400000, collected:480000, donors:31, daysLeft:45, image:"🎗️", urgent:false, videoUrl:null, desc:{fr:"Fatou, jeune maman de 2 enfants, a reçu un diagnostic de cancer du sein au stade II. Un protocole de chimiothérapie de 6 cycles est nécessaire.",en:"Fatou, a young mother of 2, was diagnosed with stage II breast cancer. A 6-cycle chemotherapy protocol is needed."}, status:"COLLECTING" },
+  { id:4, title:{fr:"Prothèse orthopédique pour Ibrahim",en:"Orthopedic prosthesis for Ibrahim"}, beneficiary:"Ibrahim Coulibaly", age:19, city:"Daloa", hospital:"CHR de Daloa", category:{fr:"Orthopédie",en:"Orthopedics"}, required:620000, collected:620000, donors:62, daysLeft:0, image:"🦾", urgent:false, videoUrl:null, desc:{fr:"Ibrahim a perdu sa jambe droite suite à un accident de la route. Grâce à votre générosité, l'objectif est atteint !",en:"Ibrahim lost his right leg in a road accident. Thanks to your generosity, the goal has been reached!"}, status:"FUNDED" },
+  { id:5, title:{fr:"Traitement neurologique pour Mariam",en:"Neurological treatment for Mariam"}, beneficiary:"Mariam Ouédraogo", age:41, city:"Abidjan", hospital:"CHU de Yopougon", category:{fr:"Cardiologie",en:"Cardiology"}, required:1100000, collected:330000, donors:22, daysLeft:33, image:"🧠", urgent:true, videoUrl:null, desc:{fr:"Mariam souffre d'une sclérose en plaques progressivement invalidante.",en:"Mariam suffers from progressively disabling multiple sclerosis."}, status:"COLLECTING" },
+  { id:6, title:{fr:"Opération de la vue pour Kouassi",en:"Eye surgery for Kouassi"}, beneficiary:"Kouassi Yao", age:67, city:"San-Pédro", hospital:"Clinique Vision CI", category:{fr:"Oncologie",en:"Oncology"}, required:380000, collected:285000, donors:41, daysLeft:8, image:"👁️", urgent:false, videoUrl:null, desc:{fr:"Kouassi souffre de glaucome bilatéral avancé. Sans une opération urgente, il risque de perdre définitivement la vue.",en:"Kouassi suffers from advanced bilateral glaucoma. Without urgent surgery, he risks permanently losing his sight."}, status:"COLLECTING" },
 ];
 
 const FRAUD_ALERTS = [
@@ -172,7 +178,10 @@ const CaseCard = ({ c, lang, t, onClick }) => {
       <div className="p-5">
         <div className="flex items-start justify-between gap-2 mb-2">
           <h3 className="font-bold text-gray-900 text-sm leading-snug group-hover:text-emerald-700 transition-colors">{c.title[lang]}</h3>
-          <Badge color={funded?"green":"blue"}>{funded?t.badges.funded:c.category[lang]}</Badge>
+          <div className="flex flex-col gap-1 flex-shrink-0">
+            {c.urgent && <Badge color="red">{t.badges.urgent}</Badge>}
+            <Badge color={funded?"green":"blue"}>{funded?t.badges.funded:c.category[lang]}</Badge>
+          </div>
         </div>
         <div className="flex items-center gap-1 text-xs text-gray-500 mb-4">🏥 <span className="truncate">{c.hospital}</span> · 📍 <span>{c.city}</span></div>
         <div className="mb-3">
@@ -192,7 +201,83 @@ const CaseCard = ({ c, lang, t, onClick }) => {
   );
 };
 
-// ── Home Page ─────────────────────────────────────────────────
+// ── Urgent Banner ─────────────────────────────────────────────
+const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
+  const t = T[lang];
+  const urgentCases = cases.filter(c => {
+    const autoUrgent = c.daysLeft !== undefined && c.daysLeft <= 7 && pct(c.collected, c.required) < 50;
+    return (c.urgent || autoUrgent) && c.status !== "FUNDED";
+  });
+  if (urgentCases.length === 0) return null;
+  return (
+    <div className="bg-white border-b border-gray-100">
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-3 h-3 bg-red-500 rounded-full animate-ping" />
+          <h2 className="font-black text-xl text-gray-900">{t.urgent.title}</h2>
+          <span className="bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-full">{urgentCases.length}</span>
+        </div>
+        <p className="text-gray-500 text-sm mb-5">{t.urgent.sub}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {urgentCases.map(c => (
+            <button key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); }} className="bg-red-50 hover:bg-red-100 border-2 border-red-200 hover:border-red-400 rounded-2xl p-4 text-left transition-all group">
+              <div className="flex items-start gap-3">
+                <div className="text-3xl">{c.image}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="bg-red-600 text-white text-xs font-black px-2 py-0.5 rounded-full animate-pulse">🚨 URGENT</span>
+                  </div>
+                  <div className="font-bold text-sm text-gray-900 leading-snug group-hover:text-red-700">{c.title[lang]}</div>
+                  <div className="text-gray-500 text-xs mt-1">🏥 {c.hospital} · ⏳ {c.daysLeft}j</div>
+                  <div className="mt-2 text-xs bg-amber-100 text-amber-700 rounded-lg px-2 py-1 inline-block font-medium">{t.urgent.alert}</div>
+                </div>
+              </div>
+              <div className="mt-3">
+                <ProgressBar percent={pct(c.collected, c.required)} />
+                <div className="flex justify-between text-xs mt-1 text-gray-500">
+                  <span>{fmt(c.collected)}</span>
+                  <span className="font-bold text-red-600">{pct(c.collected, c.required)}%</span>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Support Ayyad Section ─────────────────────────────────────
+const SupportAyyadSection = ({ lang }) => {
+  const t = T[lang].supportAyyad;
+  return (
+    <div className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 text-white">
+      <div className="max-w-4xl mx-auto px-4 py-14 text-center">
+        <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 mb-5 text-sm font-medium">
+          <span>💚</span> {t.directDonation}
+        </div>
+        <h2 className="text-3xl font-black mb-4">{t.title}</h2>
+        <p className="text-emerald-200 text-sm max-w-lg mx-auto mb-8 leading-relaxed">{t.sub}</p>
+        <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-8 max-w-sm mx-auto">
+          <div className="text-5xl mb-4">🔜</div>
+          <div className="font-black text-xl mb-2">
+            {lang === "fr" ? "Paiements bientôt disponibles" : "Payments coming soon"}
+          </div>
+          <p className="text-emerald-300 text-sm leading-relaxed">
+            {lang === "fr"
+              ? "Wave, Orange Money et MTN Money seront intégrés très prochainement. Merci pour votre patience et votre soutien."
+              : "Wave, Orange Money and MTN Money will be integrated very soon. Thank you for your patience and support."}
+          </p>
+          <div className="flex justify-center gap-4 mt-6 text-2xl opacity-60">
+            <span>🌊</span><span>🟠</span><span>💛</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── HomePage
 const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const [filter, setFilter] = useState("all");
   const t = T[lang];
@@ -206,7 +291,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
             <span className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse" />{t.hero.badge}
           </div>
           <h1 className="text-4xl md:text-5xl font-black mb-5 leading-tight">{t.hero.title1}<br /><span className="text-emerald-200">{t.hero.title2}</span></h1>
-          <p className="text-emerald-100 text-lg max-w-xl mx-auto mb-8">{t.hero.sub}</p>
+          <p className="text-emerald-100 text-lg max-w-2xl mx-auto mb-8 leading-relaxed">{t.hero.sub}</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button onClick={() => document.getElementById("collectes")?.scrollIntoView({behavior:"smooth"})} className="bg-white text-emerald-700 font-bold px-8 py-3.5 rounded-xl hover:bg-emerald-50 shadow-lg">{t.hero.cta1} →</button>
             <button onClick={() => setPage("submit")} className="bg-emerald-500/40 hover:bg-emerald-500/60 border border-white/30 text-white font-semibold px-8 py-3.5 rounded-xl">{t.hero.cta2}</button>
@@ -220,6 +305,10 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           </div>
         </div>
       </div>
+
+      {/* Urgent Cases Banner — mock + auto-detection */}
+      <UrgentBanner cases={MOCK_CASES} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} />
+
       <div id="collectes" className="max-w-6xl mx-auto px-4 py-12">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
@@ -232,6 +321,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           {filtered.map(c => <CaseCard key={c.id} c={c} lang={lang} t={t} onClick={() => { setSelectedCase(c); setPage("case"); }} />)}
         </div>
       </div>
+
       <div className="bg-gray-50 border-t border-gray-100">
         <div className="max-w-6xl mx-auto px-4 py-16 text-center">
           <h2 className="text-2xl font-black text-gray-900 mb-2">{t.how.title}</h2>
@@ -248,6 +338,9 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           </div>
         </div>
       </div>
+
+      {/* Support Ayyad Section */}
+      <SupportAyyadSection lang={lang} />
     </div>
   );
 };
@@ -272,7 +365,7 @@ const CasePage = ({ c, setPage, lang }) => {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="h-52 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 flex items-center justify-center text-9xl">{c.image}</div>
             <div className="p-6">
-              <div className="flex flex-wrap gap-2 mb-3"><Badge color="blue">{c.category[lang]}</Badge><Badge color="green">{t.badges.verified}</Badge>{funded&&<Badge color="green">{t.badges.funded}</Badge>}</div>
+              <div className="flex flex-wrap gap-2 mb-3"><Badge color="blue">{c.category[lang]}</Badge><Badge color="green">{t.badges.verified}</Badge>{funded&&<Badge color="green">{t.badges.funded}</Badge>}{c.urgent&&<Badge color="red">{t.badges.urgent}</Badge>}</div>
               <h1 className="text-2xl font-black text-gray-900 mb-3">{c.title[lang]}</h1>
               <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-4"><span>🏥 {c.hospital}</span><span>📍 {c.city}</span><span>👤 {c.age} {lang==="fr"?"ans":"years"}</span></div>
               <p className="text-gray-600 leading-relaxed">{c.desc[lang]}</p>
@@ -294,6 +387,24 @@ const CasePage = ({ c, setPage, lang }) => {
             <span className="text-2xl flex-shrink-0">🔒</span>
             <div><div className="font-bold text-emerald-800 text-sm">{t.guarantee.title}</div><div className="text-emerald-700 text-xs mt-1">{t.guarantee.desc}</div></div>
           </div>
+
+          {/* Video Section */}
+          {c.videoUrl ? (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-gray-100 flex items-center gap-2">
+                <span className="text-xl">🎥</span>
+                <span className="font-bold text-gray-900">{t.video.title}</span>
+              </div>
+              <div className="relative w-full" style={{paddingBottom:"56.25%"}}>
+                <iframe src={c.videoUrl} className="absolute inset-0 w-full h-full" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Patient video" />
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 text-center">
+              <div className="text-3xl mb-2">🎥</div>
+              <div className="text-sm text-gray-400">{t.video.noVideo}</div>
+            </div>
+          )}
         </div>
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-xl p-6 sticky top-24">
@@ -613,7 +724,20 @@ const AdminPage = ({ user, setPage, lang }) => {
 
   useEffect(() => { loadCases(); }, []);
 
-  // ── Approve a case ──
+  // ── Toggle urgent ──
+  const toggleUrgent = async (id, current) => {
+    const { error } = await supabase
+      .from("cases")
+      .update({ urgent: !current })
+      .eq("id", id);
+    if (!error) setCases(prev => prev.map(c => c.id===id ? {...c, urgent:!current} : c));
+  };
+
+  // ── Auto-urgent: < 7 days left AND < 50% collected ──
+  const isAutoUrgent = (c) => {
+    if (!c.days_left || !c.amount || !c.collected) return false;
+    return c.days_left <= 7 && (c.collected / c.amount) < 0.5;
+  };
   const approveCase = async (id) => {
     const { error } = await supabase
       .from("cases")
@@ -767,6 +891,9 @@ const AdminPage = ({ user, setPage, lang }) => {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <Badge color="yellow">{t.statusLabels.PENDING}</Badge>
+                        <button onClick={() => toggleUrgent(c.id, c.urgent)} className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${c.urgent || isAutoUrgent(c) ? "bg-red-600 text-white border-red-600" : "border-gray-200 text-gray-500 hover:border-red-400 hover:text-red-600"}`}>
+                          {c.urgent || isAutoUrgent(c) ? "🚨 Urgent" : "⚪ Urgent"}
+                        </button>
                         <button onClick={() => { setRejectModal(c.id); }} className="px-3 py-1.5 border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50">{t.reject}</button>
                         <button onClick={() => approveCase(c.id)} className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm">{t.approve}</button>
                       </div>
