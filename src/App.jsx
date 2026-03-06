@@ -199,12 +199,16 @@ const T = {
 
 // ── Static mock cases for homepage display ───────────────────
 const MOCK_CASES = [
-  { id:1, title:{fr:"Opération cardiaque urgente pour Aminata",en:"Urgent heart surgery for Aminata"}, beneficiary:"Aminata Koné", age:34, city:"Abidjan", hospital:"CHU de Cocody", category:{fr:"Cardiologie",en:"Cardiology"}, required:1800000, collected:1260000, donors:87, daysLeft:12, image:"🫀", urgent:true, videoUrl:"https://www.youtube.com/embed/dQw4w9WgXcQ", desc:{fr:"Aminata souffre d'une cardiopathie valvulaire sévère nécessitant un remplacement de valve urgent. Sans cette intervention, son pronostic vital est engagé dans les 3 prochains mois.",en:"Aminata suffers from severe valvular heart disease requiring urgent valve replacement. Without this procedure, her life is at risk within 3 months."}, status:"COLLECTING" },
-  { id:2, title:{fr:"Dialyse rénale pour Kofi Asante",en:"Kidney dialysis for Kofi Asante"}, beneficiary:"Kofi Asante", age:52, city:"Bouaké", hospital:"Hôpital Régional de Bouaké", category:{fr:"Néphrologie",en:"Nephrology"}, required:950000, collected:712000, donors:45, daysLeft:21, image:"🫘", urgent:false, videoUrl:null, desc:{fr:"Kofi est en insuffisance rénale chronique terminale. Il a besoin de 3 séances de dialyse par semaine pendant 6 mois en attente de greffe.",en:"Kofi has end-stage chronic kidney failure. He needs 3 dialysis sessions per week for 6 months while awaiting a transplant."}, status:"COLLECTING" },
-  { id:3, title:{fr:"Chimiothérapie pour Fatou Diallo",en:"Chemotherapy for Fatou Diallo"}, beneficiary:"Fatou Diallo", age:28, city:"Abidjan", hospital:"Institut National d'Oncologie", category:{fr:"Oncologie",en:"Oncology"}, required:2400000, collected:480000, donors:31, daysLeft:45, image:"🎗️", urgent:false, videoUrl:null, desc:{fr:"Fatou, jeune maman de 2 enfants, a reçu un diagnostic de cancer du sein au stade II. Un protocole de chimiothérapie de 6 cycles est nécessaire.",en:"Fatou, a young mother of 2, was diagnosed with stage II breast cancer. A 6-cycle chemotherapy protocol is needed."}, status:"COLLECTING" },
-  { id:4, title:{fr:"Prothèse orthopédique pour Ibrahim",en:"Orthopedic prosthesis for Ibrahim"}, beneficiary:"Ibrahim Coulibaly", age:19, city:"Daloa", hospital:"CHR de Daloa", category:{fr:"Orthopédie",en:"Orthopedics"}, required:620000, collected:620000, donors:62, daysLeft:0, image:"🦾", urgent:false, videoUrl:null, desc:{fr:"Ibrahim a perdu sa jambe droite suite à un accident de la route. Grâce à votre générosité, l'objectif est atteint !",en:"Ibrahim lost his right leg in a road accident. Thanks to your generosity, the goal has been reached!"}, status:"FUNDED" },
-  { id:5, title:{fr:"Traitement neurologique pour Mariam",en:"Neurological treatment for Mariam"}, beneficiary:"Mariam Ouédraogo", age:41, city:"Abidjan", hospital:"CHU de Yopougon", category:{fr:"Cardiologie",en:"Cardiology"}, required:1100000, collected:330000, donors:22, daysLeft:33, image:"🧠", urgent:true, videoUrl:null, desc:{fr:"Mariam souffre d'une sclérose en plaques progressivement invalidante.",en:"Mariam suffers from progressively disabling multiple sclerosis."}, status:"COLLECTING" },
-  { id:6, title:{fr:"Opération de la vue pour Kouassi",en:"Eye surgery for Kouassi"}, beneficiary:"Kouassi Yao", age:67, city:"San-Pédro", hospital:"Clinique Vision CI", category:{fr:"Oncologie",en:"Oncology"}, required:380000, collected:285000, donors:41, daysLeft:8, image:"👁️", urgent:false, videoUrl:null, desc:{fr:"Kouassi souffre de glaucome bilatéral avancé. Sans une opération urgente, il risque de perdre définitivement la vue.",en:"Kouassi suffers from advanced bilateral glaucoma. Without urgent surgery, he risks permanently losing his sight."}, status:"COLLECTING" },
+  { id:1, trackingId:"AYD-2025-001", title:{fr:"Opération cardiaque urgente pour Aminata",en:"Urgent heart surgery for Aminata"}, beneficiary:"Aminata Koné", age:34, city:"Abidjan", hospital:"CHU de Cocody", category:{fr:"Cardiologie",en:"Cardiology"}, required:1800000, collected:1260000, donors:87, daysLeft:2, image:"🫀", urgent:true, videoUrl:"https://www.youtube.com/embed/dQw4w9WgXcQ", desc:{fr:"Aminata souffre d'une cardiopathie valvulaire sévère nécessitant un remplacement de valve urgent. Sans cette intervention, son pronostic vital est engagé dans les 3 prochains mois.",en:"Aminata suffers from severe valvular heart disease requiring urgent valve replacement. Without this procedure, her life is at risk within 3 months."}, status:"COLLECTING" },
+  { id:2, trackingId:"AYD-2025-002", title:{fr:"Dialyse rénale pour Kofi Asante",en:"Kidney dialysis for Kofi Asante"}, beneficiary:"Kofi Asante", age:52, city:"Bouaké", hospital:"CHU de Bouaké", category:{fr:"Néphrologie",en:"Nephrology"}, required:950000, collected:712000, donors:45, daysLeft:21, image:"🫘", urgent:false, videoUrl:null, desc:{fr:"Kofi est en insuffisance rénale chronique terminale. Il a besoin de 3 séances de dialyse par semaine pendant 6 mois en attente de greffe.",en:"Kofi has end-stage chronic kidney failure. He needs 3 dialysis sessions per week for 6 months while awaiting a transplant."}, status:"COLLECTING" },
+  { id:3, trackingId:"AYD-2025-003", title:{fr:"Chimiothérapie pour Fatou Diallo",en:"Chemotherapy for Fatou Diallo"}, beneficiary:"Fatou Diallo", age:28, city:"Abidjan", hospital:"Institut National d'Oncologie", category:{fr:"Oncologie",en:"Oncology"}, required:2400000, collected:480000, donors:31, daysLeft:45, image:"🎗️", urgent:false, videoUrl:null, desc:{fr:"Fatou, jeune maman de 2 enfants, a reçu un diagnostic de cancer du sein au stade II. Un protocole de chimiothérapie de 6 cycles est nécessaire.",en:"Fatou, a young mother of 2, was diagnosed with stage II breast cancer. A 6-cycle chemotherapy protocol is needed."}, status:"COLLECTING" },
+  { id:4, trackingId:"AYD-2025-004", title:{fr:"Prothèse orthopédique pour Ibrahim",en:"Orthopedic prosthesis for Ibrahim"}, beneficiary:"Ibrahim Coulibaly", age:19, city:"Daloa", hospital:"CHR de Daloa", category:{fr:"Orthopédie",en:"Orthopedics"}, required:620000, collected:620000, donors:62, daysLeft:0, image:"🦾", urgent:false, videoUrl:null, desc:{fr:"Ibrahim a perdu sa jambe droite suite à un accident de la route. Grâce à votre générosité, l'objectif est atteint !",en:"Ibrahim lost his right leg in a road accident. Thanks to your generosity, the goal has been reached!"}, status:"FUNDED" },
+  { id:5, trackingId:"AYD-2025-005", title:{fr:"Traitement neurologique pour Mariam",en:"Neurological treatment for Mariam"}, beneficiary:"Mariam Ouédraogo", age:41, city:"Abidjan", hospital:"CHU de Yopougon", category:{fr:"Neurologie",en:"Neurology"}, required:1100000, collected:330000, donors:22, daysLeft:4, image:"🧠", urgent:true, videoUrl:null, desc:{fr:"Mariam souffre d'une sclérose en plaques progressivement invalidante.",en:"Mariam suffers from progressively disabling multiple sclerosis."}, status:"COLLECTING" },
+  { id:6, trackingId:"AYD-2025-006", title:{fr:"Opération de la vue pour Kouassi",en:"Eye surgery for Kouassi"}, beneficiary:"Kouassi Yao", age:67, city:"San-Pédro", hospital:"Clinique Vision CI", category:{fr:"Oncologie",en:"Oncology"}, required:380000, collected:285000, donors:41, daysLeft:8, image:"👁️", urgent:false, videoUrl:null, desc:{fr:"Kouassi souffre de glaucome bilatéral avancé. Sans une opération urgente, il risque de perdre définitivement la vue.",en:"Kouassi suffers from advanced bilateral glaucoma. Without urgent surgery, he risks permanently losing his sight."}, status:"COLLECTING" },
+  { id:7, trackingId:"AYD-2025-007", title:{fr:"Amputation évitable pour Seydou",en:"Avoidable amputation for Seydou"}, beneficiary:"Seydou Bah", age:23, city:"Korhogo", hospital:"CHR de Korhogo", category:{fr:"Orthopédie",en:"Orthopedics"}, required:750000, collected:120000, donors:14, daysLeft:1, image:"🦴", urgent:true, videoUrl:null, desc:{fr:"Seydou a une infection osseuse grave au pied gauche. Sans traitement immédiat, les médecins devront amputer. Il reste moins de 24h pour agir.",en:"Seydou has a serious bone infection in his left foot. Without immediate treatment, doctors will have to amputate. Less than 24 hours to act."}, status:"COLLECTING" },
+  { id:8, trackingId:"AYD-2025-008", title:{fr:"Accouchement d'urgence pour Rokia",en:"Emergency delivery for Rokia"}, beneficiary:"Rokia Soro", age:26, city:"Yamoussoukro", hospital:"CHR de Yamoussoukro", category:{fr:"Gynécologie",en:"Gynecology"}, required:420000, collected:85000, donors:9, daysLeft:1, image:"🌸", urgent:true, videoUrl:null, desc:{fr:"Rokia est enceinte de 8 mois avec une grossesse à haut risque. Une césarienne d'urgence est nécessaire dans les prochaines heures.",en:"Rokia is 8 months pregnant with a high-risk pregnancy. An emergency C-section is needed in the coming hours."}, status:"COLLECTING" },
+  { id:9, trackingId:"AYD-2025-009", title:{fr:"Greffe de cornée pour Abou",en:"Cornea transplant for Abou"}, beneficiary:"Abou Diomandé", age:15, city:"Man", hospital:"CHR de Man", category:{fr:"Neurologie",en:"Neurology"}, required:890000, collected:220000, donors:18, daysLeft:3, image:"👀", urgent:true, videoUrl:null, desc:{fr:"Abou, 15 ans, perd la vue progressivement. La cornée donneuse est disponible mais l'opération doit se faire avant 72h sinon elle sera perdue.",en:"Abou, 15, is progressively losing his sight. The donor cornea is available but surgery must happen within 72h or it will be lost."}, status:"COLLECTING" },
+  { id:10, trackingId:"AYD-2025-010", title:{fr:"Dialyse pédiatrique pour Bintou",en:"Pediatric dialysis for Bintou"}, beneficiary:"Bintou Koné", age:8, city:"Abidjan", hospital:"CHU de Yopougon", category:{fr:"Pédiatrie",en:"Pediatrics"}, required:1200000, collected:310000, donors:27, daysLeft:5, image:"👶", urgent:true, videoUrl:null, desc:{fr:"Bintou, 8 ans, est en insuffisance rénale aiguë. Elle nécessite une dialyse d'urgence pour survivre. Chaque heure compte pour cette petite fille.",en:"Bintou, 8, is in acute kidney failure. She needs emergency dialysis to survive. Every hour counts for this little girl."}, status:"COLLECTING" },
 ];
 
 const TEMOIGNAGES = [
@@ -347,6 +351,12 @@ const CaseCard = ({ c, lang, t, onClick }) => {
           <span>👥 {c.donors} {tc.donors}</span>
           {funded?<span className="text-emerald-600 font-bold">{tc.funded}</span>:<span className="text-amber-600 font-medium">⏳ {c.daysLeft} {tc.daysLeft}</span>}
         </div>
+        {c.trackingId && (
+          <div className="mt-3 flex items-center justify-between bg-gray-50 rounded-lg px-2.5 py-1.5 border border-gray-100">
+            <span className="text-[10px] text-gray-400 font-medium">ID Suivi</span>
+            <span className="text-xs font-mono font-bold text-emerald-700">{c.trackingId}</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -357,7 +367,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
   const t = T[lang];
   const urgentCases = cases
     .filter(c => {
-      const autoUrgent = c.daysLeft !== undefined && c.daysLeft <= 7 && pct(c.collected, c.required) < 50;
+      const autoUrgent = c.daysLeft !== undefined && c.daysLeft <= 14 && pct(c.collected, c.required) < 80;
       return (c.urgent || autoUrgent) && c.status !== "FUNDED";
     })
     .sort((a, b) => a.daysLeft - b.daysLeft); // ordre d'urgence croissant
@@ -749,6 +759,13 @@ const CasePage = ({ c, setPage, lang }) => {
               <div className="flex flex-wrap gap-2 mb-3"><Badge color="blue">{c.category[lang]}</Badge><Badge color="green">{t.badges.verified}</Badge>{funded&&<Badge color="green">{t.badges.funded}</Badge>}{c.urgent&&<Badge color="red">{t.badges.urgent}</Badge>}</div>
               <h1 className="text-2xl font-black text-gray-900 mb-3">{c.title[lang]}</h1>
               <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-4"><span>🏥 {c.hospital}</span><span>📍 {c.city}</span><span>👤 {c.age} {lang==="fr"?"ans":"years"}</span></div>
+              {c.trackingId && (
+                <div className="flex items-center gap-2 mb-3 bg-gray-50 rounded-xl px-3 py-2 w-fit">
+                  <span className="text-xs text-gray-400">{lang==="fr"?"ID de suivi :":"Tracking ID:"}</span>
+                  <span className="text-xs font-mono font-bold text-emerald-700">{c.trackingId}</span>
+                  <button onClick={() => navigator.clipboard.writeText(c.trackingId)} className="text-xs text-gray-400 hover:text-emerald-600">📋</button>
+                </div>
+              )}
               <p className="text-gray-600 leading-relaxed">{c.desc[lang]}</p>
             </div>
           </div>
@@ -789,6 +806,16 @@ const CasePage = ({ c, setPage, lang }) => {
         </div>
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-xl p-6 sticky top-24">
+            {/* Bannière don sans connexion */}
+            {step==="donate" && !funded && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 mb-4 flex items-center gap-2">
+                <span className="text-lg">🔓</span>
+                <div>
+                  <div className="text-xs font-bold text-emerald-800">{lang==="fr" ? "Aucune connexion requise" : "No login required"}</div>
+                  <div className="text-[10px] text-emerald-600">{lang==="fr" ? "Donnez librement, même en anonyme" : "Donate freely, even anonymously"}</div>
+                </div>
+              </div>
+            )}
             {step==="donate"&&<>
               <h3 className="font-black text-gray-900 text-lg mb-1">{td.title}</h3>
               <p className="text-xs text-gray-500 mb-5">{td.sub}</p>
@@ -1506,57 +1533,90 @@ const AdminPage = ({ user, setPage, lang }) => {
               ) : (
                 <div className="divide-y divide-gray-50">
                   {cases.filter(c => c.status === "FUNDED" || c.status === "APPROVED").map(c => (
-                    <div key={c.id} className="p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-900 text-sm">{c.title}</div>
-                        <div className="text-xs text-gray-400 mt-0.5">{c.hospital} · {c.city}</div>
-                        <div className="flex items-center gap-3 mt-2">
-                          <span className="text-emerald-600 font-bold text-sm">{c.amount?.toLocaleString()} FCFA</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                            c.payout_status === "confirmed" ? "bg-emerald-100 text-emerald-700" :
-                            c.payout_status === "initiated" ? "bg-blue-100 text-blue-700" :
-                            "bg-yellow-100 text-yellow-700"
-                          }`}>
-                            {c.payout_status === "confirmed" ? "✅ " + (lang==="fr"?"Virement confirmé":"Confirmed") :
-                             c.payout_status === "initiated" ? "🔵 " + (lang==="fr"?"Initié":"Initiated") :
-                             "🟡 " + (lang==="fr"?"En attente":"Pending")}
-                          </span>
-                        </div>
-                        {c.payout_receipt && (
-                          <a href={c.payout_receipt} target="_blank" rel="noreferrer" className="text-xs text-emerald-600 underline mt-1 block">📄 {lang==="fr"?"Voir le reçu":"View receipt"}</a>
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-2 min-w-[160px]">
-                        {!c.payout_status || c.payout_status === "pending" ? (
-                          <button onClick={async () => {
-                            await supabase.from("cases").update({ payout_status: "initiated", payout_initiated_at: new Date().toISOString() }).eq("id", c.id);
-                            setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"initiated"} : x));
-                            emailNewCase({ caseTitle: `VIREMENT INITIÉ: ${c.title}`, hospital: c.hospital, city: c.city, amount: c.amount });
-                          }} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl">
-                            🔵 {lang==="fr"?"Déclencher virement":"Initiate payout"}
-                          </button>
-                        ) : c.payout_status === "initiated" ? (
-                          <div className="space-y-2">
-                            <label className="block text-xs text-gray-500 font-medium">{lang==="fr"?"Uploader reçu bancaire :":"Upload bank receipt:"}</label>
-                            <label className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer block text-center">
-                              📄 {lang==="fr"?"Choisir reçu":"Choose receipt"}
-                              <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={async (e) => {
-                                const file = e.target.files[0];
-                                if (!file) return;
-                                const path = `receipts/${c.id}_${Date.now()}`;
-                                const { data } = await supabase.storage.from("documents").upload(path, file);
-                                if (data) {
-                                  const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
-                                  await supabase.from("cases").update({ payout_status: "confirmed", payout_receipt: urlData.publicUrl, payout_confirmed_at: new Date().toISOString() }).eq("id", c.id);
-                                  setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"confirmed", payout_receipt: urlData.publicUrl} : x));
-                                }
-                              }} />
-                            </label>
+                    <div key={c.id} className="p-5 space-y-4">
+                      {/* Identité du dossier */}
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">{c.tracking_id || `AYD-${c.id}`}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                              c.payout_status === "confirmed" ? "bg-emerald-100 text-emerald-700" :
+                              c.payout_status === "initiated" ? "bg-blue-100 text-blue-700" :
+                              "bg-yellow-100 text-yellow-700"
+                            }`}>
+                              {c.payout_status === "confirmed" ? "✅ Virement confirmé" :
+                               c.payout_status === "initiated" ? "🔵 Initié" :
+                               "🟡 En attente"}
+                            </span>
                           </div>
-                        ) : (
-                          <div className="text-emerald-600 text-xs font-bold text-center">✅ {lang==="fr"?"Virement complété":"Payout completed"}</div>
-                        )}
+                          <div className="font-semibold text-gray-900 text-sm mt-1">{c.title}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">🏥 {c.hospital} · 📍 {c.city} · 👤 {c.beneficiary}</div>
+                          <div className="text-emerald-700 font-black text-base mt-1">{c.amount?.toLocaleString()} FCFA</div>
+                          {c.payout_receipt && (
+                            <a href={c.payout_receipt} target="_blank" rel="noreferrer" className="text-xs text-emerald-600 underline mt-1 block">📄 Voir le reçu</a>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Actions selon statut */}
+                      {(!c.payout_status || c.payout_status === "pending") && (
+                        <div className="bg-blue-50 rounded-2xl p-4 space-y-3 border border-blue-100">
+                          <div className="text-xs font-bold text-blue-700 mb-2">💸 Choisir le moyen de virement vers {c.hospital}</div>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {[
+                              { id:"WAVE", emoji:"🌊", label:"Wave CI", detail:"Envoyer via Wave Business", color:"bg-blue-600 hover:bg-blue-700" },
+                              { id:"ORANGE", emoji:"🟠", label:"Orange Money", detail:"Transfert Orange Business", color:"bg-orange-500 hover:bg-orange-600" },
+                              { id:"MTN", emoji:"🟡", label:"MTN MoMo", detail:"Transfert MTN Business", color:"bg-yellow-500 hover:bg-yellow-600" },
+                            ].map(pm => (
+                              <button key={pm.id} onClick={async () => {
+                                await supabase.from("cases").update({ payout_status: "initiated", payout_initiated_at: new Date().toISOString(), payout_method: pm.id }).eq("id", c.id);
+                                setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"initiated", payout_method: pm.id} : x));
+                                emailNewCase({ caseTitle: `VIREMENT ${pm.label} INITIÉ — ${c.title} (${c.tracking_id||"AYD-"+c.id})`, hospital: c.hospital, city: c.city, amount: c.amount });
+                              }} className={`${pm.color} text-white text-xs font-bold px-3 py-3 rounded-xl flex flex-col items-center gap-1`}>
+                                <span className="text-xl">{pm.emoji}</span>
+                                <span>{pm.label}</span>
+                                <span className="text-white/70 text-[10px]">{pm.detail}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <div className="bg-white rounded-xl p-3 border border-blue-100 text-xs text-gray-600 space-y-1">
+                            <div className="font-bold text-gray-700 mb-1">📋 Informations pour le virement :</div>
+                            <div>• <span className="font-semibold">Bénéficiaire :</span> {c.hospital}</div>
+                            <div>• <span className="font-semibold">Montant exact :</span> <span className="text-emerald-700 font-bold">{c.amount?.toLocaleString()} FCFA</span></div>
+                            <div>• <span className="font-semibold">Référence :</span> <span className="font-mono text-emerald-700">{c.tracking_id || `AYD-${c.id}`} — {c.beneficiary}</span></div>
+                            <div>• <span className="font-semibold">Ville :</span> {c.city}</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {c.payout_status === "initiated" && (
+                        <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 space-y-2">
+                          <div className="text-xs font-bold text-emerald-700">
+                            ✅ Virement {c.payout_method === "WAVE" ? "🌊 Wave" : c.payout_method === "ORANGE" ? "🟠 Orange Money" : c.payout_method === "MTN" ? "🟡 MTN MoMo" : ""} initié
+                          </div>
+                          <div className="text-xs text-gray-500">Référence : <span className="font-mono font-bold">{c.tracking_id || `AYD-${c.id}`}</span></div>
+                          <label className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer flex items-center justify-center gap-2 w-full">
+                            📄 Uploader le reçu de confirmation
+                            <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={async (e) => {
+                              const file = e.target.files[0];
+                              if (!file) return;
+                              const path = `receipts/${c.id}_${Date.now()}`;
+                              const { data } = await supabase.storage.from("documents").upload(path, file);
+                              if (data) {
+                                const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
+                                await supabase.from("cases").update({ payout_status: "confirmed", payout_receipt: urlData.publicUrl, payout_confirmed_at: new Date().toISOString() }).eq("id", c.id);
+                                setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"confirmed", payout_receipt: urlData.publicUrl} : x));
+                              }
+                            }} />
+                          </label>
+                        </div>
+                      )}
+
+                      {c.payout_status === "confirmed" && (
+                        <div className="bg-emerald-100 rounded-xl px-4 py-2 text-emerald-700 text-xs font-bold flex items-center gap-2">
+                          ✅ Virement complété · Référence <span className="font-mono">{c.tracking_id || `AYD-${c.id}`}</span>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
