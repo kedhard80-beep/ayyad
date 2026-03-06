@@ -400,38 +400,51 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
         <p className="text-gray-500 text-sm mb-5">{t.urgent.sub}</p>
 
         {/* Carousel — fade style, carte unique visible */}
-        <div style={{position:"relative", minHeight:"160px"}}>
-          {urgentCases.map((c, i) => (
-            <div key={c.id} style={{
-              position: i === 0 ? "relative" : "absolute",
-              top: 0, left: 0, right: 0,
-              opacity: i === current ? 1 : 0,
-              transition: "opacity 600ms ease-in-out",
-              pointerEvents: i === current ? "auto" : "none",
-            }}>
-              <button onClick={() => { setSelectedCase(c); setPage("case"); }} className="w-full bg-red-50 hover:bg-red-100 border-2 border-red-200 hover:border-red-400 rounded-2xl p-5 text-left transition-colors group">
-                <div className="flex items-start gap-4">
-                  <div className="text-4xl">{c.image}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="bg-red-600 text-white text-xs font-black px-2 py-0.5 rounded-full animate-pulse">🚨 URGENT</span>
-                      <span className="text-xs text-orange-600 font-bold">⏱️ {c.daysLeft}j restants</span>
+        <div style={{position:"relative", minHeight:"260px"}}>
+          {urgentCases.map((c, i) => {
+            const percent = pct(c.collected, c.required);
+            return (
+              <div key={c.id} style={{
+                position: i === 0 ? "relative" : "absolute",
+                top: 0, left: 0, right: 0,
+                opacity: i === current ? 1 : 0,
+                transition: "opacity 600ms ease-in-out",
+                pointerEvents: i === current ? "auto" : "none",
+              }}>
+                <button onClick={() => { setSelectedCase(c); setPage("case"); }}
+                  className="w-full bg-white border-2 border-red-200 hover:border-red-400 rounded-2xl overflow-hidden text-left transition-all group shadow-sm hover:shadow-md">
+                  {/* Image / Emoji banner */}
+                  <div className="h-32 bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center text-7xl relative">
+                    {c.image}
+                    <div className="absolute top-3 left-3 flex gap-2">
+                      <span className="bg-red-600 text-white text-xs font-black px-2 py-1 rounded-full animate-pulse">🚨 URGENT</span>
+                      <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1 rounded-full">⏱️ {c.daysLeft}j</span>
                     </div>
-                    <div className="font-bold text-gray-900 leading-snug group-hover:text-red-700">{c.title[lang]}</div>
-                    <div className="text-gray-500 text-xs mt-1">🏥 {c.hospital} · {c.city}</div>
-                    <div className="mt-2 text-xs bg-amber-100 text-amber-700 rounded-lg px-2 py-1 inline-block font-medium">{t.urgent.alert}</div>
+                    <div className="absolute top-3 right-3">
+                      <span className="bg-white text-gray-500 text-[10px] font-mono px-2 py-1 rounded-full border border-gray-200">{c.trackingId}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-4">
-                  <ProgressBar percent={pct(c.collected, c.required)} />
-                  <div className="flex justify-between text-xs mt-1 text-gray-500">
-                    <span>{fmt(c.collected)}</span>
-                    <span className="font-bold text-red-600">{pct(c.collected, c.required)}%</span>
+                  {/* Contenu */}
+                  <div className="p-4">
+                    <div className="font-bold text-gray-900 text-sm leading-snug group-hover:text-red-700 mb-1">{c.title[lang]}</div>
+                    <div className="text-xs text-gray-400 mb-3">🏥 {c.hospital} · 📍 {c.city}</div>
+                    {/* Progression */}
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span className="font-semibold text-gray-800">{fmt(c.collected)}</span>
+                      <span className="text-gray-400">sur {fmt(c.required)}</span>
+                    </div>
+                    <div className="h-2 bg-red-100 rounded-full overflow-hidden mb-1">
+                      <div className="h-full bg-red-500 rounded-full" style={{width: percent+"%"}} />
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-400">👥 {c.donors} {lang==="fr"?"donateurs":"donors"}</span>
+                      <span className="font-bold text-red-600">{percent}%</span>
+                    </div>
                   </div>
-                </div>
-              </button>
-            </div>
-          ))}
+                </button>
+              </div>
+            );
+          })}
         </div>
 
         {/* Dots */}
@@ -538,38 +551,96 @@ const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
 // ── Collectes terminées & Témoignages ─────────────────────────
 
 // ── Collectes Actives Page (groupées par spécialité) ──────────
-const CollectesActivesPage = ({ setPage, setSelectedCase, lang }) => {
-  const active = MOCK_CASES.filter(c => c.status !== "FUNDED");
+const CAT_ICONS = {
+  "Cardiologie": "🫀", "Cardiology": "🫀",
+  "Oncologie": "🎗️", "Oncology": "🎗️",
+  "Neurologie": "🧠", "Neurology": "🧠",
+  "Orthopédie": "🦴", "Orthopedics": "🦴",
+  "Pédiatrie": "👶", "Pediatrics": "👶",
+  "Gynécologie": "🌸", "Gynecology": "🌸",
+  "Néphrologie": "🫘", "Nephrology": "🫘",
+  "Autre": "🏥", "Other": "🏥",
+};
 
-  // Grouper par catégorie
+// Page spécialité — collectes d'une seule spécialité
+const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
+  const cases = MOCK_CASES.filter(c => c.status !== "FUNDED" && c.category[lang] === specialite);
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-gradient-to-br from-emerald-700 to-teal-600 text-white py-10 px-4">
+        <div className="max-w-5xl mx-auto">
+          <button onClick={() => setPage("collectesactives")} className="flex items-center gap-1 text-emerald-200 hover:text-white text-sm mb-5">← {lang==="fr" ? "Toutes les spécialités" : "All specialties"}</button>
+          <div className="flex items-center gap-3">
+            <span className="text-4xl">{CAT_ICONS[specialite] || "🏥"}</span>
+            <div>
+              <h1 className="text-3xl font-black">{specialite}</h1>
+              <p className="text-emerald-200 text-sm">{cases.length} {lang==="fr" ? "collecte(s) active(s)" : "active campaign(s)"}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="max-w-5xl mx-auto px-4 py-10">
+        {cases.length === 0 ? (
+          <div className="text-center py-20 text-gray-400">
+            <div className="text-5xl mb-4">{CAT_ICONS[specialite] || "🏥"}</div>
+            <div>{lang==="fr" ? "Aucune collecte active dans cette spécialité." : "No active campaigns in this specialty."}</div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {cases.map(c => {
+              const percent = Math.min(100, Math.round((c.collected / c.required) * 100));
+              return (
+                <button key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); }}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-300 overflow-hidden text-left transition-all group">
+                  <div className="h-28 bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center text-6xl relative">
+                    {c.image}
+                    {c.urgent && <span className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">🚨 URGENT</span>}
+                  </div>
+                  <div className="p-4">
+                    <div className="font-bold text-gray-900 text-sm leading-snug group-hover:text-emerald-700 mb-1">{c.title[lang]}</div>
+                    <div className="text-xs text-gray-400 mb-3">🏥 {c.hospital} · 📍 {c.city}</div>
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span className="font-semibold text-gray-800">{fmt(c.collected)}</span>
+                      <span className="text-gray-400">sur {fmt(c.required)}</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-2">
+                      <div className="h-full bg-emerald-500 rounded-full" style={{width: percent+"%"}} />
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-400">👥 {c.donors} · ⏳ {c.daysLeft}j</span>
+                      <span className="font-bold text-emerald-600">{percent}%</span>
+                    </div>
+                    <div className="text-[10px] font-mono text-gray-300 mt-2">{c.trackingId}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Page liste des spécialités
+const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite }) => {
+  const active = MOCK_CASES.filter(c => c.status !== "FUNDED");
   const groups = {};
   active.forEach(c => {
     const cat = c.category[lang];
-    if (!groups[cat]) groups[cat] = { label: cat, icon: "", cases: [] };
+    if (!groups[cat]) groups[cat] = { label: cat, cases: [] };
     groups[cat].cases.push(c);
   });
 
-  const catIcons = {
-    "Cardiologie": "🫀", "Cardiology": "🫀",
-    "Oncologie": "🎗️", "Oncology": "🎗️",
-    "Neurologie": "🧠", "Neurology": "🧠",
-    "Orthopédie": "🦴", "Orthopedics": "🦴",
-    "Pédiatrie": "👶", "Pediatrics": "👶",
-    "Gynécologie": "🌸", "Gynecology": "🌸",
-    "Néphrologie": "🫘", "Nephrology": "🫘",
-    "Autre": "🏥", "Other": "🏥",
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero */}
       <div className="bg-gradient-to-br from-emerald-700 to-teal-600 text-white py-12 px-4">
         <div className="max-w-5xl mx-auto">
           <button onClick={() => setPage("home")} className="flex items-center gap-1 text-emerald-200 hover:text-white text-sm mb-6">← {lang==="fr" ? "Retour" : "Back"}</button>
-          <h1 className="text-3xl font-black mb-2">{lang==="fr" ? "🏥 Collectes actives" : "🏥 Active campaigns"}</h1>
-          <p className="text-emerald-100 text-sm">{lang==="fr" ? active.length+" dossiers vérifiés en cours de financement" : active.length+" verified cases being funded"}</p>
-          <div className="flex gap-4 mt-6">
-            {[[active.length+"", lang==="fr"?"Collectes actives":"Active campaigns"],
+          <h1 className="text-3xl font-black mb-2">🏥 {lang==="fr" ? "Collectes actives" : "Active campaigns"}</h1>
+          <p className="text-emerald-100 text-sm">{active.length} {lang==="fr" ? "dossiers vérifiés — choisissez une spécialité" : "verified cases — choose a specialty"}</p>
+          <div className="flex gap-4 mt-6 flex-wrap">
+            {[[active.length+"", lang==="fr"?"Collectes":"Campaigns"],
               [Object.keys(groups).length+"", lang==="fr"?"Spécialités":"Specialties"],
               [active.reduce((s,c)=>s+c.donors,0)+"", lang==="fr"?"Donateurs":"Donors"]
             ].map(([v,l]) => (
@@ -582,49 +653,23 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang }) => {
         </div>
       </div>
 
-      {/* Groupes par spécialité */}
-      <div className="max-w-5xl mx-auto px-4 py-10 space-y-12">
-        {Object.values(groups).map(group => (
-          <div key={group.label}>
-            {/* Titre groupe */}
-            <div className="flex items-center gap-3 mb-5">
-              <span className="text-3xl">{catIcons[group.label] || "🏥"}</span>
-              <div>
-                <h2 className="text-xl font-black text-gray-900">{group.label}</h2>
-                <p className="text-xs text-gray-400">{group.cases.length} {lang==="fr" ? "collecte(s) en cours" : "active campaign(s)"}</p>
-              </div>
-              <div className="ml-auto h-px flex-1 bg-gray-200" />
-            </div>
-
-            {/* Cartes de la spécialité */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {group.cases.map(c => {
-                const percent = Math.min(100, Math.round((c.collected / c.required) * 100));
-                return (
-                  <button key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); }}
-                    className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-300 p-4 text-left transition-all group">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="text-3xl">{c.image}</div>
-                      <div className="flex-1 min-w-0">
-                        {c.urgent && <span className="bg-red-100 text-red-600 text-[10px] font-black px-2 py-0.5 rounded-full">🚨 URGENT</span>}
-                        <div className="font-bold text-gray-900 text-sm leading-snug mt-1 group-hover:text-emerald-700">{c.title[lang]}</div>
-                        <div className="text-xs text-gray-400 mt-0.5">🏥 {c.hospital}</div>
-                      </div>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-2">
-                      <div className="h-full bg-emerald-500 rounded-full transition-all" style={{width: percent+"%"}} />
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span className="font-semibold text-emerald-700">{percent}%</span>
-                      <span>⏳ {c.daysLeft}j · 👥 {c.donors}</span>
-                    </div>
-                    <div className="text-xs font-mono text-gray-300 mt-2">{c.trackingId}</div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+      {/* Grille des spécialités */}
+      <div className="max-w-5xl mx-auto px-4 py-10">
+        <h2 className="text-lg font-black text-gray-900 mb-6">{lang==="fr" ? "Choisissez une spécialité" : "Choose a specialty"}</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Object.values(groups).map(group => (
+            <button key={group.label}
+              onClick={() => { setSpecialite(group.label); setPage("specialite"); }}
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-400 p-6 text-center transition-all group">
+              <div className="text-4xl mb-3">{CAT_ICONS[group.label] || "🏥"}</div>
+              <div className="font-bold text-gray-900 text-sm group-hover:text-emerald-700">{group.label}</div>
+              <div className="text-xs text-gray-400 mt-1">{group.cases.length} {lang==="fr" ? "collecte(s)" : "campaign(s)"}</div>
+              {group.cases.some(c => c.urgent) && (
+                <div className="mt-2 bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full inline-block">🚨 Urgent</div>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -2074,6 +2119,7 @@ export default function AyyadApp() {
   const [lang, setLang] = useState("fr");
   const [user, setUser] = useState(null);
   const [selectedCase, setSelectedCase] = useState(null);
+  const [specialite, setSpecialite] = useState("");
 
   // Restore session on load
   useEffect(() => {
@@ -2104,7 +2150,8 @@ export default function AyyadApp() {
       <main>
         {page==="home"&&<HomePage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
         {page==="collectes"&&<CollectesPage setPage={setPage} lang={lang} />}
-        {page==="collectesactives"&&<CollectesActivesPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
+        {page==="collectesactives"&&<CollectesActivesPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} setSpecialite={setSpecialite} />}
+        {page==="specialite"&&<SpecialitePage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} specialite={specialite} />}
         {page==="case"&&selectedCase&&<CasePage c={selectedCase} setPage={setPage} lang={lang} />}
         {page==="how"&&<HowPage lang={lang} setPage={setPage} />}
         {page==="urgents"&&<UrgentsPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
