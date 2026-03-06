@@ -568,7 +568,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
               </button>
               {heroMenu && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 z-50">
-                  <button onClick={() => { document.getElementById("collectes")?.scrollIntoView({behavior:"smooth"}); setHeroMenu(false); }} className="w-full text-left px-3 py-3 rounded-xl hover:bg-emerald-50 transition-colors group">
+                  <button onClick={() => { setPage("collectes"); setHeroMenu(false); }} className="w-full text-left px-3 py-3 rounded-xl hover:bg-emerald-50 transition-colors group">
                     <div className="font-semibold text-gray-900 text-sm group-hover:text-emerald-700">🏥 {lang==="fr" ? "Collectes actives" : "Active campaigns"}</div>
                     <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Parcourir toutes les collectes médicales" : "Browse all medical campaigns"}</div>
                   </button>
@@ -1077,7 +1077,7 @@ const HowPage = ({ lang, setPage }) => {
           ))}
         </div>
         <div className="mt-6 text-center">
-          <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-xl shadow-md transition-colors">
+          <button onClick={() => setPage("collectes")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-xl shadow-md transition-colors">
             {lang==="fr" ? "Voir les collectes →" : "See campaigns →"}
           </button>
         </div>
