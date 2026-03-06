@@ -129,7 +129,7 @@ const CI_HOPITAUX = [
 const T = {
   fr: {
     nav: { collections: "Collectes", how: "Comment ça marche", admin: "Administration", login: "Connexion", start: "Démarrer", logout: "Déconnexion", medicalFinancing: "Financement médical" },
-    hero: { badge: "Plateforme vérifiée & sécurisée", title1: "Donner de la force à ceux", title2: "qui en ont besoin", sub: "Parce que soutenir une vie, c'est en sauver une. Ensemble, nous donnons de la force à ceux qui gardent encore espoir.", cta1: "Voir les collectes", cta2: "Soumettre un dossier" },
+    hero: { badge: "Plateforme vérifiée & sécurisée", title1: "Donner de la force à ceux", title2: "qui en ont besoin", sub: "Parce que soutenir une vie, c'est en sauver une. Ensemble, nous donnons de la force à ceux qui gardent encore espoir.", cta1: "Collectes terminées & témoignages", cta2: "Soumettre un dossier" },
     stats: { patients: "Patients aidés", collected: "FCFA collectés", hospitals: "Hôpitaux partenaires" },
     collections: { title: "Collectes en cours", sub: "dossiers vérifiés actifs" },
     card: { donors: "donateurs", daysLeft: "j restants", funded: "Objectif atteint !", on: "sur" },
@@ -163,7 +163,7 @@ const T = {
   },
   en: {
     nav: { collections: "Campaigns", how: "How it works", admin: "Administration", login: "Login", start: "Get started", logout: "Logout", medicalFinancing: "Medical funding" },
-    hero: { badge: "Verified & secure platform", title1: "Giving strength to those", title2: "who need it most", sub: "Because supporting a life means saving one. Together, we give strength to those who still hold on to hope.", cta1: "See campaigns", cta2: "Submit a case" },
+    hero: { badge: "Verified & secure platform", title1: "Giving strength to those", title2: "who need it most", sub: "Because supporting a life means saving one. Together, we give strength to those who still hold on to hope.", cta1: "Completed campaigns & testimonials", cta2: "Submit a case" },
     stats: { patients: "Patients helped", collected: "FCFA raised", hospitals: "Partner hospitals" },
     collections: { title: "Active campaigns", sub: "verified active cases" },
     card: { donors: "donors", daysLeft: "days left", funded: "Goal reached!", on: "of" },
@@ -429,6 +429,63 @@ const SupportAyyadSection = ({ lang }) => {
 };
 
 // ── HomePage
+// ── Cas Urgents Page ──────────────────────────────────────────
+const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
+  const urgents = MOCK_CASES.filter(c => c.urgent || c.daysLeft <= 7);
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-gradient-to-br from-red-700 to-red-500 text-white py-16 px-4 text-center">
+        <div className="text-5xl mb-4">🚨</div>
+        <h1 className="text-3xl font-black mb-3">{lang==="fr" ? "Cas urgents" : "Urgent cases"}</h1>
+        <p className="text-red-100 max-w-xl mx-auto">{lang==="fr" ? "Ces patients ont besoin d'aide immédiate. Chaque heure compte." : "These patients need immediate help. Every hour counts."}</p>
+        <div className="bg-red-800/40 rounded-2xl px-6 py-3 inline-block mt-4 text-sm font-semibold">
+          ⏱️ {lang==="fr" ? "Intervention critique sous 72h" : "Critical intervention within 72h"}
+        </div>
+      </div>
+      <div className="max-w-4xl mx-auto px-4 py-10 space-y-4">
+        {urgents.length === 0 ? (
+          <div className="text-center py-16 text-gray-400">
+            <div className="text-4xl mb-3">✅</div>
+            <div>{lang==="fr" ? "Aucun cas urgent pour l'instant." : "No urgent cases right now."}</div>
+          </div>
+        ) : urgents.map(c => (
+          <div key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); }}
+            className="bg-white rounded-2xl border-2 border-red-200 shadow-sm p-6 cursor-pointer hover:border-red-400 hover:shadow-md transition-all">
+            <div className="flex items-start gap-4">
+              <div className="text-4xl">{c.image}</div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">🚨 URGENT</span>
+                  {c.daysLeft <= 7 && <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">⏱️ {c.daysLeft}j restants</span>}
+                </div>
+                <h3 className="font-black text-gray-900">{c.title[lang]}</h3>
+                <p className="text-xs text-gray-400 mt-0.5">{c.hospital} · {c.city}</p>
+                <p className="text-sm text-gray-600 mt-2 line-clamp-2">{c.desc[lang]}</p>
+                <div className="mt-3">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>{c.collected.toLocaleString()} FCFA</span>
+                    <span>{c.required.toLocaleString()} FCFA</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-red-500 rounded-full" style={{width: Math.min(100, Math.round(c.collected/c.required*100))+"%"}} />
+                  </div>
+                  <div className="text-xs text-red-600 font-bold mt-1">{Math.min(100, Math.round(c.collected/c.required*100))}% {lang==="fr"?"collecté":"collected"}</div>
+                </div>
+              </div>
+              <button className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex-shrink-0">
+                {lang==="fr" ? "Aider →" : "Help →"}
+              </button>
+            </div>
+          </div>
+        ))}
+        <div className="text-center mt-6">
+          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-red-600">← {lang==="fr"?"Retour à l'accueil":"Back to home"}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Collectes terminées & Témoignages ─────────────────────────
 const CollectesPage = ({ setPage, lang }) => {
   const [tab, setTab] = useState("testimonials");
@@ -572,7 +629,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
                     <div className="font-semibold text-gray-900 text-sm group-hover:text-emerald-700">🏥 {lang==="fr" ? "Collectes actives" : "Active campaigns"}</div>
                     <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Parcourir toutes les collectes médicales" : "Browse all medical campaigns"}</div>
                   </button>
-                  <button onClick={() => { document.getElementById("urgents")?.scrollIntoView({behavior:"smooth"}); setHeroMenu(false); }} className="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 transition-colors group">
+                  <button onClick={() => { setPage("urgents"); setHeroMenu(false); }} className="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 transition-colors group">
                     <div className="font-semibold text-gray-900 text-sm group-hover:text-red-700">🚨 {lang==="fr" ? "Cas urgents" : "Urgent cases"}</div>
                     <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Interventions critiques sous 72h" : "Critical interventions within 72h"}</div>
                   </button>
@@ -1752,6 +1809,7 @@ export default function AyyadApp() {
         {page==="collectes"&&<CollectesPage setPage={setPage} lang={lang} />}
         {page==="case"&&selectedCase&&<CasePage c={selectedCase} setPage={setPage} lang={lang} />}
         {page==="how"&&<HowPage lang={lang} setPage={setPage} />}
+        {page==="urgents"&&<UrgentsPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
         {page==="login"&&<LoginPage setPage={setPage} setUser={setUser} lang={lang} />}
         {page==="register"&&<RegisterPage setPage={setPage} setUser={setUser} lang={lang} />}
         {page==="submit"&&<SubmitPage setPage={setPage} user={user} lang={lang} />}
