@@ -2093,10 +2093,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                                       }).eq("id", c.id);
                                       setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"initiated", payout_method: payMethod, payout_amount_hospital: montantHopital, payout_amount_ayyad: fraisAyyad} : x));
                                       emailNewCase({
-                                        caseTitle: "VIREMENT INITIÉ — "+c.title+" ("+( c.tracking_id||"AYD-"+c.id)+")
-Montant hôpital : "+montantHopital.toLocaleString()+" FCFA
-Frais Ayyad (5%) : "+fraisAyyad.toLocaleString()+" FCFA
-Via : "+payMethod,
+                                        caseTitle: "VIREMENT - "+c.title+" ("+(c.tracking_id||"AYD-"+c.id)+") Hopital: "+montantHopital.toLocaleString()+" FCFA Ayyad5pct: "+fraisAyyad.toLocaleString()+" FCFA Via: "+payMethod,
                                         hospital: c.hospital, city: c.city, amount: montantHopital
                                       });
                                       setConfirming(false);
