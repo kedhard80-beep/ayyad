@@ -378,7 +378,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
     if (urgentCases.length <= 1) return;
     const interval = setInterval(() => {
       setCurrent(prev => (prev + 1) % urgentCases.length);
-    }, 3500);
+    }, 4500);
     return () => clearInterval(interval);
   }, [urgentCases.length]);
 
@@ -401,7 +401,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
 
         {/* Carousel */}
         <div style={{overflow:"hidden", borderRadius:"1rem", width:"100%"}}>
-          <div style={{display:"flex", transition:"transform 500ms ease-in-out", transform:`translateX(-${current * 100}%)`, width:`${urgentCases.length * 100}%`}}>
+          <div style={{display:"flex", transition:"transform 700ms ease-in-out", transform:`translateX(-${current * 100}%)`, width:`${urgentCases.length * 100}%`}}>
             {urgentCases.map(c => (
               <div key={c.id} style={{width:`${100 / urgentCases.length}%`, flexShrink:0}}>
                 <button onClick={() => { setSelectedCase(c); setPage("case"); }} className="w-full bg-red-50 hover:bg-red-100 border-2 border-red-200 hover:border-red-400 rounded-2xl p-5 text-left transition-all group">
@@ -761,7 +761,7 @@ const CasePage = ({ c, setPage, lang }) => {
 
       {/* Option 1 — Se connecter */}
       <button
-        onClick={() => { setAnonymous(false); setDonMode("logged"); }}
+        onClick={() => setPage("login")}
         className="w-full group border-2 border-emerald-200 hover:border-emerald-500 bg-emerald-50 hover:bg-emerald-100 rounded-2xl p-4 text-left transition-all"
       >
         <div className="flex items-start gap-3">
