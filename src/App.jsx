@@ -400,10 +400,10 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
         <p className="text-gray-500 text-sm mb-5">{t.urgent.sub}</p>
 
         {/* Carousel */}
-        <div className="overflow-hidden rounded-2xl">
-          <div className="flex transition-transform duration-500 ease-in-out" style={{transform: `translateX(-${current * 100}%)`}}>
+        <div style={{overflow:"hidden", borderRadius:"1rem", width:"100%"}}>
+          <div style={{display:"flex", transition:"transform 500ms ease-in-out", transform:`translateX(-${current * 100}%)`, width:`${urgentCases.length * 100}%`}}>
             {urgentCases.map(c => (
-              <div key={c.id} className="min-w-full">
+              <div key={c.id} style={{width:`${100 / urgentCases.length}%`, flexShrink:0}}>
                 <button onClick={() => { setSelectedCase(c); setPage("case"); }} className="w-full bg-red-50 hover:bg-red-100 border-2 border-red-200 hover:border-red-400 rounded-2xl p-5 text-left transition-all group">
                   <div className="flex items-start gap-4">
                     <div className="text-4xl">{c.image}</div>
