@@ -742,12 +742,141 @@ const CasePage = ({ c, setPage, lang }) => {
   const [provider, setProvider] = useState("WAVE");
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
-  const [step, setStep] = useState("donate");
+  // donMode: "choose" | "anonymous" | "logged" | "confirm" | "success"
+  const [donMode, setDonMode] = useState("choose");
   const percent = pct(c.collected, c.required);
   const funded = c.status==="FUNDED";
   const t = T[lang];
   const td = t.donate;
   const presets = [1000,5000,10000,25000,50000];
+
+  // Widget de choix initial
+  const ChooseWidget = () => (
+    <div className="space-y-4">
+      <div className="text-center mb-2">
+        <div className="text-3xl mb-2">💚</div>
+        <h3 className="font-black text-gray-900 text-lg">{lang==="fr" ? "Faire un don" : "Make a donation"}</h3>
+        <p className="text-xs text-gray-500 mt-1">{lang==="fr" ? "Choisissez comment vous souhaitez donner" : "Choose how you want to donate"}</p>
+      </div>
+
+      {/* Option 1 — Se connecter */}
+      <button
+        onClick={() => { setAnonymous(false); setDonMode("logged"); }}
+        className="w-full group border-2 border-emerald-200 hover:border-emerald-500 bg-emerald-50 hover:bg-emerald-100 rounded-2xl p-4 text-left transition-all"
+      >
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white text-lg flex-shrink-0">👤</div>
+          <div className="flex-1">
+            <div className="font-bold text-gray-900 text-sm group-hover:text-emerald-700">
+              {lang==="fr" ? "Se connecter pour donner" : "Sign in to donate"}
+            </div>
+            <div className="text-xs text-gray-500 mt-1 leading-relaxed">
+              {lang==="fr"
+                ? "Recevez des notifications de progression, un reçu par email, et suivez l'impact de vos dons."
+                : "Get progress notifications, an email receipt, and track the impact of your donations."}
+            </div>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {(lang==="fr"
+                ? ["📧 Reçu email","🔔 Notifications","📊 Suivi dons"]
+                : ["📧 Email receipt","🔔 Notifications","📊 Donation tracking"]
+              ).map(tag => (
+                <span key={tag} className="bg-emerald-200 text-emerald-800 text-[10px] font-semibold px-2 py-0.5 rounded-full">{tag}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </button>
+
+      {/* Séparateur */}
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-xs text-gray-400 font-medium">{lang==="fr" ? "ou" : "or"}</span>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
+
+      {/* Option 2 — Don anonyme */}
+      <button
+        onClick={() => { setAnonymous(true); setDonMode("anonymous"); }}
+        className="w-full group border-2 border-gray-200 hover:border-gray-400 bg-gray-50 hover:bg-gray-100 rounded-2xl p-4 text-left transition-all"
+      >
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 bg-gray-700 rounded-xl flex items-center justify-center text-white text-lg flex-shrink-0">🕵️</div>
+          <div className="flex-1">
+            <div className="font-bold text-gray-900 text-sm">
+              {lang==="fr" ? "Donner en anonyme" : "Donate anonymously"}
+            </div>
+            <div className="text-xs text-gray-500 mt-1 leading-relaxed">
+              {lang==="fr"
+                ? "Aucun compte requis. Votre identité reste totalement confidentielle."
+                : "No account required. Your identity stays completely private."}
+            </div>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {(lang==="fr"
+                ? ["🔒 Aucun compte","✅ Immédiat","🙈 100% privé"]
+                : ["🔒 No account","✅ Instant","🙈 100% private"]
+              ).map(tag => (
+                <span key={tag} className="bg-gray-200 text-gray-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">{tag}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </button>
+
+      <p className="text-center text-[10px] text-gray-400">🔒 {lang==="fr" ? "Paiement sécurisé · Aucuns frais cachés" : "Secure payment · No hidden fees"}</p>
+    </div>
+  );
+
+  // Formulaire de don (partagé anonyme + connecté)
+  const DonateForm = () => (
+    <>
+      {/* Badge mode actuel */}
+      <div className={`flex items-center gap-2 rounded-xl px-3 py-2 mb-4 ${anonymous ? "bg-gray-100 border border-gray-200" : "bg-emerald-50 border border-emerald-200"}`}>
+        <span>{anonymous ? "🕵️" : "👤"}</span>
+        <span className="text-xs font-bold text-gray-700">
+          {anonymous
+            ? (lang==="fr" ? "Don anonyme" : "Anonymous donation")
+            : (lang==="fr" ? "Don avec compte" : "Donation with account")}
+        </span>
+        <button onClick={() => setDonMode("choose")} className="ml-auto text-[10px] text-gray-400 hover:text-gray-600 underline">
+          {lang==="fr" ? "Changer" : "Change"}
+        </button>
+      </div>
+
+      <h3 className="font-black text-gray-900 text-lg mb-1">{td.title}</h3>
+      <p className="text-xs text-gray-500 mb-5">{td.sub}</p>
+
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {presets.map(p => <button key={p} onClick={() => setAmount(String(p))} className={`py-2 rounded-xl text-xs font-bold transition-all border ${Number(amount)===p?"bg-emerald-600 text-white border-emerald-600 shadow-md":"bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-400"}`}>{new Intl.NumberFormat("fr").format(p)}</button>)}
+        <button onClick={() => setAmount("")} className={`py-2 rounded-xl text-xs font-bold border ${!presets.includes(Number(amount))&&amount?"bg-emerald-600 text-white border-emerald-600":"bg-gray-50 text-gray-600 border-gray-200 hover:border-emerald-400"}`}>{td.custom}</button>
+      </div>
+      <div className="mb-4">
+        <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{td.amount}</label>
+        <div className="relative">
+          <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="15 000" className="w-full border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-16" />
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span>
+        </div>
+        {amount&&Number(amount)>=500&&<div className="text-xs text-center text-gray-400 mt-1.5">{lang==="fr"?"Débité : ":"Charged: "}<span className="font-bold text-gray-700">{fmt(Number(amount))}</span></div>}
+      </div>
+      <div className="mb-4">
+        <label className="text-xs font-semibold text-gray-600 mb-2 block">{td.payment}</label>
+        <div className="grid grid-cols-3 gap-2">
+          {[{id:"WAVE",label:"Wave",emoji:"🌊"},{id:"ORANGE_MONEY",label:"Orange",emoji:"🟠"},{id:"STRIPE",label:lang==="fr"?"Carte":"Card",emoji:"💳"}].map(pv => (
+            <button key={pv.id} onClick={() => setProvider(pv.id)} className={`flex flex-col items-center p-2.5 rounded-xl border text-xs font-bold transition-all ${provider===pv.id?"ring-2 ring-emerald-500 bg-emerald-50 border-emerald-200":"bg-gray-50 border-gray-200 opacity-60 hover:opacity-100"}`}>
+              <span className="text-lg mb-0.5">{pv.emoji}</span>{pv.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="mb-5">
+        <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder={td.message} rows={2} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+      </div>
+      <button onClick={() => setDonMode("confirm")} disabled={!amount||isNaN(amount)||Number(amount)<500||funded} className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl shadow-md text-sm">
+        {funded?td.btnFunded:`${td.btn} ${amount?fmt(Number(amount)):"→"}`}
+      </button>
+      {!funded&&<p className="text-center text-xs text-gray-400 mt-3">{td.secure}</p>}
+    </>
+  );
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <button onClick={() => setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">{t.back}</button>
@@ -806,74 +935,49 @@ const CasePage = ({ c, setPage, lang }) => {
         </div>
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-xl p-6 sticky top-24">
-            {/* Bannière don sans connexion */}
-            {step==="donate" && !funded && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 mb-4 flex items-center gap-2">
-                <span className="text-lg">🔓</span>
-                <div>
-                  <div className="text-xs font-bold text-emerald-800">{lang==="fr" ? "Aucune connexion requise" : "No login required"}</div>
-                  <div className="text-[10px] text-emerald-600">{lang==="fr" ? "Donnez librement, même en anonyme" : "Donate freely, even anonymously"}</div>
-                </div>
+
+            {/* ÉTAPE 1 — Choisir le mode de don */}
+            {donMode==="choose" && !funded && <ChooseWidget />}
+
+            {/* Collecte terminée */}
+            {funded && (
+              <div className="text-center py-4">
+                <div className="text-4xl mb-3">✅</div>
+                <h3 className="font-black text-gray-900 text-lg">{td.btnFunded}</h3>
+                <p className="text-sm text-gray-500 mt-2">{lang==="fr" ? "Merci à tous les donateurs !" : "Thank you to all donors!"}</p>
               </div>
             )}
-            {step==="donate"&&<>
-              <h3 className="font-black text-gray-900 text-lg mb-1">{td.title}</h3>
-              <p className="text-xs text-gray-500 mb-5">{td.sub}</p>
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                {presets.map(p => <button key={p} onClick={() => setAmount(String(p))} className={`py-2 rounded-xl text-xs font-bold transition-all border ${Number(amount)===p?"bg-emerald-600 text-white border-emerald-600 shadow-md":"bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-400"}`}>{new Intl.NumberFormat("fr").format(p)}</button>)}
-                <button onClick={() => setAmount("")} className={`py-2 rounded-xl text-xs font-bold border ${!presets.includes(Number(amount))&&amount?"bg-emerald-600 text-white border-emerald-600":"bg-gray-50 text-gray-600 border-gray-200 hover:border-emerald-400"}`}>{td.custom}</button>
-              </div>
-              <div className="mb-4">
-                <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{td.amount}</label>
-                <div className="relative">
-                  <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="15 000" className="w-full border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-16" />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span>
-                </div>
-                {amount&&Number(amount)>=500&&<div className="text-xs text-center text-gray-400 mt-1.5">{lang==="fr"?"Débité : ":"Charged: "}<span className="font-bold text-gray-700">{fmt(Number(amount))}</span></div>}
-              </div>
-              <div className="mb-4">
-                <label className="text-xs font-semibold text-gray-600 mb-2 block">{td.payment}</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[{id:"WAVE",label:"Wave",emoji:"🌊"},{id:"ORANGE_MONEY",label:"Orange",emoji:"🟠"},{id:"STRIPE",label:lang==="fr"?"Carte":"Card",emoji:"💳"}].map(pv => (
-                    <button key={pv.id} onClick={() => setProvider(pv.id)} className={`flex flex-col items-center p-2.5 rounded-xl border text-xs font-bold transition-all ${provider===pv.id?"ring-2 ring-emerald-500 bg-emerald-50 border-emerald-200":"bg-gray-50 border-gray-200 opacity-60 hover:opacity-100"}`}>
-                      <span className="text-lg mb-0.5">{pv.emoji}</span>{pv.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="mb-5 space-y-2.5">
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600"><input type="checkbox" checked={anonymous} onChange={e => setAnonymous(e.target.checked)} className="w-4 h-4 accent-emerald-600 rounded" />{td.anonymous}</label>
-                <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder={td.message} rows={2} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-              </div>
-              <button onClick={() => setStep("confirm")} disabled={!amount||isNaN(amount)||Number(amount)<500||funded} className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl shadow-md text-sm">
-                {funded?td.btnFunded:`${td.btn} ${amount?fmt(Number(amount)):"→"}`}
-              </button>
-              {!funded&&<p className="text-center text-xs text-gray-400 mt-3">{td.secure}</p>}
-            </>}
-            {step==="confirm"&&<div className="space-y-5">
+
+            {/* ÉTAPE 2 — Formulaire de don (anonyme ou connecté) */}
+            {(donMode==="anonymous" || donMode==="logged") && !funded && <DonateForm />}
+
+            {/* ÉTAPE 3 — Confirmation */}
+            {donMode==="confirm" && <div className="space-y-5">
               <div className="text-center"><div className="text-4xl mb-2">💚</div><h3 className="font-black text-lg text-gray-900">{td.confirm}</h3><p className="text-sm text-gray-500">{td.verifyDon}</p></div>
               <div className="bg-gray-50 rounded-2xl p-4 space-y-3 text-sm">
-                {[[td.debited,fmt(Number(amount))],[td.beneficiary,c.beneficiary],[td.via,provider==="WAVE"?"🌊 Wave":provider==="ORANGE_MONEY"?"🟠 Orange Money":"💳 "+(lang==="fr"?"Carte":"Card")],...(anonymous?[[td.anonymity,td.active]]:[])].map(([k,v],i) => (
+                {[[td.debited,fmt(Number(amount))],[td.beneficiary,c.beneficiary],[td.via,provider==="WAVE"?"🌊 Wave":provider==="ORANGE_MONEY"?"🟠 Orange Money":"💳 "+(lang==="fr"?"Carte":"Card")],[td.anonymity, anonymous ? "🕵️ "+(lang==="fr"?"Anonyme":"Anonymous") : "👤 "+(lang==="fr"?"Avec compte":"With account")]].map(([k,v],i) => (
                   <div key={i} className="flex justify-between items-center"><span className="text-gray-500">{k}</span><span className={`font-semibold ${k===td.anonymity?"text-emerald-600":""}`}>{v}</span></div>
                 ))}
               </div>
               {message&&<div className="bg-emerald-50 rounded-xl p-3 text-sm text-emerald-700 italic border border-emerald-100">"{message}"</div>}
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => setStep("donate")} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{td.modify}</button>
+                <button onClick={() => setDonMode(anonymous?"anonymous":"logged")} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{td.modify}</button>
                 <button onClick={() => {
-                  setStep("success");
+                  setDonMode("success");
                   emailDonConfirm({ donorEmail: null, donorName: anonymous ? "" : "Donateur", amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
                 }} className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md">{td.confirmBtn}</button>
               </div>
             </div>}
-            {step==="success"&&<div className="text-center space-y-4 py-2">
+
+            {/* ÉTAPE 4 — Succès */}
+            {donMode==="success" && <div className="text-center space-y-4 py-2">
               <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-3xl">🎉</div>
               <h3 className="font-black text-xl text-gray-900">{td.thanks}</h3>
               <p className="text-sm text-gray-600">{td.thanksSub}</p>
               <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-4 text-sm text-emerald-800 border border-emerald-100">
                 <p className="font-semibold mb-1">{td.impact}</p><p>{td.impactSub} {c.beneficiary} {td.impactEnd}</p>
               </div>
-              <button onClick={() => setStep("donate")} className="w-full border border-emerald-200 text-emerald-700 font-semibold py-2.5 rounded-xl text-sm hover:bg-emerald-50">{td.again}</button>
+              <button onClick={() => { setDonMode("choose"); setAmount(""); setMessage(""); }} className="w-full border border-emerald-200 text-emerald-700 font-semibold py-2.5 rounded-xl text-sm hover:bg-emerald-50">{td.again}</button>
             </div>}
           </div>
         </div>
