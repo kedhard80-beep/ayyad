@@ -567,7 +567,7 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang }) => {
         <div className="max-w-5xl mx-auto">
           <button onClick={() => setPage("home")} className="flex items-center gap-1 text-emerald-200 hover:text-white text-sm mb-6">← {lang==="fr" ? "Retour" : "Back"}</button>
           <h1 className="text-3xl font-black mb-2">{lang==="fr" ? "🏥 Collectes actives" : "🏥 Active campaigns"}</h1>
-          <p className="text-emerald-100 text-sm">{lang==="fr" ?  : }</p>
+          <p className="text-emerald-100 text-sm">{lang==="fr" ? active.length+" dossiers vérifiés en cours de financement" : active.length+" verified cases being funded"}</p>
           <div className="flex gap-4 mt-6">
             {[[active.length+"", lang==="fr"?"Collectes actives":"Active campaigns"],
               [Object.keys(groups).length+"", lang==="fr"?"Spécialités":"Specialties"],
