@@ -7,7 +7,64 @@ const supabase = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvZGd1YnZndnNuYnBoZXVzZ2dtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MzE0NDIsImV4cCI6MjA4NjMwNzQ0Mn0.Kx9gQtLBp8frC5iE08303pgbsV6paDIpWvyeLOg4MHU"
 );
 
-// ── Côte d'Ivoire Data ───────────────────────────────────────
+// ── Resend Email ─────────────────────────────────────────────
+const RESEND_API_KEY = "re_6BaGYjac_7myZjmXxBi4RTB6VeeqxSgss";
+const ADMIN_EMAIL = "kedhard80@gmail.com";
+
+const sendEmail = async ({ to, subject, html }) => {
+  try {
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${RESEND_API_KEY}` },
+      body: JSON.stringify({ from: "Ayyad <onboarding@resend.dev>", to, subject, html })
+    });
+  } catch(e) { console.log("Email error:", e); }
+};
+
+const emailDonConfirm = ({ donorEmail, donorName, amount, beneficiary, caseTitle }) =>
+  sendEmail({
+    to: donorEmail || ADMIN_EMAIL,
+    subject: `✅ Votre don de ${amount} FCFA a été enregistré — Ayyad`,
+    html: `<div style="font-family:sans-serif;max-width:500px;margin:auto">
+      <div style="background:#0d5c2e;padding:24px;text-align:center;border-radius:12px 12px 0 0">
+        <h1 style="color:#C9A84C;margin:0;font-size:24px">AYYAD</h1>
+        <p style="color:#a7f3d0;margin:4px 0 0">Financement médical solidaire</p>
+      </div>
+      <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
+        <h2 style="color:#111">Merci ${donorName || ""} pour votre don 💚</h2>
+        <p style="color:#6b7280">Votre don a bien été enregistré :</p>
+        <div style="background:#f0fdf4;border-radius:8px;padding:16px;margin:16px 0">
+          <p style="margin:4px 0"><strong>Montant :</strong> ${amount} FCFA</p>
+          <p style="margin:4px 0"><strong>Bénéficiaire :</strong> ${beneficiary}</p>
+          <p style="margin:4px 0"><strong>Collecte :</strong> ${caseTitle}</p>
+        </div>
+        <p style="color:#6b7280;font-size:14px">Les fonds seront versés directement à l'hôpital partenaire. Aucuns frais cachés.</p>
+        <p style="color:#6b7280;font-size:14px">Merci de soutenir la vie. 🙏</p>
+        <p style="color:#9ca3af;font-size:12px;margin-top:24px">© 2025 Ayyad CI · ayyad.vercel.app</p>
+      </div>
+    </div>`
+  });
+
+const emailNewCase = ({ caseTitle, hospital, city, amount }) =>
+  sendEmail({
+    to: ADMIN_EMAIL,
+    subject: `📋 Nouveau dossier soumis : ${caseTitle}`,
+    html: `<div style="font-family:sans-serif;max-width:500px;margin:auto">
+      <div style="background:#0d5c2e;padding:24px;text-align:center;border-radius:12px 12px 0 0">
+        <h1 style="color:#C9A84C;margin:0">AYYAD — Admin</h1>
+      </div>
+      <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
+        <h2 style="color:#111">📋 Nouveau dossier à vérifier</h2>
+        <div style="background:#fefce8;border-radius:8px;padding:16px;margin:16px 0;border:1px solid #fde047">
+          <p style="margin:4px 0"><strong>Titre :</strong> ${caseTitle}</p>
+          <p style="margin:4px 0"><strong>Hôpital :</strong> ${hospital}</p>
+          <p style="margin:4px 0"><strong>Ville :</strong> ${city}</p>
+          <p style="margin:4px 0"><strong>Montant :</strong> ${amount} FCFA</p>
+        </div>
+        <a href="https://ayyad.vercel.app" style="background:#0d5c2e;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px">Voir le dashboard →</a>
+      </div>
+    </div>`
+  });
 const CI_VILLES = [
   "Abengourou","Abidjan","Aboisso","Adzopé","Agboville","Anyama","Bondoukou",
   "Bouna","Boundiali","Daloa","Dimbokro","Divo","Ferkessédougou","Gagnoa",
@@ -530,7 +587,10 @@ const CasePage = ({ c, setPage, lang }) => {
               {message&&<div className="bg-emerald-50 rounded-xl p-3 text-sm text-emerald-700 italic border border-emerald-100">"{message}"</div>}
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={() => setStep("donate")} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{td.modify}</button>
-                <button onClick={() => setStep("success")} className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md">{td.confirmBtn}</button>
+                <button onClick={() => {
+                  setStep("success");
+                  emailDonConfirm({ donorEmail: null, donorName: anonymous ? "" : "Donateur", amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
+                }} className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md">{td.confirmBtn}</button>
               </div>
             </div>}
             {step==="success"&&<div className="text-center space-y-4 py-2">
@@ -705,6 +765,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
       user_id: user?.id || null,
     });
     if (error) { setSubmitError(lang==="fr"?"Erreur lors de la soumission. Réessayez.":"Submission error. Please try again."); setSubmitting(false); return; }
+    emailNewCase({ caseTitle: form.title, hospital: form.hospital, city: form.city, amount: form.amount });
     setStep(3);
     setSubmitting(false);
   };
@@ -1181,11 +1242,93 @@ const AdminPage = ({ user, setPage, lang }) => {
 
         {/* Payouts */}
         {tab==="payouts"&&(
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-            <div className="p-5 border-b border-gray-100"><h3 className="font-bold text-gray-900">{t.payoutsTitle}</h3></div>
-            <div className="p-10 text-center text-gray-400">
-              <div className="text-4xl mb-3">🏦</div>
-              <div className="font-medium text-gray-600">{lang==="fr"?"Les virements seront disponibles après intégration Stripe.":"Payouts will be available after Stripe integration."}</div>
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+              <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="font-bold text-gray-900">{t.payoutsTitle}</h3>
+                <div className="flex gap-2 text-xs">
+                  <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-semibold">🟡 {lang==="fr"?"En attente":"Pending"}</span>
+                  <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">🔵 {lang==="fr"?"Initié":"Initiated"}</span>
+                  <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-semibold">✅ {lang==="fr"?"Confirmé":"Confirmed"}</span>
+                </div>
+              </div>
+              {cases.filter(c => c.status === "FUNDED" || c.status === "APPROVED").length === 0 ? (
+                <div className="p-10 text-center text-gray-400">
+                  <div className="text-4xl mb-3">🏦</div>
+                  <div className="font-medium text-gray-500">{lang==="fr" ? "Aucun virement en attente pour l'instant." : "No payouts pending for now."}</div>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {cases.filter(c => c.status === "FUNDED" || c.status === "APPROVED").map(c => (
+                    <div key={c.id} className="p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-900 text-sm">{c.title}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{c.hospital} · {c.city}</div>
+                        <div className="flex items-center gap-3 mt-2">
+                          <span className="text-emerald-600 font-bold text-sm">{c.amount?.toLocaleString()} FCFA</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                            c.payout_status === "confirmed" ? "bg-emerald-100 text-emerald-700" :
+                            c.payout_status === "initiated" ? "bg-blue-100 text-blue-700" :
+                            "bg-yellow-100 text-yellow-700"
+                          }`}>
+                            {c.payout_status === "confirmed" ? "✅ " + (lang==="fr"?"Virement confirmé":"Confirmed") :
+                             c.payout_status === "initiated" ? "🔵 " + (lang==="fr"?"Initié":"Initiated") :
+                             "🟡 " + (lang==="fr"?"En attente":"Pending")}
+                          </span>
+                        </div>
+                        {c.payout_receipt && (
+                          <a href={c.payout_receipt} target="_blank" rel="noreferrer" className="text-xs text-emerald-600 underline mt-1 block">📄 {lang==="fr"?"Voir le reçu":"View receipt"}</a>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2 min-w-[160px]">
+                        {!c.payout_status || c.payout_status === "pending" ? (
+                          <button onClick={async () => {
+                            await supabase.from("cases").update({ payout_status: "initiated", payout_initiated_at: new Date().toISOString() }).eq("id", c.id);
+                            setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"initiated"} : x));
+                            emailNewCase({ caseTitle: `VIREMENT INITIÉ: ${c.title}`, hospital: c.hospital, city: c.city, amount: c.amount });
+                          }} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl">
+                            🔵 {lang==="fr"?"Déclencher virement":"Initiate payout"}
+                          </button>
+                        ) : c.payout_status === "initiated" ? (
+                          <div className="space-y-2">
+                            <label className="block text-xs text-gray-500 font-medium">{lang==="fr"?"Uploader reçu bancaire :":"Upload bank receipt:"}</label>
+                            <label className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer block text-center">
+                              📄 {lang==="fr"?"Choisir reçu":"Choose receipt"}
+                              <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={async (e) => {
+                                const file = e.target.files[0];
+                                if (!file) return;
+                                const path = `receipts/${c.id}_${Date.now()}`;
+                                const { data } = await supabase.storage.from("documents").upload(path, file);
+                                if (data) {
+                                  const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
+                                  await supabase.from("cases").update({ payout_status: "confirmed", payout_receipt: urlData.publicUrl, payout_confirmed_at: new Date().toISOString() }).eq("id", c.id);
+                                  setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"confirmed", payout_receipt: urlData.publicUrl} : x));
+                                }
+                              }} />
+                            </label>
+                          </div>
+                        ) : (
+                          <div className="text-emerald-600 text-xs font-bold text-center">✅ {lang==="fr"?"Virement complété":"Payout completed"}</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Résumé financier */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                { label: lang==="fr"?"Total virements en attente":"Total pending payouts", value: cases.filter(c=>!c.payout_status||c.payout_status==="pending").reduce((s,c)=>s+(c.amount||0),0), color: "yellow" },
+                { label: lang==="fr"?"Virements initiés":"Initiated payouts", value: cases.filter(c=>c.payout_status==="initiated").reduce((s,c)=>s+(c.amount||0),0), color: "blue" },
+                { label: lang==="fr"?"Virements confirmés":"Confirmed payouts", value: cases.filter(c=>c.payout_status==="confirmed").reduce((s,c)=>s+(c.amount||0),0), color: "emerald" },
+              ].map((s,i) => (
+                <div key={i} className={`bg-white rounded-2xl border border-gray-100 p-5 shadow-sm`}>
+                  <div className="text-xs text-gray-500 mb-1">{s.label}</div>
+                  <div className={`text-xl font-black ${s.color==="yellow"?"text-yellow-600":s.color==="blue"?"text-blue-600":"text-emerald-600"}`}>{s.value.toLocaleString()} FCFA</div>
+                </div>
+              ))}
             </div>
           </div>
         )}
