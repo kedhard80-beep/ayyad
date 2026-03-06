@@ -244,33 +244,6 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
             )}
           </div>
 
-          {/* Soumettre dropdown */}
-          <div className="relative" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setDropdownOpen(dropdownOpen==="submit" ? null : "submit")} className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${dropdownOpen==="submit" ? "bg-emerald-50 text-emerald-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"}`}>
-              {lang==="fr" ? "Collecter des fonds" : "Raise funds"} <span className="text-xs">{dropdownOpen==="submit" ? "▲" : "▼"}</span>
-            </button>
-            {dropdownOpen==="submit" && (
-              <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50">
-                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-100">
-                  <span className="text-lg">💚</span>
-                  <span className="font-bold text-gray-700 text-sm">{lang==="fr" ? "Démarrez votre collecte" : "Start your fundraiser"}</span>
-                </div>
-                <button onClick={() => { setPage("submit"); setDropdownOpen(null); }} className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-emerald-50 transition-colors group">
-                  <div className="font-semibold text-gray-900 text-sm group-hover:text-emerald-700">{lang==="fr" ? "Soumettre un dossier" : "Submit a case"}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Rapport médical, devis, pièce d'identité" : "Medical report, quote, identity"}</div>
-                </button>
-                <button onClick={() => { setPage("how"); setDropdownOpen(null); }} className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors group">
-                  <div className="font-semibold text-gray-900 text-sm">{lang==="fr" ? "Comment ça marche" : "How it works"}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Guide étape par étape" : "Step by step guide"}</div>
-                </button>
-                <button onClick={() => { setPage("how"); setDropdownOpen(null); }} className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors group">
-                  <div className="font-semibold text-gray-900 text-sm">{lang==="fr" ? "La règle des 5%" : "The 5% rule"}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Totalement invisible pour vous" : "Completely invisible to you"}</div>
-                </button>
-              </div>
-            )}
-          </div>
-
           <button onClick={() => setPage("how")} className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${page==="how" ? "text-emerald-600 bg-emerald-50" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"}`}>
             {lang==="fr" ? "À propos" : "About"}
           </button>
@@ -429,6 +402,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button onClick={() => document.getElementById("collectes")?.scrollIntoView({behavior:"smooth"})} className="bg-white text-emerald-700 font-bold px-8 py-3.5 rounded-xl hover:bg-emerald-50 shadow-lg">{t.hero.cta1} →</button>
             <button onClick={() => setPage("submit")} className="bg-emerald-500/40 hover:bg-emerald-500/60 border border-white/30 text-white font-semibold px-8 py-3.5 rounded-xl">{t.hero.cta2}</button>
+            <button onClick={() => setPage("how")} className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-8 py-3.5 rounded-xl">{lang==="fr" ? "Comment ça marche" : "How it works"}</button>
           </div>
         </div>
         <div className="bg-white/10 border-t border-white/20">
