@@ -1927,127 +1927,269 @@ const AdminPage = ({ user, setPage, lang }) => {
 
         {/* Payouts */}
         {tab==="payouts"&&(
-          <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-              <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-bold text-gray-900">{t.payoutsTitle}</h3>
-                <div className="flex gap-2 text-xs">
-                  <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-semibold">🟡 {lang==="fr"?"En attente":"Pending"}</span>
-                  <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">🔵 {lang==="fr"?"Initié":"Initiated"}</span>
-                  <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-semibold">✅ {lang==="fr"?"Confirmé":"Confirmed"}</span>
-                </div>
-              </div>
-              {cases.filter(c => c.status === "FUNDED" || c.status === "APPROVED").length === 0 ? (
-                <div className="p-10 text-center text-gray-400">
-                  <div className="text-4xl mb-3">🏦</div>
-                  <div className="font-medium text-gray-500">{lang==="fr" ? "Aucun virement en attente pour l'instant." : "No payouts pending for now."}</div>
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-50">
-                  {cases.filter(c => c.status === "FUNDED" || c.status === "APPROVED").map(c => (
-                    <div key={c.id} className="p-5 space-y-4">
-                      {/* Identité du dossier */}
-                      <div className="flex items-start gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-mono text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">{c.tracking_id || `AYD-${c.id}`}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                              c.payout_status === "confirmed" ? "bg-emerald-100 text-emerald-700" :
-                              c.payout_status === "initiated" ? "bg-blue-100 text-blue-700" :
-                              "bg-yellow-100 text-yellow-700"
-                            }`}>
-                              {c.payout_status === "confirmed" ? "✅ Virement confirmé" :
-                               c.payout_status === "initiated" ? "🔵 Initié" :
-                               "🟡 En attente"}
-                            </span>
-                          </div>
-                          <div className="font-semibold text-gray-900 text-sm mt-1">{c.title}</div>
-                          <div className="text-xs text-gray-400 mt-0.5">🏥 {c.hospital} · 📍 {c.city} · 👤 {c.beneficiary}</div>
-                          <div className="text-emerald-700 font-black text-base mt-1">{c.amount?.toLocaleString()} FCFA</div>
-                          {c.payout_receipt && (
-                            <a href={c.payout_receipt} target="_blank" rel="noreferrer" className="text-xs text-emerald-600 underline mt-1 block">📄 Voir le reçu</a>
-                          )}
-                        </div>
-                      </div>
+          <div className="space-y-5">
 
-                      {/* Actions selon statut */}
-                      {(!c.payout_status || c.payout_status === "pending") && (
-                        <div className="bg-blue-50 rounded-2xl p-4 space-y-3 border border-blue-100">
-                          <div className="text-xs font-bold text-blue-700 mb-2">💸 Choisir le moyen de virement vers {c.hospital}</div>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            {[
-                              { id:"WAVE", emoji:"🌊", label:"Wave CI", detail:"Envoyer via Wave Business", color:"bg-blue-600 hover:bg-blue-700" },
-                              { id:"ORANGE", emoji:"🟠", label:"Orange Money", detail:"Transfert Orange Business", color:"bg-orange-500 hover:bg-orange-600" },
-                              { id:"MTN", emoji:"🟡", label:"MTN MoMo", detail:"Transfert MTN Business", color:"bg-yellow-500 hover:bg-yellow-600" },
-                            ].map(pm => (
-                              <button key={pm.id} onClick={async () => {
-                                await supabase.from("cases").update({ payout_status: "initiated", payout_initiated_at: new Date().toISOString(), payout_method: pm.id }).eq("id", c.id);
-                                setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"initiated", payout_method: pm.id} : x));
-                                emailNewCase({ caseTitle: `VIREMENT ${pm.label} INITIÉ — ${c.title} (${c.tracking_id||"AYD-"+c.id})`, hospital: c.hospital, city: c.city, amount: c.amount });
-                              }} className={`${pm.color} text-white text-xs font-bold px-3 py-3 rounded-xl flex flex-col items-center gap-1`}>
-                                <span className="text-xl">{pm.emoji}</span>
-                                <span>{pm.label}</span>
-                                <span className="text-white/70 text-[10px]">{pm.detail}</span>
-                              </button>
-                            ))}
-                          </div>
-                          <div className="bg-white rounded-xl p-3 border border-blue-100 text-xs text-gray-600 space-y-1">
-                            <div className="font-bold text-gray-700 mb-1">📋 Informations pour le virement :</div>
-                            <div>• <span className="font-semibold">Bénéficiaire :</span> {c.hospital}</div>
-                            <div>• <span className="font-semibold">Montant exact :</span> <span className="text-emerald-700 font-bold">{c.amount?.toLocaleString()} FCFA</span></div>
-                            <div>• <span className="font-semibold">Référence :</span> <span className="font-mono text-emerald-700">{c.tracking_id || `AYD-${c.id}`} — {c.beneficiary}</span></div>
-                            <div>• <span className="font-semibold">Ville :</span> {c.city}</div>
-                          </div>
-                        </div>
-                      )}
-
-                      {c.payout_status === "initiated" && (
-                        <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 space-y-2">
-                          <div className="text-xs font-bold text-emerald-700">
-                            ✅ Virement {c.payout_method === "WAVE" ? "🌊 Wave" : c.payout_method === "ORANGE" ? "🟠 Orange Money" : c.payout_method === "MTN" ? "🟡 MTN MoMo" : ""} initié
-                          </div>
-                          <div className="text-xs text-gray-500">Référence : <span className="font-mono font-bold">{c.tracking_id || `AYD-${c.id}`}</span></div>
-                          <label className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer flex items-center justify-center gap-2 w-full">
-                            📄 Uploader le reçu de confirmation
-                            <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={async (e) => {
-                              const file = e.target.files[0];
-                              if (!file) return;
-                              const path = `receipts/${c.id}_${Date.now()}`;
-                              const { data } = await supabase.storage.from("documents").upload(path, file);
-                              if (data) {
-                                const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
-                                await supabase.from("cases").update({ payout_status: "confirmed", payout_receipt: urlData.publicUrl, payout_confirmed_at: new Date().toISOString() }).eq("id", c.id);
-                                setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"confirmed", payout_receipt: urlData.publicUrl} : x));
-                              }
-                            }} />
-                          </label>
-                        </div>
-                      )}
-
-                      {c.payout_status === "confirmed" && (
-                        <div className="bg-emerald-100 rounded-xl px-4 py-2 text-emerald-700 text-xs font-bold flex items-center gap-2">
-                          ✅ Virement complété · Référence <span className="font-mono">{c.tracking_id || `AYD-${c.id}`}</span>
-                        </div>
-                      )}
+            {/* ── Solde Ayyad (5%) ── */}
+            {(() => {
+              const confirmed = cases.filter(c => c.payout_status === "confirmed");
+              const totalConfirmed = confirmed.reduce((s,c) => s+(c.amount||0), 0);
+              const ayyadBalance = Math.round(totalConfirmed * 0.05);
+              const totalDonations = cases.reduce((s,c) => s+(c.amount||0), 0);
+              const ayyadTotal = Math.round(totalDonations * 0.05);
+              return (
+                <div className="bg-gradient-to-br from-emerald-800 to-teal-700 rounded-2xl p-6 text-white">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                      <div className="text-xs text-emerald-300 font-semibold uppercase tracking-wider mb-1">💰 Trésorerie Ayyad (5% automatique)</div>
+                      <div className="text-4xl font-black">{ayyadBalance.toLocaleString()} FCFA</div>
+                      <div className="text-emerald-300 text-xs mt-1">Prélevés sur {confirmed.length} virement(s) confirmé(s)</div>
                     </div>
-                  ))}
+                    <div className="flex gap-4 text-center">
+                      <div className="bg-white/10 rounded-xl px-4 py-3">
+                        <div className="font-black text-lg">{ayyadTotal.toLocaleString()}</div>
+                        <div className="text-emerald-300 text-xs">Total 5% cumulés</div>
+                      </div>
+                      <div className="bg-white/10 rounded-xl px-4 py-3">
+                        <div className="font-black text-lg">{cases.filter(c=>c.payout_status==="confirmed").length}</div>
+                        <div className="text-emerald-300 text-xs">Virements confirmés</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 text-xs text-emerald-300 bg-white/10 rounded-xl px-3 py-2">
+                    ℹ️ Les 5% sont prélevés automatiquement sur chaque collecte au moment de la confirmation du virement. Le montant versé à l'hôpital est toujours le montant collecté moins 5%.
+                  </div>
                 </div>
-              )}
-            </div>
+              );
+            })()}
 
-            {/* Résumé financier */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { label: lang==="fr"?"Total virements en attente":"Total pending payouts", value: cases.filter(c=>!c.payout_status||c.payout_status==="pending").reduce((s,c)=>s+(c.amount||0),0), color: "yellow" },
-                { label: lang==="fr"?"Virements initiés":"Initiated payouts", value: cases.filter(c=>c.payout_status==="initiated").reduce((s,c)=>s+(c.amount||0),0), color: "blue" },
-                { label: lang==="fr"?"Virements confirmés":"Confirmed payouts", value: cases.filter(c=>c.payout_status==="confirmed").reduce((s,c)=>s+(c.amount||0),0), color: "emerald" },
-              ].map((s,i) => (
-                <div key={i} className={`bg-white rounded-2xl border border-gray-100 p-5 shadow-sm`}>
-                  <div className="text-xs text-gray-500 mb-1">{s.label}</div>
-                  <div className={`text-xl font-black ${s.color==="yellow"?"text-yellow-600":s.color==="blue"?"text-blue-600":"text-emerald-600"}`}>{s.value.toLocaleString()} FCFA</div>
+            {/* ── Collectes financées — prêtes pour virement ── */}
+            {(() => {
+              const funded = cases.filter(c => c.status === "FUNDED" && (!c.payout_status || c.payout_status === "pending"));
+              const initiated = cases.filter(c => c.payout_status === "initiated");
+              const confirmed = cases.filter(c => c.payout_status === "confirmed");
+
+              const PayoutMethodBadge = ({ method }) => {
+                const map = { WAVE:"🌊 Wave", ORANGE:"🟠 Orange Money", MTN:"🟡 MTN MoMo", BANK:"🏦 Virement bancaire" };
+                return <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">{map[method]||method}</span>;
+              };
+
+              return (
+                <div className="space-y-4">
+
+                  {/* Collectes 100% — en attente de virement */}
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🟡</span>
+                        <h3 className="font-bold text-gray-900">{lang==="fr" ? "Collectes à virer" : "Ready for payout"}</h3>
+                        {funded.length > 0 && <span className="bg-amber-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{funded.length}</span>}
+                      </div>
+                      <div className="text-xs text-gray-400">{lang==="fr" ? "Objectif atteint · virement manuel requis" : "Goal reached · manual payout required"}</div>
+                    </div>
+
+                    {funded.length === 0 ? (
+                      <div className="p-10 text-center text-gray-400">
+                        <div className="text-4xl mb-3">✅</div>
+                        <div>{lang==="fr" ? "Aucune collecte en attente de virement." : "No campaigns awaiting payout."}</div>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-50">
+                        {funded.map(c => {
+                          const montantHopital = Math.round((c.amount||0) * 0.95);
+                          const fraisAyyad = Math.round((c.amount||0) * 0.05);
+                          const [payMethod, setPayMethod] = useState(null);
+                          const [confirming, setConfirming] = useState(false);
+
+                          return (
+                            <div key={c.id} className="p-5 space-y-4">
+                              {/* En-tête dossier */}
+                              <div className="flex items-start gap-4">
+                                <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
+                                  {c.category === "Cardiologie" ? "🫀" : c.category === "Oncologie" ? "🎗️" : c.category === "Neurologie" ? "🧠" : c.category === "Pédiatrie" ? "👶" : c.category === "Gynécologie" ? "🌸" : c.category === "Orthopédie" ? "🦴" : c.category === "Néphrologie" ? "🫘" : "🏥"}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                                    <span className="font-mono text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">{c.tracking_id || "AYD-"+c.id}</span>
+                                    <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">✅ FUNDED</span>
+                                  </div>
+                                  <div className="font-bold text-gray-900">{c.title}</div>
+                                  <div className="text-xs text-gray-400 mt-0.5">🏥 {c.hospital} · 📍 {c.city} · 👤 {c.full_name||c.beneficiary}</div>
+                                </div>
+                              </div>
+
+                              {/* Décomposition financière */}
+                              <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-3 gap-3 text-center">
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">💰 Total collecté</div>
+                                  <div className="font-black text-gray-900 text-sm">{(c.amount||0).toLocaleString()}</div>
+                                  <div className="text-[10px] text-gray-400">FCFA</div>
+                                </div>
+                                <div className="border-x border-gray-200">
+                                  <div className="text-xs text-gray-500 mb-1">🏥 Montant hôpital</div>
+                                  <div className="font-black text-emerald-700 text-sm">{montantHopital.toLocaleString()}</div>
+                                  <div className="text-[10px] text-emerald-600">95% · FCFA</div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">💚 Frais Ayyad</div>
+                                  <div className="font-black text-amber-600 text-sm">{fraisAyyad.toLocaleString()}</div>
+                                  <div className="text-[10px] text-amber-500">5% · FCFA</div>
+                                </div>
+                              </div>
+
+                              {/* Choix du moyen de paiement */}
+                              {!confirming ? (
+                                <div className="space-y-3">
+                                  <div className="text-xs font-bold text-gray-700">💸 Choisissez le moyen de virement vers <span className="text-emerald-700">{c.hospital}</span> :</div>
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    {[
+                                      { id:"WAVE", emoji:"🌊", label:"Wave CI", bg:"bg-blue-600 hover:bg-blue-700", ring:"ring-blue-500" },
+                                      { id:"ORANGE", emoji:"🟠", label:"Orange Money", bg:"bg-orange-500 hover:bg-orange-600", ring:"ring-orange-400" },
+                                      { id:"MTN", emoji:"🟡", label:"MTN MoMo", bg:"bg-yellow-400 hover:bg-yellow-500", ring:"ring-yellow-400" },
+                                      { id:"BANK", emoji:"🏦", label:"Virement bancaire", bg:"bg-gray-700 hover:bg-gray-800", ring:"ring-gray-500" },
+                                    ].map(pm => (
+                                      <button key={pm.id} onClick={() => setPayMethod(pm.id)}
+                                        className={"text-white text-xs font-bold py-3 rounded-xl flex flex-col items-center gap-1 transition-all "+(pm.id==="MTN"?"text-gray-900 ":"")+" "+pm.bg+(payMethod===pm.id?" ring-2 "+pm.ring+" scale-105":"")}>
+                                        <span className="text-2xl">{pm.emoji}</span>
+                                        <span>{pm.label}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                  {payMethod && (
+                                    <button onClick={() => setConfirming(true)}
+                                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2">
+                                      💸 {lang==="fr" ? "Virer maintenant" : "Transfer now"} — {montantHopital.toLocaleString()} FCFA
+                                      <span className="text-emerald-200 text-xs">via {payMethod==="WAVE"?"🌊 Wave":payMethod==="ORANGE"?"🟠 Orange":payMethod==="MTN"?"🟡 MTN":"🏦 Banque"}</span>
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                                /* Modal confirmation */
+                                <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 space-y-4">
+                                  <div className="flex items-center gap-2 text-amber-700 font-black">
+                                    <span className="text-xl">⚠️</span>
+                                    {lang==="fr" ? "Confirmer le virement ?" : "Confirm transfer?"}
+                                  </div>
+                                  <div className="bg-white rounded-xl p-4 space-y-2 text-sm">
+                                    <div className="flex justify-between"><span className="text-gray-500">Bénéficiaire</span><span className="font-bold">{c.hospital}</span></div>
+                                    <div className="flex justify-between"><span className="text-gray-500">Référence</span><span className="font-mono font-bold text-emerald-700">{c.tracking_id || "AYD-"+c.id}</span></div>
+                                    <div className="flex justify-between"><span className="text-gray-500">Montant à virer</span><span className="font-black text-emerald-700 text-base">{montantHopital.toLocaleString()} FCFA</span></div>
+                                    <div className="flex justify-between"><span className="text-gray-500">5% Ayyad prélevés</span><span className="font-bold text-amber-600">{fraisAyyad.toLocaleString()} FCFA ✓</span></div>
+                                    <div className="flex justify-between"><span className="text-gray-500">Via</span>
+                                      <PayoutMethodBadge method={payMethod} />
+                                    </div>
+                                    <div className="flex justify-between"><span className="text-gray-500">Patient</span><span className="font-semibold">{c.full_name||c.beneficiary}</span></div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <button onClick={() => setConfirming(false)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">
+                                      Annuler
+                                    </button>
+                                    <button onClick={async () => {
+                                      await supabase.from("cases").update({
+                                        payout_status: "initiated",
+                                        payout_method: payMethod,
+                                        payout_initiated_at: new Date().toISOString(),
+                                        payout_amount_hospital: montantHopital,
+                                        payout_amount_ayyad: fraisAyyad,
+                                      }).eq("id", c.id);
+                                      setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"initiated", payout_method: payMethod, payout_amount_hospital: montantHopital, payout_amount_ayyad: fraisAyyad} : x));
+                                      emailNewCase({
+                                        caseTitle: "VIREMENT INITIÉ — "+c.title+" ("+( c.tracking_id||"AYD-"+c.id)+")
+Montant hôpital : "+montantHopital.toLocaleString()+" FCFA
+Frais Ayyad (5%) : "+fraisAyyad.toLocaleString()+" FCFA
+Via : "+payMethod,
+                                        hospital: c.hospital, city: c.city, amount: montantHopital
+                                      });
+                                      setConfirming(false);
+                                    }} className="bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-sm shadow-md">
+                                      ✅ Confirmer le virement
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Virements en cours (initiés) */}
+                  {initiated.length > 0 && (
+                    <div className="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
+                      <div className="p-4 border-b border-blue-50 flex items-center gap-2 bg-blue-50">
+                        <span className="text-lg">🔵</span>
+                        <h3 className="font-bold text-gray-900 text-sm">{lang==="fr" ? "Virements en cours" : "Transfers in progress"}</h3>
+                        <span className="bg-blue-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{initiated.length}</span>
+                      </div>
+                      <div className="divide-y divide-gray-50">
+                        {initiated.map(c => {
+                          const montantHopital = c.payout_amount_hospital || Math.round((c.amount||0)*0.95);
+                          const fraisAyyad = c.payout_amount_ayyad || Math.round((c.amount||0)*0.05);
+                          return (
+                            <div key={c.id} className="p-4 space-y-3">
+                              <div className="flex items-center justify-between flex-wrap gap-2">
+                                <div>
+                                  <div className="font-semibold text-gray-900 text-sm">{c.title}</div>
+                                  <div className="text-xs text-gray-400 mt-0.5">🏥 {c.hospital} · Via {c.payout_method==="WAVE"?"🌊 Wave":c.payout_method==="ORANGE"?"🟠 Orange Money":c.payout_method==="MTN"?"🟡 MTN MoMo":"🏦 Banque"}</div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-black text-emerald-700">{montantHopital.toLocaleString()} FCFA</div>
+                                  <div className="text-xs text-amber-500">+{fraisAyyad.toLocaleString()} FCFA Ayyad</div>
+                                </div>
+                              </div>
+                              <label className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer flex items-center justify-center gap-2 w-full">
+                                📄 {lang==="fr" ? "Uploader le reçu de confirmation" : "Upload confirmation receipt"}
+                                <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={async (e) => {
+                                  const file = e.target.files[0];
+                                  if (!file) return;
+                                  const path = "receipts/"+c.id+"_"+Date.now();
+                                  const { data } = await supabase.storage.from("documents").upload(path, file);
+                                  if (data) {
+                                    const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
+                                    await supabase.from("cases").update({ payout_status: "confirmed", payout_receipt: urlData.publicUrl, payout_confirmed_at: new Date().toISOString() }).eq("id", c.id);
+                                    setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"confirmed", payout_receipt: urlData.publicUrl} : x));
+                                  }
+                                }} />
+                              </label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Virements confirmés */}
+                  {confirmed.length > 0 && (
+                    <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden">
+                      <div className="p-4 border-b border-emerald-50 bg-emerald-50 flex items-center gap-2">
+                        <span className="text-lg">✅</span>
+                        <h3 className="font-bold text-gray-900 text-sm">{lang==="fr" ? "Virements confirmés" : "Confirmed transfers"}</h3>
+                        <span className="bg-emerald-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{confirmed.length}</span>
+                      </div>
+                      <div className="divide-y divide-gray-50">
+                        {confirmed.map(c => {
+                          const montantHopital = c.payout_amount_hospital || Math.round((c.amount||0)*0.95);
+                          const fraisAyyad = c.payout_amount_ayyad || Math.round((c.amount||0)*0.05);
+                          return (
+                            <div key={c.id} className="p-4 flex items-center justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-gray-900 text-sm truncate">{c.title}</div>
+                                <div className="text-xs text-gray-400 mt-0.5">🏥 {c.hospital} · {c.payout_method==="WAVE"?"🌊 Wave":c.payout_method==="ORANGE"?"🟠 Orange":c.payout_method==="MTN"?"🟡 MTN":"🏦 Banque"}</div>
+                                {c.payout_receipt && <a href={c.payout_receipt} target="_blank" rel="noreferrer" className="text-xs text-emerald-600 underline">📄 Reçu</a>}
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <div className="font-black text-emerald-700 text-sm">{montantHopital.toLocaleString()} FCFA</div>
+                                <div className="text-[10px] text-amber-500">{fraisAyyad.toLocaleString()} FCFA → Ayyad</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </div>
         )}
       </div>
