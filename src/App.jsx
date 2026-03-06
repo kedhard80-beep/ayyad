@@ -7,6 +7,67 @@ const supabase = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvZGd1YnZndnNuYnBoZXVzZ2dtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MzE0NDIsImV4cCI6MjA4NjMwNzQ0Mn0.Kx9gQtLBp8frC5iE08303pgbsV6paDIpWvyeLOg4MHU"
 );
 
+// ── Côte d'Ivoire Data ───────────────────────────────────────
+const CI_VILLES = [
+  "Abengourou","Abidjan","Aboisso","Adzopé","Agboville","Anyama","Bondoukou",
+  "Bouna","Boundiali","Daloa","Dimbokro","Divo","Ferkessédougou","Gagnoa",
+  "Grand-Bassam","Guiglo","Issia","Jacqueville","Katiola","Korhogo","Lakota",
+  "Man","Mankono","Odienné","Oumé","San-Pédro","Sassandra","Séguéla","Sinfra",
+  "Soubré","Tabou","Tanda","Tiassalé","Tingrela","Touba","Toumodi","Vavoua",
+  "Yamoussoukro"
+];
+
+const CI_HOPITAUX = [
+  { nom: "CHU de Cocody", ville: "Abidjan", type: "CHU" },
+  { nom: "CHU de Treichville", ville: "Abidjan", type: "CHU" },
+  { nom: "CHU de Yopougon", ville: "Abidjan", type: "CHU" },
+  { nom: "CHU de Bouaké", ville: "Bouaké", type: "CHU" },
+  { nom: "CHR d'Abengourou", ville: "Abengourou", type: "CHR" },
+  { nom: "CHR d'Agboville", ville: "Agboville", type: "CHR" },
+  { nom: "CHR de Bondoukou", ville: "Bondoukou", type: "CHR" },
+  { nom: "CHR de Bouna", ville: "Bouna", type: "CHR" },
+  { nom: "CHR de Daloa", ville: "Daloa", type: "CHR" },
+  { nom: "CHR de Dimbokro", ville: "Dimbokro", type: "CHR" },
+  { nom: "CHR de Divo", ville: "Divo", type: "CHR" },
+  { nom: "CHR de Ferkessédougou", ville: "Ferkessédougou", type: "CHR" },
+  { nom: "CHR de Gagnoa", ville: "Gagnoa", type: "CHR" },
+  { nom: "CHR de Guiglo", ville: "Guiglo", type: "CHR" },
+  { nom: "CHR d'Issia", ville: "Issia", type: "CHR" },
+  { nom: "CHR de Katiola", ville: "Katiola", type: "CHR" },
+  { nom: "CHR de Korhogo", ville: "Korhogo", type: "CHR" },
+  { nom: "CHR de Lakota", ville: "Lakota", type: "CHR" },
+  { nom: "CHR de Man", ville: "Man", type: "CHR" },
+  { nom: "CHR de Mankono", ville: "Mankono", type: "CHR" },
+  { nom: "CHR d'Odienné", ville: "Odienné", type: "CHR" },
+  { nom: "CHR d'Oumé", ville: "Oumé", type: "CHR" },
+  { nom: "CHR de San-Pédro", ville: "San-Pédro", type: "CHR" },
+  { nom: "CHR de Séguéla", ville: "Séguéla", type: "CHR" },
+  { nom: "CHR de Sinfra", ville: "Sinfra", type: "CHR" },
+  { nom: "CHR de Soubré", ville: "Soubré", type: "CHR" },
+  { nom: "CHR de Tanda", ville: "Tanda", type: "CHR" },
+  { nom: "CHR de Tiassalé", ville: "Tiassalé", type: "CHR" },
+  { nom: "CHR de Touba", ville: "Touba", type: "CHR" },
+  { nom: "CHR de Toumodi", ville: "Toumodi", type: "CHR" },
+  { nom: "CHR de Yamoussoukro", ville: "Yamoussoukro", type: "CHR" },
+  // Cliniques privées Abidjan
+  { nom: "Clinique Procréa", ville: "Abidjan", type: "Clinique" },
+  { nom: "Clinique Sainte Marie", ville: "Abidjan", type: "Clinique" },
+  { nom: "Clinique du Plateau", ville: "Abidjan", type: "Clinique" },
+  { nom: "Clinique Les Deux Plateaux", ville: "Abidjan", type: "Clinique" },
+  { nom: "Clinique Avicenne", ville: "Abidjan", type: "Clinique" },
+  { nom: "Clinique Houphouët-Boigny (Polyclinique)", ville: "Abidjan", type: "Clinique" },
+  { nom: "Clinique Biétry", ville: "Abidjan", type: "Clinique" },
+  { nom: "Clinique Casamance", ville: "Abidjan", type: "Clinique" },
+  { nom: "Clinique Saint Joseph Moscati", ville: "Abidjan", type: "Clinique" },
+  { nom: "Clinique Mère-Enfant (CME)", ville: "Abidjan", type: "Clinique" },
+  { nom: "Polyclinique Internationale Sainte Anne-Marie (PISAM)", ville: "Abidjan", type: "Clinique" },
+  { nom: "Clinique de l'Indénié", ville: "Abidjan", type: "Clinique" },
+  { nom: "Clinique Lagarrigue", ville: "Abidjan", type: "Clinique" },
+  { nom: "Clinique Sikensi / Centre Médical Sikensi", ville: "Abidjan", type: "Clinique" },
+  { nom: "Infirmerie Protestante de Dabou", ville: "Abidjan", type: "Clinique" },
+  { nom: "Autre établissement", ville: "", type: "Autre" },
+];
+
 // ── Translations ─────────────────────────────────────────────
 const T = {
   fr: {
@@ -722,8 +783,34 @@ const SubmitPage = ({ setPage, user, lang }) => {
           <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.titleField}</label><input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
           <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.descField}</label><textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={4} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" /></div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.hospitalField}</label><input value={form.hospital} onChange={e=>setForm({...form,hospital:e.target.value})} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
-            <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.cityField}</label><input value={form.city} onChange={e=>setForm({...form,city:e.target.value})} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.hospitalField}</label>
+              <select value={form.hospital} onChange={e => {
+                const h = CI_HOPITAUX.find(x => x.nom === e.target.value);
+                setForm({...form, hospital: e.target.value, city: h?.ville || form.city});
+              }} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <option value="">— Choisir un hôpital —</option>
+                <optgroup label="🏛 CHU (Centres Hospitaliers Universitaires)">
+                  {CI_HOPITAUX.filter(h => h.type === "CHU").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
+                </optgroup>
+                <optgroup label="🏥 CHR (Centres Hospitaliers Régionaux)">
+                  {CI_HOPITAUX.filter(h => h.type === "CHR").map(h => <option key={h.nom} value={h.nom}>{h.nom} — {h.ville}</option>)}
+                </optgroup>
+                <optgroup label="🏢 Cliniques privées (Abidjan)">
+                  {CI_HOPITAUX.filter(h => h.type === "Clinique").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
+                </optgroup>
+                <optgroup label="Autre">
+                  {CI_HOPITAUX.filter(h => h.type === "Autre").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
+                </optgroup>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.cityField}</label>
+              <select value={form.city} onChange={e => setForm({...form, city: e.target.value})} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <option value="">— Choisir une ville —</option>
+                {CI_VILLES.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.amountField}</label><input value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})} type="number" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
@@ -742,13 +829,23 @@ const SubmitPage = ({ setPage, user, lang }) => {
                 {key:"Autre", enKey:"Other", icon:"🏥"},
               ].map(cat => (
                 <button key={cat.key} type="button"
-                  onClick={() => setForm({...form, category: cat.key})}
+                  onClick={() => setForm({...form, category: cat.key, categoryOther: ""})}
                   className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all ${form.category===cat.key ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm" : "border-gray-200 hover:border-gray-300 text-gray-500 hover:bg-gray-50"}`}>
                   <span className="text-xl">{cat.icon}</span>
                   <span className="text-xs text-center leading-tight font-medium">{lang==="fr" ? cat.key : cat.enKey}</span>
                 </button>
               ))}
             </div>
+            {form.category === "Autre" && (
+              <div className="mt-3">
+                <input
+                  value={form.categoryOther || ""}
+                  onChange={e => setForm({...form, categoryOther: e.target.value})}
+                  placeholder={lang==="fr" ? "Précisez la spécialité médicale..." : "Specify the medical specialty..."}
+                  className="w-full border-2 border-emerald-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-emerald-50"
+                />
+              </div>
+            )}
           </div>
           <button onClick={()=>setStep(2)} disabled={!form.title||!form.description||!form.hospital||!form.amount} className="w-full bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">{t.next}</button>
         </div>}
