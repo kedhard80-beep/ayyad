@@ -199,11 +199,11 @@ const T = {
 
 // ── Static mock cases for homepage display ───────────────────
 const MOCK_CASES = [
-  { id:1, trackingId:"AYD-2025-001", title:{fr:"Opération cardiaque urgente pour Aminata",en:"Urgent heart surgery for Aminata"}, beneficiary:"Aminata Koné", age:34, city:"Abidjan", hospital:"CHU de Cocody", category:{fr:"Cardiologie",en:"Cardiology"}, required:1800000, collected:1260000, donors:87, daysLeft:2, image:"🫀", urgent:true, videoUrl:"https://www.youtube.com/embed/dQw4w9WgXcQ", desc:{fr:"Aminata souffre d'une cardiopathie valvulaire sévère nécessitant un remplacement de valve urgent. Sans cette intervention, son pronostic vital est engagé dans les 3 prochains mois.",en:"Aminata suffers from severe valvular heart disease requiring urgent valve replacement. Without this procedure, her life is at risk within 3 months."}, status:"COLLECTING" },
+  { id:1, trackingId:"AYD-2025-001", title:{fr:"Opération cardiaque urgente pour Aminata",en:"Urgent heart surgery for Aminata"}, beneficiary:"Aminata Koné", age:34, city:"Abidjan", hospital:"CHU de Cocody", category:{fr:"Cardiologie",en:"Cardiology"}, required:1800000, collected:1260000, donors:87, daysLeft:2, image:"🫀", urgent:true, videoUrl:"https://www.youtube.com/embed/dQw4w9WgXcQ", photos:["https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=600&q=80","https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&q=80"], desc:{fr:"Aminata souffre d'une cardiopathie valvulaire sévère nécessitant un remplacement de valve urgent. Sans cette intervention, son pronostic vital est engagé dans les 3 prochains mois.",en:"Aminata suffers from severe valvular heart disease requiring urgent valve replacement. Without this procedure, her life is at risk within 3 months."}, status:"COLLECTING" },
   { id:2, trackingId:"AYD-2025-002", title:{fr:"Dialyse rénale pour Kofi Asante",en:"Kidney dialysis for Kofi Asante"}, beneficiary:"Kofi Asante", age:52, city:"Bouaké", hospital:"CHU de Bouaké", category:{fr:"Néphrologie",en:"Nephrology"}, required:950000, collected:712000, donors:45, daysLeft:21, image:"🫘", urgent:false, videoUrl:null, desc:{fr:"Kofi est en insuffisance rénale chronique terminale. Il a besoin de 3 séances de dialyse par semaine pendant 6 mois en attente de greffe.",en:"Kofi has end-stage chronic kidney failure. He needs 3 dialysis sessions per week for 6 months while awaiting a transplant."}, status:"COLLECTING" },
   { id:3, trackingId:"AYD-2025-003", title:{fr:"Chimiothérapie pour Fatou Diallo",en:"Chemotherapy for Fatou Diallo"}, beneficiary:"Fatou Diallo", age:28, city:"Abidjan", hospital:"Institut National d'Oncologie", category:{fr:"Oncologie",en:"Oncology"}, required:2400000, collected:480000, donors:31, daysLeft:45, image:"🎗️", urgent:false, videoUrl:null, desc:{fr:"Fatou, jeune maman de 2 enfants, a reçu un diagnostic de cancer du sein au stade II. Un protocole de chimiothérapie de 6 cycles est nécessaire.",en:"Fatou, a young mother of 2, was diagnosed with stage II breast cancer. A 6-cycle chemotherapy protocol is needed."}, status:"COLLECTING" },
   { id:4, trackingId:"AYD-2025-004", title:{fr:"Prothèse orthopédique pour Ibrahim",en:"Orthopedic prosthesis for Ibrahim"}, beneficiary:"Ibrahim Coulibaly", age:19, city:"Daloa", hospital:"CHR de Daloa", category:{fr:"Orthopédie",en:"Orthopedics"}, required:620000, collected:620000, donors:62, daysLeft:0, image:"🦾", urgent:false, videoUrl:null, desc:{fr:"Ibrahim a perdu sa jambe droite suite à un accident de la route. Grâce à votre générosité, l'objectif est atteint !",en:"Ibrahim lost his right leg in a road accident. Thanks to your generosity, the goal has been reached!"}, status:"FUNDED" },
-  { id:5, trackingId:"AYD-2025-005", title:{fr:"Traitement neurologique pour Mariam",en:"Neurological treatment for Mariam"}, beneficiary:"Mariam Ouédraogo", age:41, city:"Abidjan", hospital:"CHU de Yopougon", category:{fr:"Neurologie",en:"Neurology"}, required:1100000, collected:330000, donors:22, daysLeft:4, image:"🧠", urgent:true, videoUrl:null, desc:{fr:"Mariam souffre d'une sclérose en plaques progressivement invalidante.",en:"Mariam suffers from progressively disabling multiple sclerosis."}, status:"COLLECTING" },
+  { id:5, trackingId:"AYD-2025-005", title:{fr:"Traitement neurologique pour Mariam",en:"Neurological treatment for Mariam"}, beneficiary:"Mariam Ouédraogo", age:41, city:"Abidjan", hospital:"CHU de Yopougon", category:{fr:"Neurologie",en:"Neurology"}, required:1100000, collected:330000, donors:22, daysLeft:4, image:"🧠", urgent:true, videoUrl:null, photos:["https://images.unsplash.com/photo-1584515933487-779824d29309?w=600&q=80"], desc:{fr:"Mariam souffre d'une sclérose en plaques progressivement invalidante.",en:"Mariam suffers from progressively disabling multiple sclerosis."}, status:"COLLECTING" },
   { id:6, trackingId:"AYD-2025-006", title:{fr:"Opération de la vue pour Kouassi",en:"Eye surgery for Kouassi"}, beneficiary:"Kouassi Yao", age:67, city:"San-Pédro", hospital:"Clinique Vision CI", category:{fr:"Oncologie",en:"Oncology"}, required:380000, collected:285000, donors:41, daysLeft:8, image:"👁️", urgent:false, videoUrl:null, desc:{fr:"Kouassi souffre de glaucome bilatéral avancé. Sans une opération urgente, il risque de perdre définitivement la vue.",en:"Kouassi suffers from advanced bilateral glaucoma. Without urgent surgery, he risks permanently losing his sight."}, status:"COLLECTING" },
   { id:7, trackingId:"AYD-2025-007", title:{fr:"Amputation évitable pour Seydou",en:"Avoidable amputation for Seydou"}, beneficiary:"Seydou Bah", age:23, city:"Korhogo", hospital:"CHR de Korhogo", category:{fr:"Orthopédie",en:"Orthopedics"}, required:750000, collected:120000, donors:14, daysLeft:1, image:"🦴", urgent:true, videoUrl:null, desc:{fr:"Seydou a une infection osseuse grave au pied gauche. Sans traitement immédiat, les médecins devront amputer. Il reste moins de 24h pour agir.",en:"Seydou has a serious bone infection in his left foot. Without immediate treatment, doctors will have to amputate. Less than 24 hours to act."}, status:"COLLECTING" },
   { id:8, trackingId:"AYD-2025-008", title:{fr:"Accouchement d'urgence pour Rokia",en:"Emergency delivery for Rokia"}, beneficiary:"Rokia Soro", age:26, city:"Yamoussoukro", hospital:"CHR de Yamoussoukro", category:{fr:"Gynécologie",en:"Gynecology"}, required:420000, collected:85000, donors:9, daysLeft:1, image:"🌸", urgent:true, videoUrl:null, desc:{fr:"Rokia est enceinte de 8 mois avec une grossesse à haut risque. Une césarienne d'urgence est nécessaire dans les prochaines heures.",en:"Rokia is 8 months pregnant with a high-risk pregnancy. An emergency C-section is needed in the coming hours."}, status:"COLLECTING" },
@@ -458,6 +458,184 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
       </div>
     </div>
   );
+};
+
+// ── MediaSection — Photos + Vidéo patient ────────────────────
+const MediaSection = ({ c, lang, t }) => {
+  const [activePhoto, setActivePhoto] = useState(0);
+  const photos = c.photos || [];
+  const hasMedia = photos.length > 0 || c.videoUrl;
+  if (!hasMedia) return (
+    <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 text-center">
+      <div className="text-3xl mb-2">📸</div>
+      <div className="text-sm text-gray-400">{lang==="fr" ? "Aucun média disponible pour ce dossier." : "No media available for this case."}</div>
+    </div>
+  );
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">📸</span>
+          <span className="font-bold text-gray-900">{lang==="fr" ? "Photos & vidéo du patient" : "Patient photos & video"}</span>
+        </div>
+        <div className="flex gap-1 text-xs text-gray-400">
+          {photos.length > 0 && <span className="bg-gray-100 px-2 py-0.5 rounded-full">{photos.length} {lang==="fr"?"photo(s)":"photo(s)"}</span>}
+          {c.videoUrl && <span className="bg-gray-100 px-2 py-0.5 rounded-full">1 {lang==="fr"?"vidéo":"video"}</span>}
+        </div>
+      </div>
+      {/* Galerie photos */}
+      {photos.length > 0 && (
+        <div>
+          <div className="relative overflow-hidden" style={{height:"220px"}}>
+            <img src={photos[activePhoto]} alt={"Photo "+c.beneficiary} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+            <div className="absolute bottom-3 left-3 text-white text-xs font-semibold bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
+              📍 {c.hospital} · {c.city}
+            </div>
+            {photos.length > 1 && (
+              <>
+                <button onClick={() => setActivePhoto(p => (p-1+photos.length)%photos.length)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full w-8 h-8 flex items-center justify-center text-gray-700 shadow">‹</button>
+                <button onClick={() => setActivePhoto(p => (p+1)%photos.length)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full w-8 h-8 flex items-center justify-center text-gray-700 shadow">›</button>
+                <div className="absolute bottom-3 right-3 flex gap-1">
+                  {photos.map((_,i) => <div key={i} className={"w-1.5 h-1.5 rounded-full "+(i===activePhoto?"bg-white":"bg-white/50")} />)}
+                </div>
+              </>
+            )}
+          </div>
+          {/* Thumbnails */}
+          {photos.length > 1 && (
+            <div className="flex gap-2 p-3 overflow-x-auto">
+              {photos.map((ph, i) => (
+                <button key={i} onClick={() => setActivePhoto(i)} className={"flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all "+(i===activePhoto?"border-emerald-500":"border-transparent opacity-60 hover:opacity-100")}>
+                  <img src={ph} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {/* Vidéo */}
+      {c.videoUrl && (
+        <div>
+          {photos.length > 0 && <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>🎥</span>{t.video.title}</div>}
+          {!photos.length && <div className="px-4 py-2 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>🎥</span>{t.video.title}</div>}
+          <div className="relative w-full" style={{paddingBottom:"56.25%"}}>
+            <iframe src={c.videoUrl} className="absolute inset-0 w-full h-full" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Patient video" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── MobilePay Widget — Wave / Orange Money / MTN ──────────────
+const MobilePayWidget = ({ amount, caseData, lang, onSuccess }) => {
+  const [step, setStep] = useState("choose"); // choose | enter | waiting | done
+  const [provider, setProvider] = useState(null);
+  const [phone, setPhone] = useState("");
+  const [countdown, setCountdown] = useState(30);
+
+  useEffect(() => {
+    if (step !== "waiting") return;
+    if (countdown <= 0) { setStep("done"); return; }
+    const t = setTimeout(() => setCountdown(c => c-1), 1000);
+    return () => clearTimeout(t);
+  }, [step, countdown]);
+
+  const providers = [
+    { id:"WAVE", emoji:"🌊", label:"Wave", color:"bg-blue-600 hover:bg-blue-700", prefix:"+225 01" },
+    { id:"ORANGE", emoji:"🟠", label:"Orange Money", color:"bg-orange-500 hover:bg-orange-600", prefix:"+225 07" },
+    { id:"MTN", emoji:"🟡", label:"MTN MoMo", color:"bg-yellow-400 hover:bg-yellow-500 text-gray-900", prefix:"+225 05" },
+  ];
+
+  const selectedProvider = providers.find(p => p.id === provider);
+
+  const handlePay = () => {
+    if (!phone.trim() || phone.length < 8) return;
+    setStep("waiting");
+    setCountdown(30);
+    setTimeout(() => { setStep("done"); onSuccess && onSuccess(); }, 30000);
+  };
+
+  if (step === "choose") return (
+    <div className="space-y-2">
+      <div className="text-xs font-bold text-gray-600 mb-3">{lang==="fr" ? "Choisissez votre opérateur :" : "Choose your operator:"}</div>
+      {providers.map(pv => (
+        <button key={pv.id} onClick={() => { setProvider(pv.id); setStep("enter"); }}
+          className={"w-full "+pv.color+" text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-3 text-sm shadow-sm"}>
+          <span className="text-xl">{pv.emoji}</span>
+          <span>{pv.label}</span>
+          <span className="ml-auto text-white/70 text-xs">{lang==="fr" ? "Payer " : "Pay "}{new Intl.NumberFormat("fr").format(amount)} FCFA →</span>
+        </button>
+      ))}
+      <p className="text-center text-[10px] text-gray-400 pt-1">🔒 {lang==="fr" ? "Paiement sécurisé · Aucuns frais cachés" : "Secure payment · No hidden fees"}</p>
+    </div>
+  );
+
+  if (step === "enter") return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-2">
+        <button onClick={() => setStep("choose")} className="text-gray-400 hover:text-gray-600 text-sm">←</button>
+        <span className="text-xl">{selectedProvider?.emoji}</span>
+        <span className="font-bold text-gray-900 text-sm">{selectedProvider?.label}</span>
+      </div>
+      <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
+        <div className="text-xs text-gray-500 mb-0.5">{lang==="fr" ? "Montant à débiter" : "Amount to charge"}</div>
+        <div className="font-black text-xl text-emerald-700">{new Intl.NumberFormat("fr").format(amount)} FCFA</div>
+        <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Pour : " : "For: "}{caseData?.beneficiary}</div>
+      </div>
+      <div>
+        <label className="text-xs font-semibold text-gray-600 block mb-1.5">{lang==="fr" ? "Votre numéro "+selectedProvider?.label : "Your "+selectedProvider?.label+" number"}</label>
+        <div className="flex gap-2">
+          <div className="bg-gray-100 border border-gray-200 rounded-xl px-3 py-3 text-xs text-gray-500 font-mono flex-shrink-0">+225</div>
+          <input type="tel" value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,""))} maxLength={10}
+            placeholder="07 00 00 00 00"
+            className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        </div>
+      </div>
+      <button onClick={handlePay} disabled={phone.length < 8}
+        className={"w-full font-bold py-3.5 rounded-xl text-sm shadow-md disabled:bg-gray-200 disabled:text-gray-400 "+selectedProvider?.color+" text-white"}>
+        {lang==="fr" ? "Confirmer et payer →" : "Confirm and pay →"}
+      </button>
+      <p className="text-center text-[10px] text-gray-400">{lang==="fr" ? "Une notification sera envoyée sur votre téléphone." : "A notification will be sent to your phone."}</p>
+    </div>
+  );
+
+  if (step === "waiting") return (
+    <div className="text-center space-y-4 py-4">
+      <div className="relative w-16 h-16 mx-auto">
+        <div className="w-16 h-16 border-4 border-emerald-100 border-t-emerald-500 rounded-full animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center text-lg">{selectedProvider?.emoji}</div>
+      </div>
+      <div>
+        <div className="font-black text-gray-900">{lang==="fr" ? "En attente de paiement..." : "Waiting for payment..."}</div>
+        <div className="text-sm text-gray-500 mt-1">{lang==="fr" ? "Vérifiez votre téléphone" : "Check your phone"}</div>
+      </div>
+      <div className="bg-gray-50 rounded-xl p-4 text-sm">
+        <div className="text-gray-500 text-xs mb-1">{lang==="fr" ? "Numéro" : "Number"}: <span className="font-mono font-bold">+225 {phone}</span></div>
+        <div className="text-gray-500 text-xs">{lang==="fr" ? "Montant" : "Amount"}: <span className="font-bold text-emerald-700">{new Intl.NumberFormat("fr").format(amount)} FCFA</span></div>
+      </div>
+      <div className="text-xs text-gray-400">{lang==="fr" ? "Expiration dans" : "Expires in"} <span className="font-bold text-amber-600">{countdown}s</span></div>
+    </div>
+  );
+
+  if (step === "done") return (
+    <div className="text-center space-y-4 py-2">
+      <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-3xl">🎉</div>
+      <div className="font-black text-xl text-gray-900">{lang==="fr" ? "Merci infiniment !" : "Thank you so much!"}</div>
+      <div className="text-sm text-gray-500">{lang==="fr" ? "Votre don a bien été enregistré." : "Your donation has been recorded."}</div>
+      <div className="bg-emerald-50 rounded-xl p-4 text-sm text-emerald-800 border border-emerald-100">
+        <p className="font-semibold mb-1">{lang==="fr" ? "Ce que vous venez de faire :" : "What you just did:"}</p>
+        <p>{lang==="fr" ? "Rapprocher " : "Brought "}{caseData?.beneficiary}{lang==="fr" ? " d'une vie meilleure." : " closer to a better life."}</p>
+      </div>
+      <button onClick={() => { setStep("choose"); setPhone(""); setCountdown(30); }}
+        className="w-full border border-emerald-200 text-emerald-700 font-semibold py-2.5 rounded-xl text-sm hover:bg-emerald-50">
+        {lang==="fr" ? "Refaire un don" : "Donate again"}
+      </button>
+    </div>
+  );
+
+  return null;
 };
 
 // ── Support Ayyad Section ─────────────────────────────────────
@@ -1001,22 +1179,24 @@ const CasePage = ({ c, setPage, lang }) => {
         {amount&&Number(amount)>=500&&<div className="text-xs text-center text-gray-400 mt-1.5">{lang==="fr"?"Débité : ":"Charged: "}<span className="font-bold text-gray-700">{fmt(Number(amount))}</span></div>}
       </div>
       <div className="mb-4">
-        <label className="text-xs font-semibold text-gray-600 mb-2 block">{td.payment}</label>
-        <div className="grid grid-cols-3 gap-2">
-          {[{id:"WAVE",label:"Wave",emoji:"🌊"},{id:"ORANGE_MONEY",label:"Orange",emoji:"🟠"},{id:"STRIPE",label:lang==="fr"?"Carte":"Card",emoji:"💳"}].map(pv => (
-            <button key={pv.id} onClick={() => setProvider(pv.id)} className={`flex flex-col items-center p-2.5 rounded-xl border text-xs font-bold transition-all ${provider===pv.id?"ring-2 ring-emerald-500 bg-emerald-50 border-emerald-200":"bg-gray-50 border-gray-200 opacity-60 hover:opacity-100"}`}>
-              <span className="text-lg mb-0.5">{pv.emoji}</span>{pv.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="mb-5">
         <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder={td.message} rows={2} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400" />
       </div>
-      <button onClick={() => setDonMode("confirm")} disabled={!amount||isNaN(amount)||Number(amount)<500||funded} className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl shadow-md text-sm">
-        {funded?td.btnFunded:`${td.btn} ${amount?fmt(Number(amount)):"→"}`}
-      </button>
-      {!funded&&<p className="text-center text-xs text-gray-400 mt-3">{td.secure}</p>}
+      {/* Widget paiement mobile — Wave / Orange Money / MTN */}
+      {amount && Number(amount) >= 500 ? (
+        <MobilePayWidget
+          amount={Number(amount)}
+          caseData={c}
+          lang={lang}
+          onSuccess={() => {
+            setDonMode("success");
+            emailDonConfirm({ donorEmail: null, donorName: anonymous ? "" : "Donateur", amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
+          }}
+        />
+      ) : (
+        <button disabled className="w-full bg-gray-200 text-gray-400 font-bold py-3.5 rounded-xl text-sm">
+          {lang==="fr" ? "Entrez un montant ≥ 500 FCFA" : "Enter an amount ≥ 500 FCFA"}
+        </button>
+      )}
     </>
   );
 
@@ -1058,23 +1238,8 @@ const CasePage = ({ c, setPage, lang }) => {
             <div><div className="font-bold text-emerald-800 text-sm">{t.guarantee.title}</div><div className="text-emerald-700 text-xs mt-1">{t.guarantee.desc}</div></div>
           </div>
 
-          {/* Video Section */}
-          {c.videoUrl ? (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-gray-100 flex items-center gap-2">
-                <span className="text-xl">🎥</span>
-                <span className="font-bold text-gray-900">{t.video.title}</span>
-              </div>
-              <div className="relative w-full" style={{paddingBottom:"56.25%"}}>
-                <iframe src={c.videoUrl} className="absolute inset-0 w-full h-full" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Patient video" />
-              </div>
-            </div>
-          ) : (
-            <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 text-center">
-              <div className="text-3xl mb-2">🎥</div>
-              <div className="text-sm text-gray-400">{t.video.noVideo}</div>
-            </div>
-          )}
+          {/* Médias — Photos + Vidéo */}
+          <MediaSection c={c} lang={lang} t={t} />
         </div>
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-xl p-6 sticky top-24">
@@ -1518,7 +1683,7 @@ const AdminPage = ({ user, setPage, lang }) => {
   const [tab, setTab] = useState("overview");
   const [cases, setCases] = useState([]);
   const [loadingCases, setLoadingCases] = useState(true);
-  const [alerts, setAlerts] = useState(FRAUD_ALERTS);
+  const [alerts, setAlerts] = useState(MOCK_ALERTS);
   const [rejectModal, setRejectModal] = useState(null); // caseId
   const [rejectReason, setRejectReason] = useState("");
   const t = T[lang].admin;
