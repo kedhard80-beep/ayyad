@@ -355,44 +355,79 @@ const CaseCard = ({ c, lang, t, onClick }) => {
 // ── Urgent Banner ─────────────────────────────────────────────
 const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
   const t = T[lang];
-  const urgentCases = cases.filter(c => {
-    const autoUrgent = c.daysLeft !== undefined && c.daysLeft <= 7 && pct(c.collected, c.required) < 50;
-    return (c.urgent || autoUrgent) && c.status !== "FUNDED";
-  });
+  const urgentCases = cases
+    .filter(c => {
+      const autoUrgent = c.daysLeft !== undefined && c.daysLeft <= 7 && pct(c.collected, c.required) < 50;
+      return (c.urgent || autoUrgent) && c.status !== "FUNDED";
+    })
+    .sort((a, b) => a.daysLeft - b.daysLeft); // ordre d'urgence croissant
+
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    if (urgentCases.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrent(prev => (prev + 1) % urgentCases.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [urgentCases.length]);
+
   if (urgentCases.length === 0) return null;
+
   return (
     <div className="bg-white border-b border-gray-100">
       <div className="max-w-6xl mx-auto px-4 py-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-3 h-3 bg-red-500 rounded-full animate-ping" />
-          <h2 className="font-black text-xl text-gray-900">{t.urgent.title}</h2>
-          <span className="bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-full">{urgentCases.length}</span>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-ping" />
+            <h2 className="font-black text-xl text-gray-900">{t.urgent.title}</h2>
+            <span className="bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-full">{urgentCases.length}</span>
+          </div>
+          <button onClick={() => setPage("urgents")} className="text-xs text-red-600 font-semibold hover:underline">
+            {lang==="fr" ? "Voir tous →" : "See all →"}
+          </button>
         </div>
         <p className="text-gray-500 text-sm mb-5">{t.urgent.sub}</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {urgentCases.map(c => (
-            <button key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); }} className="bg-red-50 hover:bg-red-100 border-2 border-red-200 hover:border-red-400 rounded-2xl p-4 text-left transition-all group">
-              <div className="flex items-start gap-3">
-                <div className="text-3xl">{c.image}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="bg-red-600 text-white text-xs font-black px-2 py-0.5 rounded-full animate-pulse">🚨 URGENT</span>
+
+        {/* Carousel */}
+        <div className="overflow-hidden rounded-2xl">
+          <div className="flex transition-transform duration-500 ease-in-out" style={{transform: `translateX(-${current * 100}%)`}}>
+            {urgentCases.map(c => (
+              <div key={c.id} className="min-w-full">
+                <button onClick={() => { setSelectedCase(c); setPage("case"); }} className="w-full bg-red-50 hover:bg-red-100 border-2 border-red-200 hover:border-red-400 rounded-2xl p-5 text-left transition-all group">
+                  <div className="flex items-start gap-4">
+                    <div className="text-4xl">{c.image}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="bg-red-600 text-white text-xs font-black px-2 py-0.5 rounded-full animate-pulse">🚨 URGENT</span>
+                        <span className="text-xs text-orange-600 font-bold">⏱️ {c.daysLeft}j restants</span>
+                      </div>
+                      <div className="font-bold text-gray-900 leading-snug group-hover:text-red-700">{c.title[lang]}</div>
+                      <div className="text-gray-500 text-xs mt-1">🏥 {c.hospital} · {c.city}</div>
+                      <div className="mt-2 text-xs bg-amber-100 text-amber-700 rounded-lg px-2 py-1 inline-block font-medium">{t.urgent.alert}</div>
+                    </div>
                   </div>
-                  <div className="font-bold text-sm text-gray-900 leading-snug group-hover:text-red-700">{c.title[lang]}</div>
-                  <div className="text-gray-500 text-xs mt-1">🏥 {c.hospital} · ⏳ {c.daysLeft}j</div>
-                  <div className="mt-2 text-xs bg-amber-100 text-amber-700 rounded-lg px-2 py-1 inline-block font-medium">{t.urgent.alert}</div>
-                </div>
+                  <div className="mt-4">
+                    <ProgressBar percent={pct(c.collected, c.required)} />
+                    <div className="flex justify-between text-xs mt-1 text-gray-500">
+                      <span>{fmt(c.collected)}</span>
+                      <span className="font-bold text-red-600">{pct(c.collected, c.required)}%</span>
+                    </div>
+                  </div>
+                </button>
               </div>
-              <div className="mt-3">
-                <ProgressBar percent={pct(c.collected, c.required)} />
-                <div className="flex justify-between text-xs mt-1 text-gray-500">
-                  <span>{fmt(c.collected)}</span>
-                  <span className="font-bold text-red-600">{pct(c.collected, c.required)}%</span>
-                </div>
-              </div>
-            </button>
-          ))}
+            ))}
+          </div>
         </div>
+
+        {/* Dots */}
+        {urgentCases.length > 1 && (
+          <div className="flex justify-center gap-2 mt-3">
+            {urgentCases.map((_, i) => (
+              <button key={i} onClick={() => setCurrent(i)} className={`w-2 h-2 rounded-full transition-all ${i===current ? "bg-red-500 w-4" : "bg-gray-300"}`} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
