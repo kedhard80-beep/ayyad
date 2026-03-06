@@ -207,7 +207,25 @@ const MOCK_CASES = [
   { id:6, title:{fr:"Opération de la vue pour Kouassi",en:"Eye surgery for Kouassi"}, beneficiary:"Kouassi Yao", age:67, city:"San-Pédro", hospital:"Clinique Vision CI", category:{fr:"Oncologie",en:"Oncology"}, required:380000, collected:285000, donors:41, daysLeft:8, image:"👁️", urgent:false, videoUrl:null, desc:{fr:"Kouassi souffre de glaucome bilatéral avancé. Sans une opération urgente, il risque de perdre définitivement la vue.",en:"Kouassi suffers from advanced bilateral glaucoma. Without urgent surgery, he risks permanently losing his sight."}, status:"COLLECTING" },
 ];
 
-const FRAUD_ALERTS = [
+const TEMOIGNAGES = [
+  { id:1, name:"Ibrahim Coulibaly", age:19, city:"Daloa", category:{fr:"Orthopédie",en:"Orthopedics"}, image:"🦾", amount:620000, hospital:"CHR de Daloa",
+    message:{fr:"Grâce à Ayyad et à tous les donateurs, j'ai reçu ma prothèse en moins d'un mois. Aujourd'hui je marche à nouveau et j'ai repris mes études. Je ne sais pas comment vous remercier. Que Dieu vous bénisse tous.", en:"Thanks to Ayyad and all the donors, I received my prosthesis in less than a month. Today I walk again and I've resumed my studies. I don't know how to thank you. God bless you all."},
+    date:"Janvier 2025", stars:5 },
+  { id:2, name:"Aya Traoré", age:31, city:"Abidjan", category:{fr:"Cardiologie",en:"Cardiology"}, image:"🫀", amount:1500000, hospital:"CHU de Cocody",
+    message:{fr:"Mon mari pleurait chaque nuit parce qu'il ne pouvait pas payer l'opération. Ayyad nous a sauvé la vie. L'opération s'est très bien passée, je suis en pleine forme. Merci du fond du cœur à chaque donateur.", en:"My husband cried every night because he couldn't pay for the operation. Ayyad saved our lives. The operation went very well, I'm in great shape. Thank you from the bottom of my heart to every donor."},
+    date:"Novembre 2024", stars:5 },
+  { id:3, name:"Moussa Bamba", age:58, city:"Bouaké", category:{fr:"Néphrologie",en:"Nephrology"}, image:"🫘", amount:950000, hospital:"CHU de Bouaké",
+    message:{fr:"Mes 3 séances de dialyse par semaine coûtaient une fortune. Ma famille était épuisée financièrement. Ayyad a tout changé. Je suis en attente de greffe maintenant, avec espoir.", en:"My 3 dialysis sessions per week were costing a fortune. My family was financially exhausted. Ayyad changed everything. I'm now awaiting a transplant, with hope."},
+    date:"Décembre 2024", stars:5 },
+  { id:4, name:"Fatou Konaté", age:24, city:"Abidjan", category:{fr:"Oncologie",en:"Oncology"}, image:"🎗️", amount:2100000, hospital:"Institut National d'Oncologie",
+    message:{fr:"J'ai terminé mes 6 cycles de chimiothérapie. Les médecins sont optimistes. Ma petite fille de 2 ans aura sa maman. Merci à tous ceux qui ont donné, vous avez choisi la vie.", en:"I finished my 6 chemotherapy cycles. Doctors are optimistic. My 2-year-old daughter will have her mom. Thank you to all who donated, you chose life."},
+    date:"Février 2025", stars:5 },
+  { id:5, name:"Yves Kouamé", age:45, city:"Yamoussoukro", category:{fr:"Neurologie",en:"Neurology"}, image:"🧠", amount:780000, hospital:"CHR de Yamoussoukro",
+    message:{fr:"Suite à mon AVC, j'avais perdu l'usage de mon bras droit. La rééducation financée par Ayyad m'a permis de récupérer 80% de mes capacités. Je retravaille depuis 2 mois.", en:"After my stroke, I had lost the use of my right arm. The rehabilitation funded by Ayyad allowed me to recover 80% of my abilities. I've been back at work for 2 months."},
+    date:"Mars 2025", stars:5 },
+];
+
+
   { id:1, type:{fr:"Devis dupliqué",en:"Duplicate quote"}, sev:"high", case:{fr:"Dossier #1042 & #1038",en:"Case #1042 & #1038"}, time:"14:32", resolved:false },
   { id:2, type:{fr:"Multi-comptes détecté",en:"Multi-account detected"}, sev:"critical", case:{fr:"User #552 (3 comptes)",en:"User #552 (3 accounts)"}, time:"11:15", resolved:false },
   { id:3, type:{fr:"Don suspect > 500k FCFA",en:"Suspicious donation > 500k FCFA"}, sev:"medium", case:{fr:"Donation #7821 — anonyme",en:"Donation #7821 — anonymous"}, time:"09:47", resolved:true },
@@ -411,6 +429,119 @@ const SupportAyyadSection = ({ lang }) => {
 };
 
 // ── HomePage
+// ── Collectes terminées & Témoignages ─────────────────────────
+const CollectesPage = ({ setPage, lang }) => {
+  const [tab, setTab] = useState("testimonials");
+  const funded = MOCK_CASES.filter(c => c.status === "FUNDED");
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-emerald-700 to-teal-600 text-white py-16 px-4 text-center">
+        <div className="text-5xl mb-4">💚</div>
+        <h1 className="text-3xl font-black mb-3">{lang==="fr" ? "Vies transformées par Ayyad" : "Lives transformed by Ayyad"}</h1>
+        <p className="text-emerald-100 max-w-xl mx-auto">{lang==="fr" ? "Ces personnes ont reçu les soins dont elles avaient besoin grâce à votre générosité." : "These people received the care they needed thanks to your generosity."}</p>
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mt-8">
+          {[[TEMOIGNAGES.length+"", lang==="fr"?"Vies aidées":"Lives helped"],
+            [(TEMOIGNAGES.reduce((s,t)=>s+t.amount,0)/1000000).toFixed(1)+"M", "FCFA "+( lang==="fr"?"versés":"paid")],
+            ["100%", lang==="fr"?"Directs hôpital":"Direct hospital"]
+          ].map(([v,l]) => (
+            <div key={l} className="bg-white/10 rounded-2xl p-4">
+              <div className="text-2xl font-black">{v}</div>
+              <div className="text-emerald-200 text-xs mt-0.5">{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-10">
+        {/* Tabs */}
+        <div className="flex gap-2 mb-8 bg-white rounded-2xl p-1.5 shadow-sm border border-gray-100 w-fit mx-auto">
+          <button onClick={() => setTab("testimonials")} className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab==="testimonials" ? "bg-emerald-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+            💬 {lang==="fr" ? "Témoignages" : "Testimonials"}
+          </button>
+          <button onClick={() => setTab("funded")} className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab==="funded" ? "bg-emerald-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+            ✅ {lang==="fr" ? "Collectes terminées" : "Completed campaigns"}
+          </button>
+        </div>
+
+        {/* Témoignages */}
+        {tab==="testimonials" && (
+          <div className="space-y-6">
+            {TEMOIGNAGES.map(t => (
+              <div key={t.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">{t.image}</div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div>
+                          <div className="font-black text-gray-900">{t.name}</div>
+                          <div className="text-xs text-gray-400">{t.age} {lang==="fr"?"ans":"years old"} · {t.city} · {t.hospital}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-emerald-600 font-bold text-sm">{t.amount.toLocaleString()} FCFA</div>
+                          <div className="text-xs text-gray-400">{t.date}</div>
+                        </div>
+                      </div>
+                      <div className="flex mt-1">{"⭐".repeat(t.stars)}</div>
+                    </div>
+                  </div>
+                  <div className="mt-4 bg-emerald-50 rounded-xl p-4 border-l-4 border-emerald-400">
+                    <p className="text-gray-700 text-sm leading-relaxed italic">"{t.message[lang]}"</p>
+                  </div>
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">{t.category[lang]}</span>
+                    <span className="text-xs text-gray-400">✅ {lang==="fr"?"Collecte terminée · Virement confirmé":"Campaign completed · Transfer confirmed"}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Collectes terminées */}
+        {tab==="funded" && (
+          <div className="space-y-4">
+            {funded.length === 0 ? (
+              <div className="text-center py-16 text-gray-400">
+                <div className="text-4xl mb-3">🏥</div>
+                <div>{lang==="fr" ? "Aucune collecte terminée pour l'instant." : "No completed campaigns yet."}</div>
+              </div>
+            ) : funded.map(c => (
+              <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-5">
+                <div className="text-4xl">{c.image}</div>
+                <div className="flex-1">
+                  <div className="font-bold text-gray-900">{c.title[lang]}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{c.hospital} · {c.city}</div>
+                  <div className="mt-2">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>{c.collected.toLocaleString()} FCFA</span><span>{c.required.toLocaleString()} FCFA</span>
+                    </div>
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full" style={{width:"100%"}} />
+                    </div>
+                  </div>
+                </div>
+                <div className="text-center flex-shrink-0">
+                  <div className="text-2xl">✅</div>
+                  <div className="text-xs text-emerald-600 font-bold mt-1">{lang==="fr"?"Financé":"Funded"}</div>
+                  <div className="text-xs text-gray-400">{c.donors} {lang==="fr"?"donateurs":"donors"}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="text-center mt-10">
+          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">← {lang==="fr"?"Retour à l'accueil":"Back to home"}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const [filter, setFilter] = useState("all");
   const [heroMenu, setHeroMenu] = useState(false);
@@ -427,7 +558,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           <h1 className="text-4xl md:text-5xl font-black mb-5 leading-tight">{t.hero.title1}<br /><span className="text-emerald-200">{t.hero.title2}</span></h1>
           <p className="text-emerald-100 text-lg max-w-2xl mx-auto mb-8 leading-relaxed">{t.hero.sub}</p>
           <div className="flex flex-wrap justify-center gap-3">
-            <button onClick={() => document.getElementById("collectes")?.scrollIntoView({behavior:"smooth"})} className="bg-white text-emerald-700 font-bold px-5 py-3 rounded-xl hover:bg-emerald-50 shadow-lg text-sm">{t.hero.cta1} →</button>
+            <button onClick={() => setPage("collectes")} className="bg-white text-emerald-700 font-bold px-5 py-3 rounded-xl hover:bg-emerald-50 shadow-lg text-sm">{t.hero.cta1} →</button>
             <button onClick={() => setPage("submit")} className="bg-emerald-500/40 hover:bg-emerald-500/60 border border-white/30 text-white font-semibold px-5 py-3 rounded-xl text-sm">{t.hero.cta2}</button>
             <button onClick={() => setPage("how")} className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-5 py-3 rounded-xl text-sm">{lang==="fr" ? "Comment ça marche" : "How it works"}</button>
             {/* Je soutiens dropdown */}
@@ -1618,6 +1749,7 @@ export default function AyyadApp() {
       <Navbar page={page} setPage={setPage} user={user} setUser={setUser} lang={lang} setLang={setLang} />
       <main>
         {page==="home"&&<HomePage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
+        {page==="collectes"&&<CollectesPage setPage={setPage} lang={lang} />}
         {page==="case"&&selectedCase&&<CasePage c={selectedCase} setPage={setPage} lang={lang} />}
         {page==="how"&&<HowPage lang={lang} setPage={setPage} />}
         {page==="login"&&<LoginPage setPage={setPage} setUser={setUser} lang={lang} />}
