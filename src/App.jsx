@@ -430,6 +430,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
             <button onClick={() => setPage("submit")} className="bg-emerald-500/40 hover:bg-emerald-500/60 border border-white/30 text-white font-semibold px-5 py-3 rounded-xl text-sm">{t.hero.cta2}</button>
             <button onClick={() => setPage("how")} className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-5 py-3 rounded-xl text-sm">{lang==="fr" ? "Comment ça marche" : "How it works"}</button>
             <button onClick={() => document.getElementById("collectes")?.scrollIntoView({behavior:"smooth"})} className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-5 py-3 rounded-xl text-sm">{lang==="fr" ? "Je soutiens 🤝" : "I support 🤝"}</button>
+            <button onClick={() => setPage("tracking")} className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-5 py-3 rounded-xl text-sm">{lang==="fr" ? "Suivi 🔍" : "Track 🔍"}</button>
           </div>
         </div>
         <div className="bg-white/10 border-t border-white/20">
@@ -1357,6 +1358,156 @@ const Footer = ({ setPage, lang }) => {
 };
 
 // ── App Root ──────────────────────────────────────────────────
+// ── Tracking Page ─────────────────────────────────────────────
+const TrackingPage = ({ setPage, lang }) => {
+  const [trackingId, setTrackingId] = useState("");
+  const [caseData, setCaseData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+
+  const search = async (id) => {
+    if (!id.trim()) return;
+    setLoading(true); setNotFound(false); setCaseData(null);
+    const { data } = await supabase.from("cases").select("*").eq("id", id.trim()).single();
+    if (data) setCaseData(data);
+    else setNotFound(true);
+    setLoading(false);
+  };
+
+  const pct = (c) => c.required > 0 ? Math.min(100, Math.round((c.collected||0)/c.required*100)) : 0;
+
+  const steps = lang==="fr"
+    ? ["Dossier reçu","Vérification Ayyad","En ligne","Financé","Virement hôpital"]
+    : ["Case received","Ayyad review","Live","Funded","Hospital payout"];
+
+  const statusToStep = (s, ps) => {
+    if (ps === "confirmed") return 4;
+    if (ps === "initiated") return 4;
+    if (s === "FUNDED") return 3;
+    if (s === "APPROVED") return 2;
+    if (s === "PENDING") return 1;
+    return 0;
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-12 px-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-8">
+          <div className="text-4xl mb-3">🔍</div>
+          <h1 className="text-2xl font-black text-gray-900">{lang==="fr" ? "Suivi de collecte" : "Campaign tracking"}</h1>
+          <p className="text-gray-500 text-sm mt-2">{lang==="fr" ? "Entrez l'identifiant de la collecte pour voir son statut en temps réel." : "Enter the campaign ID to see its real-time status."}</p>
+        </div>
+
+        {/* Search */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+          <label className="text-sm font-semibold text-gray-700 block mb-2">{lang==="fr" ? "Identifiant de collecte" : "Campaign ID"}</label>
+          <div className="flex gap-2">
+            <input value={trackingId} onChange={e=>setTrackingId(e.target.value)} onKeyDown={e=>e.key==="Enter"&&search(trackingId)}
+              placeholder={lang==="fr" ? "Ex: abc123..." : "Ex: abc123..."} className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+            <button onClick={() => search(trackingId)} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-3 rounded-xl text-sm">
+              {loading ? "..." : lang==="fr" ? "Rechercher" : "Search"}
+            </button>
+          </div>
+          {notFound && <p className="text-red-500 text-sm mt-2">{lang==="fr" ? "Aucune collecte trouvée avec cet identifiant." : "No campaign found with this ID."}</p>}
+        </div>
+
+        {/* Results */}
+        {caseData && (
+          <div className="space-y-4">
+            {/* Header */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div>
+                  <h2 className="font-black text-lg text-gray-900">{caseData.title}</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">{caseData.hospital} · {caseData.city}</p>
+                </div>
+                <span className={`text-xs px-3 py-1 rounded-full font-bold flex-shrink-0 ${
+                  caseData.payout_status==="confirmed" ? "bg-emerald-100 text-emerald-700" :
+                  caseData.status==="FUNDED" ? "bg-blue-100 text-blue-700" :
+                  caseData.status==="APPROVED" ? "bg-emerald-100 text-emerald-700" :
+                  "bg-yellow-100 text-yellow-700"
+                }`}>
+                  {caseData.payout_status==="confirmed" ? "✅ "+(lang==="fr"?"Virement effectué":"Payout done") :
+                   caseData.status==="FUNDED" ? "💰 "+(lang==="fr"?"Financé":"Funded") :
+                   caseData.status==="APPROVED" ? "🟢 "+(lang==="fr"?"En ligne":"Live") :
+                   "🟡 "+(lang==="fr"?"En vérification":"Under review")}
+                </span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="mb-4">
+                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                  <span>{(caseData.collected||0).toLocaleString()} FCFA {lang==="fr"?"collectés":"collected"}</span>
+                  <span>{lang==="fr"?"Objectif":"Goal"}: {(caseData.required||caseData.amount||0).toLocaleString()} FCFA</span>
+                </div>
+                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 rounded-full transition-all" style={{width: pct(caseData)+"%"}} />
+                </div>
+                <div className="text-right text-xs text-emerald-600 font-bold mt-1">{pct(caseData)}%</div>
+              </div>
+
+              {/* Steps */}
+              <div className="relative">
+                <div className="flex justify-between items-center">
+                  {steps.map((s, i) => {
+                    const current = statusToStep(caseData.status, caseData.payout_status);
+                    const done = i <= current;
+                    return (
+                      <div key={i} className="flex flex-col items-center flex-1">
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold z-10 ${done ? "bg-emerald-500 text-white" : "bg-gray-200 text-gray-400"}`}>
+                          {done ? "✓" : i+1}
+                        </div>
+                        <div className={`text-center text-xs mt-1 leading-tight ${done ? "text-emerald-600 font-semibold" : "text-gray-400"}`} style={{fontSize:"10px"}}>{s}</div>
+                        {i < steps.length-1 && (
+                          <div className={`absolute h-0.5 ${done && i < statusToStep(caseData.status, caseData.payout_status) ? "bg-emerald-400" : "bg-gray-200"}`}
+                            style={{top:"14px", left:`${(i+0.5)*20}%`, width:"20%"}} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Reçu virement */}
+            {caseData.payout_receipt && (
+              <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-5 flex items-center gap-4">
+                <div className="text-3xl">📄</div>
+                <div className="flex-1">
+                  <div className="font-bold text-emerald-800 text-sm">{lang==="fr" ? "Reçu de virement disponible" : "Transfer receipt available"}</div>
+                  <div className="text-xs text-emerald-600 mt-0.5">{lang==="fr" ? "Les fonds ont été versés directement à l'hôpital." : "Funds were sent directly to the hospital."}</div>
+                </div>
+                <a href={caseData.payout_receipt} target="_blank" rel="noreferrer" className="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-xl">
+                  {lang==="fr" ? "Voir →" : "View →"}
+                </a>
+              </div>
+            )}
+
+            {/* Info */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <div className="text-xs font-semibold text-gray-500 uppercase mb-3">{lang==="fr" ? "Informations" : "Information"}</div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Bénéficiaire":"Beneficiary"}</span><span className="font-semibold text-gray-900">{caseData.full_name||"—"}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Hôpital":"Hospital"}</span><span className="font-semibold text-gray-900">{caseData.hospital}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Catégorie":"Category"}</span><span className="font-semibold text-gray-900">{caseData.category||"—"}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Soumis le":"Submitted"}</span><span className="font-semibold text-gray-900">{caseData.created_at ? new Date(caseData.created_at).toLocaleDateString(lang==="fr"?"fr-FR":"en-US") : "—"}</span></div>
+              </div>
+            </div>
+
+            <button onClick={() => { setCaseData(null); setTrackingId(""); }} className="w-full text-gray-400 text-sm hover:text-gray-600 py-2">
+              {lang==="fr" ? "← Nouvelle recherche" : "← New search"}
+            </button>
+          </div>
+        )}
+
+        <div className="text-center mt-8">
+          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">{lang==="fr" ? "← Retour à l'accueil" : "← Back to home"}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Change Password Page ──────────────────────────────────────
 const ChangePasswordPage = ({ setPage, lang }) => {
   const [newPassword, setNewPassword] = useState("");
@@ -1451,6 +1602,7 @@ export default function AyyadApp() {
         {page==="register"&&<RegisterPage setPage={setPage} setUser={setUser} lang={lang} />}
         {page==="submit"&&<SubmitPage setPage={setPage} user={user} lang={lang} />}
         {page==="admin"&&<AdminPage user={user} setPage={setPage} lang={lang} />}
+        {page==="tracking"&&<TrackingPage setPage={setPage} lang={lang} />}
         {page==="changepassword"&&<ChangePasswordPage setPage={setPage} lang={lang} />}
       </main>
       {showFooter&&<Footer setPage={setPage} lang={lang} />}
