@@ -216,38 +216,6 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-1">
-
-          {/* Je soutiens dropdown */}
-          <div className="relative" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setDropdownOpen(dropdownOpen==="support" ? null : "support")} className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${dropdownOpen==="support" ? "bg-emerald-50 text-emerald-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"}`}>
-              {lang==="fr" ? "Je soutiens" : "I support"} <span className="text-xs">{dropdownOpen==="support" ? "▲" : "▼"}</span>
-            </button>
-            {dropdownOpen==="support" && (
-              <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50">
-                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-100">
-                  <span className="text-lg">🤝</span>
-                  <span className="font-bold text-gray-700 text-sm">{lang==="fr" ? "Découvrez les collectes à soutenir" : "Discover campaigns to support"}</span>
-                </div>
-                <button onClick={() => { setPage("home"); setDropdownOpen(null); }} className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-emerald-50 transition-colors group">
-                  <div className="font-semibold text-gray-900 text-sm group-hover:text-emerald-700">{lang==="fr" ? "Collectes actives" : "Active campaigns"}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Parcourir par catégorie médicale" : "Browse by medical category"}</div>
-                </button>
-                <button onClick={() => { setPage("home"); setDropdownOpen(null); }} className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-red-50 transition-colors group">
-                  <div className="font-semibold text-gray-900 text-sm group-hover:text-red-700">🚨 {lang==="fr" ? "Cas urgents" : "Urgent cases"}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Interventions critiques sous 72h" : "Critical interventions within 72h"}</div>
-                </button>
-                <button onClick={() => { setPage("how"); setDropdownOpen(null); }} className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors group">
-                  <div className="font-semibold text-gray-900 text-sm">{lang==="fr" ? "Garantie Ayyad" : "Ayyad guarantee"}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Fonds versés directement à l'hôpital" : "Funds sent directly to hospital"}</div>
-                </button>
-              </div>
-            )}
-          </div>
-
-          <button onClick={() => setPage("how")} className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${page==="how" ? "text-emerald-600 bg-emerald-50" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"}`}>
-            {lang==="fr" ? "À propos" : "About"}
-          </button>
-
           {user?.isAdmin && (
             <button onClick={() => setPage("admin")} className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${page==="admin" ? "text-emerald-600 bg-emerald-50" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"}`}>{t.admin}</button>
           )}
@@ -399,10 +367,11 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           </div>
           <h1 className="text-4xl md:text-5xl font-black mb-5 leading-tight">{t.hero.title1}<br /><span className="text-emerald-200">{t.hero.title2}</span></h1>
           <p className="text-emerald-100 text-lg max-w-2xl mx-auto mb-8 leading-relaxed">{t.hero.sub}</p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button onClick={() => document.getElementById("collectes")?.scrollIntoView({behavior:"smooth"})} className="bg-white text-emerald-700 font-bold px-8 py-3.5 rounded-xl hover:bg-emerald-50 shadow-lg">{t.hero.cta1} →</button>
-            <button onClick={() => setPage("submit")} className="bg-emerald-500/40 hover:bg-emerald-500/60 border border-white/30 text-white font-semibold px-8 py-3.5 rounded-xl">{t.hero.cta2}</button>
-            <button onClick={() => setPage("how")} className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-8 py-3.5 rounded-xl">{lang==="fr" ? "Comment ça marche" : "How it works"}</button>
+          <div className="flex flex-wrap justify-center gap-3">
+            <button onClick={() => document.getElementById("collectes")?.scrollIntoView({behavior:"smooth"})} className="bg-white text-emerald-700 font-bold px-5 py-3 rounded-xl hover:bg-emerald-50 shadow-lg text-sm">{t.hero.cta1} →</button>
+            <button onClick={() => setPage("submit")} className="bg-emerald-500/40 hover:bg-emerald-500/60 border border-white/30 text-white font-semibold px-5 py-3 rounded-xl text-sm">{t.hero.cta2}</button>
+            <button onClick={() => setPage("how")} className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-5 py-3 rounded-xl text-sm">{lang==="fr" ? "Comment ça marche" : "How it works"}</button>
+            <button onClick={() => document.getElementById("collectes")?.scrollIntoView({behavior:"smooth"})} className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-5 py-3 rounded-xl text-sm">{lang==="fr" ? "Je soutiens 🤝" : "I support 🤝"}</button>
           </div>
         </div>
         <div className="bg-white/10 border-t border-white/20">
