@@ -1,3 +1,4 @@
+import { inject } from "@vercel/analytics";
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
@@ -3896,6 +3897,7 @@ export default function AyyadApp() {
 
   // Restore session on load
   useEffect(() => {
+    inject();
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         const meta = session.user.user_metadata || {};
