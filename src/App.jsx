@@ -2180,6 +2180,168 @@ const HowPage = ({ lang, setPage }) => {
           </div>
         </div>
       </div>
+
+      {/* Section politique de remboursement */}
+      <div className="bg-white py-14 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-2xl text-2xl mb-4">🔄</div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2">
+              {lang==="fr" ? "Politique de remboursement" : "Refund policy"}
+            </h2>
+            <p className="text-gray-500 text-sm max-w-lg mx-auto">
+              {lang==="fr"
+                ? "Ayyad s'engage à une transparence totale sur la gestion des fonds dans toutes les situations."
+                : "Ayyad is committed to full transparency on fund management in all situations."}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Cas 1 — Dossier rejeté */}
+            <div className="border border-gray-100 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">❌</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Dossier rejeté après des dons" : "Case rejected after donations"}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                {lang==="fr"
+                  ? "Si Ayyad rejette un dossier après réception de dons (documents falsifiés, fraude détectée, etc.), chaque donateur enregistré est contacté par email."
+                  : "If Ayyad rejects a case after receiving donations (falsified documents, fraud detected, etc.), each registered donor is contacted by email."}
+              </p>
+              <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                <div className="text-[11px] font-bold text-gray-600 uppercase tracking-wide mb-1">
+                  {lang==="fr" ? "Le donateur choisit :" : "The donor chooses:"}
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Remboursement intégral sur son mobile money" : "Full refund to their mobile money account"}
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Redistribution aux cas urgents actifs" : "Redistribution to active urgent cases"}
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-400 mt-1 border-t border-gray-200 pt-2">
+                  {lang==="fr"
+                    ? "⏳ Sans réponse sous 14 jours → redistribution automatique aux cas urgents."
+                    : "⏳ No response within 14 days → automatic redistribution to urgent cases."}
+                </div>
+              </div>
+            </div>
+
+            {/* Cas 2 — Objectif non atteint */}
+            <div className="border border-gray-100 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">⏳</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Objectif non atteint en fin de collecte" : "Goal not reached at end of campaign"}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                {lang==="fr"
+                  ? "Si l'objectif n'est pas atteint à l'échéance, tous les donateurs ayant un compte sont notifiés et consultés."
+                  : "If the goal is not reached at deadline, all registered donors are notified and consulted."}
+              </p>
+              <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                <div className="text-[11px] font-bold text-gray-600 uppercase tracking-wide mb-1">
+                  {lang==="fr" ? "Notification envoyée avec choix :" : "Notification sent with choice:"}
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Remboursement intégral" : "Full refund"}
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Don maintenu → redistribué aux cas urgents" : "Donation kept → redistributed to urgent cases"}
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-400 mt-1 border-t border-gray-200 pt-2">
+                  {lang==="fr"
+                    ? "⏳ Sans réponse sous 14 jours → redistribution automatique aux cas urgents."
+                    : "⏳ No response within 14 days → automatic redistribution to urgent cases."}
+                </div>
+              </div>
+            </div>
+
+            {/* Cas 3 — Surcollecte */}
+            <div className="border border-gray-100 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🎉</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Objectif dépassé (surcollecte)" : "Goal exceeded (surplus)"}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                {lang==="fr"
+                  ? "Si les dons dépassent l'objectif, le surplus est réparti automatiquement selon la règle Ayyad."
+                  : "If donations exceed the goal, the surplus is automatically distributed according to Ayyad's rule."}
+              </p>
+              <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">🏥 {lang==="fr" ? "Hôpital (objectif atteint)" : "Hospital (goal met)"}</span>
+                  <span className="font-bold text-emerald-600">100%</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">👤 {lang==="fr" ? "70% surplus → bénéficiaire" : "70% surplus → beneficiary"}</span>
+                  <span className="font-bold text-blue-600">70%</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">🚨 {lang==="fr" ? "25% surplus → cas urgents" : "25% surplus → urgent cases"}</span>
+                  <span className="font-bold text-purple-600">25%</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">⚙️ {lang==="fr" ? "5% surplus → Ayyad" : "5% surplus → Ayyad"}</span>
+                  <span className="font-bold text-amber-600">5%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Cas 4 — Engagement transparence */}
+            <div className="border border-emerald-100 bg-emerald-50 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🔒</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Notre engagement" : "Our commitment"}
+                </div>
+              </div>
+              <div className="space-y-2">
+                {(lang==="fr" ? [
+                  "Chaque virement est documenté avec un reçu disponible publiquement",
+                  "Les donateurs enregistrés reçoivent un email de confirmation après chaque don",
+                  "Un rapport de transparence est publié trimestriellement",
+                  "Ayyad ne touche jamais à l'argent destiné à l'hôpital",
+                ] : [
+                  "Every transfer is documented with a publicly available receipt",
+                  "Registered donors receive a confirmation email after each donation",
+                  "A transparency report is published quarterly",
+                  "Ayyad never touches the money destined for the hospital",
+                ]).map((item, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-emerald-500 text-xs mt-0.5 flex-shrink-0">✓</span>
+                    <span className="text-xs text-gray-700">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-8">
+            <button
+              onClick={() => setPage("refund")}
+              className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold underline underline-offset-2">
+              {lang==="fr" ? "Lire la politique de remboursement complète →" : "Read the full refund policy →"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -2906,6 +3068,192 @@ const AdminPage = ({ user, setPage, lang }) => {
   );
 };
 
+// ── Refund Policy Page ────────────────────────────────────────
+const RefundPage = ({ setPage, lang }) => {
+  const fr = lang === "fr";
+  const Section = ({ icon, title, children }) => (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">{icon}</div>
+        <h2 className="font-black text-gray-900 text-base">{title}</h2>
+      </div>
+      {children}
+    </div>
+  );
+  const Rule = ({ label, children }) => (
+    <div className="border-l-2 border-emerald-400 pl-4">
+      <div className="text-xs font-bold text-gray-700 mb-1">{label}</div>
+      <div className="text-xs text-gray-500 leading-relaxed">{children}</div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-100 rounded-2xl text-3xl mb-4">🔄</div>
+          <h1 className="text-2xl font-black text-gray-900">
+            {fr ? "Politique de remboursement" : "Refund Policy"}
+          </h1>
+          <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
+            {fr
+              ? "Ayyad s'engage à gérer chaque franc confié avec transparence et intégrité."
+              : "Ayyad is committed to managing every franc entrusted with transparency and integrity."}
+          </p>
+          <div className="text-[11px] text-gray-400 mt-2">
+            {fr ? "Dernière mise à jour : mars 2025" : "Last updated: March 2025"}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {/* Principe général */}
+          <Section icon="📋" title={fr ? "Principe général" : "General principle"}>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              {fr
+                ? "Tout don effectué sur Ayyad est un acte de solidarité volontaire. Ayyad ne garantit pas l'atteinte de l'objectif de collecte, mais garantit que chaque franc reçu sera utilisé conformément à la présente politique."
+                : "Every donation made on Ayyad is a voluntary act of solidarity. Ayyad does not guarantee that the campaign goal will be reached, but guarantees that every franc received will be used in accordance with this policy."}
+            </p>
+          </Section>
+
+          {/* Cas 1 — Dossier rejeté */}
+          <Section icon="❌" title={fr ? "Dossier rejeté après réception de dons" : "Case rejected after donations received"}>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              {fr
+                ? "Si Ayyad rejette un dossier après réception de dons (documents falsifiés, fraude détectée, non-conformité médicale, etc.) :"
+                : "If Ayyad rejects a case after receiving donations (falsified documents, detected fraud, medical non-compliance, etc.):"}
+            </p>
+            <div className="space-y-3">
+              <Rule label={fr ? "1. Notification immédiate" : "1. Immediate notification"}>
+                {fr
+                  ? "Tous les donateurs ayant un compte Ayyad sont contactés par email dans un délai de 48h après la décision de rejet."
+                  : "All donors with an Ayyad account are contacted by email within 48 hours of the rejection decision."}
+              </Rule>
+              <Rule label={fr ? "2. Choix du donateur" : "2. Donor's choice"}>
+                {fr
+                  ? "Chaque donateur peut choisir : (a) un remboursement intégral sur son numéro mobile money d'origine, ou (b) la redistribution de son don aux cas urgents actifs sur la plateforme."
+                  : "Each donor can choose: (a) a full refund to their original mobile money number, or (b) redistribution of their donation to active urgent cases on the platform."}
+              </Rule>
+              <Rule label={fr ? "3. Délai de réponse" : "3. Response deadline"}>
+                {fr
+                  ? "Le donateur dispose de 14 jours calendaires pour exprimer son choix. Sans réponse dans ce délai, le don est automatiquement redistribué aux cas urgents actifs."
+                  : "The donor has 14 calendar days to express their choice. Without a response within this period, the donation is automatically redistributed to active urgent cases."}
+              </Rule>
+              <Rule label={fr ? "4. Délai de remboursement" : "4. Refund timeline"}>
+                {fr
+                  ? "Les remboursements sont effectués dans un délai de 5 jours ouvrés après confirmation du choix, via le même opérateur mobile money utilisé pour le don."
+                  : "Refunds are processed within 5 business days after confirmation of the choice, via the same mobile money operator used for the donation."}
+              </Rule>
+            </div>
+          </Section>
+
+          {/* Cas 2 — Objectif non atteint */}
+          <Section icon="⏳" title={fr ? "Objectif non atteint à l'échéance" : "Goal not reached at deadline"}>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              {fr
+                ? "Si l'objectif de collecte n'est pas atteint à la date de clôture prévue :"
+                : "If the campaign goal is not reached by the scheduled closing date:"}
+            </p>
+            <div className="space-y-3">
+              <Rule label={fr ? "1. Notification aux donateurs enregistrés" : "1. Notification to registered donors"}>
+                {fr
+                  ? "Une notification email est envoyée à tous les donateurs ayant un compte sur la plateforme, avec le montant collecté, l'écart par rapport à l'objectif, et les options disponibles."
+                  : "An email notification is sent to all donors with a platform account, showing the amount collected, the gap from the goal, and available options."}
+              </Rule>
+              <Rule label={fr ? "2. Options proposées" : "2. Available options"}>
+                {fr
+                  ? "Remboursement intégral du don, ou maintien du don redistribué aux cas les plus urgents actifs sur la plateforme au moment de la clôture."
+                  : "Full refund of the donation, or keeping the donation redistributed to the most urgent active cases on the platform at closing time."}
+              </Rule>
+              <Rule label={fr ? "3. Donateurs anonymes" : "3. Anonymous donors"}>
+                {fr
+                  ? "Les dons effectués de manière anonyme (sans compte Ayyad) ne peuvent pas être remboursés faute d'identification. Ils sont automatiquement redistribués aux cas urgents."
+                  : "Donations made anonymously (without an Ayyad account) cannot be refunded due to lack of identification. They are automatically redistributed to urgent cases."}
+              </Rule>
+              <Rule label={fr ? "4. Délai de réponse" : "4. Response deadline"}>
+                {fr
+                  ? "14 jours calendaires pour répondre. Sans réponse → redistribution automatique."
+                  : "14 calendar days to respond. No response → automatic redistribution."}
+              </Rule>
+            </div>
+          </Section>
+
+          {/* Cas 3 — Surcollecte */}
+          <Section icon="🎉" title={fr ? "Objectif dépassé — Surcollecte" : "Goal exceeded — Surplus"}>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              {fr
+                ? "Si les dons dépassent l'objectif, la collecte reste ouverte jusqu'au lendemain de l'atteinte de l'objectif. Le surplus est ensuite réparti selon la règle suivante :"
+                : "If donations exceed the goal, the campaign stays open until the day after the goal is reached. The surplus is then distributed as follows:"}
+            </p>
+            <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+              {[
+                ["🏥", fr?"Objectif atteint → viré intégralement à l'hôpital":"Goal met → transferred in full to hospital", "100%", "text-emerald-600"],
+                ["👤", fr?"70% du surplus → bénéficiaire (mobile money)":"70% of surplus → beneficiary (mobile money)", "70%", "text-blue-600"],
+                ["🚨", fr?"25% du surplus → redistribués aux cas urgents":"25% of surplus → redistributed to urgent cases", "25%", "text-purple-600"],
+                ["⚙️", fr?"5% du surplus → frais opérationnels Ayyad":"5% of surplus → Ayyad operational fee", "5%", "text-amber-600"],
+              ].map(([icon, label, pct, color]) => (
+                <div key={label} className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2"><span>{icon}</span><span className="text-gray-600">{label}</span></div>
+                  <span className={`font-black ${color}`}>{pct}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400">
+              {fr
+                ? "⚠️ Le virement des 70% au bénéficiaire peut être différé par Ayyad si le patient est encore en convalescence, afin de garantir une utilisation appropriée des fonds."
+                : "⚠️ The 70% transfer to the beneficiary may be deferred by Ayyad if the patient is still recovering, to ensure appropriate use of funds."}
+            </p>
+          </Section>
+
+          {/* Non remboursables */}
+          <Section icon="⚠️" title={fr ? "Cas non remboursables" : "Non-refundable cases"}>
+            <div className="space-y-2">
+              {(fr ? [
+                "Dons effectués de façon anonyme (sans compte Ayyad)",
+                "Dons effectués sur une collecte clôturée avec virement déjà effectué à l'hôpital",
+                "La commission opérationnelle d'Ayyad de 5% intégrée dans l'objectif",
+                "Frais de transfert mobile money si applicables",
+              ] : [
+                "Donations made anonymously (without an Ayyad account)",
+                "Donations on a closed campaign where the hospital transfer has already been made",
+                "Ayyad's 5% operational fee built into the campaign goal",
+                "Mobile money transfer fees if applicable",
+              ]).map((item, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <span className="text-red-400 text-xs mt-0.5 flex-shrink-0">✗</span>
+                  <span className="text-xs text-gray-600">{item}</span>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          {/* Contact */}
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 text-center">
+            <div className="text-2xl mb-2">📩</div>
+            <div className="font-bold text-emerald-800 text-sm mb-1">
+              {fr ? "Une question sur votre don ?" : "A question about your donation?"}
+            </div>
+            <div className="text-xs text-emerald-600 mb-3">
+              {fr
+                ? "Notre équipe répond sous 24h ouvrées."
+                : "Our team responds within 24 business hours."}
+            </div>
+            <a href="mailto:support@ayyad.ci" className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl">
+              support@ayyad.ci
+            </a>
+          </div>
+
+          <div className="text-center pt-2">
+            <button onClick={() => setPage("how")} className="text-sm text-gray-400 hover:text-emerald-600">
+              {fr ? "← Retour à Comment ça marche" : "← Back to How it works"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Footer ────────────────────────────────────────────────────
 const Footer = ({ setPage, lang }) => {
   const t = T[lang].footer;
@@ -2914,7 +3262,20 @@ const Footer = ({ setPage, lang }) => {
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1"><div className="flex items-center gap-2 mb-4"><svg width="36" height="36" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="35" cy="35" r="33" fill="#1a6b3a"/><circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" strokeWidth="2.5"/><rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/><rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/><path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/></svg><span className="font-black text-xl" style={{fontFamily:"Georgia, serif", letterSpacing:"1px"}}>AYYAD</span></div><p className="text-gray-400 text-xs leading-relaxed">{t.tagline}</p></div>
-          {[[t.platform,t.platformLinks],[t.trust,t.trustLinks],[t.legal,t.legalLinks]].map(([title,links])=><div key={title}><div className="font-bold text-sm mb-4 text-gray-300">{title}</div><ul className="space-y-2.5">{links.map(l=><li key={l}><a href="#" className="text-gray-500 text-xs hover:text-emerald-400 transition-colors">{l}</a></li>)}</ul></div>)}
+          {[[t.platform, t.platformLinks, ["collectesactives","how","submit"]], [t.trust, t.trustLinks, ["how","how","how"]], [t.legal, t.legalLinks, ["refund","refund","how"]]].map(([title, links, pages]) =>
+            <div key={title}>
+              <div className="font-bold text-sm mb-4 text-gray-300">{title}</div>
+              <ul className="space-y-2.5">
+                {links.map((l, i) => (
+                  <li key={l}>
+                    <button onClick={() => setPage(pages[i])} className="text-gray-500 text-xs hover:text-emerald-400 transition-colors text-left">
+                      {l}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
         <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-gray-500 text-xs">{t.rights}</p>
@@ -3358,6 +3719,7 @@ export default function AyyadApp() {
         {page==="specialite"&&<SpecialitePage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} specialite={specialite} />}
         {page==="case"&&selectedCase&&<CasePage c={selectedCase} setPage={setPage} lang={lang} />}
         {page==="how"&&<HowPage lang={lang} setPage={setPage} />}
+        {page==="refund"&&<RefundPage lang={lang} setPage={setPage} />}
         {page==="urgents"&&<UrgentsPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
         {page==="login"&&<LoginPage setPage={setPage} setUser={setUser} lang={lang} />}
         {page==="register"&&<RegisterPage setPage={setPage} setUser={setUser} lang={lang} />}
