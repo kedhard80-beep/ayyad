@@ -387,19 +387,36 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
       const autoUrgent = c.daysLeft !== undefined && c.daysLeft <= 14 && pct(c.collected, c.required) < 80;
       return (c.urgent || autoUrgent) && c.status !== "FUNDED";
     })
-    .sort((a, b) => a.daysLeft - b.daysLeft); // ordre d'urgence croissant
+    .sort((a, b) => a.daysLeft - b.daysLeft);
 
   const [current, setCurrent] = useState(0);
+  const [sliding, setSliding] = useState(false);
+  const intervalRef = React.useRef(null);
+
+  const goTo = (next) => {
+    if (sliding) return;
+    setSliding(true);
+    setTimeout(() => {
+      setCurrent(next);
+      setSliding(false);
+    }, 600);
+  };
 
   useEffect(() => {
     if (urgentCases.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrent(prev => (prev + 1) % urgentCases.length);
+    intervalRef.current = setInterval(() => {
+      setCurrent(prev => {
+        const next = (prev + 1) % urgentCases.length;
+        return next;
+      });
     }, 4500);
-    return () => clearInterval(interval);
+    return () => clearInterval(intervalRef.current);
   }, [urgentCases.length]);
 
   if (urgentCases.length === 0) return null;
+
+  const prev = (current - 1 + urgentCases.length) % urgentCases.length;
+  const next = (current + 1) % urgentCases.length;
 
   return (
     <div className="bg-white border-b border-gray-100">
@@ -416,59 +433,61 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
         </div>
         <p className="text-gray-500 text-sm mb-5">{t.urgent.sub}</p>
 
-        {/* Carousel — fade style, carte unique visible */}
-        <div style={{position:"relative", minHeight:"260px"}}>
-          {urgentCases.map((c, i) => {
-            const percent = pct(c.collected, c.required);
-            return (
-              <div key={c.id} style={{
-                position: i === 0 ? "relative" : "absolute",
-                top: 0, left: 0, right: 0,
-                opacity: i === current ? 1 : 0,
-                transition: "opacity 600ms ease-in-out",
-                pointerEvents: i === current ? "auto" : "none",
-              }}>
-                <button onClick={() => { setSelectedCase(c); setPage("case"); }}
-                  className="w-full bg-white border-2 border-red-200 hover:border-red-400 rounded-2xl overflow-hidden text-left transition-all group shadow-sm hover:shadow-md">
-                  {/* Image / Emoji banner */}
-                  <div className="h-32 bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center text-7xl relative">
-                    {c.image}
-                    <div className="absolute top-3 left-3 flex gap-2">
-                      <span className="bg-red-600 text-white text-xs font-black px-2 py-1 rounded-full animate-pulse">🚨 URGENT</span>
-                      <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1 rounded-full">⏱️ {c.daysLeft}j</span>
+        {/* Carousel — slide horizontal */}
+        <div style={{position:"relative", overflow:"hidden", borderRadius:"16px"}}>
+          <div style={{
+            display:"flex",
+            transform: "translateX(-" + (current * 100) + "%)",
+            transition: "transform 700ms cubic-bezier(0.4, 0, 0.2, 1)",
+            willChange: "transform",
+          }}>
+            {urgentCases.map((c, i) => {
+              const percent = pct(c.collected, c.required);
+              return (
+                <div key={c.id} style={{minWidth:"100%", boxSizing:"border-box"}}>
+                  <button onClick={() => { setSelectedCase(c); setPage("case"); }}
+                    className="w-full bg-white border-2 border-red-200 hover:border-red-400 rounded-2xl overflow-hidden text-left transition-all group shadow-sm hover:shadow-md">
+                    <div className="h-32 bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center text-7xl relative">
+                      {c.image}
+                      <div className="absolute top-3 left-3 flex gap-2">
+                        <span className="bg-red-600 text-white text-xs font-black px-2 py-1 rounded-full animate-pulse">🚨 URGENT</span>
+                        <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1 rounded-full">⏱️ {c.daysLeft}j</span>
+                      </div>
+                      <div className="absolute top-3 right-3">
+                        <span className="bg-white text-gray-500 text-[10px] font-mono px-2 py-1 rounded-full border border-gray-200">{c.trackingId}</span>
+                      </div>
                     </div>
-                    <div className="absolute top-3 right-3">
-                      <span className="bg-white text-gray-500 text-[10px] font-mono px-2 py-1 rounded-full border border-gray-200">{c.trackingId}</span>
+                    <div className="p-4">
+                      <div className="font-bold text-gray-900 text-sm leading-snug group-hover:text-red-700 mb-1">{c.title[lang]}</div>
+                      <div className="text-xs text-gray-400 mb-3">🏥 {c.hospital} · 📍 {c.city}</div>
+                      <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <span className="font-semibold text-gray-800">{fmt(c.collected)}</span>
+                        <span className="text-gray-400">sur {fmt(c.required)}</span>
+                      </div>
+                      <div className="h-2 bg-red-100 rounded-full overflow-hidden mb-1">
+                        <div className="h-full bg-red-500 rounded-full" style={{width: percent+"%", transition:"width 700ms"}} />
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-400">👥 {c.donors} {lang==="fr"?"donateurs":"donors"}</span>
+                        <span className="font-bold text-red-600">{percent}%</span>
+                      </div>
                     </div>
-                  </div>
-                  {/* Contenu */}
-                  <div className="p-4">
-                    <div className="font-bold text-gray-900 text-sm leading-snug group-hover:text-red-700 mb-1">{c.title[lang]}</div>
-                    <div className="text-xs text-gray-400 mb-3">🏥 {c.hospital} · 📍 {c.city}</div>
-                    {/* Progression */}
-                    <div className="flex justify-between text-xs text-gray-500 mb-1">
-                      <span className="font-semibold text-gray-800">{fmt(c.collected)}</span>
-                      <span className="text-gray-400">sur {fmt(c.required)}</span>
-                    </div>
-                    <div className="h-2 bg-red-100 rounded-full overflow-hidden mb-1">
-                      <div className="h-full bg-red-500 rounded-full" style={{width: percent+"%"}} />
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">👥 {c.donors} {lang==="fr"?"donateurs":"donors"}</span>
-                      <span className="font-bold text-red-600">{percent}%</span>
-                    </div>
-                  </div>
-                </button>
-              </div>
-            );
-          })}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Dots */}
         {urgentCases.length > 1 && (
           <div className="flex justify-center gap-2 mt-4">
             {urgentCases.map((_, i) => (
-              <button key={i} onClick={() => setCurrent(i)} style={{width: i===current ? "16px" : "8px", height:"8px", borderRadius:"9999px", background: i===current ? "#ef4444" : "#d1d5db", border:"none", cursor:"pointer", transition:"all 300ms"}} />
+              <button key={i} onClick={() => {
+                clearInterval(intervalRef.current);
+                setCurrent(i);
+                intervalRef.current = setInterval(() => setCurrent(p => (p+1)%urgentCases.length), 4500);
+              }} style={{width: i===current?"16px":"8px", height:"8px", borderRadius:"9999px", background: i===current?"#ef4444":"#d1d5db", border:"none", cursor:"pointer", transition:"all 300ms"}} />
             ))}
           </div>
         )}
