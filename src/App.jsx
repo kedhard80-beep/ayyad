@@ -601,106 +601,164 @@ const MediaSection = ({ c, lang, t }) => {
 };
 
 // ── MobilePay Widget — Wave / Orange Money / MTN ──────────────
-const MobilePayWidget = ({ amount, caseData, lang, onSuccess }) => {
-  const [step, setStep] = useState("choose"); // choose | enter | waiting | done
-  const [provider, setProvider] = useState(null);
-  const [phone, setPhone] = useState("");
-  const [countdown, setCountdown] = useState(30);
+// ── Comptes marchands Ayyad (à remplacer par les vrais numéros) ──
+const AYYAD_ACCOUNTS = {
+  WAVE:   { numero: "07 00 00 00 00", nom: "AYYAD SOLIDARITE", prefix: "🌊" },
+  ORANGE: { numero: "07 11 11 11 11", nom: "AYYAD SOLIDARITE", prefix: "🟠" },
+  MTN:    { numero: "05 22 22 22 22", nom: "AYYAD SOLIDARITE", prefix: "🟡" },
+};
 
-  useEffect(() => {
-    if (step !== "waiting") return;
-    if (countdown <= 0) { setStep("done"); return; }
-    const t = setTimeout(() => setCountdown(c => c-1), 1000);
-    return () => clearTimeout(t);
-  }, [step, countdown]);
+// QR code placeholder (image base64 simple — à remplacer par vrai QR Ayyad)
+const QR_PLACEHOLDER = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=";
+
+const MobilePayWidget = ({ amount, caseData, lang, onSuccess }) => {
+  const [step, setStep] = useState("choose"); // choose | qr | ref | done
+  const [provider, setProvider] = useState(null);
+  const [txRef, setTxRef] = useState("");
+  const [refError, setRefError] = useState(false);
+
+  const selectedProvider = provider ? AYYAD_ACCOUNTS[provider] : null;
+  const amountFmt = new Intl.NumberFormat("fr").format(amount);
 
   const providers = [
-    { id:"WAVE", emoji:"🌊", label:"Wave", color:"bg-blue-600 hover:bg-blue-700", prefix:"+225 01" },
-    { id:"ORANGE", emoji:"🟠", label:"Orange Money", color:"bg-orange-500 hover:bg-orange-600", prefix:"+225 07" },
-    { id:"MTN", emoji:"🟡", label:"MTN MoMo", color:"bg-yellow-400 hover:bg-yellow-500 text-gray-900", prefix:"+225 05" },
+    { id:"WAVE",   emoji:"🌊", label:"Wave CI",      color:"bg-blue-600 hover:bg-blue-700",           qrData: "wave://pay?to="+AYYAD_ACCOUNTS.WAVE.numero.replace(/\s/g,"")+"&amount="+amount+"&note=AYYAD-"+(caseData?.trackingId||"DON") },
+    { id:"ORANGE", emoji:"🟠", label:"Orange Money", color:"bg-orange-500 hover:bg-orange-600",       qrData: "orangemoney://pay?numero="+AYYAD_ACCOUNTS.ORANGE.numero.replace(/\s/g,"")+"&montant="+amount },
+    { id:"MTN",    emoji:"🟡", label:"MTN MoMo",     color:"bg-yellow-400 hover:bg-yellow-500 text-gray-900", qrData: "mtn://pay?numero="+AYYAD_ACCOUNTS.MTN.numero.replace(/\s/g,"")+"&montant="+amount },
   ];
+  const pv = providers.find(p => p.id === provider);
 
-  const selectedProvider = providers.find(p => p.id === provider);
-
-  const handlePay = () => {
-    if (!phone.trim() || phone.length < 8) return;
-    setStep("waiting");
-    setCountdown(30);
-    setTimeout(() => { setStep("done"); onSuccess && onSuccess(); }, 30000);
+  const handleConfirmRef = () => {
+    if (txRef.trim().length < 4) { setRefError(true); return; }
+    setRefError(false);
+    setStep("done");
+    onSuccess && onSuccess();
   };
 
+  // ÉTAPE 1 — Choix opérateur
   if (step === "choose") return (
     <div className="space-y-2">
       <div className="text-xs font-bold text-gray-600 mb-3">{lang==="fr" ? "Choisissez votre opérateur :" : "Choose your operator:"}</div>
       {providers.map(pv => (
-        <button key={pv.id} onClick={() => { setProvider(pv.id); setStep("enter"); }}
+        <button key={pv.id} onClick={() => { setProvider(pv.id); setStep("qr"); }}
           className={"w-full "+pv.color+" text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-3 text-sm shadow-sm"}>
           <span className="text-xl">{pv.emoji}</span>
           <span>{pv.label}</span>
-          <span className="ml-auto text-white/70 text-xs">{lang==="fr" ? "Payer " : "Pay "}{new Intl.NumberFormat("fr").format(amount)} FCFA →</span>
+          <span className="ml-auto text-white/70 text-xs">{amountFmt} FCFA →</span>
         </button>
       ))}
       <p className="text-center text-[10px] text-gray-400 pt-1">🔒 {lang==="fr" ? "Paiement sécurisé · Aucuns frais cachés" : "Secure payment · No hidden fees"}</p>
     </div>
   );
 
-  if (step === "enter") return (
+  // ÉTAPE 2 — QR code + numéro
+  if (step === "qr") return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2">
         <button onClick={() => setStep("choose")} className="text-gray-400 hover:text-gray-600 text-sm">←</button>
-        <span className="text-xl">{selectedProvider?.emoji}</span>
-        <span className="font-bold text-gray-900 text-sm">{selectedProvider?.label}</span>
+        <span className="text-xl">{pv?.emoji}</span>
+        <span className="font-bold text-gray-900 text-sm">{pv?.label}</span>
       </div>
-      <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
-        <div className="text-xs text-gray-500 mb-0.5">{lang==="fr" ? "Montant à débiter" : "Amount to charge"}</div>
-        <div className="font-black text-xl text-emerald-700">{new Intl.NumberFormat("fr").format(amount)} FCFA</div>
-        <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Pour : " : "For: "}{caseData?.beneficiary}</div>
+
+      {/* Montant en gros */}
+      <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 text-center">
+        <div className="text-xs text-gray-500 mb-1">{lang==="fr" ? "Montant à envoyer" : "Amount to send"}</div>
+        <div className="font-black text-3xl text-emerald-700">{amountFmt}</div>
+        <div className="text-sm text-emerald-600 font-bold">FCFA</div>
+        <div className="text-xs text-gray-400 mt-1">{lang==="fr" ? "Pour : " : "For: "}<span className="font-semibold">{caseData?.beneficiary}</span></div>
       </div>
-      <div>
-        <label className="text-xs font-semibold text-gray-600 block mb-1.5">{lang==="fr" ? "Votre numéro "+selectedProvider?.label : "Your "+selectedProvider?.label+" number"}</label>
-        <div className="flex gap-2">
-          <div className="bg-gray-100 border border-gray-200 rounded-xl px-3 py-3 text-xs text-gray-500 font-mono flex-shrink-0">+225</div>
-          <input type="tel" value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,""))} maxLength={10}
-            placeholder="07 00 00 00 00"
-            className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+
+      {/* QR Code */}
+      <div className="bg-white border-2 border-gray-100 rounded-2xl p-4 text-center space-y-3">
+        <div className="text-xs font-bold text-gray-600">📱 {lang==="fr" ? "Scannez avec " : "Scan with "}{pv?.label}</div>
+        <div className="flex justify-center">
+          <div className="relative">
+            <img
+              src={QR_PLACEHOLDER + encodeURIComponent(pv?.qrData||"")}
+              alt="QR Code"
+              className="w-44 h-44 rounded-xl border border-gray-100"
+              onError={e => { e.target.style.display="none"; }}
+            />
+            <div className="absolute -bottom-2 -right-2 bg-white border border-gray-200 rounded-full p-1 text-lg">{pv?.emoji}</div>
+          </div>
+        </div>
+        <div className="text-[10px] text-gray-400">{lang==="fr" ? "Ouvrez " : "Open "}
+          <span className="font-bold">{pv?.label}</span>
+          {lang==="fr" ? " → Payer → Scanner → Confirmez" : " → Pay → Scan → Confirm"}
         </div>
       </div>
-      <button onClick={handlePay} disabled={phone.length < 8}
-        className={"w-full font-bold py-3.5 rounded-xl text-sm shadow-md disabled:bg-gray-200 disabled:text-gray-400 "+selectedProvider?.color+" text-white"}>
-        {lang==="fr" ? "Confirmer et payer →" : "Confirm and pay →"}
+
+      {/* Numéro en backup */}
+      <div className="bg-gray-50 rounded-xl p-3 text-center space-y-1 border border-gray-100">
+        <div className="text-xs text-gray-500">{lang==="fr" ? "Ou envoyez directement au numéro :" : "Or send to this number:"}</div>
+        <div className="font-mono font-black text-lg text-gray-900 tracking-widest">{selectedProvider?.numero}</div>
+        <div className="text-xs text-gray-400">Nom : <span className="font-semibold">{selectedProvider?.nom}</span></div>
+      </div>
+
+      <button onClick={() => setStep("ref")}
+        className={"w-full font-bold py-3.5 rounded-xl text-sm shadow-md text-white "+(provider==="MTN"?"bg-yellow-400 hover:bg-yellow-500 text-gray-900":provider==="ORANGE"?"bg-orange-500 hover:bg-orange-600":"bg-blue-600 hover:bg-blue-700")}>
+        {lang==="fr" ? "J'ai effectué le paiement →" : "I have made the payment →"}
       </button>
-      <p className="text-center text-[10px] text-gray-400">{lang==="fr" ? "Une notification sera envoyée sur votre téléphone." : "A notification will be sent to your phone."}</p>
     </div>
   );
 
-  if (step === "waiting") return (
-    <div className="text-center space-y-4 py-4">
-      <div className="relative w-16 h-16 mx-auto">
-        <div className="w-16 h-16 border-4 border-emerald-100 border-t-emerald-500 rounded-full animate-spin" />
-        <div className="absolute inset-0 flex items-center justify-center text-lg">{selectedProvider?.emoji}</div>
+  // ÉTAPE 3 — Référence de transaction
+  if (step === "ref") return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <button onClick={() => setStep("qr")} className="text-gray-400 hover:text-gray-600 text-sm">←</button>
+        <span className="font-bold text-gray-900 text-sm">🧾 {lang==="fr" ? "Référence de transaction" : "Transaction reference"}</span>
       </div>
+
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700">
+        {lang==="fr"
+          ? "Après votre paiement "+pv?.label+", vous avez reçu un SMS de confirmation. Entrez le code de référence ci-dessous."
+          : "After your "+pv?.label+" payment, you received a confirmation SMS. Enter the reference code below."}
+      </div>
+
       <div>
-        <div className="font-black text-gray-900">{lang==="fr" ? "En attente de paiement..." : "Waiting for payment..."}</div>
-        <div className="text-sm text-gray-500 mt-1">{lang==="fr" ? "Vérifiez votre téléphone" : "Check your phone"}</div>
+        <label className="text-xs font-semibold text-gray-600 block mb-1.5">
+          {lang==="fr" ? "Code de référence (ex: WV-20250303-XXXXX)" : "Reference code (e.g. WV-20250303-XXXXX)"}
+        </label>
+        <input
+          type="text"
+          value={txRef}
+          onChange={e => { setTxRef(e.target.value); setRefError(false); }}
+          placeholder={provider==="WAVE" ? "WV-XXXXXXXX" : provider==="ORANGE" ? "OM-XXXXXXXX" : "MM-XXXXXXXX"}
+          className={"w-full border rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 "+(refError?"border-red-400 focus:ring-red-300":"border-gray-200 focus:ring-emerald-400")}
+        />
+        {refError && <p className="text-xs text-red-500 mt-1">⚠️ {lang==="fr" ? "Veuillez entrer votre référence de transaction." : "Please enter your transaction reference."}</p>}
       </div>
-      <div className="bg-gray-50 rounded-xl p-4 text-sm">
-        <div className="text-gray-500 text-xs mb-1">{lang==="fr" ? "Numéro" : "Number"}: <span className="font-mono font-bold">+225 {phone}</span></div>
-        <div className="text-gray-500 text-xs">{lang==="fr" ? "Montant" : "Amount"}: <span className="font-bold text-emerald-700">{new Intl.NumberFormat("fr").format(amount)} FCFA</span></div>
+
+      {/* Récap montant */}
+      <div className="bg-gray-50 rounded-xl p-3 flex justify-between items-center text-sm">
+        <span className="text-gray-500">{lang==="fr" ? "Montant payé" : "Amount paid"}</span>
+        <span className="font-black text-emerald-700">{amountFmt} FCFA</span>
       </div>
-      <div className="text-xs text-gray-400">{lang==="fr" ? "Expiration dans" : "Expires in"} <span className="font-bold text-amber-600">{countdown}s</span></div>
+
+      <button onClick={handleConfirmRef}
+        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3.5 rounded-xl text-sm shadow-md">
+        ✅ {lang==="fr" ? "Confirmer mon don" : "Confirm my donation"}
+      </button>
     </div>
   );
 
+  // ÉTAPE 4 — Succès
   if (step === "done") return (
     <div className="text-center space-y-4 py-2">
       <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-3xl">🎉</div>
       <div className="font-black text-xl text-gray-900">{lang==="fr" ? "Merci infiniment !" : "Thank you so much!"}</div>
       <div className="text-sm text-gray-500">{lang==="fr" ? "Votre don a bien été enregistré." : "Your donation has been recorded."}</div>
+      {txRef && (
+        <div className="bg-gray-50 rounded-xl p-3 text-xs text-center">
+          <span className="text-gray-400">{lang==="fr" ? "Réf. transaction : " : "Tx ref: "}</span>
+          <span className="font-mono font-bold text-gray-700">{txRef}</span>
+        </div>
+      )}
       <div className="bg-emerald-50 rounded-xl p-4 text-sm text-emerald-800 border border-emerald-100">
         <p className="font-semibold mb-1">{lang==="fr" ? "Ce que vous venez de faire :" : "What you just did:"}</p>
         <p>{lang==="fr" ? "Rapprocher " : "Brought "}{caseData?.beneficiary}{lang==="fr" ? " d'une vie meilleure." : " closer to a better life."}</p>
       </div>
-      <button onClick={() => { setStep("choose"); setPhone(""); setCountdown(30); }}
+      <button onClick={() => { setStep("choose"); setTxRef(""); setProvider(null); }}
         className="w-full border border-emerald-200 text-emerald-700 font-semibold py-2.5 rounded-xl text-sm hover:bg-emerald-50">
         {lang==="fr" ? "Refaire un don" : "Donate again"}
       </button>
