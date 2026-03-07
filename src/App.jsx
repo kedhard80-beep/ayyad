@@ -3254,6 +3254,166 @@ const RefundPage = ({ setPage, lang }) => {
   );
 };
 
+// ── Legal Page (Mentions légales + CGU) ──────────────────────
+const LegalPage = ({ setPage, lang }) => {
+  const [tab, setTab] = useState("mentions");
+  const fr = lang === "fr";
+
+  const Heading = ({ children }) => (
+    <h3 className="font-black text-gray-900 text-sm mt-6 mb-2">{children}</h3>
+  );
+  const P = ({ children }) => (
+    <p className="text-xs text-gray-600 leading-relaxed mb-2">{children}</p>
+  );
+  const Placeholder = ({ children }) => (
+    <span className="bg-yellow-100 text-yellow-700 font-bold px-1 rounded text-[11px]">[{children}]</span>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-100 rounded-2xl text-3xl mb-4">⚖️</div>
+          <h1 className="text-2xl font-black text-gray-900">
+            {fr ? "Mentions légales & CGU" : "Legal Notice & Terms"}
+          </h1>
+          <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 mt-3 max-w-sm mx-auto">
+            {fr
+              ? "⚠️ Document provisoire — à finaliser après enregistrement officiel d'Ayyad CI"
+              : "⚠️ Provisional document — to be finalized after official Ayyad CI registration"}
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6 bg-white border border-gray-100 rounded-2xl p-1.5 shadow-sm">
+          {[
+            { id: "mentions", fr: "Mentions légales", en: "Legal Notice" },
+            { id: "cgu",      fr: "CGU",              en: "Terms of Use" },
+          ].map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${tab===t.id ? "bg-emerald-600 text-white shadow" : "text-gray-500 hover:text-gray-700"}`}>
+              {fr ? t.fr : t.en}
+            </button>
+          ))}
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          {tab === "mentions" && (
+            <div>
+              <div className="text-[11px] text-gray-400 mb-4">{fr ? "Dernière mise à jour : mars 2025" : "Last updated: March 2025"}</div>
+
+              <Heading>{fr ? "1. Éditeur de la plateforme" : "1. Platform editor"}</Heading>
+              <P>
+                {fr ? "La plateforme Ayyad (accessible à l'adresse " : "The Ayyad platform (accessible at "}
+                <strong>ayyad.vercel.app</strong>
+                {fr ? ") est éditée par :" : ") is published by:"}
+              </P>
+              <div className="bg-gray-50 rounded-xl p-4 text-xs space-y-1.5 mb-3">
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Dénomination":"Name"}</span><strong>Ayyad CI</strong> <Placeholder>{fr?"À compléter après enregistrement":"To complete after registration"}</Placeholder></div>
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Forme juridique":"Legal form"}</span><Placeholder>{fr?"SARL / SAS / ONG — À définir":"SARL / SAS / NGO — To define"}</Placeholder></div>
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Capital social":"Share capital"}</span><Placeholder>{fr?"Montant — À compléter":"Amount — To complete"}</Placeholder></div>
+                <div><span className="text-gray-400 w-32 inline-block">RCCM</span><Placeholder>{fr?"Numéro RCCM — À compléter":"RCCM number — To complete"}</Placeholder></div>
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Siège social":"Registered office"}</span>Abidjan, Côte d'Ivoire <Placeholder>{fr?"Commune — À préciser":"District — To specify"}</Placeholder></div>
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Directeur de pub.":"Publisher"}</span><Placeholder>Nom du dirigeant</Placeholder></div>
+                <div><span className="text-gray-400 w-32 inline-block">Email</span><a href="mailto:contact@ayyad.ci" className="text-emerald-600">contact@ayyad.ci</a></div>
+              </div>
+
+              <Heading>{fr ? "2. Hébergement" : "2. Hosting"}</Heading>
+              <div className="bg-gray-50 rounded-xl p-4 text-xs space-y-1.5 mb-3">
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Hébergeur":"Host"}</span><strong>Vercel Inc.</strong></div>
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Adresse":"Address"}</span>340 Pine Street, Suite 701, San Francisco, CA 94104, USA</div>
+                <div><span className="text-gray-400 w-32 inline-block">Site</span><a href="https://vercel.com" target="_blank" rel="noreferrer" className="text-emerald-600">vercel.com</a></div>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 text-xs space-y-1.5 mb-3">
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Base de données":"Database"}</span><strong>Supabase Inc.</strong></div>
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Adresse":"Address"}</span>970 Toa Payoh North, Singapore 318992</div>
+                <div><span className="text-gray-400 w-32 inline-block">Site</span><a href="https://supabase.com" target="_blank" rel="noreferrer" className="text-emerald-600">supabase.com</a></div>
+              </div>
+
+              <Heading>{fr ? "3. Propriété intellectuelle" : "3. Intellectual property"}</Heading>
+              <P>{fr
+                ? "L'ensemble des contenus présents sur la plateforme Ayyad (logo, textes, interface, code) sont la propriété exclusive d'Ayyad CI et sont protégés par les lois ivoiriennes et internationales sur la propriété intellectuelle. Toute reproduction sans autorisation préalable écrite est interdite."
+                : "All content on the Ayyad platform (logo, texts, interface, code) is the exclusive property of Ayyad CI and is protected by Ivorian and international intellectual property laws. Any reproduction without prior written authorization is prohibited."}</P>
+
+              <Heading>{fr ? "4. Responsabilité" : "4. Liability"}</Heading>
+              <P>{fr
+                ? "Ayyad CI ne saurait être tenu responsable des dommages directs ou indirects résultant de l'utilisation de la plateforme. Ayyad CI vérifie les dossiers médicaux soumis mais ne peut garantir l'exactitude absolue de toutes les informations communiquées par les bénéficiaires."
+                : "Ayyad CI cannot be held liable for direct or indirect damages resulting from the use of the platform. Ayyad CI verifies submitted medical cases but cannot guarantee the absolute accuracy of all information provided by beneficiaries."}</P>
+
+              <Heading>{fr ? "5. Droit applicable" : "5. Applicable law"}</Heading>
+              <P>{fr
+                ? "Les présentes mentions légales sont soumises au droit ivoirien. En cas de litige, les tribunaux compétents de la ville d'Abidjan, Côte d'Ivoire, seront seuls compétents."
+                : "These legal notices are governed by Ivorian law. In case of dispute, the competent courts of Abidjan, Côte d'Ivoire, shall have exclusive jurisdiction."}</P>
+            </div>
+          )}
+
+          {tab === "cgu" && (
+            <div>
+              <div className="text-[11px] text-gray-400 mb-4">{fr ? "Dernière mise à jour : mars 2025" : "Last updated: March 2025"}</div>
+
+              <Heading>{fr ? "1. Objet" : "1. Purpose"}</Heading>
+              <P>{fr
+                ? "Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme Ayyad par tout visiteur ou utilisateur enregistré. L'utilisation de la plateforme implique l'acceptation pleine et entière des présentes CGU."
+                : "These Terms of Use govern access to and use of the Ayyad platform by any visitor or registered user. Use of the platform implies full acceptance of these Terms."}</P>
+
+              <Heading>{fr ? "2. Description du service" : "2. Service description"}</Heading>
+              <P>{fr
+                ? "Ayyad est une plateforme de financement participatif médical solidaire. Elle met en relation des personnes souhaitant financer des soins médicaux (donateurs) avec des patients dans le besoin (bénéficiaires), via un système de collecte de fonds sécurisé. Ayyad n'est pas un établissement financier et n'effectue pas d'opérations bancaires au sens strict."
+                : "Ayyad is a solidarity medical crowdfunding platform. It connects people wishing to finance medical care (donors) with patients in need (beneficiaries) through a secure fundraising system. Ayyad is not a financial institution and does not perform banking operations in the strict sense."}</P>
+
+              <Heading>{fr ? "3. Inscription et compte utilisateur" : "3. Registration and user account"}</Heading>
+              <P>{fr
+                ? "L'inscription est gratuite et ouverte à toute personne physique majeure. L'utilisateur s'engage à fournir des informations exactes et à maintenir la confidentialité de ses identifiants. Ayyad se réserve le droit de suspendre tout compte en cas d'utilisation frauduleuse ou contraire aux présentes CGU."
+                : "Registration is free and open to any adult individual. The user agrees to provide accurate information and to maintain the confidentiality of their credentials. Ayyad reserves the right to suspend any account in case of fraudulent use or violation of these Terms."}</P>
+
+              <Heading>{fr ? "4. Dons et paiements" : "4. Donations and payments"}</Heading>
+              <P>{fr
+                ? "Les dons sont effectués via des opérateurs de paiement mobile (Wave, Orange Money, MTN MoMo). Chaque don est définitif sauf dans les cas prévus par la politique de remboursement d'Ayyad. Ayyad prélève une commission opérationnelle de 5%, intégrée dans l'objectif de collecte et invisible pour le donateur."
+                : "Donations are made via mobile payment operators (Wave, Orange Money, MTN MoMo). Each donation is final except in cases provided for by Ayyad's refund policy. Ayyad charges a 5% operational fee, included in the campaign goal and invisible to the donor."}</P>
+
+              <Heading>{fr ? "5. Soumission de dossiers" : "5. Case submission"}</Heading>
+              <P>{fr
+                ? "Tout bénéficiaire soumettant un dossier s'engage à fournir des documents médicaux authentiques et véridiques. La soumission de faux documents constitue une fraude passible de poursuites judiciaires conformément au droit ivoirien. Ayyad se réserve le droit de rejeter tout dossier sans justification."
+                : "Any beneficiary submitting a case agrees to provide authentic and truthful medical documents. Submission of false documents constitutes fraud subject to legal action under Ivorian law. Ayyad reserves the right to reject any case without justification."}</P>
+
+              <Heading>{fr ? "6. Protection des données personnelles" : "6. Personal data protection"}</Heading>
+              <P>{fr
+                ? "Les données personnelles collectées sont traitées conformément à la loi ivoirienne n°2013-450 du 19 juin 2013 relative à la protection des données à caractère personnel et aux directives de l'ARTCI. Les utilisateurs disposent d'un droit d'accès, de rectification et de suppression de leurs données en contactant contact@ayyad.ci."
+                : "Personal data collected is processed in accordance with Ivorian law n°2013-450 of June 19, 2013 on personal data protection and ARTCI guidelines. Users have the right to access, correct and delete their data by contacting contact@ayyad.ci."}</P>
+
+              <Heading>{fr ? "7. Responsabilité des utilisateurs" : "7. User responsibility"}</Heading>
+              <P>{fr
+                ? "L'utilisateur est seul responsable de l'usage qu'il fait de la plateforme. Il s'interdit notamment : (a) de publier des informations fausses ou trompeuses, (b) d'utiliser la plateforme à des fins commerciales non autorisées, (c) de tenter de contourner les systèmes de sécurité."
+                : "The user is solely responsible for their use of the platform. They agree not to: (a) publish false or misleading information, (b) use the platform for unauthorized commercial purposes, (c) attempt to bypass security systems."}</P>
+
+              <Heading>{fr ? "8. Modification des CGU" : "8. Amendment of Terms"}</Heading>
+              <P>{fr
+                ? "Ayyad se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs seront notifiés par email de toute modification substantielle. L'utilisation continue de la plateforme après notification vaut acceptation des nouvelles CGU."
+                : "Ayyad reserves the right to modify these Terms at any time. Users will be notified by email of any substantial modification. Continued use of the platform after notification constitutes acceptance of the new Terms."}</P>
+
+              <Heading>{fr ? "9. Contact" : "9. Contact"}</Heading>
+              <P>{fr
+                ? "Pour toute question relative aux présentes CGU, contactez-nous à :"
+                : "For any questions regarding these Terms, contact us at:"}</P>
+              <a href="mailto:legal@ayyad.ci" className="text-emerald-600 text-xs font-bold">legal@ayyad.ci</a>
+            </div>
+          )}
+        </div>
+
+        <div className="text-center mt-6 space-y-2">
+          <button onClick={() => setPage("refund")} className="block mx-auto text-sm text-gray-400 hover:text-emerald-600">
+            {fr ? "→ Politique de remboursement" : "→ Refund policy"}
+          </button>
+          <button onClick={() => setPage("home")} className="block mx-auto text-sm text-gray-400 hover:text-emerald-600">
+            {fr ? "← Retour à l'accueil" : "← Back to home"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Footer ────────────────────────────────────────────────────
 const Footer = ({ setPage, lang }) => {
   const t = T[lang].footer;
@@ -3262,7 +3422,7 @@ const Footer = ({ setPage, lang }) => {
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1"><div className="flex items-center gap-2 mb-4"><svg width="36" height="36" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="35" cy="35" r="33" fill="#1a6b3a"/><circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" strokeWidth="2.5"/><rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/><rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/><path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/></svg><span className="font-black text-xl" style={{fontFamily:"Georgia, serif", letterSpacing:"1px"}}>AYYAD</span></div><p className="text-gray-400 text-xs leading-relaxed">{t.tagline}</p></div>
-          {[[t.platform, t.platformLinks, ["collectesactives","how","submit"]], [t.trust, t.trustLinks, ["how","how","how"]], [t.legal, t.legalLinks, ["refund","refund","how"]]].map(([title, links, pages]) =>
+          {[[t.platform, t.platformLinks, ["collectesactives","how","submit"]], [t.trust, t.trustLinks, ["how","how","how"]], [t.legal, t.legalLinks, ["legal","legal","how"]]].map(([title, links, pages]) =>
             <div key={title}>
               <div className="font-bold text-sm mb-4 text-gray-300">{title}</div>
               <ul className="space-y-2.5">
@@ -3720,6 +3880,7 @@ export default function AyyadApp() {
         {page==="case"&&selectedCase&&<CasePage c={selectedCase} setPage={setPage} lang={lang} />}
         {page==="how"&&<HowPage lang={lang} setPage={setPage} />}
         {page==="refund"&&<RefundPage lang={lang} setPage={setPage} />}
+        {page==="legal"&&<LegalPage lang={lang} setPage={setPage} />}
         {page==="urgents"&&<UrgentsPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
         {page==="login"&&<LoginPage setPage={setPage} setUser={setUser} lang={lang} />}
         {page==="register"&&<RegisterPage setPage={setPage} setUser={setUser} lang={lang} />}
