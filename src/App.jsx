@@ -159,7 +159,7 @@ const T = {
     progress: { collected: "collectés sur", donors: "donateurs", daysLeft: "jours restants", intervention: "✓ Intervention planifiée", progressTitle: "Progression de la collecte", of: "de l'objectif" },
     back: "← Retour aux collectes",
     footer: { tagline: "Financer la santé pour tous en Afrique.", platform: "Plateforme", trust: "Confiance", legal: "Légal", platformLinks: ["Collectes actives","Comment ça marche","Soumettre un dossier"], trustLinks: ["Vérification dossiers","Sécurité des paiements","Rapport d'impact"], legalLinks: ["Mentions légales","Confidentialité","Conformité BCEAO"], rights: "© 2025 Ayyad CI — Tous droits réservés" },
-    howPage: { title: "Comment fonctionne Ayyad ?", sub: "Transparent, sécurisé, conçu pour l'Afrique", forDonors: { icon:"💚",title:"Pour les donateurs",steps:["Parcourez les collectes vérifiées actives","Choisissez librement votre montant","Payez via Wave, Orange Money ou carte","Vous êtes débité exactement du montant choisi","L'argent arrive directement à l'hôpital"] }, forBenef: { icon:"🏥",title:"Pour les bénéficiaires",steps:["Créez un compte et soumettez votre dossier médical","Téléchargez rapport médical, devis, pièce d'identité","Notre équipe vérifie avec l'hôpital partenaire","Votre collecte est mise en ligne sous 48h","Les fonds sont versés directement à l'hôpital"] }, feeTitle: "La règle des 5% — Toujours silencieuse", feeSub: "Ayyad prélève une commission opérationnelle de 5% sur chaque don. Cette commission est totalement invisible pour vous.", youGive: "Vous donnez", collectReceives: "Collecte reçoit", ayyadFee: "Frais Ayyad (5%)" },
+    howPage: { title: "Comment fonctionne Ayyad ?", sub: "Transparent, sécurisé, conçu pour l'Afrique", forDonors: { icon:"💚",title:"Pour les donateurs",steps:["Parcourez les collectes vérifiées actives","Choisissez librement votre montant","Payez via Wave, Orange Money ou carte","Vous êtes débité exactement du montant choisi","L'argent arrive directement à l'hôpital"] }, forBenef: { icon:"🏥",title:"Pour les bénéficiaires",steps:["Créez un compte et soumettez votre dossier médical","Téléchargez rapport médical, devis, pièce d'identité","Notre équipe vérifie avec l'hôpital partenaire","Votre collecte est mise en ligne sous 48h","Les fonds sont versés directement à l'hôpital"] }, feeTitle: "La règle des 5% — Incluse dans l'objectif", feeSub: "Ayyad intègre sa commission de 5% directement dans l'objectif de collecte. Vous donnez 10 000 FCFA, l'hôpital reçoit 10 000 FCFA. Rien n'est prélevé sur votre don.", youGive: "Vous donnez", collectReceives: "L'hôpital reçoit", ayyadFee: "Frais Ayyad (inclus dans l'objectif)" },
   },
   en: {
     nav: { collections: "Campaigns", how: "How it works", admin: "Administration", login: "Login", start: "Get started", logout: "Logout", medicalFinancing: "Medical funding" },
@@ -193,7 +193,7 @@ const T = {
     progress: { collected: "raised out of", donors: "donors", daysLeft: "days left", intervention: "✓ Procedure scheduled", progressTitle: "Campaign progress", of: "of goal" },
     back: "← Back to campaigns",
     footer: { tagline: "Funding healthcare for all in Africa.", platform: "Platform", trust: "Trust", legal: "Legal", platformLinks: ["Active campaigns","How it works","Submit a case"], trustLinks: ["Case verification","Payment security","Impact report"], legalLinks: ["Legal notice","Privacy policy","BCEAO compliance"], rights: "© 2025 Ayyad CI — All rights reserved" },
-    howPage: { title: "How does Ayyad work?", sub: "Transparent, secure, built for Africa", forDonors: { icon:"💚",title:"For donors",steps:["Browse verified active campaigns","Freely choose your amount","Pay via Wave, Orange Money or card","You are charged exactly the amount you chose","The money goes directly to the hospital"] }, forBenef: { icon:"🏥",title:"For beneficiaries",steps:["Create an account and submit your medical case","Upload medical report, quote, identity document","Our team verifies with the partner hospital","Your campaign goes live within 48h","Funds are transferred directly to the hospital"] }, feeTitle: "The 5% rule — Always silent", feeSub: "Ayyad charges a 5% operational fee on each donation. This fee is completely invisible to you.", youGive: "You give", collectReceives: "Campaign receives", ayyadFee: "Ayyad fee (5%)" },
+    howPage: { title: "How does Ayyad work?", sub: "Transparent, secure, built for Africa", forDonors: { icon:"💚",title:"For donors",steps:["Browse verified active campaigns","Freely choose your amount","Pay via Wave, Orange Money or card","You are charged exactly the amount you chose","The money goes directly to the hospital"] }, forBenef: { icon:"🏥",title:"For beneficiaries",steps:["Create an account and submit your medical case","Upload medical report, quote, identity document","Our team verifies with the partner hospital","Your campaign goes live within 48h","Funds are transferred directly to the hospital"] }, feeTitle: "The 5% rule — Built into the goal", feeSub: "Ayyad includes its 5% fee directly in the campaign goal. You give 10,000 FCFA, the hospital receives 10,000 FCFA. Nothing is deducted from your donation.", youGive: "You give", collectReceives: "Hospital receives", ayyadFee: "Ayyad fee (included in goal)" },
   }
 };
 
@@ -2136,12 +2136,48 @@ const HowPage = ({ lang, setPage }) => {
       <div className="bg-gray-900 py-14 px-4 text-white text-center">
         <h2 className="text-2xl font-black mb-3">{t.feeTitle}</h2>
         <p className="text-gray-300 mb-8 max-w-lg mx-auto text-sm">{t.feeSub}</p>
-        <div className="bg-white/10 rounded-2xl p-6 text-sm max-w-xs mx-auto border border-white/20">
-          <div className="text-gray-400 mb-1 text-xs uppercase tracking-wider">{t.youGive}</div>
-          <div className="text-3xl font-black my-2">10 000 FCFA</div>
-          <div className="border-t border-white/20 my-4"/>
-          <div className="flex justify-between items-center mb-2"><span className="text-emerald-400 text-sm">{t.collectReceives}</span><span className="font-black text-lg">9 500 FCFA</span></div>
-          <div className="flex justify-between items-center text-gray-400 text-xs"><span>{t.ayyadFee}</span><span>500 FCFA</span></div>
+        <div className="bg-white/10 rounded-2xl p-6 text-sm max-w-sm mx-auto border border-white/20 space-y-4">
+
+          {/* Donateur */}
+          <div>
+            <div className="text-gray-400 mb-1 text-xs uppercase tracking-wider">{t.youGive}</div>
+            <div className="text-3xl font-black">10 000 FCFA</div>
+          </div>
+
+          <div className="border-t border-white/20"/>
+
+          {/* Hôpital reçoit */}
+          <div className="flex justify-between items-center">
+            <span className="text-emerald-400 font-bold text-sm">🏥 {t.collectReceives}</span>
+            <span className="font-black text-xl text-emerald-400">10 000 FCFA</span>
+          </div>
+
+          <div className="border-t border-white/10"/>
+
+          {/* Explication objectif */}
+          <div className="bg-white/5 rounded-xl p-3 text-left space-y-1.5">
+            <div className="text-[11px] text-gray-300 font-semibold uppercase tracking-wide mb-2">
+              {lang==="fr" ? "Comment ça fonctionne ?" : "How does it work?"}
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">{lang==="fr" ? "Objectif affiché (devis × 1.05)" : "Displayed goal (quote × 1.05)"}</span>
+              <span className="text-white font-bold">10 500 FCFA</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">{lang==="fr" ? "dont devis hôpital" : "of which hospital quote"}</span>
+              <span className="text-emerald-400 font-bold">10 000 FCFA</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">{t.ayyadFee}</span>
+              <span className="text-amber-400 font-bold">500 FCFA</span>
+            </div>
+          </div>
+
+          <div className="text-[11px] text-gray-400 leading-relaxed">
+            {lang==="fr"
+              ? "✅ Votre don va intégralement à l'hôpital. Les 5% Ayyad sont intégrés dans l'objectif de collecte dès le départ."
+              : "✅ Your donation goes entirely to the hospital. The 5% Ayyad fee is built into the campaign goal from the start."}
+          </div>
         </div>
       </div>
     </div>
