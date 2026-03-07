@@ -404,6 +404,9 @@ const CaseCard = ({ c, lang, t, onClick }) => {
             <span className="text-xs font-mono font-bold text-emerald-700">{c.trackingId}</span>
           </div>
         )}
+        <div className="mt-2 flex justify-end">
+          <ShareButton c={c} lang={lang} size="small" />
+        </div>
       </div>
     </div>
   );
@@ -775,6 +778,102 @@ const MobilePayWidget = ({ amount, caseData, lang, onSuccess }) => {
   );
 
   return null;
+};
+
+// ── Share Button ──────────────────────────────────────────────
+const ShareButton = ({ c, lang, size = "normal" }) => {
+  const [copied, setCopied] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const trackingId = c.trackingId || c.tracking_id || ("AYD-" + c.id);
+  const shareUrl = "https://ayyad.vercel.app/?case=" + trackingId;
+  const title = typeof c.title === "object" ? c.title[lang] : (c.title || "");
+  const beneficiary = c.beneficiary || c.full_name || "";
+  const pct = c.required ? Math.min(100, Math.round(((c.collected||0)/c.required)*100)) : 0;
+
+  const msgWA = encodeURIComponent(
+    (lang === "fr"
+      ? "Aidez " + beneficiary + " à financer ses soins medicaux ! " + pct + "% atteint. Chaque don compte. "
+      : "Help " + beneficiary + " fund their medical care! " + pct + "% reached. Every donation counts. ")
+    + shareUrl
+  );
+  const msgFB = encodeURIComponent(shareUrl);
+  const msgX  = encodeURIComponent(
+    (lang === "fr" ? "Soutenez " + beneficiary + " - " + pct + "% de l'objectif atteint " : "Support " + beneficiary + " - " + pct + "% reached ")
+    + shareUrl + " #Ayyad #SolidariteMedicale"
+  );
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const isSmall = size === "small";
+
+  return (
+    <div className="relative">
+      <button
+        onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+        className={`flex items-center gap-1.5 font-semibold rounded-xl border transition-all ${isSmall
+          ? "text-xs px-2.5 py-1.5 border-gray-200 text-gray-600 hover:border-emerald-400 hover:text-emerald-700 bg-white"
+          : "text-sm px-4 py-2.5 border-gray-200 text-gray-600 hover:border-emerald-400 hover:text-emerald-700 bg-white shadow-sm"}`}>
+        <span>📤</span>
+        <span>{lang === "fr" ? "Partager" : "Share"}</span>
+      </button>
+
+      {open && (
+        <div className="absolute z-50 bottom-full mb-2 left-0 bg-white rounded-2xl shadow-xl border border-gray-100 p-3 w-56" onClick={e => e.stopPropagation()}>
+          <div className="text-[10px] text-gray-400 font-semibold mb-2 uppercase tracking-wide">{lang === "fr" ? "Partager ce dossier" : "Share this campaign"}</div>
+
+          {/* WhatsApp */}
+          <a href={"https://wa.me/?text=" + msgWA} target="_blank" rel="noreferrer"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-green-50 transition-colors w-full text-left">
+            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-black">W</div>
+            <div>
+              <div className="text-sm font-bold text-gray-900">WhatsApp</div>
+              <div className="text-[10px] text-gray-400">{lang === "fr" ? "Groupes & contacts" : "Groups & contacts"}</div>
+            </div>
+          </a>
+
+          {/* Facebook */}
+          <a href={"https://www.facebook.com/sharer/sharer.php?u=" + msgFB} target="_blank" rel="noreferrer"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-50 transition-colors w-full text-left">
+            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-black">f</div>
+            <div>
+              <div className="text-sm font-bold text-gray-900">Facebook</div>
+              <div className="text-[10px] text-gray-400">{lang === "fr" ? "Mur & groupes" : "Wall & groups"}</div>
+            </div>
+          </a>
+
+          {/* X / Twitter */}
+          <a href={"https://x.com/intent/tweet?text=" + msgX} target="_blank" rel="noreferrer"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-100 transition-colors w-full text-left">
+            <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white text-sm font-black">𝕏</div>
+            <div>
+              <div className="text-sm font-bold text-gray-900">X / Twitter</div>
+              <div className="text-[10px] text-gray-400">{lang === "fr" ? "Tweet avec lien" : "Tweet with link"}</div>
+            </div>
+          </a>
+
+          {/* Copier lien */}
+          <button onClick={copyLink}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors w-full text-left mt-1 border-t border-gray-100 pt-3">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors ${copied ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-600"}`}>
+              {copied ? "✓" : "🔗"}
+            </div>
+            <div>
+              <div className="text-sm font-bold text-gray-900">{copied ? (lang === "fr" ? "Lien copié !" : "Link copied!") : (lang === "fr" ? "Copier le lien" : "Copy link")}</div>
+              <div className="text-[10px] text-gray-400 font-mono truncate">ayyad.vercel.app/?case={trackingId}</div>
+            </div>
+          </button>
+
+          <button onClick={() => setOpen(false)} className="absolute top-2 right-2 text-gray-300 hover:text-gray-500 text-xs">✕</button>
+        </div>
+      )}
+    </div>
+  );
 };
 
 // ── Support Ayyad Section ─────────────────────────────────────
@@ -1373,10 +1472,13 @@ const CasePage = ({ c, setPage, lang }) => {
               <h1 className="text-2xl font-black text-gray-900 mb-3">{c.title[lang]}</h1>
               <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-4"><span>🏥 {c.hospital}</span><span>📍 {c.city}</span><span>👤 {c.age} {lang==="fr"?"ans":"years"}</span></div>
               {c.trackingId && (
-                <div className="flex items-center gap-2 mb-3 bg-gray-50 rounded-xl px-3 py-2 w-fit">
-                  <span className="text-xs text-gray-400">{lang==="fr"?"ID de suivi :":"Tracking ID:"}</span>
-                  <span className="text-xs font-mono font-bold text-emerald-700">{c.trackingId}</span>
-                  <button onClick={() => navigator.clipboard.writeText(c.trackingId)} className="text-xs text-gray-400 hover:text-emerald-600">📋</button>
+                <div className="flex items-center gap-3 mb-3 flex-wrap">
+                  <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
+                    <span className="text-xs text-gray-400">{lang==="fr"?"ID de suivi :":"Tracking ID:"}</span>
+                    <span className="text-xs font-mono font-bold text-emerald-700">{c.trackingId}</span>
+                    <button onClick={() => navigator.clipboard.writeText(c.trackingId)} className="text-xs text-gray-400 hover:text-emerald-600">📋</button>
+                  </div>
+                  <ShareButton c={c} lang={lang} />
                 </div>
               )}
               <p className="text-gray-600 leading-relaxed">{c.desc[lang]}</p>
@@ -2908,6 +3010,7 @@ export default function AyyadApp() {
   const [user, setUser] = useState(null);
   const [selectedCase, setSelectedCase] = useState(null);
   const [specialite, setSpecialite] = useState("");
+  const [allCases, setAllCases] = useState([]);
 
   // Restore session on load
   useEffect(() => {
@@ -2927,6 +3030,23 @@ export default function AyyadApp() {
         setUser(null);
       }
     });
+
+    // Deep-link: ?case=AYD-2025-001
+    const params = new URLSearchParams(window.location.search);
+    const caseId = params.get("case");
+    if (caseId) {
+      // Try MOCK_CASES first, then Supabase
+      const mockMatch = MOCK_CASES.find(c => c.trackingId === caseId);
+      if (mockMatch) {
+        setSelectedCase(mockMatch);
+        setPage("case");
+      } else {
+        supabase.from("cases").select("*").eq("tracking_id", caseId).single().then(({ data }) => {
+          if (data) { setSelectedCase(data); setPage("case"); }
+        });
+      }
+    }
+
     return () => listener.subscription.unsubscribe();
   }, []);
 
