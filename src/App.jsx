@@ -3888,6 +3888,7 @@ const ChangePasswordPage = ({ setPage, lang }) => {
 
 export default function AyyadApp() {
   const [page, setPage] = useState("home");
+  useEffect(() => { window.scrollTo(0, 0); }, [page]);
   const [lang, setLang] = useState("fr");
   const [user, setUser] = useState(null);
   const [selectedCase, setSelectedCase] = useState(null);
