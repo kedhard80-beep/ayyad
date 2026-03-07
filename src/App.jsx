@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 // ── Supabase client ──────────────────────────────────────────
@@ -391,7 +391,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
 
   const [current, setCurrent] = useState(0);
   const [sliding, setSliding] = useState(false);
-  const intervalRef = React.useRef(null);
+  const intervalRef = useRef(null);
 
   const goTo = (next) => {
     if (sliding) return;
