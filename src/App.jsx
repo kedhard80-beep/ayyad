@@ -2891,115 +2891,259 @@ const Footer = ({ setPage, lang }) => {
 
 // ── App Root ──────────────────────────────────────────────────
 // ── Tracking Page ─────────────────────────────────────────────
-const TrackingPage = ({ setPage, lang }) => {
+const TrackingPage = ({ setPage, setSelectedCase, lang }) => {
   const [trackingId, setTrackingId] = useState("");
   const [caseData, setCaseData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
+  // Cherche d'abord dans MOCK_CASES, puis dans Supabase par tracking_id
   const search = async (id) => {
-    if (!id.trim()) return;
+    const q = id.trim().toUpperCase();
+    if (!q) return;
     setLoading(true); setNotFound(false); setCaseData(null);
-    const { data } = await supabase.from("cases").select("*").eq("id", id.trim()).single();
+    // Mock cases
+    const mock = MOCK_CASES.find(c => (c.trackingId||"").toUpperCase() === q);
+    if (mock) { setCaseData({...mock, _mock: true}); setLoading(false); return; }
+    // Supabase
+    const { data } = await supabase.from("cases").select("*").eq("tracking_id", q).maybeSingle();
     if (data) setCaseData(data);
     else setNotFound(true);
     setLoading(false);
   };
 
-  const pct = (c) => c.required > 0 ? Math.min(100, Math.round((c.collected||0)/c.required*100)) : 0;
+  // Deep-link ?track=AYD-2025-001
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get("track");
+    if (t) { setTrackingId(t); search(t); }
+  }, []);
 
-  const steps = lang==="fr"
-    ? ["Dossier reçu","Vérification Ayyad","En ligne","Financé","Virement hôpital"]
-    : ["Case received","Ayyad review","Live","Funded","Hospital payout"];
+  const fmt = n => (n||0).toLocaleString("fr-FR");
 
-  const statusToStep = (s, ps) => {
-    if (ps === "confirmed") return 4;
-    if (ps === "initiated") return 4;
-    if (s === "FUNDED") return 3;
-    if (s === "APPROVED") return 2;
-    if (s === "PENDING") return 1;
+  const getTitle = (c) => typeof c.title === "object" ? c.title[lang] : (c.title || "—");
+  const getDesc  = (c) => typeof c.desc === "object"  ? c.desc[lang]  : (c.description || "");
+
+  const required   = caseData ? (caseData.required || caseData.amount || 0) : 0;
+  const collected  = caseData ? (caseData.collected || 0) : 0;
+  const pct        = required > 0 ? Math.min(100, Math.round(collected / required * 100)) : 0;
+  const fin        = caseData ? calcFinancier(required, collected) : null;
+
+  // Statut lisible
+  const statusInfo = (c) => {
+    if (!c) return {};
+    if (c.payout_status === "confirmed") return { label: lang==="fr" ? "Virement effectué" : "Payout done",      color: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" };
+    if (c.payout_status === "initiated") return { label: lang==="fr" ? "Virement en cours" : "Payout in progress", color: "bg-blue-100 text-blue-700",       dot: "bg-blue-500" };
+    if (c.status === "FUNDED")           return { label: lang==="fr" ? "Objectif atteint"  : "Goal reached",      color: "bg-purple-100 text-purple-700",    dot: "bg-purple-500" };
+    if (c.status === "COLLECTING" || c.status === "APPROVED") return { label: lang==="fr" ? "Collecte active" : "Active",  color: "bg-green-100 text-green-700",      dot: "bg-green-500" };
+    if (c.status === "PENDING")          return { label: lang==="fr" ? "En vérification"   : "Under review",      color: "bg-yellow-100 text-yellow-700",    dot: "bg-yellow-500" };
+    if (c.status === "REJECTED")         return { label: lang==="fr" ? "Dossier rejeté"    : "Rejected",          color: "bg-red-100 text-red-700",           dot: "bg-red-500" };
+    return { label: "—", color: "bg-gray-100 text-gray-500", dot: "bg-gray-400" };
+  };
+
+  // Timeline étapes
+  const getStepIndex = (c) => {
+    if (!c) return -1;
+    if (c.payout_status === "confirmed") return 4;
+    if (c.payout_status === "initiated") return 3;
+    if (c.status === "FUNDED")           return 3;
+    if (c.status === "COLLECTING" || c.status === "APPROVED") return 2;
+    if (c.status === "PENDING")          return 1;
     return 0;
   };
 
+  const steps = [
+    { icon: "📋", fr: "Dossier reçu",        en: "Case received",       fr2: "Votre dossier a bien été reçu par Ayyad.",                     en2: "Your case has been received by Ayyad." },
+    { icon: "🔍", fr: "Vérification",         en: "Verification",        fr2: "Notre équipe vérifie avec l'hôpital partenaire.",              en2: "Our team verifies with the partner hospital." },
+    { icon: "💚", fr: "Collecte ouverte",     en: "Collection live",     fr2: "La collecte est active — les dons arrivent !",                 en2: "Collection is live — donations are coming in!" },
+    { icon: "🏦", fr: "Virement hôpital",     en: "Hospital payout",     fr2: "Les fonds sont virés directement à l'établissement de santé.", en2: "Funds are transferred directly to the hospital." },
+    { icon: "✅", fr: "Mission accomplie",    en: "Mission complete",    fr2: "L'hôpital a confirmé la réception des fonds.",                 en2: "The hospital has confirmed receipt of funds." },
+  ];
+
+  const si = caseData ? statusInfo(caseData) : {};
+  const stepIdx = caseData ? getStepIndex(caseData) : -1;
+  const photo = caseData ? (caseData.photo_url || (caseData.photos && caseData.photos[0]) || null) : null;
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-2xl mx-auto">
+
+        {/* Header */}
         <div className="text-center mb-8">
-          <div className="text-4xl mb-3">🔍</div>
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-100 rounded-2xl text-3xl mb-4">🔍</div>
           <h1 className="text-2xl font-black text-gray-900">{lang==="fr" ? "Suivi de collecte" : "Campaign tracking"}</h1>
-          <p className="text-gray-500 text-sm mt-2">{lang==="fr" ? "Entrez l'identifiant de la collecte pour voir son statut en temps réel." : "Enter the campaign ID to see its real-time status."}</p>
+          <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
+            {lang==="fr"
+              ? "Entrez l'identifiant de votre collecte pour suivre son évolution en temps réel."
+              : "Enter your campaign ID to track its progress in real time."}
+          </p>
         </div>
 
-        {/* Search */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-          <label className="text-sm font-semibold text-gray-700 block mb-2">{lang==="fr" ? "Identifiant de collecte" : "Campaign ID"}</label>
+        {/* Barre de recherche */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">
+            {lang==="fr" ? "Identifiant de collecte" : "Campaign ID"}
+          </label>
           <div className="flex gap-2">
-            <input value={trackingId} onChange={e=>setTrackingId(e.target.value)} onKeyDown={e=>e.key==="Enter"&&search(trackingId)}
-              placeholder={lang==="fr" ? "Ex: abc123..." : "Ex: abc123..."} className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-            <button onClick={() => search(trackingId)} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-3 rounded-xl text-sm">
-              {loading ? "..." : lang==="fr" ? "Rechercher" : "Search"}
+            <input
+              value={trackingId}
+              onChange={e => setTrackingId(e.target.value.toUpperCase())}
+              onKeyDown={e => e.key==="Enter" && search(trackingId)}
+              placeholder="AYD-2025-001"
+              className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400 uppercase"
+            />
+            <button
+              onClick={() => search(trackingId)}
+              disabled={loading || !trackingId.trim()}
+              className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold px-5 py-3 rounded-xl text-sm transition-colors">
+              {loading ? "⏳" : lang==="fr" ? "Rechercher" : "Search"}
             </button>
           </div>
-          {notFound && <p className="text-red-500 text-sm mt-2">{lang==="fr" ? "Aucune collecte trouvée avec cet identifiant." : "No campaign found with this ID."}</p>}
+          {notFound && (
+            <div className="mt-3 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5 flex items-center gap-2">
+              <span className="text-red-500">⚠️</span>
+              <span className="text-sm text-red-600">{lang==="fr" ? "Aucune collecte trouvée avec cet identifiant." : "No campaign found with this ID."}</span>
+            </div>
+          )}
+          <p className="text-[11px] text-gray-400 mt-2">
+            {lang==="fr" ? "L'identifiant figure sur votre email de confirmation ou sur la page de la collecte." : "The ID can be found in your confirmation email or on the campaign page."}
+          </p>
         </div>
 
-        {/* Results */}
+        {/* Résultats */}
         {caseData && (
           <div className="space-y-4">
-            {/* Header */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <div>
-                  <h2 className="font-black text-lg text-gray-900">{caseData.title}</h2>
-                  <p className="text-sm text-gray-500 mt-0.5">{caseData.hospital} · {caseData.city}</p>
-                </div>
-                <span className={`text-xs px-3 py-1 rounded-full font-bold flex-shrink-0 ${
-                  caseData.payout_status==="confirmed" ? "bg-emerald-100 text-emerald-700" :
-                  caseData.status==="FUNDED" ? "bg-blue-100 text-blue-700" :
-                  caseData.status==="APPROVED" ? "bg-emerald-100 text-emerald-700" :
-                  "bg-yellow-100 text-yellow-700"
-                }`}>
-                  {caseData.payout_status==="confirmed" ? "✅ "+(lang==="fr"?"Virement effectué":"Payout done") :
-                   caseData.status==="FUNDED" ? "💰 "+(lang==="fr"?"Financé":"Funded") :
-                   caseData.status==="APPROVED" ? "🟢 "+(lang==="fr"?"En ligne":"Live") :
-                   "🟡 "+(lang==="fr"?"En vérification":"Under review")}
-                </span>
-              </div>
 
-              {/* Progress bar */}
-              <div className="mb-4">
-                <div className="flex justify-between text-xs text-gray-500 mb-1">
-                  <span>{(caseData.collected||0).toLocaleString()} FCFA {lang==="fr"?"collectés":"collected"}</span>
-                  <span>{lang==="fr"?"Objectif":"Goal"}: {(caseData.required||caseData.amount||0).toLocaleString()} FCFA</span>
+            {/* Carte principale */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              {/* Photo */}
+              {photo && (
+                <div className="h-40 overflow-hidden">
+                  <img src={photo} alt={getTitle(caseData)} className="w-full h-full object-cover object-center" />
                 </div>
-                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full transition-all" style={{width: pct(caseData)+"%"}} />
+              )}
+              <div className="p-5">
+                {/* Titre + badge statut */}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div>
+                    <h2 className="font-black text-gray-900 text-lg leading-tight">{getTitle(caseData)}</h2>
+                    <p className="text-sm text-gray-500 mt-0.5">🏥 {caseData.hospital} · 📍 {caseData.city}</p>
+                  </div>
+                  <div className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-bold flex-shrink-0 ${si.color}`}>
+                    <span className={`w-2 h-2 rounded-full ${si.dot}`} />
+                    {si.label}
+                  </div>
                 </div>
-                <div className="text-right text-xs text-emerald-600 font-bold mt-1">{pct(caseData)}%</div>
-              </div>
 
-              {/* Steps */}
-              <div className="relative">
-                <div className="flex justify-between items-center">
-                  {steps.map((s, i) => {
-                    const current = statusToStep(caseData.status, caseData.payout_status);
-                    const done = i <= current;
-                    return (
-                      <div key={i} className="flex flex-col items-center flex-1">
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold z-10 ${done ? "bg-emerald-500 text-white" : "bg-gray-200 text-gray-400"}`}>
-                          {done ? "✓" : i+1}
-                        </div>
-                        <div className={`text-center text-xs mt-1 leading-tight ${done ? "text-emerald-600 font-semibold" : "text-gray-400"}`} style={{fontSize:"10px"}}>{s}</div>
-                        {i < steps.length-1 && (
-                          <div className={`absolute h-0.5 ${done && i < statusToStep(caseData.status, caseData.payout_status) ? "bg-emerald-400" : "bg-gray-200"}`}
-                            style={{top:"14px", left:`${(i+0.5)*20}%`, width:"20%"}} />
-                        )}
-                      </div>
-                    );
-                  })}
+                {/* ID de suivi */}
+                <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 mb-4 w-fit">
+                  <span className="text-[10px] text-gray-400">ID</span>
+                  <span className="text-xs font-mono font-bold text-emerald-700">{caseData.trackingId || caseData.tracking_id}</span>
+                  <button onClick={() => navigator.clipboard.writeText(caseData.trackingId || caseData.tracking_id)} className="text-gray-300 hover:text-emerald-500 text-xs">📋</button>
+                </div>
+
+                {/* Barre de progression */}
+                <div className="mb-2">
+                  <div className="flex justify-between items-end mb-1.5">
+                    <div>
+                      <span className="text-2xl font-black text-emerald-700">{fmt(collected)}</span>
+                      <span className="text-xs text-gray-400 ml-1">FCFA</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xl font-black text-gray-900">{pct}%</span>
+                      <div className="text-[10px] text-gray-400">{lang==="fr" ? "de l'objectif" : "of goal"}</div>
+                    </div>
+                  </div>
+                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${pct >= 100 ? "bg-purple-500" : "bg-emerald-500"}`} style={{width: pct+"%"}} />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-gray-400 mt-1">
+                    <span>{lang==="fr" ? "Collecté" : "Collected"}</span>
+                    <span>{lang==="fr" ? "Objectif" : "Goal"}: {fmt(required)} FCFA</span>
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Timeline */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-4">{lang==="fr" ? "Parcours du dossier" : "Case journey"}</div>
+              <div className="space-y-0">
+                {steps.map((step, i) => {
+                  const done = i <= stepIdx;
+                  const active = i === stepIdx;
+                  return (
+                    <div key={i} className="flex gap-3">
+                      {/* Indicateur vertical */}
+                      <div className="flex flex-col items-center">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 transition-all ${
+                          done ? (active ? "bg-emerald-500 shadow-lg shadow-emerald-200 scale-110" : "bg-emerald-500") : "bg-gray-100"
+                        }`}>
+                          {done ? <span className="text-white text-xs font-bold">✓</span> : <span className="text-gray-400 text-xs">{i+1}</span>}
+                        </div>
+                        {i < steps.length-1 && (
+                          <div className={`w-0.5 h-8 mt-1 ${done && i < stepIdx ? "bg-emerald-400" : "bg-gray-100"}`} />
+                        )}
+                      </div>
+                      {/* Contenu */}
+                      <div className={`flex-1 pb-6 ${i === steps.length-1 ? "pb-0" : ""}`}>
+                        <div className={`flex items-center gap-2 mb-0.5 ${active ? "mt-1" : "mt-1.5"}`}>
+                          <span className="text-sm">{step.icon}</span>
+                          <span className={`text-sm font-bold ${done ? "text-gray-900" : "text-gray-400"}`}>
+                            {lang==="fr" ? step.fr : step.en}
+                          </span>
+                          {active && <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black px-1.5 py-0.5 rounded-full">EN COURS</span>}
+                        </div>
+                        {done && (
+                          <p className="text-[11px] text-gray-400 leading-relaxed">
+                            {lang==="fr" ? step.fr2 : step.en2}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Transparence financière */}
+            {fin && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">{lang==="fr" ? "Transparence financière" : "Financial transparency"}</div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">{lang==="fr" ? "Devis hôpital" : "Hospital quote"}</span>
+                    <span className="font-bold text-gray-900">{fmt(fin.devisHopital)} FCFA</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">{lang==="fr" ? "Commission Ayyad (5%)" : "Ayyad fee (5%)"}</span>
+                    <span className="font-semibold text-amber-600">{fmt(fin.fraisAyyadBase)} FCFA</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">{lang==="fr" ? "Total collecté" : "Total collected"}</span>
+                    <span className="font-bold text-emerald-700">{fmt(collected)} FCFA</span>
+                  </div>
+                  {fin.surplus > 0 && (
+                    <>
+                      <div className="border-t border-dashed border-gray-200 pt-2 mt-1">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">🎉 {lang==="fr" ? "Surcollecte" : "Surplus"}</span>
+                          <span className="font-bold text-purple-600">+{fmt(fin.surplus)} FCFA</span>
+                        </div>
+                        <div className="flex justify-between mt-1">
+                          <span className="text-[11px] text-gray-400">→ {lang==="fr" ? "70% bénéficiaire" : "70% beneficiary"}</span>
+                          <span className="text-[11px] font-semibold text-blue-600">{fmt(fin.partBeneficiaire)} FCFA</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[11px] text-gray-400">→ {lang==="fr" ? "25% cas urgents" : "25% urgent cases"}</span>
+                          <span className="text-[11px] font-semibold text-purple-600">{fmt(fin.partRedistrib)} FCFA</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Reçu virement */}
             {caseData.payout_receipt && (
@@ -3007,7 +3151,12 @@ const TrackingPage = ({ setPage, lang }) => {
                 <div className="text-3xl">📄</div>
                 <div className="flex-1">
                   <div className="font-bold text-emerald-800 text-sm">{lang==="fr" ? "Reçu de virement disponible" : "Transfer receipt available"}</div>
-                  <div className="text-xs text-emerald-600 mt-0.5">{lang==="fr" ? "Les fonds ont été versés directement à l'hôpital." : "Funds were sent directly to the hospital."}</div>
+                  <div className="text-xs text-emerald-600 mt-0.5">{lang==="fr" ? "Les fonds ont été versés directement à l'hôpital." : "Funds sent directly to the hospital."}</div>
+                  {caseData.payout_confirmed_at && (
+                    <div className="text-[10px] text-emerald-500 mt-0.5">
+                      {new Date(caseData.payout_confirmed_at).toLocaleDateString(lang==="fr"?"fr-FR":"en-US", {day:"numeric",month:"long",year:"numeric"})}
+                    </div>
+                  )}
                 </div>
                 <a href={caseData.payout_receipt} target="_blank" rel="noreferrer" className="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-xl">
                   {lang==="fr" ? "Voir →" : "View →"}
@@ -3015,25 +3164,46 @@ const TrackingPage = ({ setPage, lang }) => {
               </div>
             )}
 
-            {/* Info */}
+            {/* Infos dossier */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <div className="text-xs font-semibold text-gray-500 uppercase mb-3">{lang==="fr" ? "Informations" : "Information"}</div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Bénéficiaire":"Beneficiary"}</span><span className="font-semibold text-gray-900">{caseData.full_name||"—"}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Hôpital":"Hospital"}</span><span className="font-semibold text-gray-900">{caseData.hospital}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Catégorie":"Category"}</span><span className="font-semibold text-gray-900">{caseData.category||"—"}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Soumis le":"Submitted"}</span><span className="font-semibold text-gray-900">{caseData.created_at ? new Date(caseData.created_at).toLocaleDateString(lang==="fr"?"fr-FR":"en-US") : "—"}</span></div>
+              <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">{lang==="fr" ? "Informations" : "Information"}</div>
+              <div className="space-y-2.5 text-sm">
+                {[
+                  [lang==="fr"?"Bénéficiaire":"Beneficiary",   caseData.beneficiary || caseData.full_name || "—"],
+                  [lang==="fr"?"Hôpital":"Hospital",            caseData.hospital || "—"],
+                  [lang==="fr"?"Spécialité":"Specialty",        typeof caseData.category === "object" ? caseData.category[lang] : (caseData.category || "—")],
+                  [lang==="fr"?"Ville":"City",                  caseData.city || "—"],
+                  [lang==="fr"?"Soumis le":"Submitted",         caseData.created_at ? new Date(caseData.created_at).toLocaleDateString(lang==="fr"?"fr-FR":"en-US",{day:"numeric",month:"long",year:"numeric"}) : "—"],
+                ].map(([k,v]) => (
+                  <div key={k} className="flex justify-between items-center border-b border-gray-50 pb-2">
+                    <span className="text-gray-400">{k}</span>
+                    <span className="font-semibold text-gray-900 text-right max-w-xs">{v}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <button onClick={() => { setCaseData(null); setTrackingId(""); }} className="w-full text-gray-400 text-sm hover:text-gray-600 py-2">
+            {/* CTA voir la collecte */}
+            <button
+              onClick={() => {
+                const mock = MOCK_CASES.find(c => (c.trackingId||"") === (caseData.trackingId||caseData.tracking_id||""));
+                if (mock) { setSelectedCase(mock); setPage("case"); }
+                else { setSelectedCase(caseData); setPage("case"); }
+              }}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-sm transition-colors">
+              {lang==="fr" ? "💚 Voir la collecte & faire un don" : "💚 View campaign & donate"}
+            </button>
+
+            <button onClick={() => { setCaseData(null); setTrackingId(""); setNotFound(false); }} className="w-full text-gray-400 text-sm hover:text-gray-600 py-2">
               {lang==="fr" ? "← Nouvelle recherche" : "← New search"}
             </button>
           </div>
         )}
 
         <div className="text-center mt-8">
-          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">{lang==="fr" ? "← Retour à l'accueil" : "← Back to home"}</button>
+          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">
+            {lang==="fr" ? "← Retour à l'accueil" : "← Back to home"}
+          </button>
         </div>
       </div>
     </div>
@@ -3157,7 +3327,7 @@ export default function AyyadApp() {
         {page==="register"&&<RegisterPage setPage={setPage} setUser={setUser} lang={lang} />}
         {page==="submit"&&<SubmitPage setPage={setPage} user={user} lang={lang} />}
         {page==="admin"&&<AdminPage user={user} setPage={setPage} lang={lang} />}
-        {page==="tracking"&&<TrackingPage setPage={setPage} lang={lang} />}
+        {page==="tracking"&&<TrackingPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
         {page==="changepassword"&&<ChangePasswordPage setPage={setPage} lang={lang} />}
       </main>
       {showFooter&&<Footer setPage={setPage} lang={lang} />}
