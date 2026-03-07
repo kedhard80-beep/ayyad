@@ -3,13 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 
 // ── Supabase client ──────────────────────────────────────────
 const supabase = createClient(
-  "https://xodgubvgvsnbpheusggm.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvZGd1YnZndnNuYnBoZXVzZ2dtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MzE0NDIsImV4cCI6MjA4NjMwNzQ0Mn0.Kx9gQtLBp8frC5iE08303pgbsV6paDIpWvyeLOg4MHU"
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_KEY
 );
 
 // ── Resend Email ─────────────────────────────────────────────
-const RESEND_API_KEY = "re_6BaGYjac_7myZjmXxBi4RTB6VeeqxSgss";
-const ADMIN_EMAIL = "kedhard80@gmail.com";
+const RESEND_API_KEY = import.meta.env.VITE_RESEND_KEY || "";
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "kedhard80@gmail.com";
 
 const sendEmail = async ({ to, subject, html }) => {
   try {
@@ -482,7 +482,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
                     className="w-full bg-white border-2 border-red-200 hover:border-red-400 rounded-2xl overflow-hidden text-left transition-all group shadow-sm hover:shadow-md">
                     <div className="h-52 relative overflow-hidden bg-gradient-to-br from-red-50 to-orange-50">
                       {(c.photos && c.photos[0]) ? (
-                        <img src={c.photos[0]} alt={c.beneficiary} className="w-full h-full object-cover object-top" />
+                        <img src={c.photos[0]} alt={c.beneficiary} className="w-full h-full object-cover object-center" />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                           <span className="text-6xl">{c.image}</span>
