@@ -1578,7 +1578,14 @@ const RegisterPage = ({ setPage, setUser, lang }) => {
 // ── Submit Page ───────────────────────────────────────────────
 const SubmitPage = ({ setPage, user, lang }) => {
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({title:"",description:"",hospital:"",city:"",amount:"",category:""});
+  const [form, setForm] = useState({
+    title:"", description:"", hospital:"", city:"", amount:"",
+    category:"", categoryOther:"", beneficiary_phone:""
+  });
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState(null);
   const [fileStates, setFileStates] = useState({medical:"idle",quote:"idle",id:"idle",consent:"idle"});
   const [fileUrls, setFileUrls] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -1586,15 +1593,32 @@ const SubmitPage = ({ setPage, user, lang }) => {
   const t = T[lang].submit;
   const allUploaded = Object.values(fileStates).every(s => s==="done");
 
+  const handlePhotoSelect = (file) => {
+    if (!file) return;
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = e => setPhotoPreview(e.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handlePhotoUpload = async () => {
+    if (!photoFile) return null;
+    setPhotoUploading(true);
+    const fileName = Date.now()+"_photo_"+photoFile.name;
+    const { error } = await supabase.storage.from("medical-documents").upload(fileName, photoFile);
+    if (error) { setPhotoUploading(false); return null; }
+    const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
+    setPhotoUrl(urlData.publicUrl);
+    setPhotoUploading(false);
+    return urlData.publicUrl;
+  };
+
   const handleFileUpload = async (key, file) => {
     if (!file) return;
     setFileStates(prev => ({...prev, [key]: "uploading"}));
-    const fileName = `${Date.now()}_${key}_${file.name}`;
+    const fileName = Date.now()+"_"+key+"_"+file.name;
     const { error } = await supabase.storage.from("medical-documents").upload(fileName, file);
-    if (error) {
-      setFileStates(prev => ({...prev, [key]: "error"}));
-      return;
-    }
+    if (error) { setFileStates(prev => ({...prev, [key]: "error"})); return; }
     const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
     setFileUrls(prev => ({...prev, [key]: urlData.publicUrl}));
     setFileStates(prev => ({...prev, [key]: "done"}));
@@ -1603,15 +1627,21 @@ const SubmitPage = ({ setPage, user, lang }) => {
   const handleSubmit = async () => {
     setSubmitting(true);
     setSubmitError("");
+    // Upload photo if not done yet
+    let finalPhotoUrl = photoUrl;
+    if (photoFile && !photoUrl) {
+      finalPhotoUrl = await handlePhotoUpload();
+    }
     const { error } = await supabase.from("cases").insert({
       title: form.title,
       description: form.description,
       hospital: form.hospital,
       city: form.city,
       amount: parseFloat(form.amount),
-      category: form.category,
+      category: form.category === "Autre" ? (form.categoryOther || "Autre") : form.category,
       full_name: user?.name || "Anonyme",
-      photo_url: fileUrls.medical || null,
+      photo_url: finalPhotoUrl || null,
+      beneficiary_phone: form.beneficiary_phone || null,
       status: "PENDING",
       user_id: user?.id || null,
     });
@@ -1636,8 +1666,46 @@ const SubmitPage = ({ setPage, user, lang }) => {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         {step===1&&<div className="space-y-5">
           <h2 className="font-black text-xl text-gray-900">{t.infoTitle}</h2>
-          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.titleField}</label><input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
-          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.descField}</label><textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={4} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" /></div>
+
+          {/* === PHOTO BÉNÉFICIAIRE === */}
+          <div>
+            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+              📷 {lang==="fr" ? "Photo du bénéficiaire" : "Beneficiary photo"}
+              <span className="text-red-400 ml-1">*</span>
+            </label>
+            <p className="text-[11px] text-gray-400 mb-3">
+              {lang==="fr"
+                ? "Une photo récente montrant la situation actuelle du bénéficiaire. Cette photo sera affichée sur la collecte publique."
+                : "A recent photo showing the beneficiary's current situation. This photo will appear on the public campaign."}
+            </p>
+            {photoPreview ? (
+              <div className="relative">
+                <img src={photoPreview} alt="preview" className="w-full h-52 object-cover rounded-2xl border-2 border-emerald-300" />
+                <div className="absolute top-2 right-2 flex gap-2">
+                  <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full font-bold">✓ Photo sélectionnée</span>
+                  <button
+                    onClick={() => { setPhotoFile(null); setPhotoPreview(null); setPhotoUrl(null); }}
+                    className="bg-white border border-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full font-bold hover:bg-red-50 hover:text-red-500">
+                    ✕ Changer
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 transition-all group">
+                <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">📷</div>
+                <span className="text-sm font-semibold text-gray-600 group-hover:text-emerald-700">
+                  {lang==="fr" ? "Cliquez pour ajouter une photo" : "Click to add a photo"}
+                </span>
+                <span className="text-xs text-gray-400 mt-1">JPG, PNG — max 5 MB</span>
+                <input type="file" className="hidden" accept="image/jpeg,image/png,image/webp"
+                  onChange={e => e.target.files[0] && handlePhotoSelect(e.target.files[0])} />
+              </label>
+            )}
+          </div>
+
+          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.titleField}</label><input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} autoComplete="off" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
+          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.descField}</label><textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={4} autoComplete="off" autoCorrect="off" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" /></div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.hospitalField}</label>
@@ -1668,9 +1736,47 @@ const SubmitPage = ({ setPage, user, lang }) => {
               </select>
             </div>
           </div>
+
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.amountField}</label><input value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})} type="number" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.amountField}</label>
+              <div className="relative">
+                <input
+                  type="text" inputMode="numeric" pattern="[0-9]*"
+                  value={form.amount}
+                  onChange={e => setForm({...form, amount: e.target.value.replace(/[^0-9]/g,"")})}
+                  placeholder="ex: 500000"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-14"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span>
+              </div>
+              {form.amount && Number(form.amount) > 0 && (
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {lang==="fr" ? "Montant collecté : " : "Amount to collect: "}
+                  <span className="font-bold text-emerald-700">{fmt(Math.round(Number(form.amount)*1.05))}</span>
+                  <span className="text-gray-400"> (devis + 5% Ayyad)</span>
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+                📱 {lang==="fr" ? "Téléphone mobile money" : "Mobile money phone"}
+              </label>
+              <div className="flex gap-1.5">
+                <span className="bg-gray-100 border border-gray-200 rounded-xl px-3 py-3 text-xs text-gray-500 font-mono flex-shrink-0">+225</span>
+                <input
+                  type="tel"
+                  value={form.beneficiary_phone}
+                  onChange={e => setForm({...form, beneficiary_phone: e.target.value.replace(/[^0-9]/g,"")})}
+                  placeholder="07 00 00 00 00"
+                  maxLength={10}
+                  className="flex-1 border border-gray-200 rounded-xl px-3 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                />
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1">{lang==="fr" ? "Pour recevoir un éventuel surplus" : "To receive any surplus"}</p>
+            </div>
           </div>
+
           <div>
             <label className="text-xs font-semibold text-gray-600 mb-3 block">{t.categoryField}</label>
             <div className="grid grid-cols-4 gap-2">
@@ -1694,20 +1800,37 @@ const SubmitPage = ({ setPage, user, lang }) => {
             </div>
             {form.category === "Autre" && (
               <div className="mt-3">
-                <input
-                  value={form.categoryOther || ""}
-                  onChange={e => setForm({...form, categoryOther: e.target.value})}
+                <input value={form.categoryOther || ""} onChange={e => setForm({...form, categoryOther: e.target.value})}
                   placeholder={lang==="fr" ? "Précisez la spécialité médicale..." : "Specify the medical specialty..."}
-                  className="w-full border-2 border-emerald-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-emerald-50"
-                />
+                  className="w-full border-2 border-emerald-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-emerald-50" />
               </div>
             )}
           </div>
-          <button onClick={()=>setStep(2)} disabled={!form.title||!form.description||!form.hospital||!form.amount} className="w-full bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">{t.next}</button>
+
+          <button onClick={()=>setStep(2)}
+            disabled={!form.title||!form.description||!form.hospital||!form.amount||!photoPreview}
+            className="w-full bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">
+            {!photoPreview
+              ? (lang==="fr" ? "⚠️ Ajoutez une photo pour continuer" : "⚠️ Add a photo to continue")
+              : t.next}
+          </button>
         </div>}
+
         {step===2&&<div className="space-y-4">
           <h2 className="font-black text-xl text-gray-900">{t.docsTitle}</h2>
           <p className="text-sm text-gray-500">{t.docsSub}</p>
+
+          {/* Rappel photo */}
+          {photoPreview && (
+            <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+              <img src={photoPreview} alt="preview" className="w-14 h-14 object-cover rounded-xl flex-shrink-0" />
+              <div>
+                <div className="text-xs font-bold text-emerald-700">✅ Photo bénéficiaire</div>
+                <div className="text-[11px] text-gray-500">Sera affichée sur la collecte publique</div>
+              </div>
+            </div>
+          )}
+
           {t.docs.map(doc=>{
             const state = fileStates[doc.key];
             return (
@@ -1728,6 +1851,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
             <button onClick={handleSubmit} disabled={!allUploaded||submitting} className="bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 rounded-xl text-sm shadow-md">{submitting?"...":t.submit}</button>
           </div>
         </div>}
+
         {step===3&&<div className="text-center space-y-5 py-4">
           <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-4xl">🎉</div>
           <div><h2 className="font-black text-2xl text-gray-900 mb-2">{t.successTitle}</h2><p className="text-gray-500 text-sm">{t.successSub}</p></div>
