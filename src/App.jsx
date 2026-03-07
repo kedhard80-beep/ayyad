@@ -1720,6 +1720,7 @@ const AdminPage = ({ user, setPage, lang }) => {
   const [rejectReason, setRejectReason] = useState("");
   const [payMethods, setPayMethods] = useState({}); // { caseId: "WAVE"|"ORANGE"|"MTN"|"BANK" }
   const [confirmingId, setConfirmingId] = useState(null); // caseId en cours de confirmation
+  const [expandedPayoutId, setExpandedPayoutId] = useState(null); // collecte expand dans virements
   const t = T[lang].admin;
   const unresolved = alerts.filter(a=>!a.resolved).length;
 
@@ -2073,145 +2074,137 @@ const AdminPage = ({ user, setPage, lang }) => {
                         <div>{lang==="fr" ? "Aucune collecte en attente de virement." : "No campaigns awaiting payout."}</div>
                       </div>
                     ) : (
-                      <div className="divide-y divide-gray-50">
+                      <div className="divide-y divide-gray-100">
                         {funded.map(c => {
                           const fin = calcFinancier(c.amount||c.required||0, c.collected||c.amount||0);
                           const payMethod = payMethods[c.id] || null;
                           const confirming = confirmingId === c.id;
                           const hasSurplus = fin.surplus > 0;
+                          const isExpanded = expandedPayoutId === c.id;
+                          const catEmoji = c.category==="Cardiologie"?"🫀":c.category==="Oncologie"?"🎗️":c.category==="Neurologie"?"🧠":c.category==="Pediatrie"||c.category==="Pédiatrie"?"👶":c.category==="Gynecologie"||c.category==="Gynécologie"?"🌸":c.category==="Orthopedie"||c.category==="Orthopédie"?"🦴":c.category==="Nephrologie"||c.category==="Néphrologie"?"🫘":"🏥";
 
                           return (
-                            <div key={c.id} className="p-5 space-y-4">
-                              {/* En-tête dossier */}
-                              <div className="flex items-start gap-4">
-                                <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
-                                  {c.category === "Cardiologie" ? "🫀" : c.category === "Oncologie" ? "🎗️" : c.category === "Neurologie" ? "🧠" : c.category === "Pediatrie" ? "👶" : c.category === "Gynecologie" ? "🌸" : c.category === "Orthopedie" ? "🦴" : c.category === "Nephrologie" ? "🫘" : "🏥"}
-                                </div>
+                            <div key={c.id}>
+                              {/* LIGNE COMPACTE — toujours visible */}
+                              <button onClick={() => setExpandedPayoutId(isExpanded ? null : c.id)}
+                                className={"w-full flex items-center gap-3 p-4 text-left transition-colors "+(isExpanded?"bg-emerald-50":"hover:bg-gray-50")}>
+                                <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">{catEmoji}</div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                                    <span className="font-mono text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">{c.tracking_id || "AYD-"+c.id}</span>
-                                    <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">✅ FUNDED</span>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-mono text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">{c.tracking_id||"AYD-"+c.id}</span>
+                                    {hasSurplus && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">🎉 Surcollecte</span>}
                                   </div>
-                                  <div className="font-bold text-gray-900">{c.title || "Dossier "+c.id}</div>
-                                  <div className="text-xs text-gray-400 mt-0.5">🏥 {c.hospital} · 📍 {c.city} · 👤 {c.full_name||c.beneficiary||"—"}</div>
+                                  <div className="font-bold text-gray-900 text-sm truncate mt-0.5">{c.title||"Dossier "+c.id}</div>
+                                  <div className="text-xs text-gray-400">🏥 {c.hospital} · 👤 {c.full_name||c.beneficiary||"—"}</div>
                                 </div>
-                              </div>
-
-                              {/* Décomposition financière */}
-                              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                                <div className="grid grid-cols-3 gap-3 text-center">
-                                  <div>
-                                    <div className="text-xs text-gray-500 mb-1">💰 Total collecté</div>
-                                    <div className="font-black text-gray-900 text-sm">{(c.collected||c.amount||0).toLocaleString()}</div>
-                                    <div className="text-[10px] text-gray-400">FCFA</div>
-                                  </div>
-                                  <div className="border-x border-gray-200">
-                                    <div className="text-xs text-gray-500 mb-1">🏥 Devis hôpital</div>
-                                    <div className="font-black text-emerald-700 text-sm">{fin.devisHopital.toLocaleString()}</div>
-                                    <div className="text-[10px] text-emerald-600">100% devis · FCFA</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-xs text-gray-500 mb-1">💚 Frais Ayyad</div>
-                                    <div className="font-black text-amber-600 text-sm">{fin.fraisAyyadBase.toLocaleString()}</div>
-                                    <div className="text-[10px] text-amber-500">5% base · FCFA</div>
-                                  </div>
+                                <div className="text-right flex-shrink-0">
+                                  <div className="font-black text-emerald-700 text-sm">{fin.devisHopital.toLocaleString()} FCFA</div>
+                                  <div className="text-xs text-gray-400">à virer</div>
                                 </div>
+                                <div className={"text-gray-400 ml-1 transition-transform "+(isExpanded?"rotate-180":"")}>▼</div>
+                              </button>
 
-                                {/* Surcollecte */}
-                                {hasSurplus && (
-                                  <div className="mt-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-2">
-                                    <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs">
-                                      <span className="text-base">🎉</span>
-                                      Surcollecte : +{fin.surplus.toLocaleString()} FCFA au-dessus de l'objectif
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                                      <div className="bg-white rounded-lg p-2">
-                                        <div className="text-amber-600 font-black">{fin.fraisAyyadSurplus.toLocaleString()}</div>
-                                        <div className="text-gray-400 text-[10px]">5% → Ayyad</div>
-                                      </div>
-                                      <div className="bg-white rounded-lg p-2">
-                                        <div className="text-blue-600 font-black">{fin.partBeneficiaire.toLocaleString()}</div>
-                                        <div className="text-gray-400 text-[10px]">70% → Bénéficiaire</div>
-                                      </div>
-                                      <div className="bg-white rounded-lg p-2">
-                                        <div className="text-purple-600 font-black">{fin.partRedistrib.toLocaleString()}</div>
-                                        <div className="text-gray-400 text-[10px]">25% → 5 urgents</div>
-                                      </div>
-                                    </div>
-                                    <div className="text-[10px] text-emerald-600 text-center">
-                                      Total Ayyad sur ce dossier : <span className="font-black">{fin.totalAyyad.toLocaleString()} FCFA</span>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
+                              {/* DÉTAIL EXPAND */}
+                              {isExpanded && (
+                                <div className="px-4 pb-5 pt-1 space-y-4 bg-emerald-50 border-t border-emerald-100">
 
-                              {/* Choix du moyen de paiement */}
-                              {!confirming ? (
-                                <div className="space-y-3">
-                                  <div className="text-xs font-bold text-gray-700">💸 Choisissez le moyen de virement vers <span className="text-emerald-700">{c.hospital}</span> :</div>
-                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                    {[
-                                      { id:"WAVE", emoji:"🌊", label:"Wave CI", bg:"bg-blue-600 hover:bg-blue-700", ring:"ring-blue-500" },
-                                      { id:"ORANGE", emoji:"🟠", label:"Orange Money", bg:"bg-orange-500 hover:bg-orange-600", ring:"ring-orange-400" },
-                                      { id:"MTN", emoji:"🟡", label:"MTN MoMo", bg:"bg-yellow-400 hover:bg-yellow-500", ring:"ring-yellow-400" },
-                                      { id:"BANK", emoji:"🏦", label:"Virement bancaire", bg:"bg-gray-700 hover:bg-gray-800", ring:"ring-gray-500" },
-                                    ].map(pm => (
-                                      <button key={pm.id} onClick={() => setPayMethods(prev => ({...prev, [c.id]: pm.id}))}
-                                        className={"text-white text-xs font-bold py-3 rounded-xl flex flex-col items-center gap-1 transition-all "+(pm.id==="MTN"?"text-gray-900 ":"")+pm.bg+(payMethod===pm.id?" ring-2 "+pm.ring+" scale-105":"")}>
-                                        <span className="text-2xl">{pm.emoji}</span>
-                                        <span>{pm.label}</span>
-                                      </button>
-                                    ))}
+                                  {/* Décomposition financière */}
+                                  <div className="bg-white rounded-xl p-4 space-y-3">
+                                    <div className="grid grid-cols-3 gap-3 text-center">
+                                      <div>
+                                        <div className="text-xs text-gray-500 mb-1">💰 Total collecté</div>
+                                        <div className="font-black text-gray-900 text-sm">{(c.collected||c.amount||0).toLocaleString()}</div>
+                                        <div className="text-[10px] text-gray-400">FCFA</div>
+                                      </div>
+                                      <div className="border-x border-gray-200">
+                                        <div className="text-xs text-gray-500 mb-1">🏥 Devis hôpital</div>
+                                        <div className="font-black text-emerald-700 text-sm">{fin.devisHopital.toLocaleString()}</div>
+                                        <div className="text-[10px] text-emerald-600">100% devis · FCFA</div>
+                                      </div>
+                                      <div>
+                                        <div className="text-xs text-gray-500 mb-1">💚 Frais Ayyad</div>
+                                        <div className="font-black text-amber-600 text-sm">{fin.fraisAyyadBase.toLocaleString()}</div>
+                                        <div className="text-[10px] text-amber-500">5% base · FCFA</div>
+                                      </div>
+                                    </div>
+                                    {hasSurplus && (
+                                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-2">
+                                        <div className="text-xs font-black text-emerald-700">🎉 Surcollecte : +{fin.surplus.toLocaleString()} FCFA</div>
+                                        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                                          <div className="bg-white rounded-lg p-2"><div className="text-amber-600 font-black">{fin.fraisAyyadSurplus.toLocaleString()}</div><div className="text-gray-400 text-[10px]">5% → Ayyad</div></div>
+                                          <div className="bg-white rounded-lg p-2"><div className="text-blue-600 font-black">{fin.partBeneficiaire.toLocaleString()}</div><div className="text-gray-400 text-[10px]">70% → Bénéf.</div></div>
+                                          <div className="bg-white rounded-lg p-2"><div className="text-purple-600 font-black">{fin.partRedistrib.toLocaleString()}</div><div className="text-gray-400 text-[10px]">25% → 5 urgents</div></div>
+                                        </div>
+                                        <div className="text-[10px] text-center text-emerald-700">Total Ayyad : <span className="font-black">{fin.totalAyyad.toLocaleString()} FCFA</span></div>
+                                      </div>
+                                    )}
                                   </div>
-                                  {payMethod && (
-                                    <button onClick={() => setConfirmingId(c.id)}
-                                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2">
-                                      💸 {lang==="fr" ? "Virer maintenant" : "Transfer now"} — {fin.devisHopital.toLocaleString()} FCFA
-                                      <span className="text-emerald-200 text-xs">via {payMethod==="WAVE"?"🌊 Wave":payMethod==="ORANGE"?"🟠 Orange":payMethod==="MTN"?"🟡 MTN":"🏦 Banque"}</span>
-                                    </button>
+
+                                  {/* Choix moyen paiement */}
+                                  {!confirming ? (
+                                    <div className="space-y-3">
+                                      <div className="text-xs font-bold text-gray-700">💸 Virement vers <span className="text-emerald-700">{c.hospital}</span> :</div>
+                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                        {[
+                                          {id:"WAVE",emoji:"🌊",label:"Wave CI",bg:"bg-blue-600 hover:bg-blue-700",ring:"ring-blue-500"},
+                                          {id:"ORANGE",emoji:"🟠",label:"Orange Money",bg:"bg-orange-500 hover:bg-orange-600",ring:"ring-orange-400"},
+                                          {id:"MTN",emoji:"🟡",label:"MTN MoMo",bg:"bg-yellow-400 hover:bg-yellow-500 text-gray-900",ring:"ring-yellow-400"},
+                                          {id:"BANK",emoji:"🏦",label:"Virement bancaire",bg:"bg-gray-700 hover:bg-gray-800",ring:"ring-gray-500"},
+                                        ].map(pm => (
+                                          <button key={pm.id} onClick={() => setPayMethods(prev => ({...prev, [c.id]: pm.id}))}
+                                            className={"text-white text-xs font-bold py-3 rounded-xl flex flex-col items-center gap-1 transition-all "+pm.bg+(payMethod===pm.id?" ring-2 "+pm.ring+" scale-105":"")}>
+                                            <span className="text-2xl">{pm.emoji}</span><span>{pm.label}</span>
+                                          </button>
+                                        ))}
+                                      </div>
+                                      {payMethod && (
+                                        <button onClick={() => setConfirmingId(c.id)}
+                                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2">
+                                          💸 Virer maintenant — {fin.devisHopital.toLocaleString()} FCFA
+                                          <span className="text-emerald-200 text-xs">via {payMethod==="WAVE"?"🌊 Wave":payMethod==="ORANGE"?"🟠 Orange":payMethod==="MTN"?"🟡 MTN":"🏦 Banque"}</span>
+                                        </button>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    /* Modal confirmation */
+                                    <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 space-y-4">
+                                      <div className="flex items-center gap-2 text-amber-700 font-black"><span className="text-xl">⚠️</span>Confirmer le virement ?</div>
+                                      <div className="bg-white rounded-xl p-4 space-y-2 text-sm">
+                                        <div className="flex justify-between"><span className="text-gray-500">Bénéficiaire</span><span className="font-bold">{c.hospital}</span></div>
+                                        <div className="flex justify-between"><span className="text-gray-500">Référence</span><span className="font-mono font-bold text-emerald-700">{c.tracking_id||"AYD-"+c.id}</span></div>
+                                        <div className="flex justify-between"><span className="text-gray-500">Devis hôpital</span><span className="font-black text-emerald-700 text-base">{fin.devisHopital.toLocaleString()} FCFA</span></div>
+                                        <div className="flex justify-between"><span className="text-gray-500">Frais Ayyad</span><span className="font-bold text-amber-600">{fin.fraisAyyadBase.toLocaleString()} FCFA ✓</span></div>
+                                        {hasSurplus && (
+                                          <div className="border-t border-dashed border-gray-200 pt-2 space-y-1">
+                                            <div className="text-xs text-emerald-700 font-bold">🎉 Surcollecte +{fin.surplus.toLocaleString()} FCFA</div>
+                                            <div className="flex justify-between text-xs"><span className="text-gray-500">→ Bénéficiaire (70%)</span><span className="font-bold text-blue-600">{fin.partBeneficiaire.toLocaleString()} FCFA</span></div>
+                                            <div className="flex justify-between text-xs"><span className="text-gray-500">→ 5 cas urgents (25%)</span><span className="font-bold text-purple-600">{fin.partRedistrib.toLocaleString()} FCFA</span></div>
+                                            <div className="flex justify-between text-xs"><span className="text-gray-500">→ Ayyad 5% surplus</span><span className="font-bold text-amber-600">{fin.fraisAyyadSurplus.toLocaleString()} FCFA</span></div>
+                                          </div>
+                                        )}
+                                        <div className="flex justify-between border-t border-gray-100 pt-2"><span className="text-gray-500">Via</span>
+                                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">{payMethod==="WAVE"?"🌊 Wave":payMethod==="ORANGE"?"🟠 Orange Money":payMethod==="MTN"?"🟡 MTN MoMo":"🏦 Virement bancaire"}</span>
+                                        </div>
+                                        <div className="flex justify-between"><span className="text-gray-500">Patient</span><span className="font-semibold">{c.full_name||c.beneficiary||"—"}</span></div>
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <button onClick={() => setConfirmingId(null)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">Annuler</button>
+                                        <button onClick={async () => {
+                                          await supabase.from("cases").update({
+                                            payout_status: "initiated", payout_method: payMethod,
+                                            payout_initiated_at: new Date().toISOString(),
+                                            payout_amount_hospital: fin.devisHopital, payout_amount_ayyad: fin.totalAyyad,
+                                          }).eq("id", c.id);
+                                          setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"initiated", payout_method: payMethod, payout_amount_hospital: fin.devisHopital, payout_amount_ayyad: fin.totalAyyad} : x));
+                                          emailNewCase({ caseTitle: "VIREMENT "+payMethod+" - "+(c.title||c.id)+" - "+fin.devisHopital.toLocaleString()+" FCFA - Ayyad: "+fin.totalAyyad.toLocaleString()+" FCFA"+(fin.surplus>0?" - Surplus: "+fin.surplus.toLocaleString()+" FCFA":""), hospital: c.hospital, city: c.city, amount: fin.devisHopital });
+                                          setConfirmingId(null);
+                                          setExpandedPayoutId(null);
+                                        }} className="bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-sm shadow-md">
+                                          ✅ Confirmer le virement
+                                        </button>
+                                      </div>
+                                    </div>
                                   )}
-                                </div>
-                              ) : (
-                                <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 space-y-4">
-                                  <div className="flex items-center gap-2 text-amber-700 font-black">
-                                    <span className="text-xl">⚠️</span>
-                                    {lang==="fr" ? "Confirmer le virement ?" : "Confirm transfer?"}
-                                  </div>
-                                  <div className="bg-white rounded-xl p-4 space-y-2 text-sm">
-                                    <div className="flex justify-between"><span className="text-gray-500">Bénéficiaire</span><span className="font-bold">{c.hospital}</span></div>
-                                    <div className="flex justify-between"><span className="text-gray-500">Référence</span><span className="font-mono font-bold text-emerald-700">{c.tracking_id || "AYD-"+c.id}</span></div>
-                                    <div className="flex justify-between"><span className="text-gray-500">Devis hôpital</span><span className="font-black text-emerald-700 text-base">{fin.devisHopital.toLocaleString()} FCFA</span></div>
-                                    <div className="flex justify-between"><span className="text-gray-500">Frais Ayyad (base)</span><span className="font-bold text-amber-600">{fin.fraisAyyadBase.toLocaleString()} FCFA ✓</span></div>
-                                    {hasSurplus && (<>
-                                      <div className="border-t border-dashed border-gray-200 pt-2 mt-1">
-                                        <div className="text-xs text-emerald-700 font-bold mb-1">🎉 Surcollecte +{fin.surplus.toLocaleString()} FCFA</div>
-                                        <div className="flex justify-between text-xs"><span className="text-gray-500">→ Bénéficiaire (70%)</span><span className="font-bold text-blue-600">{fin.partBeneficiaire.toLocaleString()} FCFA</span></div>
-                                        <div className="flex justify-between text-xs"><span className="text-gray-500">→ 5 cas urgents (25%)</span><span className="font-bold text-purple-600">{fin.partRedistrib.toLocaleString()} FCFA</span></div>
-                                        <div className="flex justify-between text-xs"><span className="text-gray-500">→ Ayyad 5% surplus</span><span className="font-bold text-amber-600">{fin.fraisAyyadSurplus.toLocaleString()} FCFA</span></div>
-                                      </div>
-                                    </>)}
-                                    <div className="flex justify-between border-t border-gray-100 pt-2"><span className="text-gray-500">Via</span>
-                                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">{payMethod==="WAVE"?"🌊 Wave":payMethod==="ORANGE"?"🟠 Orange Money":payMethod==="MTN"?"🟡 MTN MoMo":"🏦 Virement bancaire"}</span>
-                                    </div>
-                                    <div className="flex justify-between"><span className="text-gray-500">Patient</span><span className="font-semibold">{c.full_name||c.beneficiary||"—"}</span></div>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <button onClick={() => setConfirmingId(null)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">Annuler</button>
-                                    <button onClick={async () => {
-                                      await supabase.from("cases").update({
-                                        payout_status: "initiated",
-                                        payout_method: payMethod,
-                                        payout_initiated_at: new Date().toISOString(),
-                                        payout_amount_hospital: fin.devisHopital,
-                                        payout_amount_ayyad: fin.totalAyyad,
-                                      }).eq("id", c.id);
-                                      setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"initiated", payout_method: payMethod, payout_amount_hospital: fin.devisHopital, payout_amount_ayyad: fin.totalAyyad} : x));
-                                      emailNewCase({ caseTitle: "VIREMENT "+payMethod+" - "+(c.title||c.id)+" - Hopital: "+fin.devisHopital.toLocaleString()+" FCFA - Ayyad: "+fin.totalAyyad.toLocaleString()+" FCFA"+(fin.surplus>0?" - Surplus: "+fin.surplus.toLocaleString()+" FCFA":""), hospital: c.hospital, city: c.city, amount: fin.devisHopital });
-                                      setConfirmingId(null);
-                                    }} className="bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-sm shadow-md">
-                                      ✅ Confirmer le virement
-                                    </button>
-                                  </div>
                                 </div>
                               )}
                             </div>
