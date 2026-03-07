@@ -200,7 +200,7 @@ const T = {
 // ── Static mock cases for homepage display ───────────────────
 const MOCK_CASES = [
   { id:1, trackingId:"AYD-2025-001", title:{fr:"Opération cardiaque urgente pour Aminata",en:"Urgent heart surgery for Aminata"}, beneficiary:"Aminata Koné", age:34, city:"Abidjan", hospital:"CHU de Cocody", category:{fr:"Cardiologie",en:"Cardiology"}, required:1800000, collected:1260000, donors:87, daysLeft:2, image:"🫀", urgent:true, videoUrl:"https://www.youtube.com/embed/dQw4w9WgXcQ", photos:["https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=600&q=80","https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&q=80"], desc:{fr:"Aminata souffre d'une cardiopathie valvulaire sévère nécessitant un remplacement de valve urgent. Sans cette intervention, son pronostic vital est engagé dans les 3 prochains mois.",en:"Aminata suffers from severe valvular heart disease requiring urgent valve replacement. Without this procedure, her life is at risk within 3 months."}, status:"COLLECTING" },
-  { id:2, trackingId:"AYD-2025-002", title:{fr:"Dialyse rénale pour Kofi Asante",en:"Kidney dialysis for Kofi Asante"}, beneficiary:"Kofi Asante", age:52, city:"Bouaké", hospital:"CHU de Bouaké", category:{fr:"Néphrologie",en:"Nephrology"}, required:950000, collected:950000, donors:67, daysLeft:0, image:"🫘", urgent:false, videoUrl:null, desc:{fr:"Kofi est en insuffisance rénale chronique terminale. Il a besoin de 3 séances de dialyse par semaine pendant 6 mois en attente de greffe.",en:"Kofi has end-stage chronic kidney failure. He needs 3 dialysis sessions per week for 6 months while awaiting a transplant."}, status:"FUNDED" },
+  { id:2, trackingId:"AYD-2025-002", title:{fr:"Dialyse rénale pour Kofi Asante",en:"Kidney dialysis for Kofi Asante"}, beneficiary:"Kofi Asante", age:52, city:"Bouaké", hospital:"CHU de Bouaké", category:{fr:"Néphrologie",en:"Nephrology"}, required:997500, collected:1150000, donors:74, daysLeft:0, image:"🫘", urgent:false, videoUrl:null, desc:{fr:"Kofi est en insuffisance rénale chronique terminale. Il a besoin de 3 séances de dialyse par semaine pendant 6 mois en attente de greffe.",en:"Kofi has end-stage chronic kidney failure. He needs 3 dialysis sessions per week for 6 months while awaiting a transplant."}, status:"FUNDED" },
   { id:3, trackingId:"AYD-2025-003", title:{fr:"Chimiothérapie pour Fatou Diallo",en:"Chemotherapy for Fatou Diallo"}, beneficiary:"Fatou Diallo", age:28, city:"Abidjan", hospital:"Institut National d'Oncologie", category:{fr:"Oncologie",en:"Oncology"}, required:2400000, collected:480000, donors:31, daysLeft:45, image:"🎗️", urgent:false, videoUrl:null, desc:{fr:"Fatou, jeune maman de 2 enfants, a reçu un diagnostic de cancer du sein au stade II. Un protocole de chimiothérapie de 6 cycles est nécessaire.",en:"Fatou, a young mother of 2, was diagnosed with stage II breast cancer. A 6-cycle chemotherapy protocol is needed."}, status:"COLLECTING" },
   { id:4, trackingId:"AYD-2025-004", title:{fr:"Prothèse orthopédique pour Ibrahim",en:"Orthopedic prosthesis for Ibrahim"}, beneficiary:"Ibrahim Coulibaly", age:19, city:"Daloa", hospital:"CHR de Daloa", category:{fr:"Orthopédie",en:"Orthopedics"}, required:620000, collected:620000, donors:62, daysLeft:0, image:"🦾", urgent:false, videoUrl:null, desc:{fr:"Ibrahim a perdu sa jambe droite suite à un accident de la route. Grâce à votre générosité, l'objectif est atteint !",en:"Ibrahim lost his right leg in a road accident. Thanks to your generosity, the goal has been reached!"}, status:"FUNDED" },
   { id:5, trackingId:"AYD-2025-005", title:{fr:"Traitement neurologique pour Mariam",en:"Neurological treatment for Mariam"}, beneficiary:"Mariam Ouédraogo", age:41, city:"Abidjan", hospital:"CHU de Yopougon", category:{fr:"Neurologie",en:"Neurology"}, required:1100000, collected:330000, donors:22, daysLeft:4, image:"🧠", urgent:true, videoUrl:null, photos:["https://images.unsplash.com/photo-1584515933487-779824d29309?w=600&q=80"], desc:{fr:"Mariam souffre d'une sclérose en plaques progressivement invalidante.",en:"Mariam suffers from progressively disabling multiple sclerosis."}, status:"COLLECTING" },
@@ -238,6 +238,23 @@ const MOCK_ALERTS = [
 // ── Helpers ───────────────────────────────────────────────────
 const fmt = (n) => new Intl.NumberFormat("fr-CI").format(n) + " FCFA";
 const pct = (c, r) => Math.min(100, Math.round((c / r) * 100));
+
+// ── Règles financières Ayyad ──────────────────────────────────
+// required = devis_hopital * 1.05 (montant à collecter affiché)
+// devis_hopital = required / 1.05
+// frais_ayyad_base = required - devis_hopital
+// surcollecte = collected - required (si > 0)
+// sur la surcollecte : 5% Ayyad, 70% bénéficiaire, 25% redistribué 5 urgents
+const calcFinancier = (required, collected) => {
+  const devisHopital = Math.round(required / 1.05);
+  const fraisAyyadBase = required - devisHopital;
+  const surplus = Math.max(0, (collected||0) - required);
+  const fraisAyyadSurplus = Math.round(surplus * 0.05);
+  const partBeneficiaire = Math.round(surplus * 0.70);
+  const partRedistrib = Math.round(surplus * 0.25);
+  return { devisHopital, fraisAyyadBase, surplus, fraisAyyadSurplus, partBeneficiaire, partRedistrib,
+           totalAyyad: fraisAyyadBase + fraisAyyadSurplus };
+};
 
 // ── UI Atoms ──────────────────────────────────────────────────
 const Badge = ({ children, color="green" }) => {
@@ -1066,7 +1083,8 @@ const CasePage = ({ c, setPage, lang }) => {
   // donMode: "choose" | "anonymous" | "logged" | "confirm" | "success"
   const [donMode, setDonMode] = useState("choose");
   const percent = pct(c.collected, c.required);
-  const funded = c.status==="FUNDED";
+  const funded = c.status==="FUNDED"; // seul FUNDED bloque les dons
+  const goalReached = !funded && (c.collected||0) >= (c.required||1); // objectif atteint mais collecte encore ouverte
   const t = T[lang];
   const td = t.donate;
   const presets = [1000,5000,10000,25000,50000];
@@ -1245,9 +1263,23 @@ const CasePage = ({ c, setPage, lang }) => {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-xl p-6 sticky top-24">
 
             {/* ÉTAPE 1 — Choisir le mode de don */}
-            {donMode==="choose" && !funded && <ChooseWidget />}
+            {donMode==="choose" && !funded && (
+              <>
+                {goalReached && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 text-center">
+                    <div className="text-2xl mb-1">🎉</div>
+                    <div className="text-xs font-black text-emerald-700">Objectif atteint !</div>
+                    <div className="text-[11px] text-emerald-600 mt-0.5">
+                      La collecte reste ouverte jusqu'à demain.<br/>
+                      Tout don supplémentaire soutient directement le bénéficiaire.
+                    </div>
+                  </div>
+                )}
+                <ChooseWidget />
+              </>
+            )}
 
-            {/* Collecte terminée */}
+            {/* Collecte terminée (FUNDED) */}
             {funded && (
               <div className="text-center py-4">
                 <div className="text-4xl mb-3">✅</div>
@@ -1707,10 +1739,10 @@ const AdminPage = ({ user, setPage, lang }) => {
       beneficiary: "Kofi Asante",
       hospital: "CHU de Bouaké",
       city: "Bouaké",
-      category: "Néphrologie",
-      amount: 950000,
-      collected: 950000,
-      donors: 67,
+      category: "Nephrologie",
+      amount: 997500,
+      collected: 1150000,
+      donors: 74,
       status: "FUNDED",
       payout_status: null,
       created_at: new Date().toISOString(),
@@ -1721,6 +1753,34 @@ const AdminPage = ({ user, setPage, lang }) => {
   };
 
   useEffect(() => { loadCases(); }, []);
+
+  // Auto-passage en FUNDED : collectes ayant atteint leur objectif la veille ou avant
+  useEffect(() => {
+    const autoFund = async () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      yesterday.setHours(0, 0, 0, 0);
+      // Cherche les dossiers COLLECTING dont collected >= amount et goal_reached_at <= hier
+      const { data } = await supabase.from("cases")
+        .select("id, amount, collected, goal_reached_at")
+        .eq("status", "COLLECTING");
+      if (!data) return;
+      for (const c of data) {
+        if ((c.collected||0) >= (c.amount||1) && c.goal_reached_at) {
+          const reachedDate = new Date(c.goal_reached_at);
+          if (reachedDate < yesterday) {
+            await supabase.from("cases").update({ status: "FUNDED" }).eq("id", c.id);
+          }
+        }
+        // Si objectif atteint aujourd'hui mais pas encore marqué, on note la date
+        if ((c.collected||0) >= (c.amount||1) && !c.goal_reached_at) {
+          await supabase.from("cases").update({ goal_reached_at: new Date().toISOString() }).eq("id", c.id);
+        }
+      }
+      loadCases();
+    };
+    autoFund();
+  }, []);
 
   // ── Toggle urgent ──
   const toggleUrgent = async (id, current) => {
@@ -2015,10 +2075,10 @@ const AdminPage = ({ user, setPage, lang }) => {
                     ) : (
                       <div className="divide-y divide-gray-50">
                         {funded.map(c => {
-                          const montantHopital = Math.round((c.amount||0) * 0.95);
-                          const fraisAyyad = Math.round((c.amount||0) * 0.05);
+                          const fin = calcFinancier(c.amount||c.required||0, c.collected||c.amount||0);
                           const payMethod = payMethods[c.id] || null;
                           const confirming = confirmingId === c.id;
+                          const hasSurplus = fin.surplus > 0;
 
                           return (
                             <div key={c.id} className="p-5 space-y-4">
@@ -2038,22 +2098,51 @@ const AdminPage = ({ user, setPage, lang }) => {
                               </div>
 
                               {/* Décomposition financière */}
-                              <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-3 gap-3 text-center">
-                                <div>
-                                  <div className="text-xs text-gray-500 mb-1">💰 Total collecté</div>
-                                  <div className="font-black text-gray-900 text-sm">{(c.amount||0).toLocaleString()}</div>
-                                  <div className="text-[10px] text-gray-400">FCFA</div>
+                              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                                <div className="grid grid-cols-3 gap-3 text-center">
+                                  <div>
+                                    <div className="text-xs text-gray-500 mb-1">💰 Total collecté</div>
+                                    <div className="font-black text-gray-900 text-sm">{(c.collected||c.amount||0).toLocaleString()}</div>
+                                    <div className="text-[10px] text-gray-400">FCFA</div>
+                                  </div>
+                                  <div className="border-x border-gray-200">
+                                    <div className="text-xs text-gray-500 mb-1">🏥 Devis hôpital</div>
+                                    <div className="font-black text-emerald-700 text-sm">{fin.devisHopital.toLocaleString()}</div>
+                                    <div className="text-[10px] text-emerald-600">100% devis · FCFA</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-xs text-gray-500 mb-1">💚 Frais Ayyad</div>
+                                    <div className="font-black text-amber-600 text-sm">{fin.fraisAyyadBase.toLocaleString()}</div>
+                                    <div className="text-[10px] text-amber-500">5% base · FCFA</div>
+                                  </div>
                                 </div>
-                                <div className="border-x border-gray-200">
-                                  <div className="text-xs text-gray-500 mb-1">🏥 Montant hôpital</div>
-                                  <div className="font-black text-emerald-700 text-sm">{montantHopital.toLocaleString()}</div>
-                                  <div className="text-[10px] text-emerald-600">95% · FCFA</div>
-                                </div>
-                                <div>
-                                  <div className="text-xs text-gray-500 mb-1">💚 Frais Ayyad</div>
-                                  <div className="font-black text-amber-600 text-sm">{fraisAyyad.toLocaleString()}</div>
-                                  <div className="text-[10px] text-amber-500">5% · FCFA</div>
-                                </div>
+
+                                {/* Surcollecte */}
+                                {hasSurplus && (
+                                  <div className="mt-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-2">
+                                    <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs">
+                                      <span className="text-base">🎉</span>
+                                      Surcollecte : +{fin.surplus.toLocaleString()} FCFA au-dessus de l'objectif
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                                      <div className="bg-white rounded-lg p-2">
+                                        <div className="text-amber-600 font-black">{fin.fraisAyyadSurplus.toLocaleString()}</div>
+                                        <div className="text-gray-400 text-[10px]">5% → Ayyad</div>
+                                      </div>
+                                      <div className="bg-white rounded-lg p-2">
+                                        <div className="text-blue-600 font-black">{fin.partBeneficiaire.toLocaleString()}</div>
+                                        <div className="text-gray-400 text-[10px]">70% → Bénéficiaire</div>
+                                      </div>
+                                      <div className="bg-white rounded-lg p-2">
+                                        <div className="text-purple-600 font-black">{fin.partRedistrib.toLocaleString()}</div>
+                                        <div className="text-gray-400 text-[10px]">25% → 5 urgents</div>
+                                      </div>
+                                    </div>
+                                    <div className="text-[10px] text-emerald-600 text-center">
+                                      Total Ayyad sur ce dossier : <span className="font-black">{fin.totalAyyad.toLocaleString()} FCFA</span>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
 
                               {/* Choix du moyen de paiement */}
@@ -2077,7 +2166,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                                   {payMethod && (
                                     <button onClick={() => setConfirmingId(c.id)}
                                       className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2">
-                                      💸 {lang==="fr" ? "Virer maintenant" : "Transfer now"} — {montantHopital.toLocaleString()} FCFA
+                                      💸 {lang==="fr" ? "Virer maintenant" : "Transfer now"} — {fin.devisHopital.toLocaleString()} FCFA
                                       <span className="text-emerald-200 text-xs">via {payMethod==="WAVE"?"🌊 Wave":payMethod==="ORANGE"?"🟠 Orange":payMethod==="MTN"?"🟡 MTN":"🏦 Banque"}</span>
                                     </button>
                                   )}
@@ -2091,9 +2180,17 @@ const AdminPage = ({ user, setPage, lang }) => {
                                   <div className="bg-white rounded-xl p-4 space-y-2 text-sm">
                                     <div className="flex justify-between"><span className="text-gray-500">Bénéficiaire</span><span className="font-bold">{c.hospital}</span></div>
                                     <div className="flex justify-between"><span className="text-gray-500">Référence</span><span className="font-mono font-bold text-emerald-700">{c.tracking_id || "AYD-"+c.id}</span></div>
-                                    <div className="flex justify-between"><span className="text-gray-500">Montant à virer</span><span className="font-black text-emerald-700 text-base">{montantHopital.toLocaleString()} FCFA</span></div>
-                                    <div className="flex justify-between"><span className="text-gray-500">5% Ayyad prélevés</span><span className="font-bold text-amber-600">{fraisAyyad.toLocaleString()} FCFA ✓</span></div>
-                                    <div className="flex justify-between"><span className="text-gray-500">Via</span>
+                                    <div className="flex justify-between"><span className="text-gray-500">Devis hôpital</span><span className="font-black text-emerald-700 text-base">{fin.devisHopital.toLocaleString()} FCFA</span></div>
+                                    <div className="flex justify-between"><span className="text-gray-500">Frais Ayyad (base)</span><span className="font-bold text-amber-600">{fin.fraisAyyadBase.toLocaleString()} FCFA ✓</span></div>
+                                    {hasSurplus && (<>
+                                      <div className="border-t border-dashed border-gray-200 pt-2 mt-1">
+                                        <div className="text-xs text-emerald-700 font-bold mb-1">🎉 Surcollecte +{fin.surplus.toLocaleString()} FCFA</div>
+                                        <div className="flex justify-between text-xs"><span className="text-gray-500">→ Bénéficiaire (70%)</span><span className="font-bold text-blue-600">{fin.partBeneficiaire.toLocaleString()} FCFA</span></div>
+                                        <div className="flex justify-between text-xs"><span className="text-gray-500">→ 5 cas urgents (25%)</span><span className="font-bold text-purple-600">{fin.partRedistrib.toLocaleString()} FCFA</span></div>
+                                        <div className="flex justify-between text-xs"><span className="text-gray-500">→ Ayyad 5% surplus</span><span className="font-bold text-amber-600">{fin.fraisAyyadSurplus.toLocaleString()} FCFA</span></div>
+                                      </div>
+                                    </>)}
+                                    <div className="flex justify-between border-t border-gray-100 pt-2"><span className="text-gray-500">Via</span>
                                       <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">{payMethod==="WAVE"?"🌊 Wave":payMethod==="ORANGE"?"🟠 Orange Money":payMethod==="MTN"?"🟡 MTN MoMo":"🏦 Virement bancaire"}</span>
                                     </div>
                                     <div className="flex justify-between"><span className="text-gray-500">Patient</span><span className="font-semibold">{c.full_name||c.beneficiary||"—"}</span></div>
@@ -2105,11 +2202,11 @@ const AdminPage = ({ user, setPage, lang }) => {
                                         payout_status: "initiated",
                                         payout_method: payMethod,
                                         payout_initiated_at: new Date().toISOString(),
-                                        payout_amount_hospital: montantHopital,
-                                        payout_amount_ayyad: fraisAyyad,
+                                        payout_amount_hospital: fin.devisHopital,
+                                        payout_amount_ayyad: fin.totalAyyad,
                                       }).eq("id", c.id);
-                                      setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"initiated", payout_method: payMethod, payout_amount_hospital: montantHopital, payout_amount_ayyad: fraisAyyad} : x));
-                                      emailNewCase({ caseTitle: "VIREMENT "+payMethod+" - "+(c.title||c.id)+" - "+montantHopital.toLocaleString()+" FCFA - Ayyad: "+fraisAyyad.toLocaleString()+" FCFA", hospital: c.hospital, city: c.city, amount: montantHopital });
+                                      setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"initiated", payout_method: payMethod, payout_amount_hospital: fin.devisHopital, payout_amount_ayyad: fin.totalAyyad} : x));
+                                      emailNewCase({ caseTitle: "VIREMENT "+payMethod+" - "+(c.title||c.id)+" - Hopital: "+fin.devisHopital.toLocaleString()+" FCFA - Ayyad: "+fin.totalAyyad.toLocaleString()+" FCFA"+(fin.surplus>0?" - Surplus: "+fin.surplus.toLocaleString()+" FCFA":""), hospital: c.hospital, city: c.city, amount: fin.devisHopital });
                                       setConfirmingId(null);
                                     }} className="bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-sm shadow-md">
                                       ✅ Confirmer le virement
