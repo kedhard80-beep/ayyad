@@ -3887,7 +3887,9 @@ const ChangePasswordPage = ({ setPage, lang }) => {
 };
 
 export default function AyyadApp() {
-  const [page, setPage] = useState("home");
+  const [page, setPage] = useState(() => { const p = window.location.hash.replace("#","") || "home"; return p; });
+  const navigate = (p) => { window.location.hash = p; setPage(p); };
+  useEffect(() => { const onHash = () => { const p = window.location.hash.replace("#","") || "home"; setPage(p); window.scrollTo(0,0); }; window.addEventListener("hashchange", onHash); return () => window.removeEventListener("hashchange", onHash); }, []);
   useEffect(() => { window.scrollTo(0, 0); }, [page]);
   const [lang, setLang] = useState("fr");
   const [user, setUser] = useState(null);
