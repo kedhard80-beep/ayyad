@@ -587,15 +587,24 @@ const MediaSection = ({ c, lang, t }) => {
         </div>
       )}
       {/* Vidéo */}
-      {c.videoUrl && (
-        <div>
-          {photos.length > 0 && <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>🎥</span>{t.video.title}</div>}
-          {!photos.length && <div className="px-4 py-2 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>🎥</span>{t.video.title}</div>}
-          <div className="relative w-full" style={{paddingBottom:"56.25%"}}>
-            <iframe src={c.videoUrl} className="absolute inset-0 w-full h-full" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Patient video" />
+      {c.videoUrl && (() => {
+        const isTikTok = c.videoUrl.includes("tiktok.com");
+        return (
+          <div>
+            {photos.length > 0 && <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{isTikTok ? "TikTok" : t.video.title}</div>}
+            {!photos.length && <div className="px-4 py-2 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{isTikTok ? "TikTok" : t.video.title}</div>}
+            {isTikTok ? (
+              <div className="flex justify-center bg-black">
+                <iframe src={c.videoUrl} className="w-full max-w-xs" style={{height:"560px"}} allowFullScreen allow="autoplay" title="TikTok video" />
+              </div>
+            ) : (
+              <div className="relative w-full" style={{paddingBottom:"56.25%"}}>
+                <iframe src={c.videoUrl} className="absolute inset-0 w-full h-full" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Patient video" />
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
@@ -1580,7 +1589,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     title:"", description:"", hospital:"", city:"", amount:"",
-    category:"", categoryOther:"", beneficiary_phone:""
+    category:"", categoryOther:"", beneficiary_phone:"", videoUrl:""
   });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -1624,6 +1633,30 @@ const SubmitPage = ({ setPage, user, lang }) => {
     setFileStates(prev => ({...prev, [key]: "done"}));
   };
 
+  const toEmbedUrl = (url) => {
+    if (!url || !url.trim()) return null;
+    // YouTube
+    const watchMatch = url.match(/youtube\.com\/watch\?v=([^&]+)/);
+    if (watchMatch) return "https://www.youtube.com/embed/" + watchMatch[1];
+    const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
+    if (shortMatch) return "https://www.youtube.com/embed/" + shortMatch[1];
+    if (url.includes("youtube.com/embed/")) return url;
+    // TikTok — on stocke l'URL originale, embed via oembed
+    const tiktokMatch = url.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+    if (tiktokMatch) return "https://www.tiktok.com/embed/v2/" + tiktokMatch[1];
+    return null;
+  };
+
+  const getVideoType = (url) => {
+    if (!url) return null;
+    if (url.includes("youtube") || url.includes("youtu.be")) return "youtube";
+    if (url.includes("tiktok")) return "tiktok";
+    return null;
+  };
+
+  const embedPreview = toEmbedUrl(form.videoUrl);
+  const videoType = getVideoType(form.videoUrl);
+
   const handleSubmit = async () => {
     setSubmitting(true);
     setSubmitError("");
@@ -1642,6 +1675,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
       full_name: user?.name || "Anonyme",
       photo_url: finalPhotoUrl || null,
       beneficiary_phone: form.beneficiary_phone || null,
+      video_url: toEmbedUrl(form.videoUrl) || null,
       status: "PENDING",
       user_id: user?.id || null,
     });
@@ -1705,6 +1739,48 @@ const SubmitPage = ({ setPage, user, lang }) => {
 
           <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.titleField}</label><input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} autoComplete="off" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
           <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.descField}</label><textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={4} autoComplete="off" autoCorrect="off" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" /></div>
+
+          {/* Lien vidéo YouTube ou TikTok (optionnel) */}
+          <div>
+            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+              🎥 {lang==="fr" ? "Lien vidéo YouTube ou TikTok" : "YouTube or TikTok video link"}
+              <span className="text-gray-400 font-normal ml-2">({lang==="fr" ? "optionnel" : "optional"})</span>
+            </label>
+            <p className="text-[11px] text-gray-400 mb-2">
+              {lang==="fr"
+                ? "Collez le lien de votre vidéo YouTube ou TikTok. Elle sera visible sur votre page de collecte et augmente les dons."
+                : "Paste your YouTube or TikTok video link. It will appear on your campaign page and increases donations."}
+            </p>
+            <div className="flex gap-2 mb-2">
+              <span className="text-[11px] bg-red-50 text-red-600 border border-red-100 rounded-full px-2 py-0.5 font-medium">▶ YouTube</span>
+              <span className="text-[11px] bg-gray-900 text-white rounded-full px-2 py-0.5 font-medium">♪ TikTok</span>
+            </div>
+            <input
+              type="url"
+              value={form.videoUrl}
+              onChange={e => setForm({...form, videoUrl: e.target.value})}
+              placeholder="https://youtube.com/watch?v=... ou https://tiktok.com/@..."
+              autoComplete="off"
+              className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${embedPreview ? "border-emerald-300 bg-emerald-50" : "border-gray-200"}`}
+            />
+            {form.videoUrl && !embedPreview && (
+              <p className="text-xs text-red-500 mt-1">⚠️ {lang==="fr" ? "Lien non reconnu. Copiez le lien depuis YouTube ou TikTok." : "Link not recognized. Copy the link from YouTube or TikTok."}</p>
+            )}
+            {embedPreview && (
+              <div className="mt-3 rounded-xl overflow-hidden border border-emerald-200">
+                <iframe
+                  src={embedPreview}
+                  className={`w-full ${videoType === "tiktok" ? "h-96" : "h-40"}`}
+                  allowFullScreen
+                  allow="autoplay"
+                  title="preview"
+                />
+                <div className="bg-emerald-50 px-3 py-1.5 text-xs text-emerald-700 font-medium">
+                  ✅ {videoType === "tiktok" ? "TikTok" : "YouTube"} {lang==="fr" ? "— aperçu ci-dessus" : "— preview above"}
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
