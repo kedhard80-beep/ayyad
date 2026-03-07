@@ -3891,6 +3891,7 @@ export default function AyyadApp() {
   const navigate = (p) => { window.location.hash = p; setPage(p); };
   useEffect(() => { const onHash = () => { const p = window.location.hash.replace("#","") || "home"; setPage(p); window.scrollTo(0,0); }; window.addEventListener("hashchange", onHash); return () => window.removeEventListener("hashchange", onHash); }, []);
   useEffect(() => { window.scrollTo(0, 0); }, [page]);
+  useEffect(() => { window.history.pushState(null, "", window.location.href); const onPop = () => { window.history.pushState(null, "", window.location.href); }; window.addEventListener("popstate", onPop); return () => window.removeEventListener("popstate", onPop); }, [page]);
   const [lang, setLang] = useState("fr");
   const [user, setUser] = useState(null);
   const [selectedCase, setSelectedCase] = useState(null);
