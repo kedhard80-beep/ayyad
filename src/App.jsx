@@ -1304,13 +1304,34 @@ const CasePage = ({ c, setPage, lang }) => {
       <div className="mb-4">
         <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{td.amount}</label>
         <div className="relative">
-          <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="15 000" className="w-full border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-16" />
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={amount}
+            onChange={e => {
+              const val = e.target.value.replace(/[^0-9]/g, "");
+              setAmount(val);
+            }}
+            placeholder="15 000"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-16"
+          />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span>
         </div>
         {amount&&Number(amount)>=500&&<div className="text-xs text-center text-gray-400 mt-1.5">{lang==="fr"?"Débité : ":"Charged: "}<span className="font-bold text-gray-700">{fmt(Number(amount))}</span></div>}
       </div>
       <div className="mb-4">
-        <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder={td.message} rows={2} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        <textarea
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+          placeholder={td.message}
+          rows={2}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="sentences"
+          spellCheck="false"
+          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400"
+        />
       </div>
       {/* Widget paiement mobile — Wave / Orange Money / MTN */}
       {amount && Number(amount) >= 500 ? (
