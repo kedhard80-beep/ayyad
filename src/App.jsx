@@ -1684,8 +1684,10 @@ const AdminPage = ({ user, setPage, lang }) => {
   const [cases, setCases] = useState([]);
   const [loadingCases, setLoadingCases] = useState(true);
   const [alerts, setAlerts] = useState(MOCK_ALERTS);
-  const [rejectModal, setRejectModal] = useState(null); // caseId
+  const [rejectModal, setRejectModal] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [payMethods, setPayMethods] = useState({}); // { caseId: "WAVE"|"ORANGE"|"MTN"|"BANK" }
+  const [confirmingId, setConfirmingId] = useState(null); // caseId en cours de confirmation
   const t = T[lang].admin;
   const unresolved = alerts.filter(a=>!a.resolved).length;
 
@@ -2015,23 +2017,23 @@ const AdminPage = ({ user, setPage, lang }) => {
                         {funded.map(c => {
                           const montantHopital = Math.round((c.amount||0) * 0.95);
                           const fraisAyyad = Math.round((c.amount||0) * 0.05);
-                          const [payMethod, setPayMethod] = useState(null);
-                          const [confirming, setConfirming] = useState(false);
+                          const payMethod = payMethods[c.id] || null;
+                          const confirming = confirmingId === c.id;
 
                           return (
                             <div key={c.id} className="p-5 space-y-4">
                               {/* En-tête dossier */}
                               <div className="flex items-start gap-4">
                                 <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
-                                  {c.category === "Cardiologie" ? "🫀" : c.category === "Oncologie" ? "🎗️" : c.category === "Neurologie" ? "🧠" : c.category === "Pédiatrie" ? "👶" : c.category === "Gynécologie" ? "🌸" : c.category === "Orthopédie" ? "🦴" : c.category === "Néphrologie" ? "🫘" : "🏥"}
+                                  {c.category === "Cardiologie" ? "🫀" : c.category === "Oncologie" ? "🎗️" : c.category === "Neurologie" ? "🧠" : c.category === "Pediatrie" ? "👶" : c.category === "Gynecologie" ? "🌸" : c.category === "Orthopedie" ? "🦴" : c.category === "Nephrologie" ? "🫘" : "🏥"}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap mb-1">
                                     <span className="font-mono text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">{c.tracking_id || "AYD-"+c.id}</span>
                                     <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">✅ FUNDED</span>
                                   </div>
-                                  <div className="font-bold text-gray-900">{c.title}</div>
-                                  <div className="text-xs text-gray-400 mt-0.5">🏥 {c.hospital} · 📍 {c.city} · 👤 {c.full_name||c.beneficiary}</div>
+                                  <div className="font-bold text-gray-900">{c.title || "Dossier "+c.id}</div>
+                                  <div className="text-xs text-gray-400 mt-0.5">🏥 {c.hospital} · 📍 {c.city} · 👤 {c.full_name||c.beneficiary||"—"}</div>
                                 </div>
                               </div>
 
@@ -2065,15 +2067,15 @@ const AdminPage = ({ user, setPage, lang }) => {
                                       { id:"MTN", emoji:"🟡", label:"MTN MoMo", bg:"bg-yellow-400 hover:bg-yellow-500", ring:"ring-yellow-400" },
                                       { id:"BANK", emoji:"🏦", label:"Virement bancaire", bg:"bg-gray-700 hover:bg-gray-800", ring:"ring-gray-500" },
                                     ].map(pm => (
-                                      <button key={pm.id} onClick={() => setPayMethod(pm.id)}
-                                        className={"text-white text-xs font-bold py-3 rounded-xl flex flex-col items-center gap-1 transition-all "+(pm.id==="MTN"?"text-gray-900 ":"")+" "+pm.bg+(payMethod===pm.id?" ring-2 "+pm.ring+" scale-105":"")}>
+                                      <button key={pm.id} onClick={() => setPayMethods(prev => ({...prev, [c.id]: pm.id}))}
+                                        className={"text-white text-xs font-bold py-3 rounded-xl flex flex-col items-center gap-1 transition-all "+(pm.id==="MTN"?"text-gray-900 ":"")+pm.bg+(payMethod===pm.id?" ring-2 "+pm.ring+" scale-105":"")}>
                                         <span className="text-2xl">{pm.emoji}</span>
                                         <span>{pm.label}</span>
                                       </button>
                                     ))}
                                   </div>
                                   {payMethod && (
-                                    <button onClick={() => setConfirming(true)}
+                                    <button onClick={() => setConfirmingId(c.id)}
                                       className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2">
                                       💸 {lang==="fr" ? "Virer maintenant" : "Transfer now"} — {montantHopital.toLocaleString()} FCFA
                                       <span className="text-emerald-200 text-xs">via {payMethod==="WAVE"?"🌊 Wave":payMethod==="ORANGE"?"🟠 Orange":payMethod==="MTN"?"🟡 MTN":"🏦 Banque"}</span>
@@ -2081,7 +2083,6 @@ const AdminPage = ({ user, setPage, lang }) => {
                                   )}
                                 </div>
                               ) : (
-                                /* Modal confirmation */
                                 <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 space-y-4">
                                   <div className="flex items-center gap-2 text-amber-700 font-black">
                                     <span className="text-xl">⚠️</span>
@@ -2093,14 +2094,12 @@ const AdminPage = ({ user, setPage, lang }) => {
                                     <div className="flex justify-between"><span className="text-gray-500">Montant à virer</span><span className="font-black text-emerald-700 text-base">{montantHopital.toLocaleString()} FCFA</span></div>
                                     <div className="flex justify-between"><span className="text-gray-500">5% Ayyad prélevés</span><span className="font-bold text-amber-600">{fraisAyyad.toLocaleString()} FCFA ✓</span></div>
                                     <div className="flex justify-between"><span className="text-gray-500">Via</span>
-                                      <PayoutMethodBadge method={payMethod} />
+                                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">{payMethod==="WAVE"?"🌊 Wave":payMethod==="ORANGE"?"🟠 Orange Money":payMethod==="MTN"?"🟡 MTN MoMo":"🏦 Virement bancaire"}</span>
                                     </div>
-                                    <div className="flex justify-between"><span className="text-gray-500">Patient</span><span className="font-semibold">{c.full_name||c.beneficiary}</span></div>
+                                    <div className="flex justify-between"><span className="text-gray-500">Patient</span><span className="font-semibold">{c.full_name||c.beneficiary||"—"}</span></div>
                                   </div>
                                   <div className="grid grid-cols-2 gap-2">
-                                    <button onClick={() => setConfirming(false)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">
-                                      Annuler
-                                    </button>
+                                    <button onClick={() => setConfirmingId(null)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">Annuler</button>
                                     <button onClick={async () => {
                                       await supabase.from("cases").update({
                                         payout_status: "initiated",
@@ -2110,11 +2109,8 @@ const AdminPage = ({ user, setPage, lang }) => {
                                         payout_amount_ayyad: fraisAyyad,
                                       }).eq("id", c.id);
                                       setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"initiated", payout_method: payMethod, payout_amount_hospital: montantHopital, payout_amount_ayyad: fraisAyyad} : x));
-                                      emailNewCase({
-                                        caseTitle: "VIREMENT - "+c.title+" ("+(c.tracking_id||"AYD-"+c.id)+") Hopital: "+montantHopital.toLocaleString()+" FCFA Ayyad5pct: "+fraisAyyad.toLocaleString()+" FCFA Via: "+payMethod,
-                                        hospital: c.hospital, city: c.city, amount: montantHopital
-                                      });
-                                      setConfirming(false);
+                                      emailNewCase({ caseTitle: "VIREMENT "+payMethod+" - "+(c.title||c.id)+" - "+montantHopital.toLocaleString()+" FCFA - Ayyad: "+fraisAyyad.toLocaleString()+" FCFA", hospital: c.hospital, city: c.city, amount: montantHopital });
+                                      setConfirmingId(null);
                                     }} className="bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-sm shadow-md">
                                       ✅ Confirmer le virement
                                     </button>
