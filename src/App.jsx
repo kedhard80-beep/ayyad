@@ -2157,6 +2157,7 @@ const AdminPage = ({ user, setPage, lang }) => {
   const [payMethods, setPayMethods] = useState({}); // { caseId: "WAVE"|"ORANGE"|"MTN"|"BANK" }
   const [confirmingId, setConfirmingId] = useState(null); // caseId en cours de confirmation
   const [expandedPayoutId, setExpandedPayoutId] = useState(null); // collecte expand dans virements
+  const [groupedPayout, setGroupedPayout] = useState({}); // { caseId: true|false } — virement groupé hôpital + 70% bénéficiaire
   const t = T[lang].admin;
   const unresolved = alerts.filter(a=>!a.resolved).length;
 
@@ -2637,54 +2638,101 @@ const AdminPage = ({ user, setPage, lang }) => {
                                         })()}
 
                                         {/* Surcollecte */}
-                                        {hasSurplus && (
-                                          <div className="border-t border-dashed border-gray-200 pt-2 space-y-1.5">
-                                            <div className="text-xs text-emerald-700 font-bold">🎉 Surcollecte +{fin.surplus.toLocaleString()} FCFA</div>
-                                            <div className="flex justify-between text-xs"><span className="text-gray-500">→ 5 cas urgents (25%)</span><span className="font-bold text-purple-600">{fin.partRedistrib.toLocaleString()} FCFA</span></div>
-                                            <div className="flex justify-between text-xs"><span className="text-gray-500">→ Ayyad 5% surplus</span><span className="font-bold text-amber-600">{fin.fraisAyyadSurplus.toLocaleString()} FCFA</span></div>
-                                            {/* Mobile money bénéficiaire */}
-                                            <div className="bg-blue-50 rounded-lg p-2.5 mt-1 space-y-1.5">
-                                              <div className="text-xs font-bold text-blue-700">📱 Virement bénéficiaire (70%) — {fin.partBeneficiaire.toLocaleString()} FCFA</div>
-                                              <div className="text-[10px] text-gray-500 mb-1">Numéro mobile money de <span className="font-semibold">{c.full_name||c.beneficiary}</span> :</div>
-                                              <input
-                                                type="tel"
-                                                placeholder="+225 07 XX XX XX XX"
-                                                defaultValue={c.beneficiary_phone||""}
-                                                onChange={e => {
-                                                  setCases(prev => prev.map(x => x.id===c.id ? {...x, beneficiary_phone: e.target.value} : x));
-                                                }}
-                                                className="w-full border border-blue-200 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                              />
-                                              <div className="flex gap-1.5 mt-1">
-                                                {["🌊 Wave","🟠 Orange","🟡 MTN"].map(op => (
-                                                  <button key={op} className="text-[10px] bg-white border border-blue-200 text-blue-600 px-2 py-0.5 rounded-full font-medium">{op}</button>
-                                                ))}
+                                        {hasSurplus && (() => {
+                                          const isGrouped = !!groupedPayout[c.id];
+                                          return (
+                                            <div className="border-t border-dashed border-gray-200 pt-2 space-y-2">
+                                              <div className="text-xs text-emerald-700 font-bold">🎉 Surcollecte +{fin.surplus.toLocaleString()} FCFA</div>
+                                              <div className="flex justify-between text-xs"><span className="text-gray-500">→ 5 cas urgents (25%)</span><span className="font-bold text-purple-600">{fin.partRedistrib.toLocaleString()} FCFA</span></div>
+                                              <div className="flex justify-between text-xs"><span className="text-gray-500">→ Ayyad 5% surplus</span><span className="font-bold text-amber-600">{fin.fraisAyyadSurplus.toLocaleString()} FCFA</span></div>
+
+                                              {/* Toggle virement groupé */}
+                                              <div
+                                                onClick={() => setGroupedPayout(prev => ({...prev, [c.id]: !prev[c.id]}))}
+                                                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 cursor-pointer border transition-all select-none mt-1 ${isGrouped ? "bg-blue-50 border-blue-200" : "bg-gray-50 border-gray-200"}`}>
+                                                {/* Toggle switch */}
+                                                <div className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${isGrouped ? "bg-blue-500" : "bg-gray-300"}`}>
+                                                  <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isGrouped ? "translate-x-5" : "translate-x-0.5"}`} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                  <div className={`text-xs font-bold ${isGrouped ? "text-blue-700" : "text-gray-600"}`}>
+                                                    {isGrouped ? "✅ Virement groupé activé" : "Virement groupé désactivé"}
+                                                  </div>
+                                                  <div className="text-[10px] text-gray-400 leading-snug mt-0.5">
+                                                    {isGrouped
+                                                      ? "Le 70% bénéficiaire sera viré en même temps que l'hôpital"
+                                                      : "Seul le virement hôpital sera effectué maintenant"}
+                                                  </div>
+                                                </div>
                                               </div>
+
+                                              {/* Mobile money bénéficiaire — visible seulement si groupé */}
+                                              {isGrouped && (
+                                                <div className="bg-blue-50 rounded-xl p-3 space-y-2 border border-blue-100">
+                                                  <div className="flex items-center justify-between">
+                                                    <div className="text-xs font-bold text-blue-700">📱 Virement bénéficiaire (70%)</div>
+                                                    <div className="text-xs font-black text-blue-800">{fin.partBeneficiaire.toLocaleString()} FCFA</div>
+                                                  </div>
+                                                  <div className="text-[10px] text-gray-500">Numéro mobile money de <span className="font-semibold">{c.full_name||c.beneficiary}</span> :</div>
+                                                  <input
+                                                    type="tel"
+                                                    placeholder="+225 07 XX XX XX XX"
+                                                    defaultValue={c.beneficiary_phone||""}
+                                                    onChange={e => {
+                                                      setCases(prev => prev.map(x => x.id===c.id ? {...x, beneficiary_phone: e.target.value} : x));
+                                                    }}
+                                                    className="w-full border border-blue-200 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
+                                                  />
+                                                  <div className="flex gap-1.5 flex-wrap">
+                                                    {["🌊 Wave","🟠 Orange","🟡 MTN"].map(op => (
+                                                      <button key={op} className="text-[10px] bg-white border border-blue-200 text-blue-600 px-2 py-0.5 rounded-full font-medium">{op}</button>
+                                                    ))}
+                                                  </div>
+                                                </div>
+                                              )}
+
+                                              {/* Résumé virements si NON groupé */}
+                                              {!isGrouped && (
+                                                <div className="bg-amber-50 rounded-xl p-2.5 border border-amber-100 text-[10px] text-amber-700 leading-relaxed">
+                                                  ⏳ Le 70% bénéficiaire ({fin.partBeneficiaire.toLocaleString()} FCFA) sera viré ultérieurement, quand vous activerez le virement groupé.
+                                                </div>
+                                              )}
                                             </div>
-                                          </div>
-                                        )}
+                                          );
+                                        })()}
 
                                         <div className="flex justify-between border-t border-gray-100 pt-2"><span className="text-gray-500">Via</span>
                                           <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">{payMethod==="WAVE"?"🌊 Wave Business":payMethod==="ORANGE"?"🟠 Orange Money":payMethod==="MTN"?"🟡 MTN MoMo":"🏦 Virement bancaire"}</span>
                                         </div>
                                         <div className="flex justify-between"><span className="text-gray-500">Patient</span><span className="font-semibold">{c.full_name||c.beneficiary||"—"}</span></div>
                                       </div>
-                                      <div className="grid grid-cols-2 gap-2">
-                                        <button onClick={() => setConfirmingId(null)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">Annuler</button>
-                                        <button onClick={async () => {
-                                          await supabase.from("cases").update({
-                                            payout_status: "initiated", payout_method: payMethod,
-                                            payout_initiated_at: new Date().toISOString(),
-                                            payout_amount_hospital: fin.devisHopital, payout_amount_ayyad: fin.totalAyyad,
-                                          }).eq("id", c.id);
-                                          setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"initiated", payout_method: payMethod, payout_amount_hospital: fin.devisHopital, payout_amount_ayyad: fin.totalAyyad} : x));
-                                          emailNewCase({ caseTitle: "VIREMENT "+payMethod+" - "+(c.title||c.id)+" - "+fin.devisHopital.toLocaleString()+" FCFA - Ayyad: "+fin.totalAyyad.toLocaleString()+" FCFA"+(fin.surplus>0?" - Surplus: "+fin.surplus.toLocaleString()+" FCFA":""), hospital: c.hospital, city: c.city, amount: fin.devisHopital });
-                                          setConfirmingId(null);
-                                          setExpandedPayoutId(null);
-                                        }} className="bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-sm shadow-md">
-                                          ✅ Confirmer le virement
-                                        </button>
-                                      </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <button onClick={() => setConfirmingId(null)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">Annuler</button>
+                                          <button onClick={async () => {
+                                            const isGrouped = !!groupedPayout[c.id];
+                                            const updateData = {
+                                              payout_status: "initiated", payout_method: payMethod,
+                                              payout_initiated_at: new Date().toISOString(),
+                                              payout_amount_hospital: fin.devisHopital, payout_amount_ayyad: fin.totalAyyad,
+                                              surplus_payout_grouped: isGrouped,
+                                              surplus_payout_status: hasSurplus ? (isGrouped ? "initiated" : "pending") : null,
+                                            };
+                                            await supabase.from("cases").update(updateData).eq("id", c.id);
+                                            setCases(prev => prev.map(x => x.id===c.id ? {...x, ...updateData} : x));
+                                            const surplusNote = hasSurplus
+                                              ? (isGrouped
+                                                ? " + 70% bénéf. groupé ("+fin.partBeneficiaire.toLocaleString()+" FCFA)"
+                                                : " [70% bénéf. en attente]")
+                                              : "";
+                                            emailNewCase({ caseTitle: "VIREMENT "+payMethod+" - "+(c.title||c.id)+" - "+fin.devisHopital.toLocaleString()+" FCFA - Ayyad: "+fin.totalAyyad.toLocaleString()+" FCFA"+surplusNote, hospital: c.hospital, city: c.city, amount: fin.devisHopital });
+                                            setConfirmingId(null);
+                                            setExpandedPayoutId(null);
+                                          }} className="bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-sm shadow-md">
+                                            {hasSurplus && groupedPayout[c.id]
+                                              ? "✅ Confirmer les virements"
+                                              : "✅ Confirmer le virement"}
+                                          </button>
+                                        </div>
                                     </div>
                                   )}
                                 </div>
@@ -2708,6 +2756,9 @@ const AdminPage = ({ user, setPage, lang }) => {
                         {initiated.map(c => {
                           const montantHopital = c.payout_amount_hospital || Math.round((c.amount||0)*0.95);
                           const fraisAyyad = c.payout_amount_ayyad || Math.round((c.amount||0)*0.05);
+                          const finI = calcFinancier(c.amount||0, c.collected||0);
+                          const hasSurplusI = finI.surplus > 0;
+                          const surplusPending = hasSurplusI && c.surplus_payout_status === "pending";
                           return (
                             <div key={c.id} className="p-4 space-y-3">
                               <div className="flex items-center justify-between flex-wrap gap-2">
@@ -2720,6 +2771,43 @@ const AdminPage = ({ user, setPage, lang }) => {
                                   <div className="text-xs text-amber-500">+{fraisAyyad.toLocaleString()} FCFA Ayyad</div>
                                 </div>
                               </div>
+
+                              {/* Badge 70% en attente */}
+                              {surplusPending && (
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-base">⏳</span>
+                                      <div>
+                                        <div className="text-xs font-bold text-amber-700">70% surcollecte en attente</div>
+                                        <div className="text-[10px] text-amber-600">{finI.partBeneficiaire.toLocaleString()} FCFA → {c.full_name||c.beneficiary}</div>
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={async () => {
+                                        await supabase.from("cases").update({ surplus_payout_status: "initiated", surplus_payout_at: new Date().toISOString() }).eq("id", c.id);
+                                        setCases(prev => prev.map(x => x.id===c.id ? {...x, surplus_payout_status:"initiated"} : x));
+                                      }}
+                                      className="bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black px-3 py-1.5 rounded-lg">
+                                      📱 Virer maintenant
+                                    </button>
+                                  </div>
+                                  {c.beneficiary_phone && (
+                                    <div className="text-[10px] text-gray-500 font-mono bg-white rounded-lg px-2.5 py-1.5 border border-amber-100">
+                                      📞 {c.beneficiary_phone}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {hasSurplusI && c.surplus_payout_status === "initiated" && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 flex items-center gap-2">
+                                  <span>📱</span>
+                                  <div className="text-[10px] text-blue-700 font-semibold">70% bénéficiaire viré — {finI.partBeneficiaire.toLocaleString()} FCFA</div>
+                                  <span className="ml-auto text-[10px] text-blue-400">✅</span>
+                                </div>
+                              )}
+
                               <label className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer flex items-center justify-center gap-2 w-full">
                                 📄 {lang==="fr" ? "Uploader le reçu de confirmation" : "Upload confirmation receipt"}
                                 <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={async (e) => {
