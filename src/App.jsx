@@ -245,6 +245,14 @@ const pct = (c, r) => Math.min(100, Math.round((c / r) * 100));
 // frais_ayyad_base = required - devis_hopital
 // surcollecte = collected - required (si > 0)
 // sur la surcollecte : 5% Ayyad, 70% bénéficiaire, 25% redistribué 5 urgents
+// Frais de transfert par moyen (absorbés par Ayyad — montant net hôpital = devis exact)
+const TRANSFER_FEES = {
+  WAVE:   { pct: 0.00, label: "Wave Business", note: "Frais offerts (compte marchand)" },
+  ORANGE: { pct: 0.015, label: "Orange Money", note: "~1.5% à la charge d'Ayyad" },
+  MTN:    { pct: 0.015, label: "MTN MoMo", note: "~1.5% à la charge d'Ayyad" },
+  BANK:   { pct: 0.005, label: "Virement bancaire", note: "~0.5% frais bancaires" },
+};
+
 const calcFinancier = (required, collected) => {
   const devisHopital = Math.round(required / 1.05);
   const fraisAyyadBase = required - devisHopital;
@@ -2217,20 +2225,66 @@ const AdminPage = ({ user, setPage, lang }) => {
                                     <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 space-y-4">
                                       <div className="flex items-center gap-2 text-amber-700 font-black"><span className="text-xl">⚠️</span>Confirmer le virement ?</div>
                                       <div className="bg-white rounded-xl p-4 space-y-2 text-sm">
+
+                                        {/* Infos hôpital */}
                                         <div className="flex justify-between"><span className="text-gray-500">Bénéficiaire</span><span className="font-bold">{c.hospital}</span></div>
                                         <div className="flex justify-between"><span className="text-gray-500">Référence</span><span className="font-mono font-bold text-emerald-700">{c.tracking_id||"AYD-"+c.id}</span></div>
-                                        <div className="flex justify-between"><span className="text-gray-500">Devis hôpital</span><span className="font-black text-emerald-700 text-base">{fin.devisHopital.toLocaleString()} FCFA</span></div>
-                                        <div className="flex justify-between"><span className="text-gray-500">Frais Ayyad</span><span className="font-bold text-amber-600">{fin.fraisAyyadBase.toLocaleString()} FCFA ✓</span></div>
+
+                                        {/* Montant net hôpital = devis exact */}
+                                        <div className="flex justify-between border-t border-gray-100 pt-2">
+                                          <span className="text-gray-500">Montant net hôpital</span>
+                                          <span className="font-black text-emerald-700 text-base">{fin.devisHopital.toLocaleString()} FCFA</span>
+                                        </div>
+                                        <div className="flex justify-between"><span className="text-gray-500">Frais Ayyad (5%)</span><span className="font-bold text-amber-600">{fin.fraisAyyadBase.toLocaleString()} FCFA</span></div>
+
+                                        {/* Frais de transfert absorbés par Ayyad */}
+                                        {payMethod && (() => {
+                                          const tf = TRANSFER_FEES[payMethod];
+                                          const montantFrais = Math.round(fin.devisHopital * tf.pct);
+                                          return (
+                                            <div className="bg-blue-50 rounded-lg p-2.5 space-y-1">
+                                              <div className="flex justify-between text-xs">
+                                                <span className="text-blue-700 font-bold">💸 Frais de transfert</span>
+                                                <span className={montantFrais===0?"text-emerald-600 font-bold":"text-blue-700 font-bold"}>
+                                                  {montantFrais===0 ? "Gratuit ✓" : montantFrais.toLocaleString()+" FCFA"}
+                                                </span>
+                                              </div>
+                                              <div className="text-[10px] text-blue-600">{tf.note} — absorbés par Ayyad</div>
+                                              <div className="text-[10px] text-gray-500">L'hôpital reçoit exactement <span className="font-bold text-emerald-700">{fin.devisHopital.toLocaleString()} FCFA</span></div>
+                                            </div>
+                                          );
+                                        })()}
+
+                                        {/* Surcollecte */}
                                         {hasSurplus && (
-                                          <div className="border-t border-dashed border-gray-200 pt-2 space-y-1">
+                                          <div className="border-t border-dashed border-gray-200 pt-2 space-y-1.5">
                                             <div className="text-xs text-emerald-700 font-bold">🎉 Surcollecte +{fin.surplus.toLocaleString()} FCFA</div>
-                                            <div className="flex justify-between text-xs"><span className="text-gray-500">→ Bénéficiaire (70%)</span><span className="font-bold text-blue-600">{fin.partBeneficiaire.toLocaleString()} FCFA</span></div>
                                             <div className="flex justify-between text-xs"><span className="text-gray-500">→ 5 cas urgents (25%)</span><span className="font-bold text-purple-600">{fin.partRedistrib.toLocaleString()} FCFA</span></div>
                                             <div className="flex justify-between text-xs"><span className="text-gray-500">→ Ayyad 5% surplus</span><span className="font-bold text-amber-600">{fin.fraisAyyadSurplus.toLocaleString()} FCFA</span></div>
+                                            {/* Mobile money bénéficiaire */}
+                                            <div className="bg-blue-50 rounded-lg p-2.5 mt-1 space-y-1.5">
+                                              <div className="text-xs font-bold text-blue-700">📱 Virement bénéficiaire (70%) — {fin.partBeneficiaire.toLocaleString()} FCFA</div>
+                                              <div className="text-[10px] text-gray-500 mb-1">Numéro mobile money de <span className="font-semibold">{c.full_name||c.beneficiary}</span> :</div>
+                                              <input
+                                                type="tel"
+                                                placeholder="+225 07 XX XX XX XX"
+                                                defaultValue={c.beneficiary_phone||""}
+                                                onChange={e => {
+                                                  setCases(prev => prev.map(x => x.id===c.id ? {...x, beneficiary_phone: e.target.value} : x));
+                                                }}
+                                                className="w-full border border-blue-200 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                              />
+                                              <div className="flex gap-1.5 mt-1">
+                                                {["🌊 Wave","🟠 Orange","🟡 MTN"].map(op => (
+                                                  <button key={op} className="text-[10px] bg-white border border-blue-200 text-blue-600 px-2 py-0.5 rounded-full font-medium">{op}</button>
+                                                ))}
+                                              </div>
+                                            </div>
                                           </div>
                                         )}
+
                                         <div className="flex justify-between border-t border-gray-100 pt-2"><span className="text-gray-500">Via</span>
-                                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">{payMethod==="WAVE"?"🌊 Wave":payMethod==="ORANGE"?"🟠 Orange Money":payMethod==="MTN"?"🟡 MTN MoMo":"🏦 Virement bancaire"}</span>
+                                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">{payMethod==="WAVE"?"🌊 Wave Business":payMethod==="ORANGE"?"🟠 Orange Money":payMethod==="MTN"?"🟡 MTN MoMo":"🏦 Virement bancaire"}</span>
                                         </div>
                                         <div className="flex justify-between"><span className="text-gray-500">Patient</span><span className="font-semibold">{c.full_name||c.beneficiary||"—"}</span></div>
                                       </div>
