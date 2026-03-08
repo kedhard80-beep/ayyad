@@ -3874,7 +3874,7 @@ const FAQPage = ({ setPage, lang }) => {
                 <span className="font-bold text-gray-900 text-sm pr-4">{faq.q[lang]}</span>
                 <span className={"text-emerald-600 font-black text-lg flex-shrink-0 transition-transform "+(open===i?"rotate-45":"")}>+</span>
               </button>
-              {open===i // ── Change Password Page// ── Change Password Page (
+              {open===i && (
                 <div className="px-5 pb-5">
                   <div className="h-px bg-gray-100 mb-4"/>
                   <p className="text-sm text-gray-600 leading-relaxed">{faq.a[lang]}</p>
