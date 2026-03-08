@@ -1800,9 +1800,9 @@ const SubmitPage = ({ setPage, user, lang }) => {
     // YouTube
     const watchMatch = url.match(/youtube\.com\/watch\?v=([^&]+)/);
     if (watchMatch) return "https://www.youtube.com/embed/" + watchMatch[1];
-    const shortMatch = url.match(/youtu\.be\/([^?const shortMatch = url.match(/youtu\.be\/([^?&]+)/);]+)/);
-    const shortsMatch = url.match(/youtube\.com\/shorts\/([^?const shortMatch = url.match(/youtu\.be\/([^?&]+)/);]+)/);
-    if (shortsMatch) return "https://www.youtube.com/embed/" + shortsMatch[1];
+    const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
+    const shortsMatch = url.match(/youtube\.com\/shorts\/([^?&]+)/);
+    if (shortsMatch) return 'https://www.youtube.com/embed/' + shortsMatch[1];
     if (shortMatch) return "https://www.youtube.com/embed/" + shortMatch[1];
     if (url.includes("youtube.com/embed/")) return url;
     // TikTok — on stocke l'URL originale, embed via oembed
