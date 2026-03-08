@@ -210,7 +210,7 @@ const T = {
     video: { title: "Message du patient", watch: "▶ Voir la vidéo", noVideo: "Aucune vidéo disponible pour ce dossier." },
     progress: { collected: "collectés sur", donors: "donateurs", daysLeft: "jours restants", intervention: "✓ Intervention planifiée", progressTitle: "Progression de la collecte", of: "de l'objectif" },
     back: "← Retour aux collectes",
-    footer: { tagline: "Financer la santé pour tous en Afrique.", platform: "Plateforme", trust: "Confiance", legal: "Légal", platformLinks: ["Collectes actives","Comment ça marche","Soumettre un dossier"], trustLinks: ["Vérification dossiers","Sécurité des paiements","Rapport d'impact"], legalLinks: ["Mentions légales","Confidentialité","Conformité BCEAO"], rights: "© 2025 Ayyad CI — Tous droits réservés" },
+    footer: { tagline: "Financer la santé pour tous en Afrique.", platform: "Plateforme", trust: "Confiance", legal: "Légal", platformLinks: ["Collectes actives","Comment ça marche","Soumettre un dossier"], trustLinks: ["Vérification dossiers","Sécurité des paiements","Rapport d'impact"], legalLinks: ["Mentions légales","Confidentialité","Conformité BCEAO","FAQ"], rights: "© 2025 Ayyad CI — Tous droits réservés" },
     howPage: { title: "Comment fonctionne Ayyad ?", sub: "Transparent, sécurisé, conçu pour l'Afrique", forDonors: { icon:"💚",title:"Pour les donateurs",steps:["Parcourez les collectes vérifiées actives","Choisissez librement votre montant","Payez via Wave, Orange Money ou carte","Vous êtes débité exactement du montant choisi","L'argent arrive directement à l'hôpital"] }, forBenef: { icon:"🏥",title:"Pour les bénéficiaires",steps:["Créez un compte et soumettez votre dossier médical","Téléchargez rapport médical, devis, pièce d'identité","Notre équipe vérifie avec l'hôpital partenaire","Votre collecte est mise en ligne sous 48h","Les fonds sont versés directement à l'hôpital"] }, feeTitle: "La règle des 5% — Incluse dans l'objectif", feeSub: "Ayyad intègre sa commission de 5% directement dans l'objectif de collecte. Vous donnez 10 000 FCFA, l'hôpital reçoit 10 000 FCFA. Rien n'est prélevé sur votre don.", youGive: "Vous donnez", collectReceives: "L'hôpital reçoit", ayyadFee: "Frais Ayyad (inclus dans l'objectif)" },
   },
   en: {
@@ -3488,7 +3488,7 @@ const Footer = ({ setPage, lang }) => {
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1"><div className="flex items-center gap-2 mb-4"><svg width="36" height="36" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="35" cy="35" r="33" fill="#1a6b3a"/><circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" strokeWidth="2.5"/><rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/><rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/><path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/></svg><span className="font-black text-xl" style={{fontFamily:"Georgia, serif", letterSpacing:"1px"}}>AYYAD</span></div><p className="text-gray-400 text-xs leading-relaxed">{t.tagline}</p></div>
-          {[[t.platform, t.platformLinks, ["collectesactives","how","submit"]], [t.trust, t.trustLinks, ["how","how","how"]], [t.legal, t.legalLinks, ["legal","legal","how"]]].map(([title, links, pages]) =>
+          {[[t.platform, t.platformLinks, ["collectesactives","how","submit"]], [t.trust, t.trustLinks, ["how","how","how"]], [t.legal, t.legalLinks, ["legal","legal","how","faq"]]].map(([title, links, pages]) =>
             <div key={title}>
               <div className="font-bold text-sm mb-4 text-gray-300">{title}</div>
               <ul className="space-y-2.5">
@@ -3833,6 +3833,57 @@ const TrackingPage = ({ setPage, setSelectedCase, lang }) => {
   );
 };
 
+// ── FAQ Page ─────────────────────────────────────────────
+const FAQPage = ({ setPage, lang }) => {
+  const [open, setOpen] = useState(null);
+  const faqs = [
+    { q: { fr: "Comment fonctionne Ayyad ?", en: "How does Ayyad work?" }, a: { fr: "Ayyad met en relation des patients dans le besoin avec des donateurs solidaires. Chaque dossier est vérifié par notre équipe avec l'hôpital partenaire avant d'être mis en ligne. Les fonds collectés sont versés directement à l'hôpital, jamais en espèces.", en: "Ayyad connects patients in need with generous donors. Each case is verified by our team with the partner hospital before going live. Collected funds are sent directly to the hospital, never in cash." } },
+    { q: { fr: "Comment faire un don ?", en: "How do I donate?" }, a: { fr: "Choisissez une collecte active, sélectionnez votre montant, puis payez via Wave, Orange Money ou MTN MoMo. Vous êtes débité exactement du montant choisi, sans frais cachés.", en: "Choose an active campaign, select your amount, then pay via Wave, Orange Money or MTN MoMo. You are charged exactly the amount you chose, with no hidden fees." } },
+    { q: { fr: "Les fonds vont vraiment à l'hôpital ?", en: "Do funds really go to the hospital?" }, a: { fr: "Oui, à 100%. Ayyad prélève une commission de 5% intégrée dans l'objectif de collecte dès le départ — votre don va intégralement à l'hôpital partenaire. Chaque virement est documenté et auditable.", en: "Yes, 100%. Ayyad charges a 5% fee built into the campaign goal from the start — your donation goes entirely to the partner hospital. Every transfer is documented and auditable." } },
+    { q: { fr: "Comment soumettre un dossier ?", en: "How do I submit a case?" }, a: { fr: "Créez un compte, cliquez sur Soumettre un dossier, remplissez le formulaire et téléchargez les documents requis (rapport médical, devis hospitalier, pièce d'identité). Notre équipe vous répond sous 48h.", en: "Create an account, click Submit a case, fill in the form and upload the required documents (medical report, hospital quote, ID). Our team responds within 48 hours." } },
+    { q: { fr: "Puis-je donner anonymement ?", en: "Can I donate anonymously?" }, a: { fr: "Oui. Lors du don, choisissez l'option Don anonyme — aucun compte n'est requis et votre identité reste totalement confidentielle. Notez que les dons anonymes ne peuvent pas être remboursés en cas d'annulation.", en: "Yes. When donating, choose the Anonymous donation option — no account is required and your identity remains completely private. Note that anonymous donations cannot be refunded in case of cancellation." } },
+    { q: { fr: "Que se passe-t-il si l'objectif n'est pas atteint ?", en: "What happens if the goal is not reached?" }, a: { fr: "Si l'objectif n'est pas atteint à l'échéance, tous les donateurs enregistrés sont notifiés et peuvent choisir entre un remboursement intégral ou la redistribution de leur don aux cas urgents actifs.", en: "If the goal is not reached by the deadline, all registered donors are notified and can choose between a full refund or redistribution of their donation to active urgent cases." } },
+    { q: { fr: "Pourquoi est-il important d'ajouter une vidéo ?", en: "Why is it important to add a video?" }, a: { fr: "Une vidéo humanise le dossier et augmente considérablement les dons. Les collectes avec vidéo reçoivent en moyenne 3x plus de dons. Elle permet aux donateurs de voir et entendre le patient, créant un lien émotionnel fort qui pousse à l'action.", en: "A video humanizes the case and significantly increases donations. Campaigns with video receive on average 3x more donations. It allows donors to see and hear the patient, creating a strong emotional connection that drives action." } },
+    { q: { fr: "Pourquoi Ayyad ne reverse pas les fonds si l'objectif n'est pas atteint ?", en: "Why does Ayyad not release funds if the goal is not reached?" }, a: { fr: "Parce que l'hôpital a besoin du montant exact du devis pour effectuer l'intervention. Verser une somme partielle ne permet pas de couvrir les frais médicaux et pourrait mettre le patient dans une situation encore plus difficile. Ayyad préfère rembourser les donateurs ou redistribuer vers des cas urgents plutôt que de verser une somme insuffisante.", en: "Because the hospital needs the exact amount of the quote to perform the procedure. Paying a partial amount does not cover medical costs and could put the patient in an even more difficult situation. Ayyad prefers to refund donors or redistribute to urgent cases rather than pay an insufficient amount." } },
+    { q: { fr: "Pourquoi 70% de la surcollecte va au bénéficiaire ?", en: "Why does 70% of the surplus go to the beneficiary?" }, a: { fr: "L'hôpital reçoit exactement le montant du devis — ni plus, ni moins. Le surplus appartient moralement aux donateurs qui ont dépassé l'objectif. Ayyad reverse 70% au bénéficiaire pour couvrir des frais annexes (médicaments, transport, convalescence), 25% aux cas urgents et 5% à Ayyad pour les opérations.", en: "The hospital receives exactly the amount of the quote — no more, no less. The surplus morally belongs to the donors who exceeded the goal. Ayyad returns 70% to the beneficiary to cover ancillary costs (medication, transport, recovery), 25% to urgent cases and 5% to Ayyad for operations." } },
+    { q: { fr: "Pourquoi Ayyad perçoit 5% sur l'objectif et 5% sur la surcollecte ?", en: "Why does Ayyad charge 5% on the goal and 5% on the surplus?" }, a: { fr: "Les 5% d'Ayyad ne sont pas un simple bénéfice. Ils couvrent les salaires de l'équipe de vérification, la maintenance de la plateforme, et surtout tous les frais de transfert vers les hôpitaux ainsi que les frais de transfert des 70% de surcollecte vers le bénéficiaire. Le donateur ne paie jamais ces frais — Ayyad les absorbe intégralement pour que chaque franc donné arrive à destination.", en: "Ayyad's 5% is not a simple profit. It covers the verification team salaries, platform maintenance, and most importantly all transfer fees to hospitals as well as the transfer fees for the 70% surplus to the beneficiary. The donor never pays these fees — Ayyad absorbs them entirely so every franc donated reaches its destination." } },
+    { q: { fr: "En quoi Ayyad est différente des autres plateformes ?", en: "How is Ayyad different from other platforms?" }, a: { fr: "La plupart des plateformes versent les fonds au patient ou à sa famille. Ayyad verse directement à l'hôpital, éliminant tout risque de détournement. Chaque dossier est vérifié avec l'établissement de santé avant mise en ligne. Pas de fonds en espèces, pas d'intermédiaire humain — juste un virement traçable entre donateurs et hôpital.", en: "Most platforms pay funds to the patient or their family. Ayyad pays directly to the hospital, eliminating any risk of misuse. Each case is verified with the healthcare facility before going live. No cash, no human intermediary — just a traceable transfer between donors and hospital." } },
+    { q: { fr: "Pourquoi faire confiance à Ayyad ?", en: "Why trust Ayyad?" }, a: { fr: "Parce que la confiance se construit sur des actes, pas des promesses. Ayyad publie chaque reçu de virement hospitalier. Nos partenaires hôpitaux confirment chaque réception de fonds. Nos 5% sont justifiés ligne par ligne. Et notre politique de remboursement protège chaque donateur si quelque chose se passe mal.", en: "Because trust is built on actions, not promises. Ayyad publishes every hospital transfer receipt. Our hospital partners confirm every receipt of funds. Our 5% is justified line by line. And our refund policy protects every donor if something goes wrong." } },
+    { q: { fr: "Pourquoi utiliser Ayyad plutôt qu'un influenceur ?", en: "Why use Ayyad rather than an influencer?" }, a: { fr: "Quand un influenceur lance une collecte, il devient le visage de l'aide — et le bénéficiaire lui devient redevable. Ayyad repose sur un principe différent : celui qui aide ne doit pas s'en enorgueillir, et celui qui reçoit ne doit pas se sentir redevable à une personne. Sur Ayyad, le donateur est anonyme s'il le souhaite, le bénéficiaire ne sait pas qui l'a aidé, et la gratitude va naturellement vers Dieu au travers de la solidarité humaine. C'est donner pour Dieu, pas pour la reconnaissance.", en: "When an influencer launches a campaign, they become the face of the help — and the beneficiary becomes indebted to them. Ayyad is built on a different principle: the one who helps should not take pride in it, and the one who receives should not feel indebted to any person. On Ayyad, the donor can be anonymous, the beneficiary does not know who helped them, and gratitude naturally goes to God through human solidarity. It is giving for God, not for recognition." } },
+  ];
+  return (
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-100 rounded-2xl text-3xl mb-4">❓</div>
+          <h1 className="text-2xl font-black text-gray-900">{lang==="fr" ? "Questions fréquentes" : "Frequently asked questions"}</h1>
+          <p className="text-gray-500 text-sm mt-2">{lang==="fr" ? "Tout ce que vous devez savoir sur Ayyad" : "Everything you need to know about Ayyad"}</p>
+        </div>
+        <div className="space-y-3">
+          {faqs.map((faq, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <button onClick={() => setOpen(open===i ? null : i)} className="w-full flex items-center justify-between p-5 text-left">
+                <span className="font-bold text-gray-900 text-sm pr-4">{faq.q[lang]}</span>
+                <span className={"text-emerald-600 font-black text-lg flex-shrink-0 transition-transform "+(open===i?"rotate-45":"")}>+</span>
+              </button>
+              {open===i // ── Change Password Page// ── Change Password Page (
+                <div className="px-5 pb-5">
+                  <div className="h-px bg-gray-100 mb-4"/>
+                  <p className="text-sm text-gray-600 leading-relaxed">{faq.a[lang]}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="text-center mt-8 space-y-2">
+          <button onClick={() => setPage("how")} className="block mx-auto text-sm text-gray-400 hover:text-emerald-600">{lang==="fr" ? "→ Comment ça marche" : "→ How it works"}</button>
+          <button onClick={() => setPage("home")} className="block mx-auto text-sm text-gray-400 hover:text-emerald-600">{lang==="fr" ? "← Retour à l'accueil" : "← Back to home"}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Change Password Page ──────────────────────────────────────
 const ChangePasswordPage = ({ setPage, lang }) => {
   const [newPassword, setNewPassword] = useState("");
@@ -3972,6 +4023,7 @@ export default function AyyadApp() {
         {page==="admin"&&<AdminPage user={user} setPage={setPage} lang={lang} />}
         {page==="tracking"&&<TrackingPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
         {page==="changepassword"&&<ChangePasswordPage setPage={setPage} lang={lang} />}
+        {page==="faq"&&<FAQPage setPage={setPage} lang={lang} />}
       </main>
       {showFooter&&<Footer setPage={setPage} lang={lang} />}
     </div>
