@@ -3890,11 +3890,26 @@ const ChangePasswordPage = ({ setPage, lang }) => {
 export default function AyyadApp() {
   const [page, setPage] = useState("home");
 
-  useEffect(() => { window.scrollTo(0, 0); }, [page]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    window.history.pushState({ page }, "", "?p=" + page);
+  }, [page]);
   const [lang, setLang] = useState("fr");
   const [user, setUser] = useState(null);
   const [selectedCase, setSelectedCase] = useState(null);
   const [specialite, setSpecialite] = useState("");
+
+  // Fix bouton précédent navigateur
+  useEffect(() => {
+    const handlePop = () => {
+      const params = new URLSearchParams(window.location.search);
+      const p = params.get("p");
+      if (p) setPage(p);
+      else setPage("home");
+    };
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []);
   const [allCases, setAllCases] = useState([]);
 
   // Restore session on load
