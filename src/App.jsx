@@ -836,6 +836,12 @@ const MobilePayWidget = ({ amount, caseData, lang, onSuccess }) => {
 const ShareButton = ({ c, lang, size = "normal" }) => {
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [open]);
 
   const trackingId = c.trackingId || c.tracking_id || ("AYD-" + c.id);
   const shareUrl = "https://ayyad.vercel.app/?case=" + trackingId;
