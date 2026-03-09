@@ -1905,6 +1905,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
       video_url: toEmbedUrl(form.videoUrl) || null,
       status: "PENDING",
       user_id: user?.id || null,
+      deadline_requested: form.deadlineRequested || null,
     });
     if (error) { setSubmitError(lang==="fr"?"Erreur lors de la soumission. Réessayez.":"Submission error. Please try again."); setSubmitting(false); return; }
     emailNewCase({ caseTitle: form.title, hospital: form.hospital, city: form.city, amount: form.amount });
