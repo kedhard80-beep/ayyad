@@ -1098,7 +1098,26 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
 
 // Page liste des spécialités
 const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite }) => {
-  const active = MOCK_CASES.filter(c => c.status !== "FUNDED");
+  const [dbCases, setDbCases] = useState([]);
+  useEffect(() => {
+    supabase.from("cases").select("*").eq("status", "COLLECTING").then(({ data }) => {
+      if (data && data.length > 0) setDbCases(data);
+    });
+  }, []);
+  const normalizCase = (c) => ({
+    ...c,
+    title: typeof c.title === "object" ? c.title : { fr: c.title, en: c.title },
+    category: typeof c.category === "object" ? c.category : { fr: c.category || "Autre", en: c.category || "Other" },
+    desc: typeof c.desc === "object" ? c.desc : { fr: c.description || "", en: c.description || "" },
+    required: c.required || c.amount || 0,
+    trackingId: c.trackingId || c.tracking_id || "",
+    image: c.image || "🏥",
+    daysLeft: c.daysLeft ?? 30,
+  });
+  const mockActive = MOCK_CASES.filter(c => c.status !== "FUNDED");
+  const active = dbCases.length > 0
+    ? [...dbCases.map(normalizCase), ...mockActive]
+    : mockActive;
   const groups = {};
   active.forEach(c => {
     const cat = c.category[lang];
