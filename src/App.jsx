@@ -1044,6 +1044,14 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
       if (data && data.length > 0) setDbCases(data);
     });
   }, []);
+  const calcDaysLeft = (c) => {
+    if (c.daysLeft !== undefined) return c.daysLeft;
+    if (c.deadline) {
+      const diff = new Date(c.deadline) - new Date();
+      return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+    }
+    return 30;
+  };
   const normalizCase = (c) => ({
     ...c,
     title: typeof c.title === "object" ? c.title : { fr: c.title || "Sans titre", en: c.title || "Untitled" },
@@ -1053,9 +1061,10 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
     collected: Number(c.collected || 0),
     donors: Number(c.donors || 0),
     trackingId: c.trackingId || c.tracking_id || "",
-    image: c.image || "🏥",
-    daysLeft: c.daysLeft ?? 30,
+    image: c.photos?.[0] || c.photo_url || c.image || null,
     photos: c.photo_url ? [c.photo_url] : (c.photos || []),
+    daysLeft: calcDaysLeft(c),
+    urgent: c.urgent ?? false,
   });
   const allCases = [
     ...dbCases.map(normalizCase),
@@ -1127,6 +1136,14 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
       if (data && data.length > 0) setDbCases(data);
     });
   }, []);
+  const calcDaysLeft = (c) => {
+    if (c.daysLeft !== undefined) return c.daysLeft;
+    if (c.deadline) {
+      const diff = new Date(c.deadline) - new Date();
+      return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+    }
+    return 30;
+  };
   const normalizCase = (c) => ({
     ...c,
     title: typeof c.title === "object" ? c.title : { fr: c.title || "Sans titre", en: c.title || "Untitled" },
@@ -1136,9 +1153,10 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
     collected: Number(c.collected || 0),
     donors: Number(c.donors || 0),
     trackingId: c.trackingId || c.tracking_id || "",
-    image: c.image || "🏥",
-    daysLeft: c.daysLeft ?? 30,
+    image: c.photos?.[0] || c.photo_url || c.image || null,
     photos: c.photo_url ? [c.photo_url] : (c.photos || []),
+    daysLeft: calcDaysLeft(c),
+    urgent: c.urgent ?? false,
   });
   const mockActive = MOCK_CASES.filter(c => c.status !== "FUNDED");
   const active = dbCases.length > 0
