@@ -1046,13 +1046,16 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
   }, []);
   const normalizCase = (c) => ({
     ...c,
-    title: typeof c.title === "object" ? c.title : { fr: c.title, en: c.title },
+    title: typeof c.title === "object" ? c.title : { fr: c.title || "Sans titre", en: c.title || "Untitled" },
     category: typeof c.category === "object" ? c.category : { fr: c.category || "Autre", en: c.category || "Other" },
     desc: typeof c.desc === "object" ? c.desc : { fr: c.description || "", en: c.description || "" },
-    required: c.required || c.amount || 0,
+    required: Number(c.required || c.amount || 0),
+    collected: Number(c.collected || 0),
+    donors: Number(c.donors || 0),
     trackingId: c.trackingId || c.tracking_id || "",
     image: c.image || "🏥",
     daysLeft: c.daysLeft ?? 30,
+    photos: c.photo_url ? [c.photo_url] : (c.photos || []),
   });
   const allCases = [
     ...dbCases.map(normalizCase),
@@ -1126,13 +1129,16 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
   }, []);
   const normalizCase = (c) => ({
     ...c,
-    title: typeof c.title === "object" ? c.title : { fr: c.title, en: c.title },
+    title: typeof c.title === "object" ? c.title : { fr: c.title || "Sans titre", en: c.title || "Untitled" },
     category: typeof c.category === "object" ? c.category : { fr: c.category || "Autre", en: c.category || "Other" },
     desc: typeof c.desc === "object" ? c.desc : { fr: c.description || "", en: c.description || "" },
-    required: c.required || c.amount || 0,
+    required: Number(c.required || c.amount || 0),
+    collected: Number(c.collected || 0),
+    donors: Number(c.donors || 0),
     trackingId: c.trackingId || c.tracking_id || "",
     image: c.image || "🏥",
     daysLeft: c.daysLeft ?? 30,
+    photos: c.photo_url ? [c.photo_url] : (c.photos || []),
   });
   const mockActive = MOCK_CASES.filter(c => c.status !== "FUNDED");
   const active = dbCases.length > 0
