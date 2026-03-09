@@ -1038,7 +1038,27 @@ const CAT_ICONS = {
 
 // Page spécialité — collectes d'une seule spécialité
 const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
-  const cases = MOCK_CASES.filter(c => c.status !== "FUNDED" && c.category[lang] === specialite);
+  const [dbCases, setDbCases] = useState([]);
+  useEffect(() => {
+    supabase.from("cases").select("*").eq("status", "COLLECTING").then(({ data }) => {
+      if (data && data.length > 0) setDbCases(data);
+    });
+  }, []);
+  const normalizCase = (c) => ({
+    ...c,
+    title: typeof c.title === "object" ? c.title : { fr: c.title, en: c.title },
+    category: typeof c.category === "object" ? c.category : { fr: c.category || "Autre", en: c.category || "Other" },
+    desc: typeof c.desc === "object" ? c.desc : { fr: c.description || "", en: c.description || "" },
+    required: c.required || c.amount || 0,
+    trackingId: c.trackingId || c.tracking_id || "",
+    image: c.image || "🏥",
+    daysLeft: c.daysLeft ?? 30,
+  });
+  const allCases = [
+    ...dbCases.map(normalizCase),
+    ...MOCK_CASES.filter(c => c.status !== "FUNDED"),
+  ];
+  const cases = allCases.filter(c => c.category[lang] === specialite);
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-br from-emerald-700 to-teal-600 text-white py-10 px-4">
