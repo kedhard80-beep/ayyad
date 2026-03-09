@@ -2497,11 +2497,11 @@ const AdminPage = ({ user, setPage, lang }) => {
   const approveCase = async (id) => {
     const { error } = await supabase
       .from("cases")
-      .update({ status: "APPROVED" })
+      .update({ status: "COLLECTING" })
       .eq("id", id);
     if (!error) {
       const c = cases.find(x => x.id === id);
-      setCases(prev => prev.map(x => x.id===id ? {...x, status:"APPROVED"} : x));
+      setCases(prev => prev.map(x => x.id===id ? {...x, status:"COLLECTING"} : x));
       // Email notification au bénéficiaire + admin
       if (c) {
         emailCaseApproved({ beneficiaryEmail: c.email || null, beneficiaryName: c.full_name || c.beneficiary, caseTitle: c.title, trackingId: c.tracking_id });
