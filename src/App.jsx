@@ -1347,9 +1347,38 @@ const CollectesPage = ({ setPage, lang }) => {
 const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const [filter, setFilter] = useState("all");
   const [heroMenu, setHeroMenu] = useState(false);
+  const [dbCases, setDbCases] = useState([]);
   const t = T[lang];
+
+  useEffect(() => {
+    supabase.from("cases").select("*").eq("status", "COLLECTING").then(({ data }) => {
+      if (data && data.length > 0) {
+        const calcDaysLeft = (c) => {
+          if (c.deadline) { const diff = new Date(c.deadline) - new Date(); return Math.max(0, Math.ceil(diff / (1000*60*60*24))); }
+          return 30;
+        };
+        const normalized = data.map(c => ({
+          ...c,
+          title: typeof c.title === "object" ? c.title : { fr: c.title || "Sans titre", en: c.title || "Untitled" },
+          category: typeof c.category === "object" ? c.category : { fr: c.category || "Autre", en: c.category || "Other" },
+          desc: typeof c.desc === "object" ? c.desc : { fr: c.description || "", en: c.description || "" },
+          required: Number(c.required || c.amount || 0),
+          collected: Number(c.collected || 0),
+          donors: Number(c.donors || 0),
+          trackingId: c.trackingId || c.tracking_id || "",
+          image: c.photo_url || c.image || null,
+          photos: c.photo_url ? [c.photo_url] : (c.photos || []),
+          daysLeft: calcDaysLeft(c),
+          urgent: c.urgent ?? false,
+        }));
+        setDbCases(normalized);
+      }
+    });
+  }, []);
+
   const catMap = lang==="fr" ? ["Tous","Cardiologie","Oncologie","Néphrologie","Orthopédie"] : ["All","Cardiology","Oncology","Nephrology","Orthopedics"];
-  const filtered = filter==="all"||filter===catMap[0] ? MOCK_CASES : MOCK_CASES.filter(c => c.category[lang].toLowerCase()===filter.toLowerCase());
+  const allCases = dbCases.length > 0 ? [...dbCases, ...MOCK_CASES.filter(c => c.status !== "FUNDED")] : MOCK_CASES;
+  const filtered = filter==="all"||filter===catMap[0] ? allCases : allCases.filter(c => c.category[lang].toLowerCase()===filter.toLowerCase());
   return (
     <div onClick={() => setHeroMenu(false)}>
       <div className="bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-600 text-white">
