@@ -1468,6 +1468,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 // ── Case Detail + Donation Widget ─────────────────────────────
 const CasePage = ({ c, setPage, lang }) => {
   const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState("FCFA");
   const [provider, setProvider] = useState("WAVE");
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
@@ -1478,7 +1479,10 @@ const CasePage = ({ c, setPage, lang }) => {
   const goalReached = !funded && (c.collected||0) >= (c.required||1); // objectif atteint mais collecte encore ouverte
   const t = T[lang];
   const td = t.donate;
-  const presets = [1000,5000,10000,25000,50000];
+  const RATES = { FCFA: 1, EUR: 0.00152, USD: 0.00166 };
+  const PRESETS_MAP = { FCFA: [1000,5000,10000,25000,50000], EUR: [1,5,10,25,50], USD: [1,5,10,25,50] };
+  const presets = PRESETS_MAP[currency] || PRESETS_MAP.FCFA;
+  const amountInFcfa = currency === "FCFA" ? Number(amount) : Math.round(Number(amount) / RATES[currency]);
 
   // Widget de choix initial
   const ChooseWidget = () => (
@@ -1596,7 +1600,7 @@ const CasePage = ({ c, setPage, lang }) => {
             autoComplete="off"
             className="w-full border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-16"
           />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span>
+          <select value={currency} onChange={e=>{setCurrency(e.target.value);setAmount("");}} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold bg-gray-100 border-0 rounded-lg px-1 py-0.5 focus:outline-none cursor-pointer"><option>FCFA</option><option>EUR</option><option>USD</option></select>
         </div>
         {amount&&Number(amount)>=500&&<div className="text-xs text-center text-gray-400 mt-1.5">{lang==="fr"?"Débité : ":"Charged: "}<span className="font-bold text-gray-700">{fmt(Number(amount))}</span></div>}
       </div>
@@ -1614,9 +1618,9 @@ const CasePage = ({ c, setPage, lang }) => {
         />
       </div>
       {/* Widget paiement mobile — Wave / Carte bancaire */}
-      {amount && Number(amount) >= 500 ? (
+      {amount && amountInFcfa >= 500 ? (
         <MobilePayWidget
-          amount={Number(amount)}
+          amount={amountInFcfa}
           caseData={c}
           lang={lang}
           onSuccess={() => {
