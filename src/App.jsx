@@ -685,7 +685,7 @@ const MobilePayWidget = ({ amount, caseData, lang, onSuccess }) => {
   const amountFmt = new Intl.NumberFormat("fr").format(amount);
 
   const providers = [
-    { id:"WAVE", emoji:"🌊", label:"Wave CI",        color:"bg-blue-600 hover:bg-blue-700", "wave://pay?to="+AYYAD_ACCOUNTS.WAVE.numero.replace(/\s/g,"")+"&amount="+amount+"&note=AYYAD-"+(caseData?.trackingId||"DON") },
+    { id:"WAVE", emoji:"🌊", label:"Wave CI", color:"bg-blue-600 hover:bg-blue-700", qrData: `wave://pay?to=${AYYAD_ACCOUNTS.WAVE.numero.replace(/\s/g,"")}&amount=${amount}&note=AYYAD-${caseData?.trackingId||"DON"}` },
     { id:"CARD", emoji:"💳", label:"Carte bancaire", color:"bg-gray-800 hover:bg-gray-900", qrData: null },
   ];
   const pv = providers.find(p => p.id === provider);
@@ -974,8 +974,8 @@ const SupportAyyadSection = ({ lang }) => {
           </div>
           <p className="text-emerald-300 text-sm leading-relaxed">
             {lang === "fr"
-              ? "Wave, Orange Money et MTN Money seront intégrés très prochainement. Merci pour votre patience et votre soutien."
-              : "Wave, Orange Money and MTN Money will be integrated very soon. Thank you for your patience and support."}
+              ? "Wave CI et le paiement par carte bancaire sont disponibles. D'autres moyens arrivent bientôt."
+              : "Wave CI and card payment are available. More payment methods coming soon."}
           </p>
           <div className="flex justify-center gap-4 mt-6 text-2xl opacity-60">
             <span>🌊</span><span>🟠</span><span>💛</span>
@@ -3530,7 +3530,7 @@ const LegalPage = ({ setPage, lang }) => {
               <Heading>{fr ? "4. Dons et paiements" : "4. Donations and payments"}</Heading>
               <P>{fr
                 ? "Les dons sont effectués via des opérateurs de paiement mobile (Wave, Orange Money, MTN MoMo). Chaque don est définitif sauf dans les cas prévus par la politique de remboursement d'Ayyad. Ayyad prélève une commission opérationnelle de 5%, intégrée dans l'objectif de collecte et invisible pour le donateur."
-                : "Donations are made via mobile payment operators (Wave, Orange Money, MTN MoMo). Each donation is final except in cases provided for by Ayyad's refund policy. Ayyad charges a 5% operational fee, included in the campaign goal and invisible to the donor."}</P>
+                : "Donations are made via Wave CI or international card payment. Each donation is final except in cases provided for by Ayyad's refund policy. Ayyad charges a 5% operational fee, included in the campaign goal and invisible to the donor."}</P>
 
               <Heading>{fr ? "5. Soumission de dossiers" : "5. Case submission"}</Heading>
               <P>{fr
@@ -3932,7 +3932,7 @@ const FAQPage = ({ setPage, lang }) => {
   const [open, setOpen] = useState(null);
   const faqs = [
     { q: { fr: "Comment fonctionne Ayyad ?", en: "How does Ayyad work?" }, a: { fr: "Ayyad met en relation des patients dans le besoin avec des donateurs solidaires. Chaque dossier est vérifié par notre équipe avec l'hôpital partenaire avant d'être mis en ligne. Les fonds collectés sont versés directement à l'hôpital, jamais en espèces.", en: "Ayyad connects patients in need with generous donors. Each case is verified by our team with the partner hospital before going live. Collected funds are sent directly to the hospital, never in cash." } },
-    { q: { fr: "Comment faire un don ?", en: "How do I donate?" }, a: { fr: "Choisissez une collecte active, sélectionnez votre montant, puis payez via Wave, Orange Money ou MTN MoMo. Vous êtes débité exactement du montant choisi, sans frais cachés.", en: "Choose an active campaign, select your amount, then pay via Wave, Orange Money or MTN MoMo. You are charged exactly the amount you chose, with no hidden fees." } },
+    { q: { fr: "Comment faire un don ?", en: "How do I donate?" }, a: { fr: "Choisissez une collecte active, sélectionnez votre montant, puis payez via Wave, Orange Money ou MTN MoMo. Vous êtes débité exactement du montant choisi, sans frais cachés.", en: "Choose an active campaign, select your amount, then pay via Wave CI or card. You are charged exactly the amount you chose, with no hidden fees." } },
     { q: { fr: "Les fonds vont vraiment à l'hôpital ?", en: "Do funds really go to the hospital?" }, a: { fr: "Oui, à 100%. Ayyad prélève une commission de 5% intégrée dans l'objectif de collecte dès le départ — votre don va intégralement à l'hôpital partenaire. Chaque virement est documenté et auditable.", en: "Yes, 100%. Ayyad charges a 5% fee built into the campaign goal from the start — your donation goes entirely to the partner hospital. Every transfer is documented and auditable." } },
     { q: { fr: "Comment soumettre un dossier ?", en: "How do I submit a case?" }, a: { fr: "Créez un compte, cliquez sur Soumettre un dossier, remplissez le formulaire et téléchargez les documents requis (rapport médical, devis hospitalier, pièce d'identité). Notre équipe vous répond sous 48h.", en: "Create an account, click Submit a case, fill in the form and upload the required documents (medical report, hospital quote, ID). Our team responds within 48 hours." } },
     { q: { fr: "Puis-je donner anonymement ?", en: "Can I donate anonymously?" }, a: { fr: "Oui. Lors du don, choisissez l'option Don anonyme — aucun compte n'est requis et votre identité reste totalement confidentielle. Notez que les dons anonymes ne peuvent pas être remboursés en cas d'annulation.", en: "Yes. When donating, choose the Anonymous donation option — no account is required and your identity remains completely private. Note that anonymous donations cannot be refunded in case of cancellation." } },
