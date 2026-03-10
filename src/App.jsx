@@ -381,7 +381,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
           <LangToggle lang={lang} setLang={setLang} />
           {user ? (
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-sm">{(user.name||user.email||"U")[0].toUpperCase()}</div>
+              <button onClick={() => setPage("profile")} className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-sm hover:bg-emerald-200 transition-colors">{(user.name||user.email||"U")[0].toUpperCase()}</button>
               <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[120px] truncate">{user.name||user.email}</span>
               <button onClick={() => setPage("changepassword")} className="text-xs text-gray-400 hover:text-emerald-600 ml-1">🔑</button>
               <button onClick={handleLogout} className="text-xs text-gray-400 hover:text-red-500">{t.logout}</button>
@@ -4019,6 +4019,55 @@ const FAQPage = ({ setPage, lang }) => {
 };
 
 // ── Change Password Page ──────────────────────────────────────
+
+const ProfilePage = ({ user, cases, lang, setPage }) => {
+  const [userCases, setUserCases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const t = { fr: { title: "Mon profil", myCases: "Mes dossiers", noCases: "Aucun dossier soumis", back: "Retour", status: "Statut", amount: "Montant" }, en: { title: "My profile", myCases: "My cases", noCases: "No cases submitted", back: "Back", status: "Status", amount: "Amount" } }[lang] || {};
+  const statusColors = { PENDING: "bg-yellow-100 text-yellow-700", COLLECTING: "bg-blue-100 text-blue-700", FUNDED: "bg-emerald-100 text-emerald-700", REJECTED: "bg-red-100 text-red-600", APPROVED: "bg-purple-100 text-purple-700" };
+  
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase.from("cases").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+      setUserCases(data || []);
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      <button onClick={() => setPage("home")} className="text-sm text-gray-500 hover:text-emerald-600 mb-6 flex items-center gap-1">← {t.back}</button>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-2xl">{(user.name||user.email||"U")[0].toUpperCase()}</div>
+          <div>
+            <div className="font-bold text-gray-900 text-lg">{user.name || user.email}</div>
+            <div className="text-sm text-gray-500">{user.email}</div>
+          </div>
+        </div>
+      </div>
+      <div className="font-semibold text-gray-700 mb-3">{t.myCases}</div>
+      {loading ? <div className="text-center text-gray-400 py-8">...</div> : userCases.length === 0 ? (
+        <div className="text-center text-gray-400 py-8">{t.noCases}</div>
+      ) : (
+        <div className="space-y-3">
+          {userCases.map(c => (
+            <div key={c.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between">
+              <div>
+                <div className="font-medium text-gray-900 text-sm">{c.title || c.full_name || "—"}</div>
+                <div className="text-xs text-gray-500 mt-0.5">🏥 {c.hospital || "—"} · 💰 {c.amount ? c.amount.toLocaleString() + " FCFA" : "—"}</div>
+                <div className="text-xs text-gray-400 mt-0.5">{new Date(c.created_at).toLocaleDateString(lang==="fr"?"fr-FR":"en-US")}</div>
+              </div>
+              <span className={"text-xs font-semibold px-2 py-1 rounded-full " + (statusColors[c.status] || "bg-gray-100 text-gray-600")}>{c.status}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ChangePasswordPage = ({ setPage, lang }) => {
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -4157,6 +4206,7 @@ export default function AyyadApp() {
         {page==="admin"&&<AdminPage user={user} setPage={setPage} lang={lang} />}
         {page==="tracking"&&<TrackingPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
         {page==="changepassword"&&<ChangePasswordPage setPage={setPage} lang={lang} />}
+      {page === "profile" && <ProfilePage user={user} cases={cases} lang={lang} setPage={setPage} />}
         {page==="faq"&&<FAQPage setPage={setPage} lang={lang} />}
       </main>
       {showFooter&&<Footer setPage={setPage} lang={lang} />}
