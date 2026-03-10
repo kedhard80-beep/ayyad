@@ -1712,7 +1712,7 @@ const CasePage = ({ c, setPage, lang }) => {
             {donMode==="confirm" && <div className="space-y-5">
               <div className="text-center"><div className="text-4xl mb-2">💚</div><h3 className="font-black text-lg text-gray-900">{td.confirm}</h3><p className="text-sm text-gray-500">{td.verifyDon}</p></div>
               <div className="bg-gray-50 rounded-2xl p-4 space-y-3 text-sm">
-                {[[td.debited,fmt(Number(amount))],[td.beneficiary,c.beneficiary],[td.via,provider==="WAVE"?"🌊 Wave":"💳""+(lang==="fr"?"Carte":"Card")],[td.anonymity, anonymous ? "🕵️ "+(lang==="fr"?"Anonyme":"Anonymous") : "👤 "+(lang==="fr"?"Avec compte":"With account")]].map(([k,v],i) => (
+                {[[td.debited,fmt(Number(amount))],[td.beneficiary,c.beneficiary],[td.via,provider==="WAVE"?"🌊 Wave":"💳 "+(lang==="fr"?"Carte":"Card")],[td.anonymity, anonymous ? "👤"+(lang==="fr"?"Anonyme":"Anonymous") : "👤 "+(lang==="fr"?"Avec compte":"With account")]].map(([k,v],i) => (
                   <div key={i} className="flex justify-between items-center"><span className="text-gray-500">{k}</span><span className={`font-semibold ${k===td.anonymity?"text-emerald-600":""}`}>{v}</span></div>
                 ))}
               </div>
