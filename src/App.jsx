@@ -419,7 +419,7 @@ const CaseCard = ({ c, lang, t, onClick }) => {
         )}
         {/* Badge spécialité en overlay bas-gauche */}
         <div className="absolute bottom-2 left-2">
-          <span className="bg-white/90 backdrop-blur-sm text-gray-700 text-xs font-bold px-2 py-1 rounded-full shadow-sm">{c.image} {c.category[lang]}</span>
+          <span className="bg-white/90 backdrop-blur-sm text-gray-700 text-xs font-bold px-2 py-1 rounded-full shadow-sm">{c.image && !c.image.startsWith("http") ? c.image : "🏥"} {c.category[lang]}</span>
         </div>
         {/* Badge urgent */}
         {c.urgent && (
@@ -537,7 +537,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
                         <img src={c.photos[0]} alt={c.beneficiary} className="w-full h-full object-cover object-center" />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                          <span className="text-6xl">{c.image}</span>
+                          <span className="text-6xl">{c.image && (c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-32 object-cover rounded-t-2xl" /> : c.image)}</span>
                         </div>
                       )}
                       <div className="absolute top-3 left-3 flex gap-2">
@@ -2944,8 +2944,8 @@ const AdminPage = ({ user, setPage, lang }) => {
                                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                         {[
                                           {id:"WAVE",emoji:"🌊",label:"Wave CI",bg:"bg-blue-600 hover:bg-blue-700",ring:"ring-blue-500"},
-                                          {id:"ORANGE",emoji:"🟠",label:"Orange Money",bg:"bg-orange-500 hover:bg-orange-600",ring:"ring-orange-400"},
-                                          {id:"MTN",emoji:"🟡",label:"MTN MoMo",bg:"bg-yellow-400 hover:bg-yellow-500 text-gray-900",ring:"ring-yellow-400"},
+                                          
+                {id:"CARD",emoji:"💳",label:"Carte bancaire",bg:"bg-gray-800 hover:bg-gray-900",ring:"ring-gray-500"},
                                           {id:"BANK",emoji:"🏦",label:"Virement bancaire",bg:"bg-gray-700 hover:bg-gray-800",ring:"ring-gray-500"},
                                         ].map(pm => (
                                           <button key={pm.id} onClick={() => setPayMethods(prev => ({...prev, [c.id]: pm.id}))}
