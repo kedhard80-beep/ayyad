@@ -902,7 +902,7 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
       </button>
 
       {open && (
-        <div className="absolute z-50 bottom-full mb-2 left-0 bg-white rounded-2xl shadow-xl border border-gray-100 p-3 w-56" onClick={e => e.stopPropagation()}>
+        <div className="fixed z-[9999] bg-white rounded-2xl shadow-xl border border-gray-100 p-3 w-56" style={{bottom:"80px"}} onClick={e => e.stopPropagation()}>
           <div className="text-[10px] text-gray-400 font-semibold mb-2 uppercase tracking-wide">{lang === "fr" ? "Partager ce dossier" : "Share this campaign"}</div>
 
           {/* WhatsApp */}
@@ -2527,7 +2527,6 @@ const AdminPage = ({ user, setPage, lang }) => {
   const [alerts, setAlerts] = useState(MOCK_ALERTS);
   const [rejectModal, setRejectModal] = useState(null);
   const [editDeadline, setEditDeadline] = useState({});
-  const [editVideoUrl, setEditVideoUrl] = useState({});
   const [editDeadline, setEditDeadline] = useState({}); // { caseId: "2025-12-31" }
   const [editVideoUrl, setEditVideoUrl] = useState({}); // { caseId: "https://..." }
   const [rejectReason, setRejectReason] = useState("");
