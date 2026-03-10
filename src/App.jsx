@@ -685,9 +685,8 @@ const MobilePayWidget = ({ amount, caseData, lang, onSuccess }) => {
   const amountFmt = new Intl.NumberFormat("fr").format(amount);
 
   const providers = [
-    { id:"WAVE",   emoji:"🌊", label:"Wave CI",      color:"bg-blue-600 hover:bg-blue-700",           qrData: "wave://pay?to="+AYYAD_ACCOUNTS.WAVE.numero.replace(/\s/g,"")+"&amount="+amount+"&note=AYYAD-"+(caseData?.trackingId||"DON") },
-    { id:"ORANGE", emoji:"🟠", label:"Orange Money", color:"bg-orange-500 hover:bg-orange-600",       qrData: "orangemoney://pay?numero="+AYYAD_ACCOUNTS.ORANGE.numero.replace(/\s/g,"")+"&montant="+amount },
-    { id:"MTN",    emoji:"🟡", label:"MTN MoMo",     color:"bg-yellow-400 hover:bg-yellow-500 text-gray-900", qrData: "mtn://pay?numero="+AYYAD_ACCOUNTS.MTN.numero.replace(/\s/g,"")+"&montant="+amount },
+    { id:"WAVE", emoji:"🌊", label:"Wave CI",        color:"bg-blue-600 hover:bg-blue-700", "wave://pay?to="+AYYAD_ACCOUNTS.WAVE.numero.replace(/\s/g,"")+"&amount="+amount+"&note=AYYAD-"+(caseData?.trackingId||"DON") },
+    { id:"CARD", emoji:"💳", label:"Carte bancaire", color:"bg-gray-800 hover:bg-gray-900", qrData: null },
   ];
   const pv = providers.find(p => p.id === provider);
 
@@ -713,6 +712,29 @@ const MobilePayWidget = ({ amount, caseData, lang, onSuccess }) => {
       <p className="text-center text-[10px] text-gray-400 pt-1">🔒 {lang==="fr" ? "Paiement sécurisé · Aucuns frais cachés" : "Secure payment · No hidden fees"}</p>
     </div>
   );
+
+// ÉTAPE 2b — Carte bancaire (bientôt disponible)
+if (step === "qr" && provider === "CARD") return (
+  <div className="space-y-4 text-center py-4">
+    <div className="text-5xl mb-2">💳</div>
+    <h3 className="font-bold text-gray-900 text-lg">
+      {lang==="fr" ? "Paiement par carte bancaire" : "Card payment"}
+    </h3>
+    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+      <p className="text-yellow-800 font-semibold text-sm">
+        {lang==="fr" ? "🚧 Bientôt disponible" : "🚧 Coming soon"}
+      </p>
+      <p className="text-yellow-700 text-xs mt-1">
+        {lang==="fr"
+          ? "Le paiement par carte internationale sera disponible très prochainement. En attendant, utilisez Wave CI."
+          : "International card payment will be available very soon. In the meantime, please use Wave CI."}
+      </p>
+    </div>
+    <button onClick={() => setStep("choose")} className="w-full border border-gray-200 rounded-xl py-3 text-sm text-gray-600 hover:bg-gray-50">
+      {lang==="fr" ? "← Choisir un autre moyen" : "← Choose another method"}
+    </button>
+  </div>
+);
 
   // ÉTAPE 2 — QR code + numéro
   if (step === "qr") return (
@@ -988,7 +1010,7 @@ const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
           <div key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); }}
             className="bg-white rounded-2xl border-2 border-red-200 shadow-sm p-6 cursor-pointer hover:border-red-400 hover:shadow-md transition-all">
             <div className="flex items-start gap-4">
-              <div className="text-4xl">{c.image}</div>
+              <div className="text-4xl overflow-hidden">{c.image && (c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-full object-cover rounded-t-2xl" /> : c.image)}</div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">🚨 URGENT</span>
@@ -1293,7 +1315,7 @@ const CollectesPage = ({ setPage, lang }) => {
               </div>
             ) : funded.map(c => (
               <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-5">
-                <div className="text-4xl">{c.image}</div>
+                <div className="text-4xl overflow-hidden">{c.image && (c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-full object-cover rounded-t-2xl" /> : c.image)}</div>
                 <div className="flex-1">
                   <div className="font-bold text-gray-900">{c.title[lang]}</div>
                   <div className="text-xs text-gray-400 mt-0.5">{c.hospital} · {c.city}</div>
@@ -1589,7 +1611,7 @@ const CasePage = ({ c, setPage, lang }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-5">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="h-52 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 flex items-center justify-center text-9xl">{c.image}</div>
+            <div className="h-52 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 flex items-center justify-center text-9xl overflow-hidden">{c.image && (c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-full object-cover" /> : c.image)}</div>
             <div className="p-6">
               <div className="flex flex-wrap gap-2 mb-3"><Badge color="blue">{c.category[lang]}</Badge><Badge color="green">{t.badges.verified}</Badge>{funded&&<Badge color="green">{t.badges.funded}</Badge>}{c.urgent&&<Badge color="red">{t.badges.urgent}</Badge>}</div>
               <h1 className="text-2xl font-black text-gray-900 mb-3">{c.title[lang]}</h1>
