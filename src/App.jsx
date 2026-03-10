@@ -2527,7 +2527,6 @@ const AdminPage = ({ user, setPage, lang }) => {
   const [alerts, setAlerts] = useState(MOCK_ALERTS);
   const [rejectModal, setRejectModal] = useState(null);
   const [editDeadline, setEditDeadline] = useState({});
-  const [editDeadline, setEditDeadline] = useState({}); // { caseId: "2025-12-31" }
   const [editVideoUrl, setEditVideoUrl] = useState({}); // { caseId: "https://..." }
   const [rejectReason, setRejectReason] = useState("");
   const [payMethods, setPayMethods] = useState({}); // { caseId: "WAVE"|"ORANGE"|"MTN"|"BANK" }
