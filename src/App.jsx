@@ -301,7 +301,6 @@ const pct = (c, r) => Math.min(100, Math.round((c / r) * 100));
 const TRANSFER_FEES = {
   WAVE:   { pct: 0.00, label: "Wave Business", note: "Frais offerts (compte marchand)" },
   ORANGE: { pct: 0.015, label: "Wave CI", note: "~1.5% à la charge d'Ayyad" },
-  MTN:    { pct: 0.015, label: "Carte bancaire", note: "~1.5% à la charge d'Ayyad" },
   BANK:   { pct: 0.005, label: "Virement bancaire", note: "~0.5% frais bancaires" },
 };
 
@@ -668,8 +667,7 @@ const MediaSection = ({ c, lang, t }) => {
 // ── Comptes marchands Ayyad (à remplacer par les vrais numéros) ──
 const AYYAD_ACCOUNTS = {
   WAVE:   { numero: "07 00 00 00 00", nom: "AYYAD SOLIDARITE", prefix: "🌊" },
-  ORANGE: { numero: "07 11 11 11 11", nom: "AYYAD SOLIDARITE", prefix: "🟠" },
-  MTN:    { numero: "05 22 22 22 22", nom: "AYYAD SOLIDARITE", prefix: "🟡" },
+
 };
 
 // QR code placeholder (image base64 simple — à remplacer par vrai QR Ayyad)
@@ -781,7 +779,7 @@ if (step === "qr" && provider === "CARD") return (
       </div>
 
       <button onClick={() => setStep("ref")}
-        className={"w-full font-bold py-3.5 rounded-xl text-sm shadow-md text-white "+(provider==="MTN"?"bg-yellow-400 hover:bg-yellow-500 text-gray-900":provider==="ORANGE"?"bg-orange-500 hover:bg-orange-600":"bg-blue-600 hover:bg-blue-700")}>
+        className={"w-full font-bold py-3.5 rounded-xl text-sm shadow-md text-white "+"bg-blue-600 hover:bg-blue-700"}>
         {lang==="fr" ? "J'ai effectué le paiement →" : "I have made the payment →"}
       </button>
     </div>
@@ -809,7 +807,7 @@ if (step === "qr" && provider === "CARD") return (
           type="text"
           value={txRef}
           onChange={e => { setTxRef(e.target.value); setRefError(false); }}
-          placeholder={provider==="WAVE" ? "WV-XXXXXXXX" : provider==="ORANGE" ? "OM-XXXXXXXX" : "MM-XXXXXXXX"}
+          placeholder={"WV-XXXXXXXX"}
           className={"w-full border rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 "+(refError?"border-red-400 focus:ring-red-300":"border-gray-200 focus:ring-emerald-400")}
         />
         {refError && <p className="text-xs text-red-500 mt-1">⚠️ {lang==="fr" ? "Veuillez entrer votre référence de transaction." : "Please enter your transaction reference."}</p>}
@@ -978,7 +976,7 @@ const SupportAyyadSection = ({ lang }) => {
               : "Wave CI and card payment are available. More payment methods coming soon."}
           </p>
           <div className="flex justify-center gap-4 mt-6 text-2xl opacity-60">
-            <span>🌊</span><span>🟠</span><span>💛</span>
+            <span>🌊</span><span>💳</span>
           </div>
         </div>
       </div>
@@ -2858,7 +2856,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                     <div className="p-5 border-b border-gray-100 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-xl">🟡</span>
+                        <span className="text-xl">💳</span>
                         <h3 className="font-bold text-gray-900">{lang==="fr" ? "Collectes à virer" : "Ready for payout"}</h3>
                         {funded.length > 0 && <span className="bg-amber-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{funded.length}</span>}
                       </div>
@@ -2958,7 +2956,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                                         <button onClick={() => setConfirmingId(c.id)}
                                           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2">
                                           💸 Virer maintenant — {fin.devisHopital.toLocaleString()} FCFA
-                                          <span className="text-emerald-200 text-xs">via {payMethod==="WAVE"?"🌊 Wave":payMethod==="ORANGE"?"🟠 Orange":payMethod==="MTN"?"🟡 MTN":"🏦 Banque"}</span>
+                                          <span className="text-emerald-200 text-xs">via {payMethod==="WAVE"?"🌊 Wave":"🏦 Banque"}</span>
                                         </button>
                                       )}
                                     </div>
@@ -3044,7 +3042,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                                                     className="w-full border border-blue-200 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
                                                   />
                                                   <div className="flex gap-1.5 flex-wrap">
-                                                    {["🌊 Wave","🟠 Orange","🟡 MTN"].map(op => (
+                                                    {["🌊 Wave"].map(op => (
                                                       <button key={op} className="text-[10px] bg-white border border-blue-200 text-blue-600 px-2 py-0.5 rounded-full font-medium">{op}</button>
                                                     ))}
                                                   </div>
@@ -3205,7 +3203,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                             <div key={c.id} className="p-4 flex items-center justify-between gap-4">
                               <div className="flex-1 min-w-0">
                                 <div className="font-semibold text-gray-900 text-sm truncate">{c.title}</div>
-                                <div className="text-xs text-gray-400 mt-0.5">🏥 {c.hospital} · {c.payout_method==="WAVE"?"🌊 Wave":c.payout_method==="ORANGE"?"🟠 Orange":c.payout_method==="MTN"?"🟡 MTN":"🏦 Banque"}</div>
+                                <div className="text-xs text-gray-400 mt-0.5">🏥 {c.hospital} · {c.payout_method==="WAVE"?"🌊 Wave":"🏦 Banque"}</div>
                                 {c.payout_receipt && <a href={c.payout_receipt} target="_blank" rel="noreferrer" className="text-xs text-emerald-600 underline">📄 Reçu</a>}
                               </div>
                               <div className="text-right flex-shrink-0">
