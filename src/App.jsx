@@ -2526,6 +2526,10 @@ const AdminPage = ({ user, setPage, lang }) => {
   const [loadingCases, setLoadingCases] = useState(true);
   const [alerts, setAlerts] = useState(MOCK_ALERTS);
   const [rejectModal, setRejectModal] = useState(null);
+  const [editDeadline, setEditDeadline] = useState({});
+  const [editVideoUrl, setEditVideoUrl] = useState({});
+  const [editDeadline, setEditDeadline] = useState({}); // { caseId: "2025-12-31" }
+  const [editVideoUrl, setEditVideoUrl] = useState({}); // { caseId: "https://..." }
   const [rejectReason, setRejectReason] = useState("");
   const [payMethods, setPayMethods] = useState({}); // { caseId: "WAVE"|"ORANGE"|"MTN"|"BANK" }
   const [confirmingId, setConfirmingId] = useState(null); // caseId en cours de confirmation
@@ -2777,8 +2781,18 @@ const AdminPage = ({ user, setPage, lang }) => {
                         <button onClick={() => toggleUrgent(c.id, c.urgent)} className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${c.urgent || isAutoUrgent(c) ? "bg-red-600 text-white border-red-600" : "border-gray-200 text-gray-500 hover:border-red-400 hover:text-red-600"}`}>
                           {c.urgent || isAutoUrgent(c) ? "🚨 Urgent" : "⚪ Urgent"}
                         </button>
+                <div className="w-full mt-2 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 w-16">📅</span>
+                    <input type="date" value={editDeadline[c.id]||c.deadline||""} onChange={e=>setEditDeadline(p=>({...p,[c.id]:e.target.value}))} className="flex-1 text-xs border rounded px-2 py-1" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 w-16">🎥</span>
+                    <input type="url" placeholder="YouTube/TikTok URL" value={editVideoUrl[c.id]||c.video_url||""} onChange={e=>setEditVideoUrl(p=>({...p,[c.id]:e.target.value}))} className="flex-1 text-xs border rounded px-2 py-1" />
+                  </div>
+                </div>
                         <button onClick={() => { setRejectModal(c.id); }} className="px-3 py-1.5 border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50">{t.reject}</button>
-                        <button onClick={() => approveCase(c.id)} className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm">{t.approve}</button>
+                        <button onClick={async()=>{if(editDeadline[c.id])await supabase.from("cases").update({deadline:editDeadline[c.id]}).eq("id",c.id);if(editVideoUrl[c.id])await supabase.from("cases").update({video_url:editVideoUrl[c.id]}).eq("id",c.id);approveCase(c.id);}} className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm">{t.approve}</button>
                       </div>
                     </div>
                   </div>
