@@ -1119,7 +1119,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
                 <button key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); }}
                   className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-300 overflow-hidden text-left transition-all group">
                   <div className="h-28 bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center text-6xl relative">
-                    {c.image}
+                    {c.image && c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-full object-cover rounded-t-xl" /> : <span className="text-5xl">{CAT_ICONS[c.category?.fr] || CAT_ICONS[c.category] || "🏥"}</span>}
                     {c.urgent && <span className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">🚨 URGENT</span>}
                   </div>
                   <div className="p-4">
