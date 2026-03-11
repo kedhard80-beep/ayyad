@@ -533,7 +533,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
                     className="w-full bg-white border-2 border-red-200 hover:border-red-400 rounded-2xl overflow-hidden text-left transition-all group shadow-sm hover:shadow-md">
                     <div className="h-52 relative overflow-hidden bg-gradient-to-br from-red-50 to-orange-50">
                       {(c.photos && c.photos[0]) ? (
-                        <img src={c.photos[0]} alt={c.beneficiary} className="w-full h-full object-cover object-center" />
+                        <img src={c.photos[0]} alt={c.beneficiary} className="w-full h-full object-cover object-top" />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                           <span className="text-6xl">{c.image && (c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-32 object-cover rounded-t-2xl" /> : c.image)}</span>
