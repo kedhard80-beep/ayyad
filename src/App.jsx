@@ -4023,12 +4023,29 @@ const FAQPage = ({ setPage, lang }) => {
 
 // ── Change Password Page ──────────────────────────────────────
 
-const ProfilePage = ({ user, cases, lang, setPage }) => {
+const ProfilePage = ({ user, lang, setPage }) => {
   const [userCases, setUserCases] = useState([]);
   const [loading, setLoading] = useState(true);
-  const t = { fr: { title: "Mon profil", myCases: "Mes dossiers", noCases: "Aucun dossier soumis", back: "Retour", status: "Statut", amount: "Montant" }, en: { title: "My profile", myCases: "My cases", noCases: "No cases submitted", back: "Back", status: "Status", amount: "Amount" } }[lang] || {};
-  const statusColors = { PENDING: "bg-yellow-100 text-yellow-700", COLLECTING: "bg-blue-100 text-blue-700", FUNDED: "bg-emerald-100 text-emerald-700", REJECTED: "bg-red-100 text-red-600", APPROVED: "bg-purple-100 text-purple-700" };
-  
+  const [editingCase, setEditingCase] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
+
+  const statusColors = {
+    PENDING: "bg-yellow-100 text-yellow-700",
+    COLLECTING: "bg-blue-100 text-blue-700",
+    FUNDED: "bg-emerald-100 text-emerald-700",
+    REJECTED: "bg-red-100 text-red-600",
+    APPROVED: "bg-purple-100 text-purple-700"
+  };
+
+  const statusLabels = {
+    fr: { PENDING: "En attente", COLLECTING: "Collecte active", FUNDED: "Financé", REJECTED: "Rejeté", APPROVED: "Approuvé" },
+    en: { PENDING: "Pending", COLLECTING: "Active", FUNDED: "Funded", REJECTED: "Rejected", APPROVED: "Approved" }
+  };
+
+  const canEdit = (c) => ["PENDING", "APPROVED"].includes(c.status);
+
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.from("cases").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
@@ -4038,31 +4055,117 @@ const ProfilePage = ({ user, cases, lang, setPage }) => {
     load();
   }, []);
 
+  const openEdit = (c) => {
+    setEditingCase(c.id);
+    setEditForm({
+      title: c.title || "",
+      description: c.description || "",
+      video_url: c.video_url || "",
+      beneficiary_phone: c.beneficiary_phone || "",
+    });
+    setSaveMsg("");
+  };
+
+  const saveEdit = async () => {
+    setSaving(true);
+    const { error } = await supabase.from("cases").update({
+      title: editForm.title,
+      description: editForm.description,
+      video_url: editForm.video_url || null,
+      beneficiary_phone: editForm.beneficiary_phone || null,
+    }).eq("id", editingCase);
+    setSaving(false);
+    if (!error) {
+      setUserCases(prev => prev.map(c => c.id === editingCase ? { ...c, ...editForm } : c));
+      setSaveMsg(lang === "fr" ? "✅ Modifications enregistrées" : "✅ Changes saved");
+      setTimeout(() => { setEditingCase(null); setSaveMsg(""); }, 1500);
+    } else {
+      setSaveMsg(lang === "fr" ? "❌ Erreur lors de la sauvegarde" : "❌ Error saving");
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
-      <button onClick={() => setPage("home")} className="text-sm text-gray-500 hover:text-emerald-600 mb-6 flex items-center gap-1">← {t.back}</button>
+      <button onClick={() => setPage("home")} className="text-sm text-gray-500 hover:text-emerald-600 mb-6 flex items-center gap-1">
+        ← {lang === "fr" ? "Retour" : "Back"}
+      </button>
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-2xl">{(user.name||user.email||"U")[0].toUpperCase()}</div>
+          <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-2xl">
+            {(user.name || user.email || "U")[0].toUpperCase()}
+          </div>
           <div>
             <div className="font-bold text-gray-900 text-lg">{user.name || user.email}</div>
             <div className="text-sm text-gray-500">{user.email}</div>
           </div>
         </div>
       </div>
-      <div className="font-semibold text-gray-700 mb-3">{t.myCases}</div>
-      {loading ? <div className="text-center text-gray-400 py-8">...</div> : userCases.length === 0 ? (
-        <div className="text-center text-gray-400 py-8">{t.noCases}</div>
+      <div className="font-semibold text-gray-700 mb-3">
+        {lang === "fr" ? "Mes dossiers" : "My cases"}
+      </div>
+      {loading ? (
+        <div className="text-center text-gray-400 py-8">...</div>
+      ) : userCases.length === 0 ? (
+        <div className="text-center text-gray-400 py-8">
+          {lang === "fr" ? "Aucun dossier soumis" : "No cases submitted"}
+        </div>
       ) : (
         <div className="space-y-3">
           {userCases.map(c => (
-            <div key={c.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between">
-              <div>
-                <div className="font-medium text-gray-900 text-sm">{c.title || c.full_name || "—"}</div>
-                <div className="text-xs text-gray-500 mt-0.5">🏥 {c.hospital || "—"} · 💰 {c.amount ? c.amount.toLocaleString() + " FCFA" : "—"}</div>
-                <div className="text-xs text-gray-400 mt-0.5">{new Date(c.created_at).toLocaleDateString(lang==="fr"?"fr-FR":"en-US")}</div>
+            <div key={c.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="p-4 flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-gray-900 text-sm truncate">{c.title || "—"}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    🏥 {c.hospital || "—"} · 💰 {c.amount ? c.amount.toLocaleString() + " FCFA" : "—"}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {new Date(c.created_at).toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US")}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className={"text-xs font-semibold px-2 py-1 rounded-full " + (statusColors[c.status] || "bg-gray-100 text-gray-600")}>
+                    {(statusLabels[lang] || statusLabels.fr)[c.status] || c.status}
+                  </span>
+                  {canEdit(c) && (
+                    <button
+                      onClick={() => editingCase === c.id ? setEditingCase(null) : openEdit(c)}
+                      className="text-xs text-emerald-600 hover:text-emerald-800 font-semibold border border-emerald-200 px-2.5 py-1 rounded-lg hover:bg-emerald-50 transition-colors">
+                      {editingCase === c.id ? "✕" : lang === "fr" ? "✏️ Modifier" : "✏️ Edit"}
+                    </button>
+                  )}
+                </div>
               </div>
-              <span className={"text-xs font-semibold px-2 py-1 rounded-full " + (statusColors[c.status] || "bg-gray-100 text-gray-600")}>{c.status}</span>
+              {editingCase === c.id && (
+                <div className="border-t border-gray-100 p-4 bg-emerald-50 space-y-3">
+                  <div className="text-xs font-bold text-emerald-700 mb-2">
+                    {lang === "fr" ? "Modifier le dossier" : "Edit case"}
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 block mb-1">{lang === "fr" ? "Titre" : "Title"}</label>
+                    <input value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 block mb-1">{lang === "fr" ? "Description" : "Description"}</label>
+                    <textarea value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 block mb-1">🎥 {lang === "fr" ? "Lien vidéo YouTube/TikTok" : "YouTube/TikTok video link"} <span className="text-gray-400 font-normal">({lang === "fr" ? "optionnel" : "optional"})</span></label>
+                    <input type="url" value={editForm.video_url} onChange={e => setEditForm({ ...editForm, video_url: e.target.value })} placeholder="https://youtube.com/watch?v=..." className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 block mb-1">📱 {lang === "fr" ? "Téléphone mobile money" : "Mobile money phone"}</label>
+                    <input type="tel" value={editForm.beneficiary_phone} onChange={e => setEditForm({ ...editForm, beneficiary_phone: e.target.value })} placeholder="+225 07 00 00 00 00" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                  </div>
+                  {saveMsg && (
+                    <div className={"text-xs font-semibold px-3 py-2 rounded-lg " + (saveMsg.startsWith("✅") ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600")}>{saveMsg}</div>
+                  )}
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={() => setEditingCase(null)} className="flex-1 border border-gray-200 text-gray-600 font-semibold py-2 rounded-lg text-sm hover:bg-gray-50">{lang === "fr" ? "Annuler" : "Cancel"}</button>
+                    <button onClick={saveEdit} disabled={saving} className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white font-bold py-2 rounded-lg text-sm">{saving ? "..." : lang === "fr" ? "Enregistrer" : "Save"}</button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -4209,7 +4312,7 @@ export default function AyyadApp() {
         {page==="admin"&&<AdminPage user={user} setPage={setPage} lang={lang} />}
         {page==="tracking"&&<TrackingPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
         {page==="changepassword"&&<ChangePasswordPage setPage={setPage} lang={lang} />}
-      {page === "profile" && <ProfilePage user={user} cases={cases} lang={lang} setPage={setPage} />}
+      {page === "profile" && user && <ProfilePage user={user} lang={lang} setPage={setPage} />}
         {page==="faq"&&<FAQPage setPage={setPage} lang={lang} />}
       </main>
       {showFooter&&<Footer setPage={setPage} lang={lang} />}
