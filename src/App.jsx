@@ -1957,6 +1957,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
       beneficiary_phone: form.beneficiary_phone || null,
       video_url: toEmbedUrl(form.videoUrl) || null,
       status: "PENDING",
+      tracking_id: "AYD-" + new Date().getFullYear() + "-" + String(Math.floor(Math.random() * 900) + 100).padStart(3, "0"),
       user_id: user?.id || null,
       deadline_requested: form.deadlineRequested || null,
     });
