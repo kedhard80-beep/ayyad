@@ -193,7 +193,7 @@ const T = {
     register: { title: "Créer un compte", roleQ: "Je souhaite...", roles: [{ id:"donor",icon:"💚",title:"Faire des dons",desc:"Aider des patients dans le besoin" },{ id:"beneficiary",icon:"🏥",title:"Recevoir des soins",desc:"Financer une intervention médicale" }], fields: [{ key:"name",label:"Nom complet",p:"Aminata Koné",type:"text" },{ key:"email",label:"Email",p:"vous@exemple.ci",type:"email" },{ key:"phone",label:"Numéro Wave CI",p:"+225 07 XX XX XX XX",type:"tel" },{ key:"password",label:"Mot de passe (min. 6 caractères)",p:"••••••••",type:"password" }], terms: "J'accepte les", termsLink: "conditions d'utilisation", and: "et la", privacyLink: "politique de confidentialité", btn: "Créer mon compte", continue: "Continuer →", back: "← Retour", hasAccount: "Déjà un compte ?", signin: "Se connecter", error: "Erreur lors de la création du compte." },
     admin: {
       title: "Administration Ayyad", sub: "Tableau de bord opérationnel", status: "Système opérationnel",
-      tabs: [{ id:"overview",label:"Vue d'ensemble",icon:"📊" },{ id:"cases",label:"Dossiers",icon:"📋" },{ id:"fraud",label:"Fraude",icon:"🔍" },{ id:"payouts",label:"Virements",icon:"🏦" }],
+      tabs: [{ id:"overview",label:"Vue d'ensemble",icon:"📊" },{ id:"cases",label:"Dossiers",icon:"📋" },{ id:"fraud",label:"Fraude",icon:"🔍" },{ id:"payouts",label:"Virements",icon:"🏦" },{ id:"team",label:"Équipe",icon:"👥" }],
       stats: [{ label:"Dossiers actifs",v:"—",icon:"📋" },{ label:"Dons ce mois",v:"—",icon:"💚" },{ label:"Bénéficiaires aidés",v:"—",icon:"🏥" }],
       recentTitle: "Dossiers récents", revenueTitle: "Revenus opérationnels (5%)",
       months: [{ month:"Mars 2025",dons:"24.8M",fees:"1 240 000 FCFA" },{ month:"Fév. 2025",dons:"19.2M",fees:"960 000 FCFA" },{ month:"Jan. 2025",dons:"15.1M",fees:"755 000 FCFA" }],
@@ -1790,8 +1790,10 @@ const LoginPage = ({ setPage, setUser, lang }) => {
       return;
     }
     const meta = data.user?.user_metadata || {};
-    const isAdmin = email === "kedhard80@gmail.com"; // Set your admin email here
-    setUser({ id: data.user.id, name: meta.full_name || email, email, isAdmin });
+    const { data: adminData } = await supabase.from("admin_users").select("role, is_active").eq("email", email).single();
+    const isAdmin = !!(adminData && adminData.is_active);
+    const adminRole = adminData?.role || null;
+    setUser({ id: data.user.id, name: meta.full_name || email, email, isAdmin, adminRole });
     setPage(isAdmin ? "admin" : "home");
     setLoading(false);
   };
@@ -2550,6 +2552,158 @@ const HowPage = ({ lang, setPage }) => {
 };
 
 // ── Admin Page — Real Supabase data ───────────────────────────
+const AdminTeamList = ({ user, fr }) => {
+  const [admins, setAdmins] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [showAdd, setShowAdd] = React.useState(false);
+  const [newEmail, setNewEmail] = React.useState("");
+  const [newRole, setNewRole] = React.useState("operator");
+  const [adding, setAdding] = React.useState(false);
+  const [msg, setMsg] = React.useState("");
+
+  const ROLES = [
+    { value: "super_admin", label: fr ? "Super Admin" : "Super Admin", color: "bg-purple-100 text-purple-700" },
+    { value: "finance",     label: fr ? "Finance"     : "Finance",     color: "bg-blue-100 text-blue-700" },
+    { value: "operator",   label: fr ? "Opérateur"   : "Operator",   color: "bg-green-100 text-green-700" },
+  ];
+
+  const getRoleStyle = (role) => ROLES.find(r => r.value === role)?.color || "bg-gray-100 text-gray-600";
+  const getRoleLabel = (role) => ROLES.find(r => r.value === role)?.label || role;
+
+  React.useEffect(() => {
+    fetchAdmins();
+  }, []);
+
+  const fetchAdmins = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("admin_users")
+      .select("*")
+      .order("created_at", { ascending: true });
+    if (!error) setAdmins(data || []);
+    setLoading(false);
+  };
+
+  const handleAdd = async () => {
+    if (!newEmail.includes("@")) return setMsg(fr ? "Email invalide" : "Invalid email");
+    setAdding(true);
+    setMsg("");
+    const { error } = await supabase
+      .from("admin_users")
+      .insert({ email: newEmail.trim().toLowerCase(), role: newRole, is_active: true });
+    if (error) {
+      setMsg(fr ? "Erreur : " + error.message : "Error: " + error.message);
+    } else {
+      setMsg(fr ? "Membre ajouté ✓" : "Member added ✓");
+      setNewEmail("");
+      setNewRole("operator");
+      setShowAdd(false);
+      fetchAdmins();
+    }
+    setAdding(false);
+  };
+
+  const toggleActive = async (admin) => {
+    if (admin.email === user.email) return;
+    await supabase
+      .from("admin_users")
+      .update({ is_active: !admin.is_active })
+      .eq("id", admin.id);
+    fetchAdmins();
+  };
+
+  const changeRole = async (admin, newRole) => {
+    if (admin.email === user.email) return;
+    await supabase
+      .from("admin_users")
+      .update({ role: newRole })
+      .eq("id", admin.id);
+    fetchAdmins();
+  };
+
+  if (loading) return <div className="text-center py-10 text-gray-400">{fr ? "Chargement..." : "Loading..."}</div>;
+
+  return (
+    <div className="space-y-4">
+      {/* Formulaire ajout */}
+      {user.adminRole === "super_admin" && (
+        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+          <button
+            onClick={() => setShowAdd(!showAdd)}
+            className="text-sm font-semibold text-emerald-700 hover:underline"
+          >
+            {showAdd ? (fr ? "▲ Annuler" : "▲ Cancel") : (fr ? "▼ Ajouter un membre" : "▼ Add member")}
+          </button>
+          {showAdd && (
+            <div className="mt-3 flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                placeholder="Email"
+                value={newEmail}
+                onChange={e => setNewEmail(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              />
+              <select
+                value={newRole}
+                onChange={e => setNewRole(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              >
+                {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
+              <button
+                onClick={handleAdd}
+                disabled={adding}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {adding ? "..." : (fr ? "Ajouter" : "Add")}
+              </button>
+            </div>
+          )}
+          {msg && <p className="mt-2 text-sm text-emerald-600">{msg}</p>}
+        </div>
+      )}
+
+      {/* Liste */}
+      {admins.map(admin => (
+        <div key={admin.id} className={`flex items-center justify-between p-4 rounded-xl border ${admin.is_active ? "bg-white border-gray-100" : "bg-gray-50 border-gray-200 opacity-60"}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
+              {admin.email[0].toUpperCase()}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-800">{admin.email}</p>
+              <p className="text-xs text-gray-400">{admin.is_active ? (fr ? "Actif" : "Active") : (fr ? "Désactivé" : "Disabled")}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {user.adminRole === "super_admin" && admin.email !== user.email ? (
+              <>
+                <select
+                  value={admin.role}
+                  onChange={e => changeRole(admin, e.target.value)}
+                  className={`text-xs font-semibold px-2 py-1 rounded-full border-0 ${getRoleStyle(admin.role)}`}
+                >
+                  {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                </select>
+                <button
+                  onClick={() => toggleActive(admin)}
+                  className={`text-xs px-3 py-1 rounded-full font-semibold ${admin.is_active ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"}`}
+                >
+                  {admin.is_active ? (fr ? "Désactiver" : "Disable") : (fr ? "Réactiver" : "Enable")}
+                </button>
+              </>
+            ) : (
+              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${getRoleStyle(admin.role)}`}>
+                {getRoleLabel(admin.role)}
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const AdminPage = ({ user, setPage, lang }) => {
   const [tab, setTab] = useState("overview");
   const [cases, setCases] = useState([]);
@@ -2799,7 +2953,8 @@ const AdminPage = ({ user, setPage, lang }) => {
                               {c.document_urls?.medical&&<a href={c.document_urls.medical} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">🏥 Rapport médical</a>}
                               {c.document_urls?.quote&&<a href={c.document_urls.quote} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">💊 Devis</a>}
                               {c.document_urls?.id&&<a href={c.document_urls.id} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">🪪 Pièce d'identité</a>}
-                              {c.document_urls?.consent&&<a href={c.document_urls.consent} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">✍️ Consentement</a>} className="px-3 py-1.5 border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50">{t.reject}</button>
+                              {c.document_urls?.consent&&<a href={c.document_urls.consent} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">✍️ Consentement</a>}
+                            <button className="px-3 py-1.5 border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50">{t.reject}</button>
                         <button onClick={async()=>{if(editDeadline[c.id])await supabase.from("cases").update({deadline:editDeadline[c.id]}).eq("id",c.id);if(editVideoUrl[c.id])await supabase.from("cases").update({video_url:editVideoUrl[c.id]}).eq("id",c.id);approveCase(c.id);}} className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm">{t.approve}</button>
                       </div>
                     </div>
@@ -3506,6 +3661,25 @@ const LegalPage = ({ setPage, lang }) => {
             </button>
           ))}
         </div>
+
+        {tab === "team" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800">{fr ? "Équipe & Accès" : "Team & Access"}</h2>
+              {user.adminRole === "super_admin" && (
+                <button
+                  onClick={() => setShowAddAdmin(true)}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700"
+                >
+                  + {fr ? "Ajouter un membre" : "Add member"}
+                </button>
+              )}
+            </div>
+
+            {/* Liste des admins */}
+            <AdminTeamList user={user} fr={fr} />
+          </div>
+        )}
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           {tab === "mentions" && (
@@ -4261,11 +4435,13 @@ export default function AyyadApp() {
   // Restore session on load
   useEffect(() => {
     inject();
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         const meta = session.user.user_metadata || {};
-        const isAdmin = session.user.email === "kedhard80@gmail.com";
-        setUser({ id: session.user.id, name: meta.full_name || session.user.email, email: session.user.email, isAdmin });
+        const { data: adminData2 } = await supabase.from("admin_users").select("role, is_active").eq("email", session.user.email).single();
+        const isAdmin = !!(adminData2 && adminData2.is_active);
+        const adminRole = adminData2?.role || null;
+        setUser({ id: session.user.id, name: meta.full_name || session.user.email, email: session.user.email, isAdmin, adminRole });
       }
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
