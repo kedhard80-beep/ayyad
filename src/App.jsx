@@ -1347,6 +1347,19 @@ const CollectesPage = ({ setPage, lang }) => {
 const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [heroStats, setHeroStats] = useState({ patients: "142", collected: "89M", hospitals: "18" });
+  useEffect(() => {
+    const loadStats = async () => {
+      const { data } = await supabase.from("cases").select("collected, status, amount");
+      if (data && data.length > 0) {
+        const funded = data.filter(c => c.status === "FUNDED");
+        const totalCollected = data.reduce((s, c) => s + (c.collected || 0), 0);
+        const fmt = totalCollected >= 1000000 ? Math.round(totalCollected/1000000) + "M" : totalCollected >= 1000 ? Math.round(totalCollected/1000) + "k" : String(totalCollected);
+        setHeroStats(prev => ({ ...prev, patients: String(funded.length || 142), collected: fmt || "89M" }));
+      }
+    };
+    loadStats();
+  }, []);
   const [heroMenu, setHeroMenu] = useState(false);
   const [dbCases, setDbCases] = useState([]);
   const t = T[lang];
@@ -1421,7 +1434,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
         </div>
         <div className="bg-white/10 border-t border-white/20">
           <div className="max-w-6xl mx-auto px-4 py-5 grid grid-cols-3 text-center gap-4">
-            {[["142",t.stats.patients],["89M",t.stats.collected],["18",t.stats.hospitals]].map(([v,l]) => (
+            {[[heroStats.patients,t.stats.patients],[heroStats.collected,t.stats.collected],[heroStats.hospitals,t.stats.hospitals]].map(([v,l]) => (
               <div key={l}><div className="text-2xl font-black">{v}</div><div className="text-emerald-200 text-xs mt-0.5">{l}</div></div>
             ))}
           </div>
