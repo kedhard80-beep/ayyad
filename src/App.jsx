@@ -1346,6 +1346,7 @@ const CollectesPage = ({ setPage, lang }) => {
 
 const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [heroMenu, setHeroMenu] = useState(false);
   const [dbCases, setDbCases] = useState([]);
   const t = T[lang];
@@ -1378,7 +1379,8 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 
   const catMap = lang==="fr" ? ["Tous","Cardiologie","Oncologie","Néphrologie","Orthopédie"] : ["All","Cardiology","Oncology","Nephrology","Orthopedics"];
   const allCases = dbCases.length > 0 ? [...dbCases, ...MOCK_CASES.filter(c => c.status !== "FUNDED")] : MOCK_CASES;
-  const filtered = filter==="all"||filter===catMap[0] ? allCases : allCases.filter(c => c.category[lang].toLowerCase()===filter.toLowerCase());
+  const filtered = (filter==="all"||filter===catMap[0] ? allCases : allCases.filter(c => c.category[lang].toLowerCase()===filter.toLowerCase()))
+    .filter(c => !search.trim() || (c.title||"").toLowerCase().includes(search.toLowerCase()) || (c.hospital||"").toLowerCase().includes(search.toLowerCase()) || (c.city||"").toLowerCase().includes(search.toLowerCase()));
   return (
     <div onClick={() => setHeroMenu(false)}>
       <div className="bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-600 text-white">
@@ -1437,7 +1439,16 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           </div>
           <div className="flex gap-2 flex-wrap">{catMap.map((c,i) => <button key={c} onClick={() => setFilter(i===0?"all":c)} className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${(filter==="all"&&i===0)||filter===c?"bg-emerald-600 text-white shadow-md":"bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{c}</button>)}</div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="mb-4">
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder={lang === "fr" ? "🔍 Rechercher par nom, hôpital, ville..." : "🔍 Search by name, hospital, city..."}
+          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white shadow-sm"
+        />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map(c => <CaseCard key={c.id} c={c} lang={lang} t={t} onClick={() => { setSelectedCase(c); setPage("case"); }} />)}
         </div>
       </div>
@@ -1962,7 +1973,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
       deadline_requested: form.deadlineRequested || null,
     });
     if (error) { setSubmitError(lang==="fr"?"Erreur lors de la soumission. Réessayez.":"Submission error. Please try again."); setSubmitting(false); return; }
-    emailNewCase({ caseTitle: form.title, hospital: form.hospital, city: form.city, amount: form.amount });
+    try { emailNewCase({ caseTitle: form.title, hospital: form.hospital, city: form.city, amount: form.amount }); } catch(e) { console.warn("Email non envoyé:", e); }
     setStep(3);
     setSubmitting(false);
   };
