@@ -1984,6 +1984,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
       tracking_id: "AYD-" + new Date().getFullYear() + "-" + String(Math.floor(Math.random() * 900) + 100).padStart(3, "0"),
       user_id: user?.id || null,
       deadline_requested: form.deadlineRequested || null,
+      document_urls: fileUrls || {},
     });
     if (error) { setSubmitError(lang==="fr"?"Erreur lors de la soumission. Réessayez.":"Submission error. Please try again."); setSubmitting(false); return; }
     try { emailNewCase({ caseTitle: form.title, hospital: form.hospital, city: form.city, amount: form.amount }); } catch(e) { console.warn("Email non envoyé:", e); }
@@ -2794,31 +2795,11 @@ const AdminPage = ({ user, setPage, lang }) => {
                           <span>💰 {c.amount?fmt(c.amount):"—"}</span>
                         </div>
                         {c.description&&<p className="text-xs text-gray-600 line-clamp-2 mb-2">{c.description}</p>}
-                        {c.photo_url&&(
-                          <a href={c.photo_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline font-medium">
-                            📎 {lang==="fr"?"Voir document":"View document"}
-                          </a>
-                        )}
-                        <div className="text-xs text-gray-400 mt-1">
-                          {lang==="fr"?"Soumis le ":"Submitted: "}{new Date(c.created_at).toLocaleDateString(lang==="fr"?"fr-FR":"en-US")}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <Badge color="yellow">{t.statusLabels.PENDING}</Badge>
-                        <button onClick={() => toggleUrgent(c.id, c.urgent)} className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${c.urgent || isAutoUrgent(c) ? "bg-red-600 text-white border-red-600" : "border-gray-200 text-gray-500 hover:border-red-400 hover:text-red-600"}`}>
-                          {c.urgent || isAutoUrgent(c) ? "🚨 Urgent" : "⚪ Urgent"}
-                        </button>
-                <div className="w-full mt-2 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500 w-16">📅</span>
-                    <input type="date" value={editDeadline[c.id]||c.deadline||""} onChange={e=>setEditDeadline(p=>({...p,[c.id]:e.target.value}))} className="flex-1 text-xs border rounded px-2 py-1" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500 w-16">🎥</span>
-                    <input type="url" placeholder="YouTube/TikTok URL" value={editVideoUrl[c.id]||c.video_url||""} onChange={e=>setEditVideoUrl(p=>({...p,[c.id]:e.target.value}))} className="flex-1 text-xs border rounded px-2 py-1" />
-                  </div>
-                </div>
-                        <button onClick={() => { setRejectModal(c.id); }} className="px-3 py-1.5 border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50">{t.reject}</button>
+                        {c.photo_url&&<a href={c.photo_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline font-medium">📷 Photo</a>}
+                              {c.document_urls?.medical&&<a href={c.document_urls.medical} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">🏥 Rapport médical</a>}
+                              {c.document_urls?.quote&&<a href={c.document_urls.quote} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">💊 Devis</a>}
+                              {c.document_urls?.id&&<a href={c.document_urls.id} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">🪪 Pièce d'identité</a>}
+                              {c.document_urls?.consent&&<a href={c.document_urls.consent} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">✍️ Consentement</a>} className="px-3 py-1.5 border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50">{t.reject}</button>
                         <button onClick={async()=>{if(editDeadline[c.id])await supabase.from("cases").update({deadline:editDeadline[c.id]}).eq("id",c.id);if(editVideoUrl[c.id])await supabase.from("cases").update({video_url:editVideoUrl[c.id]}).eq("id",c.id);approveCase(c.id);}} className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm">{t.approve}</button>
                       </div>
                     </div>
