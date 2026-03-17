@@ -674,6 +674,7 @@ const AYYAD_ACCOUNTS = {
 const QR_PLACEHOLDER = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=";
 
 const MobilePayWidget = ({ amount, caseData, lang, onSuccess }) => {
+  if (!amount || !caseData) return null;
   const [step, setStep] = useState("choose"); // choose | qr | ref | done
   const [provider, setProvider] = useState(null);
   const [txRef, setTxRef] = useState("");
