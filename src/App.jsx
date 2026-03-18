@@ -1647,7 +1647,7 @@ const CasePage = ({ c, setPage, lang }) => {
             onClick={() => setDonMode("confirm")}
             className="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-md hover:bg-emerald-700"
           >
-            {lang==="fr" ? `Continuer → ${fmt(Number(amount))} ${currency}` : `Continue → ${fmt(Number(amount))} ${currency}`}
+            {lang==="fr" ? `Continuer → ${fmt(Number(amount))} FCFA` : `Continue → ${fmt(Number(amount))} FCFA`}
           </button>
         ) : (
       ) : (
