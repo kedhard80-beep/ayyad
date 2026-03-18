@@ -517,8 +517,8 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
         </div>
         <p className="text-gray-500 text-sm mb-5">{t.urgent.sub}</p>
 
-        {/* Carousel — slide horizontal */}
-        <div style={{position:"relative", overflow:"hidden", borderRadius:"16px"}}>
+        {/* Carousel — cartes grand format */}
+        <div style={{position:"relative", overflow:"hidden", borderRadius:"20px", boxShadow:"0 4px 32px rgba(0,0,0,0.10)"}}>
           <div style={{
             display:"flex",
             transform: "translateX(-" + (current * 100) + "%)",
@@ -527,40 +527,96 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
           }}>
             {urgentCases.map((c, i) => {
               const percent = pct(c.collected, c.required);
+              const hasPhoto = c.photos && c.photos[0];
               return (
                 <div key={c.id} style={{minWidth:"100%", boxSizing:"border-box"}}>
                   <button onClick={() => { setSelectedCase(c); setPage("case"); }}
-                    className="w-full bg-white border-2 border-red-200 hover:border-red-400 rounded-2xl overflow-hidden text-left transition-all group shadow-sm hover:shadow-md">
-                    <div className="h-52 relative overflow-hidden bg-gradient-to-br from-red-50 to-orange-50">
-                      {(c.photos && c.photos[0]) ? (
-                        <img src={c.photos[0]} alt={c.beneficiary} className="w-full h-full object-cover object-top" />
+                    className="w-full text-left group relative block"
+                    style={{background:"#fff", borderRadius:"20px", overflow:"hidden"}}>
+
+                    {/* Photo grande — hauteur 420px */}
+                    <div style={{position:"relative", height:"420px", background:"linear-gradient(135deg,#fff1f2,#fef3c7)"}}>
+                      {hasPhoto ? (
+                        <img src={c.photos[0]} alt={c.beneficiary}
+                          style={{width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top",
+                            transition:"transform 700ms", display:"block"}}
+                          className="group-hover:scale-105"
+                        />
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                          <span className="text-6xl">{c.image && (c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-32 object-cover rounded-t-2xl" /> : c.image)}</span>
+                        <div style={{width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center"}}>
+                          <span style={{fontSize:"120px", lineHeight:1}}>{typeof c.image === "string" && !c.image.startsWith("http") ? c.image : "🏥"}</span>
                         </div>
                       )}
-                      <div className="absolute top-3 left-3 flex gap-2">
-                        <span className="bg-red-600 text-white text-xs font-black px-2 py-1 rounded-full animate-pulse">🚨 URGENT</span>
-                        <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1 rounded-full">⏱️ {c.daysLeft}j</span>
+
+                      {/* Gradient overlay bas → top pour lisibilité du texte */}
+                      <div style={{
+                        position:"absolute", inset:0,
+                        background:"linear-gradient(to top, rgba(0,0,0,0.80) 0%, rgba(0,0,0,0.30) 50%, rgba(0,0,0,0.00) 100%)",
+                        pointerEvents:"none",
+                      }} />
+
+                      {/* Badges haut gauche */}
+                      <div style={{position:"absolute", top:16, left:16, display:"flex", gap:8}}>
+                        <span style={{background:"#dc2626", color:"#fff", fontSize:"11px", fontWeight:900, padding:"4px 10px", borderRadius:"999px", animation:"pulse 2s infinite"}}>
+                          🚨 URGENT
+                        </span>
+                        {c.daysLeft !== undefined && (
+                          <span style={{background:"rgba(255,255,255,0.95)", color:"#c2410c", fontSize:"11px", fontWeight:700, padding:"4px 10px", borderRadius:"999px"}}>
+                            ⏱️ {c.daysLeft}j
+                          </span>
+                        )}
                       </div>
-                      <div className="absolute top-3 right-3">
-                        <span className="bg-white text-gray-500 text-[10px] font-mono px-2 py-1 rounded-full border border-gray-200">{c.trackingId}</span>
+
+                      {/* Tracking ID haut droite */}
+                      <div style={{position:"absolute", top:16, right:16}}>
+                        <span style={{background:"rgba(255,255,255,0.90)", color:"#6b7280", fontSize:"10px", fontFamily:"monospace", padding:"4px 10px", borderRadius:"999px", border:"1px solid rgba(0,0,0,0.08)"}}>
+                          {c.trackingId}
+                        </span>
+                      </div>
+
+                      {/* Contenu texte en bas de la photo */}
+                      <div style={{position:"absolute", bottom:0, left:0, right:0, padding:"24px 20px 20px"}}>
+                        <div style={{fontSize:"19px", fontWeight:900, color:"#fff", lineHeight:1.25, marginBottom:6,
+                          textShadow:"0 1px 4px rgba(0,0,0,0.4)"}}>
+                          {c.title[lang]}
+                        </div>
+                        <div style={{fontSize:"12px", color:"rgba(255,255,255,0.80)", marginBottom:14}}>
+                          🏥 {c.hospital} · 📍 {c.city}
+                        </div>
+
+                        {/* Barre de progression */}
+                        <div style={{marginBottom:8}}>
+                          <div style={{height:"6px", background:"rgba(255,255,255,0.25)", borderRadius:"999px", overflow:"hidden"}}>
+                            <div style={{height:"100%", background:"#ef4444", borderRadius:"999px", width: percent+"%", transition:"width 700ms"}} />
+                          </div>
+                        </div>
+
+                        {/* Stats */}
+                        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                          <div>
+                            <span style={{color:"#fff", fontWeight:800, fontSize:"16px"}}>{fmt(c.collected)}</span>
+                            <span style={{color:"rgba(255,255,255,0.65)", fontSize:"11px", marginLeft:4}}>
+                              {lang==="fr" ? "sur" : "of"} {fmt(c.required)}
+                            </span>
+                          </div>
+                          <div style={{display:"flex", gap:12, alignItems:"center"}}>
+                            <span style={{color:"rgba(255,255,255,0.80)", fontSize:"11px"}}>👥 {c.donors || 0} {lang==="fr"?"dons":"donors"}</span>
+                            <span style={{background:"#ef4444", color:"#fff", fontWeight:900, fontSize:"13px", padding:"3px 10px", borderRadius:"999px"}}>
+                              {percent}%
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="p-4">
-                      <div className="font-bold text-gray-900 text-sm leading-snug group-hover:text-red-700 mb-1">{c.title[lang]}</div>
-                      <div className="text-xs text-gray-400 mb-3">🏥 {c.hospital} · 📍 {c.city}</div>
-                      <div className="flex justify-between text-xs text-gray-500 mb-1">
-                        <span className="font-semibold text-gray-800">{fmt(c.collected)}</span>
-                        <span className="text-gray-400">sur {fmt(c.required)}</span>
-                      </div>
-                      <div className="h-2 bg-red-100 rounded-full overflow-hidden mb-1">
-                        <div className="h-full bg-red-500 rounded-full" style={{width: percent+"%", transition:"width 700ms"}} />
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-400">👥 {c.donors} {lang==="fr"?"donateurs":"donors"}</span>
-                        <span className="font-bold text-red-600">{percent}%</span>
-                      </div>
+
+                    {/* Call-to-action strip */}
+                    <div style={{padding:"14px 20px", background:"#fff", display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid #fee2e2"}}>
+                      <span style={{fontSize:"13px", color:"#374151"}}>
+                        {lang==="fr" ? "Ces patients ont besoin d'aide immédiate — intervention critique sous 72h" : "These patients need immediate help — critical intervention within 72h"}
+                      </span>
+                      <span style={{background:"#dc2626", color:"#fff", fontSize:"12px", fontWeight:700, padding:"6px 14px", borderRadius:"999px", whiteSpace:"nowrap"}}>
+                        {lang==="fr" ? "Aider →" : "Help →"}
+                      </span>
                     </div>
                   </button>
                 </div>
@@ -992,28 +1048,138 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
 
 // ── Support Ayyad Section ─────────────────────────────────────
 const SupportAyyadSection = ({ lang }) => {
-  const t = T[lang].supportAyyad;
+  const fr = lang === "fr";
+  const [currency, setCurrency] = useState("FCFA");
+  const [amount, setAmount] = useState("");
+  const [payMode, setPayMode] = useState("WAVE"); // WAVE | CARD
+  const [cardSoon, setCardSoon] = useState(false);
+
+  const WAVE_NUMBER = "+22507480561 28".replace(/\s/g,"");
+  const CURRENCIES = [
+    { code:"FCFA", symbol:"FCFA", min:500,    step:500  },
+    { code:"EUR",  symbol:"€",    min:1,      step:1    },
+    { code:"USD",  symbol:"$",    min:1,      step:1    },
+  ];
+  const curInfo = CURRENCIES.find(c => c.code === currency) || CURRENCIES[0];
+
+  const numericAmount = Number(amount) || 0;
+  const isValid = numericAmount >= curInfo.min;
+
+  // Conversion FCFA pour Wave (Wave CI fonctionne en FCFA)
+  const RATES = { FCFA: 1, EUR: 655.957, USD: 600 };
+  const amountFCFA = Math.round(numericAmount * (RATES[currency] || 1));
+
+  const waveDeepLink = `wave://pay?to=${WAVE_NUMBER}&amount=${amountFCFA}&note=Don+Ayyad`;
+  const waveWebLink = `https://pay.wave.com/m/ayyad?amount=${amountFCFA}`;
+
+  const handlePay = () => {
+    if (!isValid) return;
+    if (payMode === "WAVE") {
+      window.open(waveDeepLink, "_blank");
+    } else {
+      setCardSoon(true);
+    }
+  };
+
+  const displayAmount = amount
+    ? (currency === "FCFA"
+        ? `${Number(amount).toLocaleString("fr")} FCFA`
+        : `${curInfo.symbol}${Number(amount).toLocaleString("fr")}`)
+    : "";
+
   return (
     <div className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 text-white">
       <div className="max-w-4xl mx-auto px-4 py-14 text-center">
         <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 mb-5 text-sm font-medium">
-          <span>💚</span> {t.directDonation}
+          <span>💚</span> {fr ? "Don direct à Ayyad" : "Direct donation to Ayyad"}
         </div>
-        <h2 className="text-3xl font-black mb-4">{t.title}</h2>
-        <p className="text-emerald-200 text-sm max-w-lg mx-auto mb-8 leading-relaxed">{t.sub}</p>
-        <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-8 max-w-sm mx-auto">
-          <div className="text-5xl mb-4">🔜</div>
-          <div className="font-black text-xl mb-2">
-            {lang === "fr" ? "Paiements bientôt disponibles" : "Payments coming soon"}
+        <h2 className="text-3xl font-black mb-3">{fr ? "Soutenir Ayyad directement" : "Support Ayyad directly"}</h2>
+        <p className="text-emerald-200 text-sm max-w-lg mx-auto mb-8 leading-relaxed">
+          {fr
+            ? "Votre don aide à financer les opérations de la plateforme : vérification des dossiers, partenariats hospitaliers, et accompagnement des patients."
+            : "Your donation helps fund platform operations: case verification, hospital partnerships, and patient support."}
+        </p>
+
+        <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 max-w-sm mx-auto space-y-4">
+
+          {/* Devise */}
+          <div>
+            <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Devise" : "Currency"}</div>
+            <div className="flex gap-2">
+              {CURRENCIES.map(c => (
+                <button key={c.code} onClick={() => { setCurrency(c.code); setAmount(""); }}
+                  className={`flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-all ${currency === c.code ? "bg-emerald-500 border-emerald-400 text-white" : "bg-white/10 border-white/20 text-emerald-200 hover:bg-white/20"}`}>
+                  {c.code}
+                </button>
+              ))}
+            </div>
           </div>
-          <p className="text-emerald-300 text-sm leading-relaxed">
-            {lang === "fr"
-              ? "Wave CI et le paiement par carte bancaire sont disponibles. D'autres moyens arrivent bientôt."
-              : "Wave CI and card payment are available. More payment methods coming soon."}
+
+          {/* Montant — devise collée au chiffre */}
+          <div>
+            <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Montant" : "Amount"}</div>
+            <div className="relative flex items-center bg-white rounded-xl overflow-hidden">
+              <input
+                type="number"
+                min={curInfo.min}
+                step={curInfo.step}
+                placeholder={String(curInfo.min)}
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                className="flex-1 text-gray-900 font-black text-lg px-4 py-3 outline-none bg-transparent"
+                style={{minWidth:0}}
+              />
+              <span className="px-3 text-gray-500 font-bold text-sm border-l border-gray-200 py-3 bg-gray-50 whitespace-nowrap">
+                {curInfo.code === "FCFA" ? "FCFA" : curInfo.symbol}
+              </span>
+            </div>
+            {displayAmount && (
+              <div className="mt-1.5 text-emerald-300 text-xs text-right">
+                ≈ {displayAmount}{currency !== "FCFA" ? ` (${amountFCFA.toLocaleString("fr")} FCFA)` : ""}
+              </div>
+            )}
+          </div>
+
+          {/* Mode de paiement */}
+          <div>
+            <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Moyen de paiement" : "Payment method"}</div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { id:"WAVE", emoji:"🌊", label:"Wave CI" },
+                { id:"CARD", emoji:"💳", label:fr?"Carte bancaire":"Card" },
+              ].map(pm => (
+                <button key={pm.id} onClick={() => { setPayMode(pm.id); setCardSoon(false); }}
+                  className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${payMode === pm.id ? "bg-white text-gray-900 border-white" : "bg-white/10 border-white/20 text-white hover:bg-white/20"}`}>
+                  <span>{pm.emoji}</span><span>{pm.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Message carte bientôt */}
+          {cardSoon && (
+            <div className="bg-amber-500/20 border border-amber-400/40 rounded-xl px-4 py-2.5 text-amber-200 text-xs">
+              💳 {fr ? "Le paiement par carte arrive bientôt. Utilisez Wave CI pour l'instant." : "Card payment coming soon. Use Wave CI for now."}
+            </div>
+          )}
+
+          {/* Bouton payer */}
+          <button
+            onClick={handlePay}
+            disabled={!isValid}
+            className={`w-full py-3.5 rounded-xl font-black text-sm transition-all ${isValid ? "bg-white text-emerald-900 hover:bg-emerald-100 shadow-lg" : "bg-white/20 text-white/40 cursor-not-allowed"}`}>
+            {!amount || numericAmount === 0
+              ? (fr ? "Saisir un montant" : "Enter an amount")
+              : !isValid
+              ? (fr ? `Min. ${curInfo.min} ${curInfo.code}` : `Min. ${curInfo.min} ${curInfo.code}`)
+              : payMode === "WAVE"
+              ? `💚 ${fr ? "Payer" : "Pay"} ${displayAmount} via Wave`
+              : `💳 ${fr ? "Payer" : "Pay"} ${displayAmount} par carte`}
+          </button>
+
+          <p className="text-emerald-400 text-[10px]">
+            {fr ? "Paiement sécurisé · 100% de votre don va à Ayyad" : "Secure payment · 100% of your donation goes to Ayyad"}
           </p>
-          <div className="flex justify-center gap-4 mt-6 text-2xl opacity-60">
-            <span>🌊</span><span>💳</span>
-          </div>
         </div>
       </div>
     </div>
@@ -1383,16 +1549,27 @@ const CollectesPage = ({ setPage, lang }) => {
 const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [heroStats, setHeroStats] = useState({ patients: "142", collected: "89M", hospitals: "18" });
+  const [heroStats, setHeroStats] = useState({ patients: "—", collected: "—", hospitals: "18" });
   useEffect(() => {
     const loadStats = async () => {
-      const { data } = await supabase.from("cases").select("collected, status, amount");
-      if (data && data.length > 0) {
-        const funded = data.filter(c => c.status === "FUNDED");
-        const totalCollected = data.reduce((s, c) => s + (c.collected || 0), 0);
-        const fmt = totalCollected >= 1000000 ? Math.round(totalCollected/1000000) + "M" : totalCollected >= 1000 ? Math.round(totalCollected/1000) + "k" : String(totalCollected);
-        setHeroStats(prev => ({ ...prev, patients: String(funded.length || 142), collected: fmt || "89M" }));
-      }
+      try {
+        const { data } = await supabase.from("cases").select("collected, status, amount");
+        if (data) {
+          // Patients aidés = dossiers qui ont été approuvés (pas PENDING/REJECTED)
+          const active = data.filter(c => !["PENDING","REJECTED"].includes(c.status));
+          const totalCollected = active.reduce((s, c) => s + (c.collected || 0), 0);
+          const fmtCollected = totalCollected >= 1000000
+            ? (totalCollected / 1000000).toFixed(1).replace(".0","") + "M"
+            : totalCollected >= 1000
+            ? Math.round(totalCollected / 1000) + "k"
+            : String(totalCollected);
+          setHeroStats(prev => ({
+            ...prev,
+            patients: String(active.length),
+            collected: totalCollected > 0 ? fmtCollected : "0",
+          }));
+        }
+      } catch(e) { /* garder les valeurs par défaut */ }
     };
     loadStats();
   }, []);
@@ -3254,6 +3431,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                           const payMethod = payMethods[c.id] || null;
                           const confirming = confirmingId === c.id;
                           const hasSurplus = fin.surplus > 0;
+                          const goalNotReached = (c.collected || 0) < (c.amount || c.required || 0);
                           const isExpanded = expandedPayoutId === c.id;
                           const catEmoji = c.category==="Cardiologie"?"🫀":c.category==="Oncologie"?"🎗️":c.category==="Neurologie"?"🧠":c.category==="Pediatrie"||c.category==="Pédiatrie"?"👶":c.category==="Gynecologie"||c.category==="Gynécologie"?"🌸":c.category==="Orthopedie"||c.category==="Orthopédie"?"🦴":c.category==="Nephrologie"||c.category==="Néphrologie"?"🫘":"🏥";
 
@@ -3301,7 +3479,30 @@ const AdminPage = ({ user, setPage, lang }) => {
                                         <div className="text-[10px] text-amber-500">5% base · FCFA</div>
                                       </div>
                                     </div>
-                                    {hasSurplus && (
+                                    {goalNotReached && (
+                                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-lg">⚖️</span>
+                                          <div className="text-xs font-black text-amber-800">{lang==="fr" ? "Règle des 5% — Objectif non atteint" : "5% Rule — Goal not reached"}</div>
+                                        </div>
+                                        <div className="text-xs text-amber-700 leading-relaxed">
+                                          {lang==="fr"
+                                            ? "Cette collecte se termine sans atteindre son objectif. Les 5% de fonctionnement Ayyad sont prélevés sur le montant collecté. Le solde restant (95%) est redistribué aux cas les plus urgents."
+                                            : "This campaign ends without reaching its goal. Ayyad's 5% operating fee is deducted from the collected amount. The remaining balance (95%) is redistributed to the most urgent cases."}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                                          <div className="bg-white rounded-lg p-2 border border-amber-100">
+                                            <div className="text-amber-600 font-black">{Math.round((c.collected||0)*0.05).toLocaleString()} FCFA</div>
+                                            <div className="text-gray-400 text-[10px]">5% → Ayyad</div>
+                                          </div>
+                                          <div className="bg-white rounded-lg p-2 border border-amber-100">
+                                            <div className="text-purple-600 font-black">{Math.round((c.collected||0)*0.95).toLocaleString()} FCFA</div>
+                                            <div className="text-gray-400 text-[10px]">{lang==="fr" ? "95% → cas urgents" : "95% → urgent cases"}</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                    {hasSurplus && !goalNotReached && (
                                       <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-2">
                                         <div className="text-xs font-black text-emerald-700">🎉 Surcollecte : +{fin.surplus.toLocaleString()} FCFA</div>
                                         <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -3318,11 +3519,9 @@ const AdminPage = ({ user, setPage, lang }) => {
                                   {!confirming ? (
                                     <div className="space-y-3">
                                       <div className="text-xs font-bold text-gray-700">💸 Virement vers <span className="text-emerald-700">{c.hospital}</span> :</div>
-                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                      <div className="grid grid-cols-2 gap-2">
                                         {[
                                           {id:"WAVE",emoji:"🌊",label:"Wave CI",bg:"bg-blue-600 hover:bg-blue-700",ring:"ring-blue-500"},
-                                          
-                {id:"CARD",emoji:"💳",label:"Carte bancaire",bg:"bg-gray-800 hover:bg-gray-900",ring:"ring-gray-500"},
                                           {id:"BANK",emoji:"🏦",label:"Virement bancaire",bg:"bg-gray-700 hover:bg-gray-800",ring:"ring-gray-500"},
                                         ].map(pm => (
                                           <button key={pm.id} onClick={() => setPayMethods(prev => ({...prev, [c.id]: pm.id}))}
@@ -3616,40 +3815,106 @@ const AdminPage = ({ user, setPage, lang }) => {
           const collecting = cases.filter(c => c.status === "COLLECTING");
           const allActive = cases.filter(c => !["PENDING","REJECTED"].includes(c.status));
           const totalCollected = allActive.reduce((s,c) => s + (c.collected||0), 0);
-          const total5pct = Math.round(totalCollected * 0.05);
+
+          // ── Calcul des 4 flux de revenus Ayyad ──
+          // 1. 5% sur objectif (toutes collectes actives, calculé sur ce qui est collecté)
+          const rev5pctObjectif = Math.round(allActive.reduce((s,c) => {
+            const col = c.collected || 0; const goal = c.amount || 1;
+            return s + Math.min(col, goal) * 0.05;
+          }, 0));
+          // 2. 5% sur surcollecte (collectes FUNDED/CLOSED avec surplus)
+          const rev5pctSurcollecte = Math.round(allActive.filter(c => (c.collected||0) > (c.amount||1)).reduce((s,c) => {
+            const surplus = Math.max(0, (c.collected||0) - (c.amount||1));
+            return s + surplus * 0.05;
+          }, 0));
+          // 3. 5% sur collectes non atteintes (FUNDED/CLOSED où collected < amount)
+          const rev5pctNonAtteint = Math.round(funded.filter(c => (c.collected||0) < (c.amount||1)).reduce((s,c) => {
+            return s + (c.collected||0) * 0.05;
+          }, 0));
+          // 4. Dons directs (table ayyad_expenses avec label contenant "don")
+          const revDonsDirect = expenses.filter(e => e.category === "don_direct").reduce((s,e) => s + (e.amount||0), 0);
+
+          const total5pct = rev5pctObjectif + rev5pctSurcollecte + rev5pctNonAtteint;
           const totalSalariesPaid = salaryPayments.filter(p=>p.status==="paid").reduce((s,p)=>s+p.amount,0);
-          const totalExpenses = expenses.reduce((s,e)=>s+e.amount,0);
-          const balance = total5pct - totalSalariesPaid - totalExpenses;
+          const totalExpenses = expenses.filter(e => e.category !== "don_direct").reduce((s,e)=>s+e.amount,0);
+          const totalRevenusAyyad = total5pct + revDonsDirect;
+          const balance = totalRevenusAyyad - totalSalariesPaid - totalExpenses;
           const fr = lang==="fr";
           return (
             <div className="space-y-6">
               {/* KPIs Finance */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: fr?"Total collecté":"Total raised",       v: fmt(totalCollected), icon:"💚", color:"emerald" },
-                  { label: fr?"5% fonctionnement":"5% operating fee", v: fmt(total5pct),      icon:"💰", color:"amber"   },
-                  { label: fr?"Salaires payés":"Salaries paid",       v: fmt(totalSalariesPaid), icon:"👔", color:"blue" },
-                  { label: fr?"Solde disponible":"Available balance", v: fmt(balance),         icon:"🏦", color: balance>=0?"emerald":"red" },
+                  { label: fr?"Total collecté":"Total raised",          v: fmt(totalCollected),     icon:"💚", color:"emerald" },
+                  { label: fr?"Revenus Ayyad":"Ayyad revenue",          v: fmt(totalRevenusAyyad),  icon:"💰", color:"amber"   },
+                  { label: fr?"Salaires payés":"Salaries paid",         v: fmt(totalSalariesPaid),  icon:"👔", color:"blue"    },
+                  { label: fr?"Solde disponible":"Available balance",   v: fmt(balance),            icon:"🏦", color: balance>=0?"emerald":"red" },
                 ].map(k => (
                   <div key={k.label} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
                     <div className="text-3xl mb-2">{k.icon}</div>
-                    <div className={`text-lg font-black ${k.color==="red"?"text-red-600":k.color==="amber"?"text-amber-600":"text-emerald-700"}`}>{k.v}</div>
+                    <div className={`text-lg font-black ${k.color==="red"?"text-red-600":k.color==="amber"?"text-amber-600":k.color==="blue"?"text-blue-700":"text-emerald-700"}`}>{k.v}</div>
                     <div className="text-xs text-gray-500 mt-0.5">{k.label}</div>
                   </div>
                 ))}
               </div>
 
-              {/* Règle métier : collectes non atteintes */}
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">⚖️</span>
-                  <div>
-                    <div className="font-bold text-amber-800 text-sm">{fr?"Règle des 5% — Collectes non atteintes":"5% Rule — Unmet campaigns"}</div>
-                    <div className="text-xs text-amber-700 mt-1 leading-relaxed">
-                      {fr
-                        ? "Lorsqu'une collecte se termine sans atteindre son objectif, les 5% de fonctionnement Ayyad sont prélevés sur le montant collecté avant redistribution du solde aux cas les plus urgents."
-                        : "When a campaign ends without reaching its goal, Ayyad's 5% operating fee is deducted from the collected amount before the balance is redistributed to the most urgent cases."}
+              {/* ── Sources de revenus Ayyad ── */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-gray-100 flex items-center gap-2">
+                  <span className="text-lg">💰</span>
+                  <h3 className="font-bold text-gray-900 text-sm">{fr ? "Sources de revenus Ayyad" : "Ayyad Revenue Streams"}</h3>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {[
+                    {
+                      icon:"📊", color:"text-amber-600", bg:"bg-amber-50",
+                      label: fr ? "5% sur objectif collecte" : "5% on campaign goal",
+                      desc: fr ? "Prélevés sur chaque montant collecté, dans la limite de l'objectif" : "Deducted from each collected amount, up to the goal",
+                      amount: rev5pctObjectif,
+                      count: allActive.filter(c=>(c.collected||0)>0).length,
+                      unit: fr ? "collectes actives" : "active campaigns",
+                    },
+                    {
+                      icon:"🎉", color:"text-emerald-600", bg:"bg-emerald-50",
+                      label: fr ? "5% sur surcollecte" : "5% on surplus",
+                      desc: fr ? "5% du surplus versé à Ayyad quand l'objectif est dépassé" : "5% of surplus paid to Ayyad when goal is exceeded",
+                      amount: rev5pctSurcollecte,
+                      count: allActive.filter(c=>(c.collected||0)>(c.amount||1)).length,
+                      unit: fr ? "collectes avec surplus" : "campaigns with surplus",
+                    },
+                    {
+                      icon:"⏳", color:"text-orange-600", bg:"bg-orange-50",
+                      label: fr ? "5% sur collectes non atteintes" : "5% on unmet goals",
+                      desc: fr ? "5% prélevés avant redistribution du solde aux cas urgents" : "5% deducted before balance is redistributed to urgent cases",
+                      amount: rev5pctNonAtteint,
+                      count: funded.filter(c=>(c.collected||0)<(c.amount||1)).length,
+                      unit: fr ? "collectes non atteintes" : "unmet campaigns",
+                    },
+                    {
+                      icon:"💚", color:"text-teal-600", bg:"bg-teal-50",
+                      label: fr ? "Dons directs à Ayyad" : "Direct donations to Ayyad",
+                      desc: fr ? "Dons effectués directement via Wave ou carte sur la section Soutenir Ayyad" : "Donations made directly via Wave or card on the Support Ayyad section",
+                      amount: revDonsDirect,
+                      count: expenses.filter(e=>e.category==="don_direct").length,
+                      unit: fr ? "dons enregistrés" : "recorded donations",
+                    },
+                  ].map((row, i) => (
+                    <div key={i} className={`p-4 flex items-center gap-4 ${row.bg}`}>
+                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm flex-shrink-0">{row.icon}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-gray-900 text-sm">{row.label}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{row.desc}</div>
+                        <div className="text-[10px] text-gray-400 mt-1">{row.count} {row.unit}</div>
+                      </div>
+                      <div className={`font-black text-lg ${row.color} flex-shrink-0 text-right`}>
+                        {fmt(row.amount)}
+                      </div>
                     </div>
+                  ))}
+                  {/* Total */}
+                  <div className="p-4 bg-gray-900 flex items-center justify-between">
+                    <div className="text-white font-bold text-sm">💰 {fr ? "Total revenus Ayyad" : "Total Ayyad Revenue"}</div>
+                    <div className="font-black text-amber-400 text-lg">{fmt(totalRevenusAyyad)}</div>
                   </div>
                 </div>
               </div>
