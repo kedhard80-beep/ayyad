@@ -1642,16 +1642,14 @@ const CasePage = ({ c, setPage, lang }) => {
         />
       </div>
       {/* Widget paiement mobile — Wave / Carte bancaire */}
-      {amount && amountInFcfa >= 500 ? (
-        <MobilePayWidget
-          amount={amountInFcfa}
-          caseData={c}
-          lang={lang}
-          onSuccess={() => {
-            setDonMode("success");
-            emailDonConfirm({ donorEmail: null, donorName: anonymous ? "" : "Donateur", amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
-          }}
-        />
+        {amount && amountInFcfa >= 500 ? (
+          <button
+            onClick={() => setDonMode("confirm")}
+            className="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-md hover:bg-emerald-700"
+          >
+            {lang==="fr" ? `Continuer → ${fmt(Number(amount))} ${currency}` : `Continue → ${fmt(Number(amount))} ${currency}`}
+          </button>
+        ) : (
       ) : (
         <button disabled className="w-full bg-gray-200 text-gray-400 font-bold py-3.5 rounded-xl text-sm">
           {lang==="fr" ? "Entrez un montant ≥ 500 FCFA" : "Enter an amount ≥ 500 FCFA"}
