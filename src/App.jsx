@@ -282,9 +282,9 @@ const TEMOIGNAGES = [
 ];
 
 const MOCK_ALERTS = [
-  { id:1, type:{fr:"Devis dupliqué",en:"Duplicate quote"}, sev:"high", case:{fr:"Dossier #1042 & #1038",en:"Case #1042 & #1038"}, time:"14:32", resolved:false },
-  { id:2, type:{fr:"Multi-comptes détecté",en:"Multi-account detected"}, sev:"critical", case:{fr:"User #552 (3 comptes)",en:"User #552 (3 accounts)"}, time:"11:15", resolved:false },
-  { id:3, type:{fr:"Don suspect > 500k FCFA",en:"Suspicious donation > 500k FCFA"}, sev:"medium", case:{fr:"Donation #7821 — anonyme",en:"Donation #7821 — anonymous"}, time:"09:47", resolved:true },
+  { id:1, type:{fr:"Devis dupliqué",en:"Duplicate quote"}, sev:"high", case:{fr:"Dossier #1042 & #1038",en:"Case #1042 & #1038"}, time:"14:32", resolved:false, caseTab:"cases" },
+  { id:2, type:{fr:"Multi-comptes détecté",en:"Multi-account detected"}, sev:"critical", case:{fr:"User #552 (3 comptes)",en:"User #552 (3 accounts)"}, time:"11:15", resolved:false, caseTab:null },
+  { id:3, type:{fr:"Don suspect > 500k FCFA",en:"Suspicious donation > 500k FCFA"}, sev:"medium", case:{fr:"Donation #7821 — anonyme",en:"Donation #7821 — anonymous"}, time:"09:47", resolved:true, caseTab:"cases" },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -3320,12 +3320,29 @@ const AdminPage = ({ user, setPage, lang }) => {
                 </div>
                 <div className="divide-y divide-gray-50">
                   {cases.filter(c=>c.status!=="PENDING").map(c=>(
-                    <div key={c.id} className="p-4 flex items-center gap-4">
+                    <div key={c.id} className="p-4 flex items-center gap-3 flex-wrap">
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm text-gray-900 truncate">{c.title||c.full_name||"—"}</div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-sm text-gray-900 truncate">{c.title||c.full_name||"—"}</span>
+                          {c.urgent && <span className="bg-red-100 text-red-600 text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">🚨 URGENT</span>}
+                        </div>
                         <div className="text-xs text-gray-500">🏥 {c.hospital||"—"} · 💰 {c.amount?fmt(c.amount):"—"}</div>
                       </div>
-                      <Badge color={statusColor(c.status)}>{t.statusLabels[c.status]||c.status}</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge color={statusColor(c.status)}>{t.statusLabels[c.status]||c.status}</Badge>
+                        {c.status === "COLLECTING" && (
+                          <button
+                            onClick={async () => {
+                              const newUrgent = !c.urgent;
+                              await supabase.from("cases").update({ urgent: newUrgent }).eq("id", c.id);
+                              setCases(prev => prev.map(x => x.id === c.id ? {...x, urgent: newUrgent} : x));
+                              auditLog(user, newUrgent ? "CASE_MARKED_URGENT" : "CASE_UNMARK_URGENT", c.title || c.id);
+                            }}
+                            className={`text-xs px-2.5 py-1 rounded-full font-bold border transition-all flex-shrink-0 ${c.urgent ? "bg-red-100 text-red-600 border-red-200 hover:bg-red-200" : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200"}`}>
+                            {c.urgent ? "🔕 Retirer urgent" : "🚨 Marquer urgent"}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -3346,11 +3363,26 @@ const AdminPage = ({ user, setPage, lang }) => {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
               <div className="p-5 border-b border-gray-100"><h3 className="font-bold text-gray-900">{t.fraudTitle}</h3></div>
               <div className="divide-y divide-gray-50">{alerts.map(a=>(
-                <div key={a.id} className={`p-5 flex items-center gap-4 ${a.resolved?"opacity-40":""}`}>
+                <div key={a.id} className={`p-5 flex items-center gap-3 flex-wrap ${a.resolved?"opacity-40":""}`}>
                   <div className={`w-1.5 h-10 rounded-full flex-shrink-0 ${a.sev==="critical"?"bg-red-500":a.sev==="high"?"bg-amber-500":"bg-yellow-400"}`}/>
-                  <div className="flex-1 min-w-0"><div className="font-semibold text-sm text-gray-900">{a.type[lang]}</div><div className="text-xs text-gray-500 mt-0.5">{a.case[lang]} · {a.time}</div></div>
-                  <Badge color={a.sev==="critical"?"red":a.sev==="high"?"yellow":"gray"}>{a.sev}</Badge>
-                  {!a.resolved?<button onClick={()=>setAlerts(al=>al.map(x=>x.id===a.id?{...x,resolved:true}:x))} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold flex-shrink-0">{t.resolve}</button>:<Badge color="green">{t.resolved}</Badge>}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm text-gray-900">{a.type[lang]}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{a.case[lang]} · {a.time}</div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge color={a.sev==="critical"?"red":a.sev==="high"?"yellow":"gray"}>{a.sev}</Badge>
+                    {a.caseTab && (
+                      <button
+                        onClick={() => setTab(a.caseTab)}
+                        className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold flex-shrink-0 border border-blue-200">
+                        🔍 {lang==="fr" ? "Voir le dossier" : "View case"}
+                      </button>
+                    )}
+                    {!a.resolved
+                      ? <button onClick={()=>setAlerts(al=>al.map(x=>x.id===a.id?{...x,resolved:true}:x))} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold flex-shrink-0">{t.resolve}</button>
+                      : <Badge color="green">{t.resolved}</Badge>
+                    }
+                  </div>
                 </div>
               ))}</div>
             </div>
