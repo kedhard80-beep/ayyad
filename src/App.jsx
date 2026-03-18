@@ -2613,6 +2613,7 @@ const HowPage = ({ lang, setPage }) => {
 const AdminTeamList = ({ user, fr }) => {
   const [admins, setAdmins] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
+  const [fetchErr, setFetchErr] = React.useState(null);
   const [showAdd, setShowAdd] = React.useState(false);
   const [newEmail, setNewEmail] = React.useState("");
   const [newRole, setNewRole] = React.useState("operator");
@@ -2620,71 +2621,103 @@ const AdminTeamList = ({ user, fr }) => {
   const [msg, setMsg] = React.useState("");
 
   const ROLES = [
-    { value: "super_admin", label: fr ? "Super Admin" : "Super Admin", color: "bg-purple-100 text-purple-700" },
-    { value: "finance",     label: fr ? "Finance"     : "Finance",     color: "bg-blue-100 text-blue-700" },
-    { value: "operator",   label: fr ? "Opérateur"   : "Operator",   color: "bg-green-100 text-green-700" },
+    { value: "super_admin", label: "Super Admin",              color: "bg-purple-100 text-purple-700" },
+    { value: "admin",       label: fr ? "Admin" : "Admin",    color: "bg-indigo-100 text-indigo-700" },
+    { value: "finance",     label: "Finance",                  color: "bg-blue-100 text-blue-700"   },
+    { value: "operator",    label: fr ? "Opérateur":"Operator", color: "bg-green-100 text-green-700" },
   ];
 
   const getRoleStyle = (role) => ROLES.find(r => r.value === role)?.color || "bg-gray-100 text-gray-600";
-  const getRoleLabel = (role) => ROLES.find(r => r.value === role)?.label || role;
+  const getRoleLabel = (role) => ROLES.find(r => r.value === role)?.label || (role || "—");
 
-  React.useEffect(() => {
-    fetchAdmins();
+  const fetchAdmins = React.useCallback(async () => {
+    setLoading(true);
+    setFetchErr(null);
+    try {
+      // Ne pas utiliser .order("created_at") — la colonne peut ne pas exister
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("id, email, role, is_active");
+      if (error) {
+        setFetchErr(error.message);
+      } else {
+        setAdmins(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      setFetchErr(String(e?.message || e));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const fetchAdmins = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("admin_users")
-      .select("*")
-      .order("created_at", { ascending: true });
-    if (!error) setAdmins(data || []);
-    setLoading(false);
-  };
+  React.useEffect(() => { fetchAdmins(); }, [fetchAdmins]);
 
   const handleAdd = async () => {
     if (!newEmail.includes("@")) return setMsg(fr ? "Email invalide" : "Invalid email");
     setAdding(true);
     setMsg("");
-    const { error } = await supabase
-      .from("admin_users")
-      .insert({ email: newEmail.trim().toLowerCase(), role: newRole, is_active: true });
-    if (error) {
-      setMsg(fr ? "Erreur : " + error.message : "Error: " + error.message);
-    } else {
-      setMsg(fr ? "Membre ajouté ✓" : "Member added ✓");
-      setNewEmail("");
-      setNewRole("operator");
-      setShowAdd(false);
-      fetchAdmins();
+    try {
+      const { error } = await supabase
+        .from("admin_users")
+        .insert({ email: newEmail.trim().toLowerCase(), role: newRole, is_active: true });
+      if (error) {
+        setMsg(fr ? "Erreur : " + error.message : "Error: " + error.message);
+      } else {
+        setMsg(fr ? "Membre ajouté ✓" : "Member added ✓");
+        setNewEmail("");
+        setNewRole("operator");
+        setShowAdd(false);
+        fetchAdmins();
+      }
+    } catch(e) {
+      setMsg(String(e?.message || e));
+    } finally {
+      setAdding(false);
     }
-    setAdding(false);
   };
 
   const toggleActive = async (admin) => {
-    if (admin.email === user.email) return;
-    await supabase
-      .from("admin_users")
-      .update({ is_active: !admin.is_active })
-      .eq("id", admin.id);
-    fetchAdmins();
+    if (!admin?.id || admin?.email === user?.email) return;
+    try {
+      await supabase.from("admin_users").update({ is_active: !admin.is_active }).eq("id", admin.id);
+      fetchAdmins();
+    } catch(e) { console.warn("toggleActive error:", e); }
   };
 
-  const changeRole = async (admin, newRole) => {
-    if (admin.email === user.email) return;
-    await supabase
-      .from("admin_users")
-      .update({ role: newRole })
-      .eq("id", admin.id);
-    fetchAdmins();
+  const changeRole = async (admin, role) => {
+    if (!admin?.id || admin?.email === user?.email) return;
+    try {
+      await supabase.from("admin_users").update({ role }).eq("id", admin.id);
+      fetchAdmins();
+    } catch(e) { console.warn("changeRole error:", e); }
   };
 
-  if (loading) return <div className="text-center py-10 text-gray-400">{fr ? "Chargement..." : "Loading..."}</div>;
+  if (loading) return (
+    <div className="text-center py-12 text-gray-400">
+      <div className="text-2xl mb-2">⏳</div>
+      <p className="text-sm">{fr ? "Chargement de l'équipe…" : "Loading team…"}</p>
+    </div>
+  );
+
+  if (fetchErr) return (
+    <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-sm text-red-700">
+      <p className="font-bold mb-1">⚠️ {fr ? "Erreur de chargement" : "Loading error"}</p>
+      <p className="text-xs font-mono">{fetchErr}</p>
+      <p className="mt-3 text-xs text-red-500">
+        {fr
+          ? "Vérifiez que la table admin_users a une politique RLS SELECT pour les admins."
+          : "Make sure the admin_users table has a SELECT RLS policy for admins."}
+      </p>
+      <button onClick={fetchAdmins} className="mt-3 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold">
+        {fr ? "Réessayer" : "Retry"}
+      </button>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
-      {/* Formulaire ajout */}
-      {user.adminRole === "super_admin" && (
+      {/* Formulaire ajout — super_admin uniquement */}
+      {user?.adminRole === "super_admin" && (
         <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
           <button
             onClick={() => setShowAdd(!showAdd)}
@@ -2713,7 +2746,7 @@ const AdminTeamList = ({ user, fr }) => {
                 disabled={adding}
                 className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50"
               >
-                {adding ? "..." : (fr ? "Ajouter" : "Add")}
+                {adding ? "…" : (fr ? "Ajouter" : "Add")}
               </button>
             </div>
           )}
@@ -2721,33 +2754,53 @@ const AdminTeamList = ({ user, fr }) => {
         </div>
       )}
 
-      {/* Liste */}
-      {admins.map(admin => (
-        <div key={admin.id} className={`flex items-center justify-between p-4 rounded-xl border ${admin.is_active ? "bg-white border-gray-100" : "bg-gray-50 border-gray-200 opacity-60"}`}>
+      {/* Message si aucun admin visible (RLS probable) */}
+      {admins.length === 0 && !fetchErr && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-800">
+          <p className="font-bold mb-1">ℹ️ {fr ? "Aucun membre visible" : "No members visible"}</p>
+          <p className="text-xs">
+            {fr
+              ? "La table admin_users est vide ou la politique RLS ne permet pas de lister tous les membres. Exécutez le SQL ci-dessous dans Supabase pour corriger :"
+              : "The admin_users table is empty or the RLS policy doesn't allow listing all members. Run the SQL below in Supabase to fix:"}
+          </p>
+          <pre className="mt-3 bg-amber-100 rounded-lg p-3 text-xs overflow-x-auto whitespace-pre-wrap">{`CREATE POLICY "admin_users_select_for_admins"
+ON admin_users FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM admin_users a2
+    WHERE a2.email = auth.email() AND a2.is_active = true
+  )
+);`}</pre>
+        </div>
+      )}
+
+      {/* Liste des membres */}
+      {admins.map((admin, idx) => (
+        <div key={admin.id ?? idx} className={`flex items-center justify-between p-4 rounded-xl border ${admin.is_active !== false ? "bg-white border-gray-100" : "bg-gray-50 border-gray-200 opacity-60"}`}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
               {(admin.email?.[0] || "?").toUpperCase()}
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-800">{admin.email}</p>
-              <p className="text-xs text-gray-400">{admin.is_active ? (fr ? "Actif" : "Active") : (fr ? "Désactivé" : "Disabled")}</p>
+              <p className="text-sm font-semibold text-gray-800">{admin.email || "—"}</p>
+              <p className="text-xs text-gray-400">{admin.is_active !== false ? (fr ? "Actif" : "Active") : (fr ? "Désactivé" : "Disabled")}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {user.adminRole === "super_admin" && admin.email !== user.email ? (
+            {user?.adminRole === "super_admin" && admin.email !== user?.email ? (
               <>
                 <select
-                  value={admin.role}
+                  value={admin.role || "operator"}
                   onChange={e => changeRole(admin, e.target.value)}
-                  className={`text-xs font-semibold px-2 py-1 rounded-full border-0 ${getRoleStyle(admin.role)}`}
+                  className={`text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer ${getRoleStyle(admin.role)}`}
                 >
                   {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
                 <button
                   onClick={() => toggleActive(admin)}
-                  className={`text-xs px-3 py-1 rounded-full font-semibold ${admin.is_active ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"}`}
+                  className={`text-xs px-3 py-1 rounded-full font-semibold ${admin.is_active !== false ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"}`}
                 >
-                  {admin.is_active ? (fr ? "Désactiver" : "Disable") : (fr ? "Réactiver" : "Enable")}
+                  {admin.is_active !== false ? (fr ? "Désactiver" : "Disable") : (fr ? "Réactiver" : "Enable")}
                 </button>
               </>
             ) : (
