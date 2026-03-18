@@ -717,14 +717,15 @@ if (step === "qr" && provider === "CARD") return (
     <div className="text-5xl mb-2">💳</div>
     <h3 className="font-bold text-gray-900 text-lg">
       {lang==="fr" ? "Paiement par carte bancaire" : "Card payment"}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4"></h3>
-          <p className="text-blue-800 font-semibold text-sm mb-1">💳 Visa / Mastercard</p>
-          <p className="text-blue-700 text-xs">
-            {lang==="fr"
-              ? "Effectuez le paiement par carte puis saisissez la référence de transaction ci-dessous."
-              : "Complete the card payment then enter your transaction reference below."}
-          </p>
-        </div>
+    </h3>
+    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+      <p className="text-blue-800 font-semibold text-sm mb-1">💳 Visa / Mastercard</p>
+      <p className="text-blue-700 text-xs">
+        {lang==="fr"
+          ? "Effectuez le paiement par carte puis saisissez la référence de transaction ci-dessous."
+          : "Complete the card payment then enter your transaction reference below."}
+      </p>
+    </div>
     <button onClick={() => setStep("choose")} className="w-full border border-gray-200 rounded-xl py-3 text-sm text-gray-600 hover:bg-gray-50">
       {lang==="fr" ? "← Choisir un autre moyen" : "← Choose another method"}
     </button>
