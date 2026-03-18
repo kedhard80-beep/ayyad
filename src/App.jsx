@@ -3139,6 +3139,31 @@ USING (
   );
 };
 
+// ── Error Boundary — capture les crashs React au lieu de page blanche ──
+class AdminErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, info) { console.error("AdminErrorBoundary caught:", error, info); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-sm text-red-700 space-y-3">
+          <div className="font-black text-base">⚠️ Erreur d'affichage</div>
+          <div className="font-mono text-xs bg-red-100 rounded-lg p-3 break-all">
+            {this.state.error?.message || String(this.state.error)}
+          </div>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold">
+            Réessayer
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ── Audit log helper ─────────────────────────────────────────
 const auditLog = async (user, action, target, oldVal = null, newVal = null) => {
   try {
@@ -3984,7 +4009,9 @@ const AdminPage = ({ user, setPage, lang }) => {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-800">{lang==="fr" ? "Équipe & Accès" : "Team & Access"}</h2>
             </div>
-            <AdminTeamList user={user} fr={lang==="fr"} />
+            <AdminErrorBoundary>
+              <AdminTeamList user={user} fr={lang==="fr"} />
+            </AdminErrorBoundary>
           </div>
         )}
 
