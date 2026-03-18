@@ -717,7 +717,7 @@ if (step === "qr" && provider === "CARD") return (
     <div className="text-5xl mb-2">💳</div>
     <h3 className="font-bold text-gray-900 text-lg">
       {lang==="fr" ? "Paiement par carte bancaire" : "Card payment"}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4"></h3>
           <p className="text-blue-800 font-semibold text-sm mb-1">💳 Visa / Mastercard</p>
           <p className="text-blue-700 text-xs">
             {lang==="fr"
