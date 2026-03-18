@@ -3213,10 +3213,17 @@ const AdminPage = ({ user, setPage, lang }) => {
   // ── Load all cases from Supabase ──
   const loadCases = async () => {
     setLoadingCases(true);
-    const { data, error } = await supabase
-      .from("cases")
-      .select("*")
-      .order("created_at", { ascending: false });
+    let data, error;
+    try {
+      ({ data, error } = await supabase
+        .from("cases")
+        .select("*")
+        .order("created_at", { ascending: false }));
+    } catch(e) {
+      console.warn("loadCases error:", e);
+      setLoadingCases(false);
+      return;
+    }
     // Cas démo FUNDED pour tester le flux virements
     const demoFunded = {
       id: "demo-kofi-001",
@@ -3244,27 +3251,27 @@ const AdminPage = ({ user, setPage, lang }) => {
   // Auto-passage en FUNDED : collectes ayant atteint leur objectif la veille ou avant
   useEffect(() => {
     const autoFund = async () => {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      yesterday.setHours(0, 0, 0, 0);
-      // Cherche les dossiers COLLECTING dont collected >= amount et goal_reached_at <= hier
-      const { data } = await supabase.from("cases")
-        .select("id, amount, collected, goal_reached_at")
-        .eq("status", "COLLECTING");
-      if (!data) return;
-      for (const c of data) {
-        if ((c.collected||0) >= (c.amount||1) && c.goal_reached_at) {
-          const reachedDate = new Date(c.goal_reached_at);
-          if (reachedDate < yesterday) {
-            await supabase.from("cases").update({ status: "FUNDED" }).eq("id", c.id);
+      try {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(0, 0, 0, 0);
+        const { data } = await supabase.from("cases")
+          .select("id, amount, collected, goal_reached_at")
+          .eq("status", "COLLECTING");
+        if (!data) return;
+        for (const c of data) {
+          if ((c.collected||0) >= (c.amount||1) && c.goal_reached_at) {
+            const reachedDate = new Date(c.goal_reached_at);
+            if (reachedDate < yesterday) {
+              await supabase.from("cases").update({ status: "FUNDED" }).eq("id", c.id);
+            }
+          }
+          if ((c.collected||0) >= (c.amount||1) && !c.goal_reached_at) {
+            await supabase.from("cases").update({ goal_reached_at: new Date().toISOString() }).eq("id", c.id);
           }
         }
-        // Si objectif atteint aujourd'hui mais pas encore marqué, on note la date
-        if ((c.collected||0) >= (c.amount||1) && !c.goal_reached_at) {
-          await supabase.from("cases").update({ goal_reached_at: new Date().toISOString() }).eq("id", c.id);
-        }
-      }
-      loadCases();
+        loadCases();
+      } catch(e) { console.warn("autoFund error:", e); }
     };
     autoFund();
   }, []);
@@ -3272,15 +3279,20 @@ const AdminPage = ({ user, setPage, lang }) => {
   // ── Chargement données financières ──
   const loadFinanceData = async () => {
     setLoadingFinance(true);
-    const [{ data: staff }, { data: salaries }, { data: exps }] = await Promise.all([
-      supabase.from("staff_members").select("*").order("name"),
-      supabase.from("salary_payments").select("*").order("payment_date", { ascending: false }),
-      supabase.from("ayyad_expenses").select("*").order("date", { ascending: false }),
-    ]);
-    setStaffMembers(staff || []);
-    setSalaryPayments(salaries || []);
-    setExpenses(exps || []);
-    setLoadingFinance(false);
+    try {
+      const [{ data: staff }, { data: salaries }, { data: exps }] = await Promise.all([
+        supabase.from("staff_members").select("*").order("name"),
+        supabase.from("salary_payments").select("*").order("payment_date", { ascending: false }),
+        supabase.from("ayyad_expenses").select("*").order("date", { ascending: false }),
+      ]);
+      setStaffMembers(staff || []);
+      setSalaryPayments(salaries || []);
+      setExpenses(exps || []);
+    } catch(e) {
+      console.warn("loadFinanceData error:", e);
+    } finally {
+      setLoadingFinance(false);
+    }
   };
 
   // ── Chargement journal d'audit ──
