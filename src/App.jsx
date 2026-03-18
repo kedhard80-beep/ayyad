@@ -1734,7 +1734,7 @@ const CasePage = ({ c, setPage, lang }) => {
             )}
 
             {/* ÉTAPE 2 — Formulaire de don (anonyme ou connecté) */}
-            {(donMode==="anonymous" || donMode==="logged") && !funded && donateFormJSX}
+            {(donMode==="anonymous" || donMode==="logged") && !funded && donateFormJSX()}
 
             {/* ÉTAPE 3 — Confirmation */}
             {donMode==="confirm" && <div className="space-y-5">
