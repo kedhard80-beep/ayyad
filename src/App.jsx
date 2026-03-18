@@ -193,7 +193,7 @@ const T = {
     register: { title: "Créer un compte", roleQ: "Je souhaite...", roles: [{ id:"donor",icon:"💚",title:"Faire des dons",desc:"Aider des patients dans le besoin" },{ id:"beneficiary",icon:"🏥",title:"Recevoir des soins",desc:"Financer une intervention médicale" }], fields: [{ key:"name",label:"Nom complet",p:"Aminata Koné",type:"text" },{ key:"email",label:"Email",p:"vous@exemple.ci",type:"email" },{ key:"phone",label:"Numéro Wave CI",p:"+225 07 XX XX XX XX",type:"tel" },{ key:"password",label:"Mot de passe (min. 6 caractères)",p:"••••••••",type:"password" }], terms: "J'accepte les", termsLink: "conditions d'utilisation", and: "et la", privacyLink: "politique de confidentialité", btn: "Créer mon compte", continue: "Continuer →", back: "← Retour", hasAccount: "Déjà un compte ?", signin: "Se connecter", error: "Erreur lors de la création du compte." },
     admin: {
       title: "Administration Ayyad", sub: "Tableau de bord opérationnel", status: "Système opérationnel",
-      tabs: [{ id:"overview",label:"Vue d'ensemble",icon:"📊" },{ id:"cases",label:"Dossiers",icon:"📋" },{ id:"fraud",label:"Fraude",icon:"🔍" },{ id:"payouts",label:"Virements",icon:"🏦" },{ id:"team",label:"Équipe",icon:"👥" }],
+      tabs: [{ id:"overview",label:"Vue d'ensemble",icon:"📊" },{ id:"cases",label:"Dossiers",icon:"📋" },{ id:"fraud",label:"Fraude",icon:"🔍" },{ id:"payouts",label:"Virements",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaires",icon:"👔" },{ id:"audit",label:"Audit",icon:"📝" },{ id:"bilan",label:"Bilan",icon:"📈" },{ id:"team",label:"Équipe",icon:"👥" }],
       stats: [{ label:"Dossiers actifs",v:"—",icon:"📋" },{ label:"Dons ce mois",v:"—",icon:"💚" },{ label:"Bénéficiaires aidés",v:"—",icon:"🏥" }],
       recentTitle: "Dossiers récents", revenueTitle: "Revenus opérationnels (5%)",
       months: [{ month:"Mars 2025",dons:"24.8M",fees:"1 240 000 FCFA" },{ month:"Fév. 2025",dons:"19.2M",fees:"960 000 FCFA" },{ month:"Jan. 2025",dons:"15.1M",fees:"755 000 FCFA" }],
@@ -227,7 +227,7 @@ const T = {
     register: { title: "Create an account", roleQ: "I want to...", roles: [{ id:"donor",icon:"💚",title:"Make donations",desc:"Help patients in need" },{ id:"beneficiary",icon:"🏥",title:"Receive care",desc:"Fund a medical procedure" }], fields: [{ key:"name",label:"Full name",p:"Aminata Koné",type:"text" },{ key:"email",label:"Email",p:"you@example.ci",type:"email" },{ key:"phone",label:"Wave CI number",p:"+225 07 XX XX XX XX",type:"tel" },{ key:"password",label:"Password (min. 6 characters)",p:"••••••••",type:"password" }], terms: "I accept the", termsLink: "terms of service", and: "and the", privacyLink: "privacy policy", btn: "Create my account", continue: "Continue →", back: "← Back", hasAccount: "Already have an account?", signin: "Sign in", error: "Error creating account." },
     admin: {
       title: "Ayyad Administration", sub: "Operational dashboard", status: "System operational",
-      tabs: [{ id:"overview",label:"Overview",icon:"📊" },{ id:"cases",label:"Cases",icon:"📋" },{ id:"fraud",label:"Fraud",icon:"🔍" },{ id:"payouts",label:"Payouts",icon:"🏦" }],
+      tabs: [{ id:"overview",label:"Overview",icon:"📊" },{ id:"cases",label:"Cases",icon:"📋" },{ id:"fraud",label:"Fraud",icon:"🔍" },{ id:"payouts",label:"Payouts",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaries",icon:"👔" },{ id:"audit",label:"Audit log",icon:"📝" },{ id:"bilan",label:"Reporting",icon:"📈" },{ id:"team",label:"Team",icon:"👥" }],
       stats: [{ label:"Active cases",v:"—",icon:"📋" },{ label:"Donations this month",v:"—",icon:"💚" },{ label:"Patients helped",v:"—",icon:"🏥" }],
       recentTitle: "Recent cases", revenueTitle: "Operational revenue (5%)",
       months: [{ month:"March 2025",dons:"24.8M",fees:"1,240,000 FCFA" },{ month:"Feb. 2025",dons:"19.2M",fees:"960,000 FCFA" },{ month:"Jan. 2025",dons:"15.1M",fees:"755,000 FCFA" }],
@@ -2762,10 +2762,40 @@ const AdminTeamList = ({ user, fr }) => {
   );
 };
 
+// ── Audit log helper ─────────────────────────────────────────
+const auditLog = async (user, action, target, oldVal = null, newVal = null) => {
+  try {
+    await supabase.from("audit_log").insert({
+      user_id:    user?.id   || null,
+      user_email: user?.email || "unknown",
+      user_role:  user?.adminRole || "unknown",
+      action,
+      target,
+      old_value:  oldVal !== null ? JSON.stringify(oldVal) : null,
+      new_value:  newVal !== null ? JSON.stringify(newVal) : null,
+      created_at: new Date().toISOString(),
+    });
+  } catch(e) { console.warn("auditLog error:", e); }
+};
+
 const AdminPage = ({ user, setPage, lang }) => {
   const [tab, setTab] = useState("overview");
   const [cases, setCases] = useState([]);
   const [loadingCases, setLoadingCases] = useState(true);
+
+  // ── Nouveaux états : Finance / Salaires / Audit / Bilan ──
+  const [staffMembers,    setStaffMembers]    = useState([]);
+  const [salaryPayments,  setSalaryPayments]  = useState([]);
+  const [auditLogs,       setAuditLogs]       = useState([]);
+  const [expenses,        setExpenses]        = useState([]);
+  const [loadingFinance,  setLoadingFinance]  = useState(false);
+  const [loadingAudit,    setLoadingAudit]    = useState(false);
+  const [bilanPeriod,     setBilanPeriod]     = useState("monthly");
+  const [bilanYear,       setBilanYear]       = useState(new Date().getFullYear());
+  const [bilanMonth,      setBilanMonth]      = useState(new Date().getMonth() + 1);
+  // Formulaire ajout employé
+  const [newStaff,        setNewStaff]        = useState({ name:"", role:"", wave_number:"", monthly_salary:0 });
+  const [showAddStaff,    setShowAddStaff]    = useState(false);
   const [alerts, setAlerts] = useState(MOCK_ALERTS);
   const [rejectModal, setRejectModal] = useState(null);
   const [editDeadline, setEditDeadline] = useState({});
@@ -2837,6 +2867,37 @@ const AdminPage = ({ user, setPage, lang }) => {
     autoFund();
   }, []);
 
+  // ── Chargement données financières ──
+  const loadFinanceData = async () => {
+    setLoadingFinance(true);
+    const [{ data: staff }, { data: salaries }, { data: exps }] = await Promise.all([
+      supabase.from("staff_members").select("*").order("name"),
+      supabase.from("salary_payments").select("*").order("payment_date", { ascending: false }),
+      supabase.from("ayyad_expenses").select("*").order("date", { ascending: false }),
+    ]);
+    setStaffMembers(staff || []);
+    setSalaryPayments(salaries || []);
+    setExpenses(exps || []);
+    setLoadingFinance(false);
+  };
+
+  // ── Chargement journal d'audit ──
+  const loadAuditLogs = async () => {
+    setLoadingAudit(true);
+    const { data } = await supabase
+      .from("audit_log")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    setAuditLogs(data || []);
+    setLoadingAudit(false);
+  };
+
+  useEffect(() => {
+    if (tab === "finance" || tab === "salary" || tab === "bilan") loadFinanceData();
+    if (tab === "audit") loadAuditLogs();
+  }, [tab]);
+
   // ── Toggle urgent ──
   const toggleUrgent = async (id, current) => {
     const { error } = await supabase
@@ -2863,6 +2924,7 @@ const AdminPage = ({ user, setPage, lang }) => {
       if (c) {
         emailCaseApproved({ beneficiaryEmail: c.email || null, beneficiaryName: c.full_name || c.beneficiary, caseTitle: c.title, trackingId: c.tracking_id });
         emailNewCase({ caseTitle: "✅ APPROUVÉ — " + (c.title || id), hospital: c.hospital, city: c.city, amount: c.amount });
+        auditLog(user, "CASE_APPROVED", c.title || id, "PENDING", "COLLECTING");
       }
     }
   };
@@ -2876,10 +2938,10 @@ const AdminPage = ({ user, setPage, lang }) => {
     if (!error) {
       const c = cases.find(x => x.id === id);
       setCases(prev => prev.map(x => x.id===id ? {...x, status:"REJECTED"} : x));
-      // Email notification au bénéficiaire + admin
       if (c) {
         emailCaseRejected({ beneficiaryEmail: c.email || null, beneficiaryName: c.full_name || c.beneficiary, caseTitle: c.title, reason: rejectReason });
         emailNewCase({ caseTitle: "❌ REJETÉ — " + (c.title || id) + " — " + rejectReason, hospital: c.hospital, city: c.city, amount: c.amount });
+        auditLog(user, "CASE_REJECTED", c.title || id, "PENDING", { status:"REJECTED", reason: rejectReason });
       }
       setRejectModal(null);
       setRejectReason("");
@@ -3485,6 +3547,459 @@ const AdminPage = ({ user, setPage, lang }) => {
             })()}
           </div>
         )}
+        {/* ── ONGLET ÉQUIPE ── */}
+        {tab === "team" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800">{lang==="fr" ? "Équipe & Accès" : "Team & Access"}</h2>
+            </div>
+            <AdminTeamList user={user} fr={lang==="fr"} />
+          </div>
+        )}
+
+        {/* ── ONGLET FINANCE ── */}
+        {tab === "finance" && (() => {
+          const funded = cases.filter(c => ["FUNDED","CLOSED"].includes(c.status));
+          const collecting = cases.filter(c => c.status === "COLLECTING");
+          const allActive = cases.filter(c => !["PENDING","REJECTED"].includes(c.status));
+          const totalCollected = allActive.reduce((s,c) => s + (c.collected||0), 0);
+          const total5pct = Math.round(totalCollected * 0.05);
+          const totalSalariesPaid = salaryPayments.filter(p=>p.status==="paid").reduce((s,p)=>s+p.amount,0);
+          const totalExpenses = expenses.reduce((s,e)=>s+e.amount,0);
+          const balance = total5pct - totalSalariesPaid - totalExpenses;
+          const fr = lang==="fr";
+          return (
+            <div className="space-y-6">
+              {/* KPIs Finance */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: fr?"Total collecté":"Total raised",       v: fmt(totalCollected), icon:"💚", color:"emerald" },
+                  { label: fr?"5% fonctionnement":"5% operating fee", v: fmt(total5pct),      icon:"💰", color:"amber"   },
+                  { label: fr?"Salaires payés":"Salaries paid",       v: fmt(totalSalariesPaid), icon:"👔", color:"blue" },
+                  { label: fr?"Solde disponible":"Available balance", v: fmt(balance),         icon:"🏦", color: balance>=0?"emerald":"red" },
+                ].map(k => (
+                  <div key={k.label} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <div className="text-3xl mb-2">{k.icon}</div>
+                    <div className={`text-lg font-black ${k.color==="red"?"text-red-600":k.color==="amber"?"text-amber-600":"text-emerald-700"}`}>{k.v}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{k.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Règle métier : collectes non atteintes */}
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">⚖️</span>
+                  <div>
+                    <div className="font-bold text-amber-800 text-sm">{fr?"Règle des 5% — Collectes non atteintes":"5% Rule — Unmet campaigns"}</div>
+                    <div className="text-xs text-amber-700 mt-1 leading-relaxed">
+                      {fr
+                        ? "Lorsqu'une collecte se termine sans atteindre son objectif, les 5% de fonctionnement Ayyad sont prélevés sur le montant collecté avant redistribution du solde aux cas les plus urgents."
+                        : "When a campaign ends without reaching its goal, Ayyad's 5% operating fee is deducted from the collected amount before the balance is redistributed to the most urgent cases."}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tableau des collectes avec 5% */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-gray-100">
+                  <h3 className="font-bold text-gray-900 text-sm">{fr?"Collectes — Prélèvements 5%":"Campaigns — 5% deductions"}</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead><tr className="bg-gray-50 text-gray-500 uppercase text-[10px]">
+                      <th className="text-left px-4 py-3">{fr?"Dossier":"Case"}</th>
+                      <th className="text-right px-4 py-3">{fr?"Collecté":"Raised"}</th>
+                      <th className="text-right px-4 py-3">{fr?"Objectif":"Goal"}</th>
+                      <th className="text-right px-4 py-3">5% Ayyad</th>
+                      <th className="text-right px-4 py-3">{fr?"Reste":"Remainder"}</th>
+                      <th className="text-center px-4 py-3">Statut</th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {allActive.slice(0,15).map(c => {
+                        const col = c.collected||0;
+                        const goal = c.amount||1;
+                        const fee = Math.round(col*0.05);
+                        const rest = col - fee;
+                        const reached = col >= goal;
+                        return (
+                          <tr key={c.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 font-semibold text-gray-900 max-w-[180px] truncate">{c.title||c.full_name||"—"}</td>
+                            <td className="px-4 py-3 text-right font-bold text-emerald-700">{fmt(col)}</td>
+                            <td className="px-4 py-3 text-right text-gray-500">{fmt(goal)}</td>
+                            <td className="px-4 py-3 text-right font-bold text-amber-600">{fmt(fee)}</td>
+                            <td className="px-4 py-3 text-right text-gray-700">{fmt(rest)}</td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${reached?"bg-emerald-100 text-emerald-700":"bg-amber-100 text-amber-700"}`}>
+                                {reached?(fr?"✓ Atteint":"✓ Reached"):(fr?"Non atteint":"Not reached")}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Charges de fonctionnement */}
+              {expenses.length > 0 && (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-gray-100">
+                    <h3 className="font-bold text-gray-900 text-sm">{fr?"Charges de fonctionnement":"Operating expenses"}</h3>
+                  </div>
+                  <div className="divide-y divide-gray-50">
+                    {expenses.slice(0,10).map(e => (
+                      <div key={e.id} className="px-4 py-3 flex justify-between items-center">
+                        <div>
+                          <div className="font-semibold text-sm text-gray-900">{e.label||"—"}</div>
+                          <div className="text-xs text-gray-400">{e.category||"—"} · {e.date?.slice(0,10)}</div>
+                        </div>
+                        <div className="font-black text-red-600 text-sm">{fmt(e.amount)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {expenses.length === 0 && !loadingFinance && (
+                <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-8 text-center text-gray-400 text-sm">
+                  {fr?"Aucune charge enregistrée. Ajoutez des dépenses depuis la table ayyad_expenses dans Supabase.":"No expenses recorded yet. Add entries in the ayyad_expenses table in Supabase."}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── ONGLET SALAIRES ── */}
+        {tab === "salary" && (() => {
+          const fr = lang==="fr";
+          const now = new Date();
+          const currentMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+          const thisMonthPayments = salaryPayments.filter(p => p.payment_month === currentMonth);
+
+          const addStaffMember = async () => {
+            if (!newStaff.name || !newStaff.monthly_salary) return;
+            const { data, error } = await supabase.from("staff_members").insert({
+              ...newStaff,
+              monthly_salary: Number(newStaff.monthly_salary),
+              created_at: new Date().toISOString(),
+            }).select().single();
+            if (!error && data) {
+              setStaffMembers(prev => [...prev, data]);
+              auditLog(user, "STAFF_ADDED", newStaff.name, null, newStaff);
+              setNewStaff({ name:"", role:"", wave_number:"", monthly_salary:0 });
+              setShowAddStaff(false);
+            }
+          };
+
+          const markSalaryPaid = async (staffId, staffName, amount) => {
+            const { data, error } = await supabase.from("salary_payments").insert({
+              staff_id: staffId,
+              staff_name: staffName,
+              amount,
+              payment_month: currentMonth,
+              payment_date: new Date().toISOString(),
+              status: "paid",
+              method: "WAVE",
+            }).select().single();
+            if (!error && data) {
+              setSalaryPayments(prev => [...prev, data]);
+              auditLog(user, "SALARY_PAID", staffName, null, { amount, month: currentMonth, method:"WAVE" });
+            }
+          };
+
+          const totalMonthlySalaries = staffMembers.reduce((s,m)=>s+m.monthly_salary,0);
+          const totalPaidThisMonth = thisMonthPayments.filter(p=>p.status==="paid").reduce((s,p)=>s+p.amount,0);
+
+          return (
+            <div className="space-y-6">
+              {/* KPIs salaires */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {[
+                  { label: fr?"Masse salariale mensuelle":"Monthly payroll",  v: fmt(totalMonthlySalaries), icon:"👥" },
+                  { label: fr?"Payé ce mois":"Paid this month",               v: fmt(totalPaidThisMonth),   icon:"✅" },
+                  { label: fr?"Restant à payer":"Remaining to pay",           v: fmt(totalMonthlySalaries - totalPaidThisMonth), icon:"⏳" },
+                ].map(k => (
+                  <div key={k.label} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <div className="text-3xl mb-2">{k.icon}</div>
+                    <div className="text-lg font-black text-emerald-700">{k.v}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{k.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Liste du personnel */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                  <h3 className="font-bold text-gray-900 text-sm">{fr?"Personnel Ayyad":"Ayyad Staff"}</h3>
+                  <button onClick={()=>setShowAddStaff(v=>!v)} className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-xl font-semibold hover:bg-emerald-700">
+                    + {fr?"Ajouter":"Add member"}
+                  </button>
+                </div>
+
+                {showAddStaff && (
+                  <div className="p-4 bg-emerald-50 border-b border-emerald-100 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <input placeholder={fr?"Nom complet":"Full name"} value={newStaff.name} onChange={e=>setNewStaff(s=>({...s,name:e.target.value}))} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                      <input placeholder={fr?"Poste / Rôle":"Position / Role"} value={newStaff.role} onChange={e=>setNewStaff(s=>({...s,role:e.target.value}))} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                      <input placeholder="Numéro Wave (+225...)" value={newStaff.wave_number} onChange={e=>setNewStaff(s=>({...s,wave_number:e.target.value}))} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                      <input type="number" placeholder={fr?"Salaire mensuel (FCFA)":"Monthly salary (FCFA)"} value={newStaff.monthly_salary||""} onChange={e=>setNewStaff(s=>({...s,monthly_salary:e.target.value}))} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={addStaffMember} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700">{fr?"Enregistrer":"Save"}</button>
+                      <button onClick={()=>setShowAddStaff(false)} className="border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-sm">{fr?"Annuler":"Cancel"}</button>
+                    </div>
+                  </div>
+                )}
+
+                {loadingFinance ? (
+                  <div className="p-8 text-center text-gray-400 text-sm">{fr?"Chargement...":"Loading..."}</div>
+                ) : staffMembers.length === 0 ? (
+                  <div className="p-8 text-center text-gray-400 text-sm">{fr?"Aucun employé enregistré.":"No staff members yet."}</div>
+                ) : (
+                  <div className="divide-y divide-gray-50">
+                    {staffMembers.map(m => {
+                      const paid = thisMonthPayments.find(p=>p.staff_id===m.id && p.status==="paid");
+                      return (
+                        <div key={m.id} className="px-4 py-3 flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-700 font-black text-sm">{(m.name||"?")[0].toUpperCase()}</div>
+                            <div>
+                              <div className="font-semibold text-gray-900 text-sm">{m.name}</div>
+                              <div className="text-xs text-gray-400">{m.role||"—"} · 🌊 {m.wave_number||"—"}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <div className="font-black text-sm text-gray-900">{fmt(m.monthly_salary)}</div>
+                              <div className="text-[10px] text-gray-400">{fr?"/mois":"/month"}</div>
+                            </div>
+                            {paid ? (
+                              <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded-lg">✅ {fr?"Payé":"Paid"}</span>
+                            ) : (
+                              <button onClick={()=>markSalaryPaid(m.id, m.name, m.monthly_salary)} className="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-blue-700">
+                                🌊 {fr?"Payer via Wave":"Pay via Wave"}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Historique paiements salaires */}
+              {salaryPayments.length > 0 && (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-gray-100">
+                    <h3 className="font-bold text-gray-900 text-sm">{fr?"Historique des paiements":"Payment history"}</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead><tr className="bg-gray-50 text-gray-500 uppercase text-[10px]">
+                        <th className="text-left px-4 py-3">{fr?"Employé":"Employee"}</th>
+                        <th className="text-right px-4 py-3">{fr?"Montant":"Amount"}</th>
+                        <th className="text-center px-4 py-3">{fr?"Mois":"Month"}</th>
+                        <th className="text-center px-4 py-3">{fr?"Méthode":"Method"}</th>
+                        <th className="text-center px-4 py-3">Statut</th>
+                      </tr></thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {salaryPayments.slice(0,20).map(p => (
+                          <tr key={p.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 font-semibold text-gray-900">{p.staff_name||"—"}</td>
+                            <td className="px-4 py-3 text-right font-bold text-emerald-700">{fmt(p.amount)}</td>
+                            <td className="px-4 py-3 text-center text-gray-500">{p.payment_month||"—"}</td>
+                            <td className="px-4 py-3 text-center">🌊 {p.method||"Wave"}</td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${p.status==="paid"?"bg-emerald-100 text-emerald-700":"bg-amber-100 text-amber-700"}`}>
+                                {p.status==="paid"?(fr?"Payé":"Paid"):(fr?"En attente":"Pending")}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── ONGLET AUDIT ── */}
+        {tab === "audit" && (
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900">{lang==="fr"?"Journal d'activité":"Activity log"}</h2>
+              <button onClick={loadAuditLogs} className="text-xs text-emerald-600 hover:underline font-semibold">↻ {lang==="fr"?"Actualiser":"Refresh"}</button>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
+              {lang==="fr"
+                ? "📋 Toutes les actions sensibles (approbation, rejet, paiements, virements, modifications) sont enregistrées ici avec l'identité de l'opérateur, l'heure et les valeurs avant/après."
+                : "📋 All sensitive actions (approvals, rejections, payments, transfers, edits) are logged here with operator identity, timestamp, and before/after values."}
+            </div>
+
+            {loadingAudit ? (
+              <div className="text-center py-10 text-gray-400">{lang==="fr"?"Chargement...":"Loading..."}</div>
+            ) : auditLogs.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-10 text-center text-gray-400 text-sm">
+                {lang==="fr"
+                  ? "Aucune entrée dans le journal. Les actions seront enregistrées automatiquement à partir de maintenant."
+                  : "No log entries yet. Actions will be recorded automatically from now on."}
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead><tr className="bg-gray-50 text-gray-500 uppercase text-[10px]">
+                      <th className="text-left px-4 py-3">{lang==="fr"?"Horodatage":"Timestamp"}</th>
+                      <th className="text-left px-4 py-3">{lang==="fr"?"Opérateur":"Operator"}</th>
+                      <th className="text-left px-4 py-3">{lang==="fr"?"Rôle":"Role"}</th>
+                      <th className="text-left px-4 py-3">{lang==="fr"?"Action":"Action"}</th>
+                      <th className="text-left px-4 py-3">{lang==="fr"?"Cible":"Target"}</th>
+                      <th className="text-left px-4 py-3">{lang==="fr"?"Ancienne valeur":"Old value"}</th>
+                      <th className="text-left px-4 py-3">{lang==="fr"?"Nouvelle valeur":"New value"}</th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {auditLogs.map(log => (
+                        <tr key={log.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{new Date(log.created_at).toLocaleString("fr")}</td>
+                          <td className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">{log.user_email||"—"}</td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${log.user_role==="super_admin"?"bg-purple-100 text-purple-700":log.user_role==="finance"?"bg-blue-100 text-blue-700":"bg-green-100 text-green-700"}`}>
+                              {log.user_role||"—"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 font-mono font-bold text-gray-700">{log.action||"—"}</td>
+                          <td className="px-4 py-3 text-gray-600 max-w-[150px] truncate">{log.target||"—"}</td>
+                          <td className="px-4 py-3 text-gray-400 max-w-[120px] truncate">{log.old_value||"—"}</td>
+                          <td className="px-4 py-3 text-gray-700 max-w-[120px] truncate">{log.new_value||"—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── ONGLET BILAN ── */}
+        {tab === "bilan" && (() => {
+          const fr = lang==="fr";
+          const now = new Date();
+          const allActive = cases.filter(c => !["PENDING","REJECTED"].includes(c.status));
+
+          // Filtrage selon période sélectionnée
+          const filterByMonth = (arr, dateField) => arr.filter(x => {
+            if (!x[dateField]) return false;
+            const d = new Date(x[dateField]);
+            return d.getFullYear() === bilanYear && d.getMonth()+1 === bilanMonth;
+          });
+          const filterByYear = (arr, dateField) => arr.filter(x => {
+            if (!x[dateField]) return false;
+            return new Date(x[dateField]).getFullYear() === bilanYear;
+          });
+
+          const isMonthly = bilanPeriod === "monthly";
+          const filteredCases = isMonthly
+            ? filterByMonth(allActive, "created_at")
+            : filterByYear(allActive, "created_at");
+
+          const collected = filteredCases.reduce((s,c)=>s+(c.collected||0),0);
+          const goalReached = filteredCases.filter(c=>(c.collected||0)>=(c.amount||1)).length;
+          const goalMissed = filteredCases.filter(c=>(c.collected||0)<(c.amount||1)).length;
+          const fees5pct = Math.round(collected*0.05);
+          const redistributed = filteredCases.filter(c=>c.payout_status==="confirmed").reduce((s,c)=>s+(c.collected||0)*0.95,0);
+
+          const filteredSalaries = isMonthly
+            ? salaryPayments.filter(p=>p.payment_month===`${bilanYear}-${String(bilanMonth).padStart(2,"0")}`)
+            : salaryPayments.filter(p=>p.payment_month?.startsWith(String(bilanYear)));
+          const totalSalaries = filteredSalaries.reduce((s,p)=>s+p.amount,0);
+
+          const filteredExpenses = isMonthly
+            ? filterByMonth(expenses,"date")
+            : filterByYear(expenses,"date");
+          const totalExp = filteredExpenses.reduce((s,e)=>s+e.amount,0);
+          const balance = fees5pct - totalSalaries - totalExp;
+
+          const MONTHS_FR = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
+          const MONTHS_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+          return (
+            <div className="space-y-6">
+              {/* Sélecteur période */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex rounded-xl overflow-hidden border border-gray-200">
+                    {["monthly","annual"].map(p => (
+                      <button key={p} onClick={()=>setBilanPeriod(p)} className={`px-4 py-2 text-sm font-semibold transition-all ${bilanPeriod===p?"bg-emerald-600 text-white":"text-gray-600 hover:bg-gray-50"}`}>
+                        {p==="monthly"?(fr?"Mensuel":"Monthly"):(fr?"Annuel":"Annual")}
+                      </button>
+                    ))}
+                  </div>
+                  <select value={bilanYear} onChange={e=>setBilanYear(Number(e.target.value))} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                    {[2024,2025,2026].map(y=><option key={y}>{y}</option>)}
+                  </select>
+                  {isMonthly && (
+                    <select value={bilanMonth} onChange={e=>setBilanMonth(Number(e.target.value))} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                      {(fr?MONTHS_FR:MONTHS_EN).map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}
+                    </select>
+                  )}
+                </div>
+              </div>
+
+              {/* KPIs bilan */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: fr?"Collectes":"Campaigns",          v: filteredCases.length,  icon:"📋", sub:"total" },
+                  { label: fr?"Objectifs atteints":"Goals met", v: goalReached,            icon:"✅", sub:`${goalMissed} ${fr?"non atteints":"missed"}` },
+                  { label: fr?"Total collecté":"Total raised",  v: fmt(collected),         icon:"💚", sub:"" },
+                  { label: fr?"5% Ayyad":"5% Ayyad",           v: fmt(fees5pct),          icon:"💰", sub:"" },
+                  { label: fr?"Salaires":"Salaries",            v: fmt(totalSalaries),     icon:"👔", sub:"" },
+                  { label: fr?"Charges":"Expenses",             v: fmt(totalExp),          icon:"📦", sub:"" },
+                  { label: fr?"Redistribués":"Redistributed",   v: fmt(redistributed),     icon:"🔄", sub:"" },
+                  { label: fr?"Solde":"Balance",                v: fmt(balance),           icon:"🏦", sub:"", highlight: balance<0?"red":"emerald" },
+                ].map(k=>(
+                  <div key={k.label} className={`bg-white rounded-2xl p-4 border shadow-sm ${k.highlight==="red"?"border-red-200":"border-gray-100"}`}>
+                    <div className="text-2xl mb-1">{k.icon}</div>
+                    <div className={`text-base font-black ${k.highlight==="red"?"text-red-600":"text-gray-900"}`}>{k.v}</div>
+                    <div className="text-xs text-gray-500">{k.label}</div>
+                    {k.sub && <div className="text-[10px] text-gray-400 mt-0.5">{k.sub}</div>}
+                  </div>
+                ))}
+              </div>
+
+              {/* Résumé texte */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                <h3 className="font-bold text-gray-900 mb-4">
+                  {fr?"Résumé opérationnel":"Operational summary"} — {isMonthly?(fr?MONTHS_FR:MONTHS_EN)[bilanMonth-1]+" "+bilanYear:bilanYear}
+                </h3>
+                <div className="space-y-2 text-sm">
+                  {[
+                    { label: fr?"Collectes créées":"Campaigns created",          v: filteredCases.length+" "+(fr?"dossiers":"cases") },
+                    { label: fr?"Objectifs atteints":"Goals reached",            v: goalReached+" / "+filteredCases.length },
+                    { label: fr?"Total collecté":"Total collected",              v: fmt(collected) },
+                    { label: fr?"5% prélevés (fonctionnement)":"5% fee taken",   v: fmt(fees5pct) },
+                    { label: fr?"Salaires payés":"Salaries paid",                v: fmt(totalSalaries) },
+                    { label: fr?"Charges diverses":"Misc expenses",              v: fmt(totalExp) },
+                    { label: fr?"Montant redistribué":"Redistributed",           v: fmt(redistributed) },
+                    { label: fr?"Solde disponible Ayyad":"Available balance",    v: fmt(balance), bold: true, color: balance<0?"text-red-600":"text-emerald-700" },
+                  ].map(r=>(
+                    <div key={r.label} className="flex justify-between items-center py-1.5 border-b border-gray-50 last:border-0">
+                      <span className="text-gray-500">{r.label}</span>
+                      <span className={`font-${r.bold?"black":"semibold"} ${r.color||"text-gray-900"}`}>{r.v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
       </div>
     </div>
   );
@@ -3719,25 +4234,6 @@ const LegalPage = ({ setPage, lang }) => {
             </button>
           ))}
         </div>
-
-        {tab === "team" && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800">{fr ? "Équipe & Accès" : "Team & Access"}</h2>
-              {user.adminRole === "super_admin" && (
-                <button
-                  onClick={() => setShowAddAdmin(true)}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700"
-                >
-                  + {fr ? "Ajouter un membre" : "Add member"}
-                </button>
-              )}
-            </div>
-
-            {/* Liste des admins */}
-            <AdminTeamList user={user} fr={fr} />
-          </div>
-        )}
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           {tab === "mentions" && (
