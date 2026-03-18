@@ -1350,7 +1350,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const [heroStats, setHeroStats] = useState({ patients: "142", collected: "89M", hospitals: "18" });
   useEffect(() => {
     const loadStats = async () => {
-      const { data } = await supabase.from("cases").select("collected, status, amount");
+      const { data } = await supabase.from("cases").select("collected, status, required");
       if (data && data.length > 0) {
         const funded = data.filter(c => c.status === "FUNDED");
         const totalCollected = data.reduce((s, c) => s + (c.collected || 0), 0);
@@ -2759,7 +2759,7 @@ const AdminPage = ({ user, setPage, lang }) => {
       yesterday.setHours(0, 0, 0, 0);
       // Cherche les dossiers COLLECTING dont collected >= amount et goal_reached_at <= hier
       const { data } = await supabase.from("cases")
-        .select("id, amount, collected, goal_reached_at")
+        .select("id, required, collected, goal_reached_at")
         .eq("status", "COLLECTING");
       if (!data) return;
       for (const c of data) {
