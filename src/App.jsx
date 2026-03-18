@@ -1586,7 +1586,7 @@ const CasePage = ({ c, setPage, lang }) => {
 
   // Formulaire de don (partagé anonyme + connecté)
   // DonateForm rendu en JSX direct (pas une sous-fonction) pour éviter le démontage à chaque keystroke
-  const donateFormJSX = () => (
+  const donateFormJSX = (currency, amount, setAmount, presets, amountInFcfa) => (
     <>
       {/* Badge mode actuel */}
       <div className={`flex items-center gap-2 rounded-xl px-3 py-2 mb-4 ${anonymous ? "bg-gray-100 border border-gray-200" : "bg-emerald-50 border border-emerald-200"}`}>
@@ -1734,7 +1734,7 @@ const CasePage = ({ c, setPage, lang }) => {
             )}
 
             {/* ÉTAPE 2 — Formulaire de don (anonyme ou connecté) */}
-            {(donMode==="anonymous" || donMode==="logged") && !funded && donateFormJSX()}
+            {(donMode==="anonymous" || donMode==="logged") && !funded && donateFormJSX(currency, amount, setAmount, presets, amountInFcfa)}
 
             {/* ÉTAPE 3 — Confirmation */}
             {donMode==="confirm" && <div className="space-y-5">
