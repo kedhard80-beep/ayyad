@@ -704,7 +704,7 @@ const MobilePayWidget = ({ amount, caseData, lang, onSuccess }) => {
           className={"w-full "+pv.color+" text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-3 text-sm shadow-sm"}>
           <span className="text-xl">{pv.emoji}</span>
           <span>{pv.label}</span>
-          <span className="ml-auto text-white/70 text-xs">{currency === "FCFA" ? amountFmt + " FCFA" : amountFmt} →</span>
+          <span className="ml-auto text-white/70 text-xs">{amountFmt} →</span>
         </button>
       ))}
       <p className="text-center text-[10px] text-gray-400 pt-1">🔒 {lang==="fr" ? "Paiement sécurisé · Aucuns frais cachés" : "Secure payment · No hidden fees"}</p>
@@ -1645,7 +1645,7 @@ const CasePage = ({ c, setPage, lang }) => {
             onClick={() => setDonMode("confirm")}
             className="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-md hover:bg-emerald-700"
           >
-            {lang==="fr" ? `Continuer → ${fmt(Number(amount))} ${currency}` : `Continue → ${fmt(Number(amount))} ${currency}`}
+            {lang==="fr" ? `Continuer → ${fmt(Number(amount))} FCFA` : `Continue → ${fmt(Number(amount))} FCFA`}
           </button>
       ) : (
         <button disabled className="w-full bg-gray-200 text-gray-400 font-bold py-3.5 rounded-xl text-sm">
