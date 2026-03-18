@@ -2726,7 +2726,7 @@ const AdminTeamList = ({ user, fr }) => {
         <div key={admin.id} className={`flex items-center justify-between p-4 rounded-xl border ${admin.is_active ? "bg-white border-gray-100" : "bg-gray-50 border-gray-200 opacity-60"}`}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
-              {admin.email[0].toUpperCase()}
+              {(admin.email?.[0] || "?").toUpperCase()}
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-800">{admin.email}</p>
