@@ -814,7 +814,7 @@ if (step === "qr" && provider === "CARD") return (
       {/* Récap montant */}
       <div className="bg-gray-50 rounded-xl p-3 flex justify-between items-center text-sm">
         <span className="text-gray-500">{lang==="fr" ? "Montant payé" : "Amount paid"}</span>
-        <span className="font-black text-emerald-700">{amountFmt} FCFA</span>
+        <span className="font-black text-emerald-700">{amountFmt}</span>
       </div>
 
       <button onClick={handleConfirmRef}
