@@ -1703,12 +1703,18 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 };
 
 // ── Case Detail + Donation Widget ─────────────────────────────
-const CasePage = ({ c, setPage, lang }) => {
+const CasePage = ({ c, setPage, lang, user }) => {
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("FCFA");
   const [provider, setProvider] = useState("WAVE");
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
+  // Edit mode (owner seulement)
+  const [editOpen, setEditOpen] = useState(false);
+  const [editVideoUrl, setEditVideoUrl_] = useState(c.video_url || c.videoUrl || "");
+  const [editSaving, setEditSaving] = useState(false);
+  const [editMsg, setEditMsg] = useState("");
+  const [editPhotoUploading, setEditPhotoUploading] = useState(false);
   // donMode: "choose" | "anonymous" | "logged" | "confirm" | "success"
   const [donMode, setDonMode] = useState("choose");
   const percent = pct(c.collected, c.required);
@@ -1938,6 +1944,147 @@ const CasePage = ({ c, setPage, lang }) => {
 
           {/* Médias — Photos + Vidéo */}
           <MediaSection c={c} lang={lang} t={t} />
+
+          {/* ── Panneau d'édition — uniquement pour le propriétaire ── */}
+          {user && c.user_id && user.id === c.user_id && (
+            <div className="bg-white rounded-2xl border-2 border-emerald-200 shadow-sm overflow-hidden">
+              <button
+                onClick={() => setEditOpen(!editOpen)}
+                className="w-full flex items-center justify-between p-5 text-left hover:bg-emerald-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">✏️</span>
+                  <div>
+                    <div className="font-bold text-gray-900 text-sm">{lang==="fr" ? "Mettre à jour mon dossier" : "Update my case"}</div>
+                    <div className="text-xs text-gray-500">{lang==="fr" ? "Ajouter des photos, une vidéo ou des documents" : "Add photos, a video or documents"}</div>
+                  </div>
+                </div>
+                <span className={`text-gray-400 transition-transform ${editOpen ? "rotate-180" : ""}`}>▼</span>
+              </button>
+
+              {editOpen && (
+                <div className="px-5 pb-6 space-y-5 border-t border-emerald-100">
+                  {/* Lien vidéo YouTube / TikTok */}
+                  <div className="pt-4">
+                    <label className="text-xs font-bold text-gray-700 block mb-1.5">
+                      🎬 {lang==="fr" ? "Lien vidéo (YouTube ou TikTok)" : "Video link (YouTube or TikTok)"}
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://youtube.com/watch?v=... ou https://tiktok.com/@..."
+                      value={editVideoUrl}
+                      onChange={e => setEditVideoUrl_(e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-300"
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">
+                      {lang==="fr" ? "YouTube, YouTube Shorts et TikTok sont acceptés." : "YouTube, YouTube Shorts and TikTok are accepted."}
+                    </p>
+                  </div>
+
+                  {/* Ajout de photo */}
+                  <div>
+                    <label className="text-xs font-bold text-gray-700 block mb-1.5">
+                      📷 {lang==="fr" ? "Ajouter une photo" : "Add a photo"}
+                    </label>
+                    <label className={`flex items-center gap-3 border-2 border-dashed rounded-xl p-4 cursor-pointer transition-colors ${editPhotoUploading ? "border-emerald-300 bg-emerald-50" : "border-gray-200 hover:border-emerald-300 hover:bg-emerald-50"}`}>
+                      <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !c.id) return;
+                        setEditPhotoUploading(true);
+                        setEditMsg("");
+                        try {
+                          const path = `cases/${c.id}/photos/${Date.now()}_${file.name}`;
+                          const { error: upErr } = await supabase.storage.from("documents").upload(path, file);
+                          if (upErr) { setEditMsg(lang==="fr" ? "Erreur upload : " + upErr.message : "Upload error: " + upErr.message); return; }
+                          const { data: urlD } = supabase.storage.from("documents").getPublicUrl(path);
+                          const newPhotos = [...(c.photos || []), urlD.publicUrl];
+                          await supabase.from("cases").update({ photos: newPhotos }).eq("id", c.id);
+                          setEditMsg(lang==="fr" ? "✅ Photo ajoutée !" : "✅ Photo added!");
+                        } catch(err) {
+                          setEditMsg(lang==="fr" ? "Erreur : " + err.message : "Error: " + err.message);
+                        } finally { setEditPhotoUploading(false); }
+                      }} />
+                      <span className="text-2xl">{editPhotoUploading ? "⏳" : "📷"}</span>
+                      <span className="text-sm text-gray-500">{editPhotoUploading ? (lang==="fr" ? "Envoi en cours…" : "Uploading…") : (lang==="fr" ? "Choisir une photo" : "Choose a photo")}</span>
+                    </label>
+                  </div>
+
+                  {/* Ajout de documents */}
+                  <div>
+                    <label className="text-xs font-bold text-gray-700 block mb-1.5">
+                      📄 {lang==="fr" ? "Ajouter un document" : "Add a document"}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { key: "medical", label: lang==="fr" ? "Rapport médical" : "Medical report", icon: "🏥" },
+                        { key: "quote",   label: lang==="fr" ? "Devis hospitalier" : "Hospital quote",  icon: "💊" },
+                        { key: "id",      label: lang==="fr" ? "Pièce d'identité"  : "Identity doc",   icon: "🪪" },
+                        { key: "other",   label: lang==="fr" ? "Autre document"    : "Other document",  icon: "📎" },
+                      ].map(doc => (
+                        <label key={doc.key} className="flex flex-col items-center gap-1 border-2 border-dashed border-gray-200 hover:border-emerald-300 rounded-xl p-3 cursor-pointer hover:bg-emerald-50 transition-colors text-center">
+                          <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || !c.id) return;
+                            setEditMsg("");
+                            try {
+                              const path = `cases/${c.id}/docs/${doc.key}_${Date.now()}_${file.name}`;
+                              const { error: upErr } = await supabase.storage.from("documents").upload(path, file);
+                              if (upErr) { setEditMsg("Erreur : " + upErr.message); return; }
+                              const { data: urlD } = supabase.storage.from("documents").getPublicUrl(path);
+                              const newDocs = { ...(c.document_urls || {}), [doc.key]: urlD.publicUrl };
+                              await supabase.from("cases").update({ document_urls: newDocs }).eq("id", c.id);
+                              setEditMsg(lang==="fr" ? `✅ ${doc.label} ajouté !` : `✅ ${doc.label} added!`);
+                            } catch(err) { setEditMsg("Erreur : " + err.message); }
+                          }} />
+                          <span className="text-xl">{doc.icon}</span>
+                          <span className="text-[10px] text-gray-500 leading-tight">{doc.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Message de retour */}
+                  {editMsg && (
+                    <div className={`rounded-xl px-4 py-2.5 text-sm font-medium ${editMsg.startsWith("✅") ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+                      {editMsg}
+                    </div>
+                  )}
+
+                  {/* Bouton sauvegarder (pour vidéo) */}
+                  <button
+                    onClick={async () => {
+                      setEditSaving(true);
+                      setEditMsg("");
+                      try {
+                        const updates = {};
+                        if (editVideoUrl.trim()) {
+                          // Conversion URL → embed
+                          let embed = editVideoUrl.trim();
+                          const ytWatch = embed.match(/youtube\.com\/watch\?v=([^&]+)/);
+                          const ytShort = embed.match(/youtu\.be\/([^?&]+)/);
+                          const ytShorts = embed.match(/youtube\.com\/shorts\/([^?&]+)/);
+                          const tt = embed.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+                          if (ytWatch) embed = "https://www.youtube.com/embed/" + ytWatch[1];
+                          else if (ytShorts) embed = "https://www.youtube.com/embed/" + ytShorts[1];
+                          else if (ytShort) embed = "https://www.youtube.com/embed/" + ytShort[1];
+                          else if (tt) embed = "https://www.tiktok.com/embed/v2/" + tt[1];
+                          updates.video_url = embed;
+                        }
+                        if (Object.keys(updates).length > 0) {
+                          await supabase.from("cases").update(updates).eq("id", c.id);
+                          setEditMsg(lang==="fr" ? "✅ Dossier mis à jour !" : "✅ Case updated!");
+                        }
+                      } catch(err) {
+                        setEditMsg(lang==="fr" ? "Erreur : " + err.message : "Error: " + err.message);
+                      } finally { setEditSaving(false); }
+                    }}
+                    disabled={editSaving}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition-colors">
+                    {editSaving ? (lang==="fr" ? "Sauvegarde…" : "Saving…") : (lang==="fr" ? "💾 Sauvegarder" : "💾 Save")}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-xl p-6 sticky top-24">
@@ -5387,7 +5534,7 @@ export default function AyyadApp() {
         {page==="collectes"&&<CollectesPage setPage={setPage} lang={lang} />}
         {page==="collectesactives"&&<CollectesActivesPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} setSpecialite={setSpecialite} />}
         {page==="specialite"&&<SpecialitePage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} specialite={specialite} />}
-        {page==="case"&&selectedCase&&<CasePage c={selectedCase} setPage={setPage} lang={lang} />}
+        {page==="case"&&selectedCase&&<CasePage c={selectedCase} setPage={setPage} lang={lang} user={user} />}
         {page==="how"&&<HowPage lang={lang} setPage={setPage} />}
         {page==="refund"&&<RefundPage lang={lang} setPage={setPage} />}
         {page==="legal"&&<LegalPage lang={lang} setPage={setPage} />}
