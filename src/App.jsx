@@ -1649,7 +1649,6 @@ const CasePage = ({ c, setPage, lang }) => {
           >
             {lang==="fr" ? `Continuer → ${fmt(Number(amount))} FCFA` : `Continue → ${fmt(Number(amount))} FCFA`}
           </button>
-        ) : (
       ) : (
         <button disabled className="w-full bg-gray-200 text-gray-400 font-bold py-3.5 rounded-xl text-sm">
           {lang==="fr" ? "Entrez un montant ≥ 500 FCFA" : "Enter an amount ≥ 500 FCFA"}
