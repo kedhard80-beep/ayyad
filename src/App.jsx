@@ -722,7 +722,7 @@ const MediaSection = ({ c, lang, t }) => {
 // ── MobilePay Widget — Wave CI / Carte bancaire ──────────────
 // ── Comptes marchands Ayyad (à remplacer par les vrais numéros) ──
 const AYYAD_ACCOUNTS = {
-  WAVE:   { numero: "07 00 00 00 00", nom: "AYYAD SOLIDARITE", prefix: "🌊" },
+  WAVE:   { numero: "+225 07 48 05 61 28", nom: "AYYAD SOLIDARITE", prefix: "🌊" },
 
 };
 
@@ -2127,6 +2127,48 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 ))}
               </div>
               {message&&<div className="bg-emerald-50 rounded-xl p-3 text-sm text-emerald-700 italic border border-emerald-100">"{message}"</div>}
+
+              {/* ── QR Code Wave CI ── */}
+              {provider === "WAVE" && (() => {
+                const waveNum = AYYAD_ACCOUNTS.WAVE.numero.replace(/[\s]/g,"");
+                const waveNote = "AYYAD-" + (c.tracking_id || c.trackingId || "DON");
+                const waveData = `wave://pay?to=${waveNum}&amount=${Math.round(Number(amount))}&note=${waveNote}`;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(waveData)}&size=180x180&margin=10&color=1d4ed8`;
+                return (
+                  <div className="flex flex-col items-center gap-3 bg-blue-50 border border-blue-100 rounded-2xl p-5">
+                    <div className="text-sm font-black text-blue-800">📱 {lang==="fr" ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
+                    <div className="relative">
+                      <img
+                        src={qrUrl}
+                        alt="QR Code Wave CI"
+                        width={180}
+                        height={180}
+                        className="rounded-xl border-2 border-blue-200 bg-white shadow-sm"
+                        onError={e => { e.target.style.display="none"; e.target.nextSibling.style.display="flex"; }}
+                      />
+                      <div style={{display:"none"}} className="w-44 h-44 bg-blue-100 rounded-xl items-center justify-center text-blue-400 text-xs text-center p-3 flex-col gap-2">
+                        <span className="text-3xl">🌊</span>
+                        <span>QR non disponible — utilisez le bouton ci-dessous</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-blue-700 text-center leading-relaxed">
+                      {lang==="fr"
+                        ? <>Ouvrez <strong>Wave CI</strong> → touchez <strong>Scanner</strong> → scannez ce code → confirmez le paiement</>
+                        : <>Open <strong>Wave CI</strong> → tap <strong>Scan</strong> → scan this code → confirm payment</>}
+                    </div>
+                    <a
+                      href={waveData}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm text-center"
+                    >
+                      📱 {lang==="fr" ? "Ouvrir Wave CI directement" : "Open Wave CI directly"}
+                    </a>
+                    <div className="text-[11px] text-blue-400 text-center">
+                      {lang==="fr" ? "Cliquez sur Confirmer uniquement après avoir effectué le paiement" : "Click Confirm only after completing your payment"}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={() => setDonMode(anonymous?"anonymous":"logged")} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{td.modify}</button>
                 <button onClick={() => {
