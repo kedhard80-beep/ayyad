@@ -1,5 +1,5 @@
 import { inject } from "@vercel/analytics";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 // ── Supabase client ──────────────────────────────────────────
