@@ -1047,45 +1047,124 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
 };
 
 // ── Support Ayyad Section ─────────────────────────────────────
+// ── Formulaire carte bancaire (démo — agrégateur à intégrer) ──
+const CardPayForm = ({ amountDisplay, lang, onSuccess, onCancel, darkMode = false }) => {
+  const fr = lang === "fr";
+  const [cardNum,  setCardNum]  = useState("");
+  const [cardName, setCardName] = useState("");
+  const [expiry,   setExpiry]   = useState("");
+  const [cvv,      setCvv]      = useState("");
+  const [paying,   setPaying]   = useState(false);
+  const [done,     setDone]     = useState(false);
+
+  const fmtCard   = v => v.replace(/\D/g,"").slice(0,16).replace(/(.{4})/g,"$1 ").trim();
+  const fmtExpiry = v => { const d=v.replace(/\D/g,"").slice(0,4); return d.length>2?d.slice(0,2)+"/"+d.slice(2):d; };
+  const isValid   = cardNum.replace(/\s/g,"").length===16 && cardName.trim().length>2 && expiry.length===5 && cvv.length>=3;
+
+  const handlePay = () => {
+    if (!isValid || paying) return;
+    setPaying(true);
+    setTimeout(() => { setPaying(false); setDone(true); onSuccess && onSuccess(); }, 1800);
+  };
+
+  const inp = `w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${darkMode ? "bg-white/10 border-white/20 text-white placeholder-white/40" : "border-gray-200 bg-white text-gray-900"}`;
+
+  if (done) return null; // parent handles success UI
+
+  return (
+    <div className="space-y-3">
+      {/* Badge démo */}
+      <div className={`flex items-center gap-2 rounded-xl px-3 py-2 ${darkMode ? "bg-amber-500/20 border border-amber-400/30" : "bg-amber-50 border border-amber-200"}`}>
+        <span>🔧</span>
+        <span className={`text-xs ${darkMode ? "text-amber-200" : "text-amber-700"}`}>
+          {fr ? "Formulaire de démo — agrégateur de paiement à intégrer" : "Demo form — payment processor to be integrated"}
+        </span>
+      </div>
+
+      {/* Numéro de carte */}
+      <div>
+        <label className={`text-xs font-semibold mb-1 block ${darkMode ? "text-emerald-300" : "text-gray-600"}`}>{fr ? "Numéro de carte" : "Card number"}</label>
+        <input type="text" inputMode="numeric" placeholder="1234 5678 9012 3456"
+          value={cardNum} onChange={e => setCardNum(fmtCard(e.target.value))} maxLength={19}
+          className={inp + " font-mono"} />
+      </div>
+
+      {/* Nom */}
+      <div>
+        <label className={`text-xs font-semibold mb-1 block ${darkMode ? "text-emerald-300" : "text-gray-600"}`}>{fr ? "Nom sur la carte" : "Cardholder name"}</label>
+        <input type="text" placeholder={fr ? "PRÉNOM NOM" : "FIRST LAST"}
+          value={cardName} onChange={e => setCardName(e.target.value.toUpperCase())}
+          className={inp + " uppercase tracking-wide"} />
+      </div>
+
+      {/* Expiration + CVV */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={`text-xs font-semibold mb-1 block ${darkMode ? "text-emerald-300" : "text-gray-600"}`}>{fr ? "Expiration" : "Expiry"}</label>
+          <input type="text" inputMode="numeric" placeholder="MM/YY"
+            value={expiry} onChange={e => setExpiry(fmtExpiry(e.target.value))} maxLength={5}
+            className={inp + " font-mono"} />
+        </div>
+        <div>
+          <label className={`text-xs font-semibold mb-1 block ${darkMode ? "text-emerald-300" : "text-gray-600"}`}>CVV</label>
+          <input type="password" inputMode="numeric" placeholder="•••"
+            value={cvv} onChange={e => setCvv(e.target.value.replace(/\D/g,"").slice(0,4))}
+            className={inp + " font-mono"} />
+        </div>
+      </div>
+
+      {/* Bouton payer */}
+      <button onClick={handlePay} disabled={!isValid || paying}
+        className={`w-full py-3 rounded-xl font-black text-sm transition-all shadow-md ${
+          isValid && !paying
+            ? darkMode ? "bg-white text-gray-900 hover:bg-gray-100" : "bg-gray-900 text-white hover:bg-gray-700"
+            : "bg-gray-300 text-gray-400 cursor-not-allowed"
+        }`}>
+        {paying ? `⏳ ${fr ? "Traitement…" : "Processing…"}` : `💳 ${fr ? "Payer" : "Pay"} ${amountDisplay || ""}`}
+      </button>
+
+      {/* Logos sécurité */}
+      <div className={`flex items-center justify-center gap-3 text-[10px] ${darkMode ? "text-white/40" : "text-gray-400"}`}>
+        <span>🔒 SSL</span><span>·</span><span>Visa</span><span>·</span><span>Mastercard</span><span>·</span><span>CB</span>
+      </div>
+
+      {onCancel && (
+        <button onClick={onCancel} className={`w-full text-xs py-1 ${darkMode ? "text-white/50 hover:text-white" : "text-gray-400 hover:text-gray-700"}`}>
+          ← {fr ? "Modifier" : "Edit"}
+        </button>
+      )}
+    </div>
+  );
+};
+
 const SupportAyyadSection = ({ lang }) => {
   const fr = lang === "fr";
   const [currency, setCurrency] = useState("FCFA");
-  const [amount, setAmount] = useState("");
-  const [payMode, setPayMode] = useState("WAVE"); // WAVE | CARD
-  const [cardSoon, setCardSoon] = useState(false);
+  const [amount,   setAmount]   = useState("");
+  const [payMode,  setPayMode]  = useState("WAVE"); // WAVE | CARD
+  const [step,     setStep]     = useState("form"); // form | wave_qr | card_form | success
 
-  const WAVE_NUMBER = "+22507480561 28".replace(/\s/g,"");
+  const WAVE_NUMBER = AYYAD_ACCOUNTS.WAVE.numero.replace(/\s/g,"");
   const CURRENCIES = [
-    { code:"FCFA", symbol:"FCFA", min:500,    step:500  },
-    { code:"EUR",  symbol:"€",    min:1,      step:1    },
-    { code:"USD",  symbol:"$",    min:1,      step:1    },
+    { code:"FCFA", symbol:"FCFA", min:500, step:500 },
+    { code:"EUR",  symbol:"€",    min:1,   step:1   },
+    { code:"USD",  symbol:"$",    min:1,   step:1   },
   ];
-  const curInfo = CURRENCIES.find(c => c.code === currency) || CURRENCIES[0];
-
+  const curInfo      = CURRENCIES.find(c => c.code === currency) || CURRENCIES[0];
   const numericAmount = Number(amount) || 0;
-  const isValid = numericAmount >= curInfo.min;
-
-  // Conversion FCFA pour Wave (Wave CI fonctionne en FCFA)
-  const RATES = { FCFA: 1, EUR: 655.957, USD: 600 };
-  const amountFCFA = Math.round(numericAmount * (RATES[currency] || 1));
-
-  const waveDeepLink = `wave://pay?to=${WAVE_NUMBER}&amount=${amountFCFA}&note=Don+Ayyad`;
-  const waveWebLink = `https://pay.wave.com/m/ayyad?amount=${amountFCFA}`;
-
-  const handlePay = () => {
-    if (!isValid) return;
-    if (payMode === "WAVE") {
-      window.open(waveDeepLink, "_blank");
-    } else {
-      setCardSoon(true);
-    }
-  };
+  const isValid      = numericAmount >= curInfo.min;
+  const RATES        = { FCFA:1, EUR:655.957, USD:600 };
+  const amountFCFA   = Math.round(numericAmount * (RATES[currency] || 1));
+  const waveData     = `wave://pay?to=${WAVE_NUMBER}&amount=${amountFCFA}&note=Don+Ayyad`;
+  const qrUrl        = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(waveData)}&size=200x200&margin=10&color=1d4ed8`;
 
   const displayAmount = amount
     ? (currency === "FCFA"
         ? `${Number(amount).toLocaleString("fr")} FCFA`
         : `${curInfo.symbol}${Number(amount).toLocaleString("fr")}`)
     : "";
+
+  const reset = () => { setStep("form"); setAmount(""); };
 
   return (
     <div className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 text-white">
@@ -1102,84 +1181,120 @@ const SupportAyyadSection = ({ lang }) => {
 
         <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 max-w-sm mx-auto space-y-4">
 
-          {/* Devise */}
-          <div>
-            <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Devise" : "Currency"}</div>
-            <div className="flex gap-2">
-              {CURRENCIES.map(c => (
-                <button key={c.code} onClick={() => { setCurrency(c.code); setAmount(""); }}
-                  className={`flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-all ${currency === c.code ? "bg-emerald-500 border-emerald-400 text-white" : "bg-white/10 border-white/20 text-emerald-200 hover:bg-white/20"}`}>
-                  {c.code}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Montant — devise collée au chiffre */}
-          <div>
-            <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Montant" : "Amount"}</div>
-            <div className="relative flex items-center bg-white rounded-xl overflow-hidden">
-              <input
-                type="number"
-                min={curInfo.min}
-                step={curInfo.step}
-                placeholder={String(curInfo.min)}
-                value={amount}
-                onChange={e => setAmount(e.target.value)}
-                className="flex-1 text-gray-900 font-black text-lg px-4 py-3 outline-none bg-transparent"
-                style={{minWidth:0}}
-              />
-              <span className="px-3 text-gray-500 font-bold text-sm border-l border-gray-200 py-3 bg-gray-50 whitespace-nowrap">
-                {curInfo.code === "FCFA" ? "FCFA" : curInfo.symbol}
-              </span>
-            </div>
-            {displayAmount && (
-              <div className="mt-1.5 text-emerald-300 text-xs text-right">
-                ≈ {displayAmount}{currency !== "FCFA" ? ` (${amountFCFA.toLocaleString("fr")} FCFA)` : ""}
-              </div>
-            )}
-          </div>
-
-          {/* Mode de paiement */}
-          <div>
-            <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Moyen de paiement" : "Payment method"}</div>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id:"WAVE", emoji:"🌊", label:"Wave CI" },
-                { id:"CARD", emoji:"💳", label:fr?"Carte bancaire":"Card" },
-              ].map(pm => (
-                <button key={pm.id} onClick={() => { setPayMode(pm.id); setCardSoon(false); }}
-                  className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${payMode === pm.id ? "bg-white text-gray-900 border-white" : "bg-white/10 border-white/20 text-white hover:bg-white/20"}`}>
-                  <span>{pm.emoji}</span><span>{pm.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Message carte bientôt */}
-          {cardSoon && (
-            <div className="bg-amber-500/20 border border-amber-400/40 rounded-xl px-4 py-2.5 text-amber-200 text-xs">
-              💳 {fr ? "Le paiement par carte arrive bientôt. Utilisez Wave CI pour l'instant." : "Card payment coming soon. Use Wave CI for now."}
+          {/* ── SUCCÈS ── */}
+          {step === "success" && (
+            <div className="text-center space-y-4 py-2">
+              <div className="w-16 h-16 bg-emerald-500/30 rounded-full flex items-center justify-center mx-auto text-3xl">🎉</div>
+              <h3 className="font-black text-xl">{fr ? "Merci pour votre soutien !" : "Thank you for your support!"}</h3>
+              <p className="text-emerald-200 text-sm">{fr ? "Chaque contribution aide Ayyad à rester gratuit pour les patients." : "Every contribution helps Ayyad stay free for patients."}</p>
+              <button onClick={reset} className="w-full border border-white/30 text-white font-semibold py-2.5 rounded-xl text-sm hover:bg-white/10">
+                {fr ? "Faire un autre don" : "Donate again"}
+              </button>
             </div>
           )}
 
-          {/* Bouton payer */}
-          <button
-            onClick={handlePay}
-            disabled={!isValid}
-            className={`w-full py-3.5 rounded-xl font-black text-sm transition-all ${isValid ? "bg-white text-emerald-900 hover:bg-emerald-100 shadow-lg" : "bg-white/20 text-white/40 cursor-not-allowed"}`}>
-            {!amount || numericAmount === 0
-              ? (fr ? "Saisir un montant" : "Enter an amount")
-              : !isValid
-              ? (fr ? `Min. ${curInfo.min} ${curInfo.code}` : `Min. ${curInfo.min} ${curInfo.code}`)
-              : payMode === "WAVE"
-              ? `💚 ${fr ? "Payer" : "Pay"} ${displayAmount} via Wave`
-              : `💳 ${fr ? "Payer" : "Pay"} ${displayAmount} par carte`}
-          </button>
+          {/* ── QR CODE WAVE ── */}
+          {step === "wave_qr" && (
+            <div className="flex flex-col items-center gap-3">
+              <div className="text-sm font-black">📱 {fr ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
+              <img src={qrUrl} alt="QR Wave" width={200} height={200}
+                className="rounded-2xl border-4 border-white/30 bg-white shadow-xl"
+                onError={e => { e.target.style.display="none"; }} />
+              <div className="text-xs text-emerald-200 text-center leading-relaxed">
+                {fr
+                  ? <>Ouvrez <strong className="text-white">Wave CI</strong> → <strong className="text-white">Scanner</strong> → scannez → payez <strong className="text-white">{displayAmount}</strong></>
+                  : <>Open <strong className="text-white">Wave CI</strong> → <strong className="text-white">Scan</strong> → scan → pay <strong className="text-white">{displayAmount}</strong></>}
+              </div>
+              <a href={waveData}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm text-center">
+                📱 {fr ? "Ouvrir Wave CI directement" : "Open Wave CI directly"}
+              </a>
+              <button onClick={() => setStep("success")}
+                className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 rounded-xl text-sm">
+                ✅ {fr ? "J'ai effectué le paiement" : "I completed the payment"}
+              </button>
+              <button onClick={reset} className="text-xs text-white/40 hover:text-white/70 py-1">
+                ← {fr ? "Modifier" : "Edit"}
+              </button>
+            </div>
+          )}
 
-          <p className="text-emerald-400 text-[10px]">
-            {fr ? "Paiement sécurisé · 100% de votre don va à Ayyad" : "Secure payment · 100% of your donation goes to Ayyad"}
-          </p>
+          {/* ── FORMULAIRE CARTE ── */}
+          {step === "card_form" && (
+            <CardPayForm
+              amountDisplay={displayAmount}
+              lang={lang}
+              darkMode={true}
+              onSuccess={() => setStep("success")}
+              onCancel={reset}
+            />
+          )}
+
+          {/* ── FORMULAIRE PRINCIPAL ── */}
+          {step === "form" && (<>
+            {/* Devise */}
+            <div>
+              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Devise" : "Currency"}</div>
+              <div className="flex gap-2">
+                {CURRENCIES.map(c => (
+                  <button key={c.code} onClick={() => { setCurrency(c.code); setAmount(""); }}
+                    className={`flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-all ${currency===c.code ? "bg-emerald-500 border-emerald-400 text-white" : "bg-white/10 border-white/20 text-emerald-200 hover:bg-white/20"}`}>
+                    {c.code}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Montant */}
+            <div>
+              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Montant" : "Amount"}</div>
+              <div className="relative flex items-center bg-white rounded-xl overflow-hidden">
+                <input type="number" min={curInfo.min} step={curInfo.step} placeholder={String(curInfo.min)}
+                  value={amount} onChange={e => setAmount(e.target.value)}
+                  className="flex-1 text-gray-900 font-black text-lg px-4 py-3 outline-none bg-transparent" style={{minWidth:0}} />
+                <span className="px-3 text-gray-500 font-bold text-sm border-l border-gray-200 py-3 bg-gray-50 whitespace-nowrap">
+                  {curInfo.code === "FCFA" ? "FCFA" : curInfo.symbol}
+                </span>
+              </div>
+              {displayAmount && (
+                <div className="mt-1.5 text-emerald-300 text-xs text-right">
+                  ≈ {displayAmount}{currency!=="FCFA" ? ` (${amountFCFA.toLocaleString("fr")} FCFA)` : ""}
+                </div>
+              )}
+            </div>
+
+            {/* Mode de paiement */}
+            <div>
+              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Moyen de paiement" : "Payment method"}</div>
+              <div className="grid grid-cols-2 gap-2">
+                {[{id:"WAVE",emoji:"🌊",label:"Wave CI"},{id:"CARD",emoji:"💳",label:fr?"Carte bancaire":"Card"}].map(pm => (
+                  <button key={pm.id} onClick={() => setPayMode(pm.id)}
+                    className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${payMode===pm.id ? "bg-white text-gray-900 border-white" : "bg-white/10 border-white/20 text-white hover:bg-white/20"}`}>
+                    <span>{pm.emoji}</span><span>{pm.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Bouton payer */}
+            <button
+              onClick={() => { if (!isValid) return; setStep(payMode==="WAVE" ? "wave_qr" : "card_form"); }}
+              disabled={!isValid}
+              className={`w-full py-3.5 rounded-xl font-black text-sm transition-all ${isValid ? "bg-white text-emerald-900 hover:bg-emerald-100 shadow-lg" : "bg-white/20 text-white/40 cursor-not-allowed"}`}>
+              {!amount || numericAmount===0
+                ? (fr ? "Saisir un montant" : "Enter an amount")
+                : !isValid
+                ? `Min. ${curInfo.min} ${curInfo.code}`
+                : payMode==="WAVE"
+                ? `🌊 ${fr?"Payer":"Pay"} ${displayAmount} via Wave`
+                : `💳 ${fr?"Payer":"Pay"} ${displayAmount} par carte`}
+            </button>
+
+            <p className="text-emerald-400 text-[10px]">
+              {fr ? "Paiement sécurisé · 100% de votre don va à Ayyad" : "Secure payment · 100% of your donation goes to Ayyad"}
+            </p>
+          </>)}
+
         </div>
       </div>
     </div>
@@ -2169,13 +2284,29 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 );
               })()}
 
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => setDonMode(anonymous?"anonymous":"logged")} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{td.modify}</button>
-                <button onClick={() => {
-                  setDonMode("success");
-                  emailDonConfirm({ donorEmail: null, donorName: anonymous ? "" : "Donateur", amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
-                }} className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md">{td.confirmBtn}</button>
-              </div>
+              {/* ── Formulaire carte bancaire ── */}
+              {provider === "CARD" && (
+                <CardPayForm
+                  amountDisplay={fmt(Number(amount))}
+                  lang={lang}
+                  onSuccess={() => {
+                    setDonMode("success");
+                    emailDonConfirm({ donorEmail: null, donorName: anonymous ? "" : "Donateur", amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
+                  }}
+                  onCancel={() => setDonMode(anonymous?"anonymous":"logged")}
+                />
+              )}
+
+              {/* Boutons Modifier / Confirmer (Wave uniquement — carte a son propre bouton) */}
+              {provider !== "CARD" && (
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => setDonMode(anonymous?"anonymous":"logged")} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{td.modify}</button>
+                  <button onClick={() => {
+                    setDonMode("success");
+                    emailDonConfirm({ donorEmail: null, donorName: anonymous ? "" : "Donateur", amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
+                  }} className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md">{td.confirmBtn}</button>
+                </div>
+              )}
             </div>}
 
             {/* ÉTAPE 4 — Succès */}
