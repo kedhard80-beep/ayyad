@@ -2484,8 +2484,11 @@ const SubmitPage = ({ setPage, user, lang }) => {
   const handleFileUpload = async (key, file) => {
     if (!file) return;
     setFileStates(prev => ({...prev, [key]: "uploading"}));
+    const ext = file.name.split('.').pop().toLowerCase();
+    const mimeMap = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' };
+    const contentType = mimeMap[ext] || file.type || 'application/octet-stream';
     const fileName = Date.now()+"_"+key+"_"+file.name;
-    const { error } = await supabase.storage.from("medical-documents").upload(fileName, file);
+    const { error } = await supabase.storage.from("medical-documents").upload(fileName, file, { contentType });
     if (error) { setFileStates(prev => ({...prev, [key]: "error"})); return; }
     const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
     setFileUrls(prev => ({...prev, [key]: urlData.publicUrl}));
