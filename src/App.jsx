@@ -2461,6 +2461,14 @@ const SubmitPage = ({ setPage, user, lang }) => {
   const t = T[lang].submit;
   const allUploaded = Object.values(fileStates).every(s => s==="done");
 
+  // ID de session unique : permet d'organiser les fichiers par dossier dans le storage
+  const [sessionId] = useState(() => {
+    const uid = user?.id || "anon";
+    const ts = Date.now();
+    const rand = Math.random().toString(36).slice(2,7);
+    return `${uid}_${ts}_${rand}`;
+  });
+
   const handlePhotoSelect = (file) => {
     if (!file) return;
     setPhotoFile(file);
@@ -2472,7 +2480,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
   const handlePhotoUpload = async () => {
     if (!photoFile) return null;
     setPhotoUploading(true);
-    const fileName = Date.now()+"_photo_"+photoFile.name;
+    const fileName = `dossiers/${sessionId}/photo_${Date.now()}_${photoFile.name}`;
     const { error } = await supabase.storage.from("medical-documents").upload(fileName, photoFile);
     if (error) { setPhotoUploading(false); return null; }
     const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
@@ -2487,7 +2495,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
     const ext = file.name.split('.').pop().toLowerCase();
     const mimeMap = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' };
     const contentType = mimeMap[ext] || file.type || 'application/octet-stream';
-    const fileName = Date.now()+"_"+key+"_"+file.name;
+    const fileName = `dossiers/${sessionId}/${key}_${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from("medical-documents").upload(fileName, file, { contentType });
     if (error) { setFileStates(prev => ({...prev, [key]: "error"})); return; }
     const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
@@ -2777,13 +2785,37 @@ const SubmitPage = ({ setPage, user, lang }) => {
           {t.docs.map(doc=>{
             const state = fileStates[doc.key];
             return (
-              <div key={doc.key} className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${state==="done"?"border-emerald-300 bg-emerald-50":state==="error"?"border-red-200 bg-red-50":"border-gray-200"}`}>
-                <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 ${state==="done"?"bg-emerald-100":"bg-gray-100"}`}>{doc.icon}</div>
-                <div className="flex-1 min-w-0"><div className="font-semibold text-sm text-gray-900">{doc.title} <span className="text-red-400">*</span></div><div className="text-xs text-gray-500">{doc.desc}</div></div>
-                <label className={`px-3 py-1.5 rounded-xl text-xs font-bold flex-shrink-0 cursor-pointer transition-colors ${state==="done"?"bg-emerald-600 text-white":state==="uploading"?"bg-gray-300 text-gray-500 cursor-wait":state==="error"?"bg-red-100 text-red-600":"bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
-                  {state==="done"?t.uploaded:state==="uploading"?t.uploading:state==="error"?t.error:t.upload}
-                  <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e=>e.target.files[0]&&handleFileUpload(doc.key,e.target.files[0])} disabled={state==="uploading"||state==="done"} />
-                </label>
+              <div key={doc.key} className={`rounded-2xl border-2 transition-all ${state==="done"?"border-emerald-300 bg-emerald-50":state==="error"?"border-red-200 bg-red-50":"border-gray-200"}`}>
+                <div className="flex items-center gap-4 p-4">
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 ${state==="done"?"bg-emerald-100":"bg-gray-100"}`}>{doc.icon}</div>
+                  <div className="flex-1 min-w-0"><div className="font-semibold text-sm text-gray-900">{doc.title} <span className="text-red-400">*</span></div><div className="text-xs text-gray-500">{doc.desc}</div></div>
+                  <label className={`px-3 py-1.5 rounded-xl text-xs font-bold flex-shrink-0 cursor-pointer transition-colors ${state==="done"?"bg-emerald-600 text-white":state==="uploading"?"bg-gray-300 text-gray-500 cursor-wait":state==="error"?"bg-red-100 text-red-600":"bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+                    {state==="done"?t.uploaded:state==="uploading"?t.uploading:state==="error"?t.error:t.upload}
+                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e=>e.target.files[0]&&handleFileUpload(doc.key,e.target.files[0])} disabled={state==="uploading"||state==="done"} />
+                  </label>
+                </div>
+                {/* Lien de téléchargement du formulaire de consentement */}
+                {doc.key==="consent"&&(
+                  <div className="px-4 pb-3 flex items-center gap-2">
+                    <div className="w-11 flex-shrink-0"/>
+                    <div className="flex-1 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+                      <span className="text-emerald-600 text-sm">📥</span>
+                      <span className="text-xs text-gray-600 flex-1">
+                        {lang==="fr"
+                          ? "Téléchargez, imprimez, signez, puis uploadez le formulaire ci-dessus."
+                          : "Download, print, sign, then upload the form above."}
+                      </span>
+                      <a
+                        href="/AYYAD_Consentement.pdf"
+                        download="AYYAD_Formulaire_Consentement.pdf"
+                        className="flex-shrink-0 inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                        onClick={e=>e.stopPropagation()}
+                      >
+                        {lang==="fr" ? "Télécharger le formulaire" : "Download form"} →
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
