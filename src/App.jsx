@@ -5742,11 +5742,18 @@ export default function AyyadApp() {
         setUser({ id: session.user.id, name: meta.full_name || session.user.email, email: session.user.email, isAdmin, adminRole });
       }
     });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const meta = session.user.user_metadata || {};
-        const isAdmin = session.user.email === "kedhard80@gmail.com";
-        setUser({ id: session.user.id, name: meta.full_name || session.user.email, email: session.user.email, isAdmin });
+        // Vérification admin depuis la base (pas de email hardcodé)
+        const { data: adminCheck } = await supabase
+          .from("admin_users")
+          .select("role, is_active")
+          .eq("email", session.user.email)
+          .single();
+        const isAdmin = !!(adminCheck && adminCheck.is_active);
+        const adminRole = adminCheck?.role || null;
+        setUser({ id: session.user.id, name: meta.full_name || session.user.email, email: session.user.email, isAdmin, adminRole });
       } else {
         setUser(null);
       }
