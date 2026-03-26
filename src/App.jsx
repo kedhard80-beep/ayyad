@@ -2338,19 +2338,23 @@ const LoginPage = ({ setPage, setUser, lang }) => {
     if (!email || !pwd) return;
     setLoading(true);
     setError("");
-    const { data, error: err } = await supabase.auth.signInWithPassword({ email, password: pwd });
-    if (err) {
-      setError(t.error);
+    try {
+      const { data, error: err } = await supabase.auth.signInWithPassword({ email, password: pwd });
+      if (err) {
+        setError(t.error);
+        return;
+      }
+      const meta = data.user?.user_metadata || {};
+      const { data: adminData } = await supabase.from("admin_users").select("role, is_active").eq("email", email).single();
+      const isAdmin = !!(adminData && adminData.is_active);
+      const adminRole = adminData?.role || null;
+      setUser({ id: data.user.id, name: meta.full_name || email, email, isAdmin, adminRole });
+      setPage(isAdmin ? "admin" : "home");
+    } catch(e) {
+      setError("Erreur de connexion. Veuillez réessayer.");
+    } finally {
       setLoading(false);
-      return;
     }
-    const meta = data.user?.user_metadata || {};
-    const { data: adminData } = await supabase.from("admin_users").select("role, is_active").eq("email", email).single();
-    const isAdmin = !!(adminData && adminData.is_active);
-    const adminRole = adminData?.role || null;
-    setUser({ id: data.user.id, name: meta.full_name || email, email, isAdmin, adminRole });
-    setPage(isAdmin ? "admin" : "home");
-    setLoading(false);
   };
 
   return (
