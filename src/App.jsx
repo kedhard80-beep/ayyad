@@ -5814,6 +5814,12 @@ const ProfilePage = ({ user, lang, setPage }) => {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
 
+  // Testimonial submission
+  const [testimonyMsg, setTestimonyMsg] = useState("");
+  const [testimonyStars, setTestimonyStars] = useState(5);
+  const [testimonyStatus, setTestimonyStatus] = useState(""); // "sending"|"sent"|"error"|"already"
+  const [existingTestimonial, setExistingTestimonial] = useState(null);
+
   const statusColors = {
     PENDING: "bg-yellow-100 text-yellow-700",
     COLLECTING: "bg-blue-100 text-blue-700",
@@ -5833,6 +5839,9 @@ const ProfilePage = ({ user, lang, setPage }) => {
     const load = async () => {
       const { data } = await supabase.from("cases").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
       setUserCases(data || []);
+      // Check if user already submitted a testimonial
+      const { data: tData } = await supabase.from("testimonials").select("id, status, message_fr").eq("submitted_by", user.id).maybeSingle();
+      if (tData) setExistingTestimonial(tData);
       setLoading(false);
     };
     load();
@@ -5866,6 +5875,33 @@ const ProfilePage = ({ user, lang, setPage }) => {
       setSaveMsg(lang === "fr" ? "❌ Erreur lors de la sauvegarde" : "❌ Error saving");
     }
   };
+
+  const submitTestimonial = async () => {
+    if (!testimonyMsg.trim()) return;
+    setTestimonyStatus("sending");
+    const fundedCase = userCases.find(c => c.status === "FUNDED");
+    const { error } = await supabase.from("testimonials").insert({
+      submitted_by: user.id,
+      beneficiary: user.name || user.email,
+      case_id: fundedCase?.id || null,
+      tracking_id: fundedCase?.tracking_id || null,
+      city: fundedCase?.city || null,
+      hospital: fundedCase?.hospital || null,
+      category_fr: fundedCase?.category_fr || fundedCase?.category || null,
+      amount: fundedCase?.amount_collected || fundedCase?.amount || null,
+      message_fr: testimonyMsg.trim(),
+      stars: testimonyStars,
+      status: "pending",
+    });
+    if (error) {
+      setTestimonyStatus("error");
+    } else {
+      setTestimonyStatus("sent");
+      setExistingTestimonial({ status: "pending", message_fr: testimonyMsg.trim() });
+    }
+  };
+
+  const fundedCases = userCases.filter(c => c.status === "FUNDED");
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -5951,6 +5987,71 @@ const ProfilePage = ({ user, lang, setPage }) => {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Testimonial submission section ── */}
+      {!loading && fundedCases.length > 0 && (
+        <div className="mt-8">
+          <div className="font-semibold text-gray-700 mb-3">
+            💬 {lang === "fr" ? "Votre témoignage" : "Your testimonial"}
+          </div>
+
+          {existingTestimonial ? (
+            <div className={"rounded-xl border p-4 " + (existingTestimonial.status === "approved" ? "bg-emerald-50 border-emerald-200" : "bg-yellow-50 border-yellow-200")}>
+              <div className={"text-xs font-bold mb-1 " + (existingTestimonial.status === "approved" ? "text-emerald-700" : "text-yellow-700")}>
+                {existingTestimonial.status === "approved"
+                  ? (lang === "fr" ? "✅ Témoignage publié" : "✅ Testimonial published")
+                  : (lang === "fr" ? "⏳ En attente de validation par l'équipe Ayyad" : "⏳ Awaiting validation by the Ayyad team")}
+              </div>
+              <p className="text-sm text-gray-700 italic">"{existingTestimonial.message_fr}"</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
+              <p className="text-xs text-gray-500">
+                {lang === "fr"
+                  ? "Votre dossier a été financé 🎉 Partagez votre expérience pour inspirer d'autres donateurs."
+                  : "Your case was funded 🎉 Share your experience to inspire other donors."}
+              </p>
+
+              {/* Star rating */}
+              <div>
+                <div className="text-xs font-semibold text-gray-600 mb-1.5">{lang === "fr" ? "Note" : "Rating"}</div>
+                <div className="flex gap-1">
+                  {[1,2,3,4,5].map(s => (
+                    <button key={s} onClick={() => setTestimonyStars(s)} className={"text-2xl transition-transform " + (s <= testimonyStars ? "text-yellow-400 scale-110" : "text-gray-300 hover:text-yellow-300")}>
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Message */}
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1.5">
+                  {lang === "fr" ? "Votre message" : "Your message"}
+                </label>
+                <textarea
+                  value={testimonyMsg}
+                  onChange={e => setTestimonyMsg(e.target.value)}
+                  rows={4}
+                  placeholder={lang === "fr" ? "Décrivez comment Ayyad vous a aidé..." : "Describe how Ayyad helped you..."}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
+                />
+              </div>
+
+              {testimonyStatus === "error" && (
+                <div className="text-xs text-red-600 font-semibold">{lang === "fr" ? "❌ Erreur lors de l'envoi. Réessayez." : "❌ Error sending. Please try again."}</div>
+              )}
+
+              <button
+                onClick={submitTestimonial}
+                disabled={testimonyStatus === "sending" || !testimonyMsg.trim()}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
+                {testimonyStatus === "sending" ? "..." : lang === "fr" ? "Envoyer mon témoignage →" : "Send my testimonial →"}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
