@@ -249,6 +249,12 @@ const T = {
   }
 };
 
+// ── Demo cases visibility (admin can toggle via dashboard) ───
+// true = campagnes fictives visibles sur la plateforme publique
+// false = seules les vraies campagnes Supabase sont affichées
+const DEMO_CASES_VISIBLE = localStorage.getItem("ayyadShowDemo") !== "false";
+const getDisplayCases = () => DEMO_CASES_VISIBLE ? MOCK_CASES : [];
+
 // ── Static mock cases for homepage display ───────────────────
 const MOCK_CASES = [
   { id:1, trackingId:"AYD-2025-001", title:{fr:"Opération cardiaque urgente pour Aminata",en:"Urgent heart surgery for Aminata"}, beneficiary:"Aminata Koné", age:34, city:"Abidjan", hospital:"CHU de Cocody", category:{fr:"Cardiologie",en:"Cardiology"}, required:1800000, collected:1260000, donors:87, daysLeft:2, image:"🫀", urgent:true, videoUrl:"https://www.youtube.com/embed/dQw4w9WgXcQ", photos:["https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=600&h=400&fit=crop&crop=faces","https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&q=80&fit=crop"], desc:{fr:"Aminata souffre d'une cardiopathie valvulaire sévère nécessitant un remplacement de valve urgent. Sans cette intervention, son pronostic vital est engagé dans les 3 prochains mois.",en:"Aminata suffers from severe valvular heart disease requiring urgent valve replacement. Without this procedure, her life is at risk within 3 months."}, status:"COLLECTING" },
@@ -1304,7 +1310,7 @@ const SupportAyyadSection = ({ lang }) => {
 // ── HomePage
 // ── Cas Urgents Page ──────────────────────────────────────────
 const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
-  const urgents = MOCK_CASES.filter(c => c.urgent || c.daysLeft <= 7);
+  const urgents = getDisplayCases().filter(c => c.urgent || c.daysLeft <= 7);
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-br from-red-700 to-red-500 text-white py-16 px-4 text-center">
@@ -1405,7 +1411,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
   });
   const allCases = [
     ...dbCases.map(normalizCase),
-    ...MOCK_CASES.filter(c => c.status !== "FUNDED"),
+    ...getDisplayCases().filter(c => c.status !== "FUNDED"),
   ];
   const cases = allCases.filter(c => c.category[lang] === specialite);
   return (
@@ -1495,7 +1501,7 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
     daysLeft: calcDaysLeft(c),
     urgent: c.urgent ?? false,
   });
-  const mockActive = MOCK_CASES.filter(c => c.status !== "FUNDED");
+  const mockActive = getDisplayCases().filter(c => c.status !== "FUNDED");
   const active = dbCases.length > 0
     ? [...dbCases.map(normalizCase), ...mockActive]
     : mockActive;
@@ -1551,7 +1557,7 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
 
 const CollectesPage = ({ setPage, lang }) => {
   const [tab, setTab] = useState("testimonials");
-  const funded = MOCK_CASES.filter(c => c.status === "FUNDED");
+  const funded = getDisplayCases().filter(c => c.status === "FUNDED");
   const [dbTestimonials, setDbTestimonials] = useState([]);
   useEffect(() => {
     supabase.from("testimonials").select("*").eq("status","approved").order("created_at",{ascending:false}).then(({data})=>{
@@ -1736,7 +1742,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
   }, []);
 
   const catMap = lang==="fr" ? ["Tous","Cardiologie","Oncologie","Néphrologie","Orthopédie"] : ["All","Cardiology","Oncology","Nephrology","Orthopedics"];
-  const allCases = dbCases.length > 0 ? [...dbCases, ...MOCK_CASES.filter(c => c.status !== "FUNDED")] : MOCK_CASES;
+  const allCases = dbCases.length > 0 ? [...dbCases, ...getDisplayCases().filter(c => c.status !== "FUNDED")] : getDisplayCases();
   const filtered = (filter==="all"||filter===catMap[0] ? allCases : allCases.filter(c => c.category[lang].toLowerCase()===filter.toLowerCase()))
     .filter(c => !search.trim() || (c.title||"").toLowerCase().includes(search.toLowerCase()) || (c.hospital||"").toLowerCase().includes(search.toLowerCase()) || (c.city||"").toLowerCase().includes(search.toLowerCase()));
   return (
@@ -1787,13 +1793,13 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       </div>
 
       {/* Urgent Cases Banner — mock + auto-detection */}
-      <UrgentBanner cases={MOCK_CASES} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} />
+      <UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} />
 
       <div id="collectes" className="max-w-6xl mx-auto px-4 py-12">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h2 className="text-2xl font-black text-gray-900">{t.collections.title}</h2>
-            <p className="text-gray-500 text-sm mt-1">{MOCK_CASES.filter(c=>c.status==="COLLECTING").length} {t.collections.sub}</p>
+            <p className="text-gray-500 text-sm mt-1">{getDisplayCases().filter(c=>c.status==="COLLECTING").length} {t.collections.sub}</p>
           </div>
           <div className="flex gap-2 flex-wrap">{catMap.map((c,i) => <button key={c} onClick={() => setFilter(i===0?"all":c)} className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${(filter==="all"&&i===0)||filter===c?"bg-emerald-600 text-white shadow-md":"bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{c}</button>)}</div>
         </div>
@@ -2355,6 +2361,11 @@ const LoginPage = ({ setPage, setUser, lang }) => {
     if (!email || !pwd) return;
     setLoading(true);
     setError("");
+    // Minuteur de sécurité : reset automatique après 15s si Supabase ne répond pas
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+      setError(lang === "fr" ? "Délai expiré. Vérifiez votre connexion et réessayez." : "Request timed out. Check your connection and try again.");
+    }, 15000);
     try {
       const { data, error: err } = await supabase.auth.signInWithPassword({ email, password: pwd });
       if (err) {
@@ -2370,6 +2381,7 @@ const LoginPage = ({ setPage, setUser, lang }) => {
     } catch(e) {
       setError("Erreur de connexion. Veuillez réessayer.");
     } finally {
+      clearTimeout(safetyTimer);
       setLoading(false);
     }
   };
@@ -3703,6 +3715,16 @@ const AdminPage = ({ user, setPage, lang }) => {
   const t = T[lang].admin;
   const unresolved = alerts.filter(a=>!a.resolved).length;
 
+  // Toggle visibilité campagnes démo
+  const [demoVisible, setDemoVisible] = useState(localStorage.getItem("ayyadShowDemo") !== "false");
+  const toggleDemo = () => {
+    const next = !demoVisible;
+    localStorage.setItem("ayyadShowDemo", next ? "true" : "false");
+    setDemoVisible(next);
+    // Recharge la page pour appliquer le changement (DEMO_CASES_VISIBLE est évalué au chargement)
+    window.location.reload();
+  };
+
   // ── Load all cases from Supabase ──
   const loadCases = async () => {
     setLoadingCases(true);
@@ -3918,6 +3940,29 @@ const AdminPage = ({ user, setPage, lang }) => {
                 </div>
               ))}
             </div>
+            {/* ── Contrôle campagnes démo ── */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center justify-between gap-4">
+              <div>
+                <div className="font-bold text-gray-900 text-sm">
+                  🎭 {lang === "fr" ? "Campagnes de démonstration" : "Demo campaigns"}
+                </div>
+                <div className="text-xs text-gray-500 mt-0.5">
+                  {lang === "fr"
+                    ? (demoVisible ? "10 dossiers fictifs sont visibles sur la plateforme publique." : "Les dossiers fictifs sont masqués — seules les vraies campagnes s'affichent.")
+                    : (demoVisible ? "10 demo cases are visible on the public platform." : "Demo cases are hidden — only real campaigns are displayed.")}
+                </div>
+              </div>
+              <button
+                onClick={toggleDemo}
+                className={"flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold border transition-colors " + (demoVisible
+                  ? "bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+                  : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100")}>
+                {demoVisible
+                  ? (lang === "fr" ? "🙈 Masquer les démos" : "🙈 Hide demos")
+                  : (lang === "fr" ? "👁️ Afficher les démos" : "👁️ Show demos")}
+              </button>
+            </div>
+
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <h3 className="font-bold text-gray-900 mb-4">{t.recentTitle}</h3>
               {loadingCases ? (
