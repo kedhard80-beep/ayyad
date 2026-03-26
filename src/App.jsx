@@ -3409,6 +3409,87 @@ const auditLog = async (user, action, target, oldVal = null, newVal = null) => {
   } catch(e) { console.warn("auditLog error:", e); }
 };
 
+// ── Composant ligne employé avec édition inline ─────────────────────
+const StaffRow = ({ m, fr, paid, onPay, onDelete, onUpdate, fmt }) => {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ name: m.name, role: m.role||"", wave_number: m.wave_number||"", monthly_salary: m.monthly_salary });
+
+  const save = async () => {
+    const ok = await onUpdate(m.id, { ...form, monthly_salary: Number(form.monthly_salary) });
+    if (ok) setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="px-4 py-3 bg-blue-50 border-l-4 border-blue-400 space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] font-bold text-gray-500 uppercase">{fr?"Nom":"Name"}</label>
+            <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm mt-0.5" />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-500 uppercase">Rôle</label>
+            <input value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm mt-0.5" placeholder="IT, Finance..." />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-500 uppercase">Wave CI</label>
+            <input value={form.wave_number} onChange={e=>setForm(f=>({...f,wave_number:e.target.value}))}
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm mt-0.5" placeholder="+225 07..." />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-500 uppercase">{fr?"Salaire/mois":"Salary/month"}</label>
+            <input type="number" value={form.monthly_salary} onChange={e=>setForm(f=>({...f,monthly_salary:e.target.value}))}
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm mt-0.5" />
+          </div>
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button onClick={save} className="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-emerald-700">
+            ✓ {fr?"Enregistrer":"Save"}
+          </button>
+          <button onClick={()=>setEditing(false)} className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-200">
+            {fr?"Annuler":"Cancel"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-3 flex items-center justify-between gap-4 hover:bg-gray-50">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-700 font-black text-sm">{(m.name||"?")[0].toUpperCase()}</div>
+        <div>
+          <div className="font-semibold text-gray-900 text-sm">{m.name}</div>
+          <div className="text-xs text-gray-400">{m.role||"—"} · 🌊 {m.wave_number||"—"}</div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="text-right">
+          <div className="font-black text-sm text-gray-900">{fmt(m.monthly_salary)}</div>
+          <div className="text-[10px] text-gray-400">{fr?"/mois":"/month"}</div>
+        </div>
+        {paid ? (
+          <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded-lg">✅ {fr?"Payé":"Paid"}</span>
+        ) : (
+          <button onClick={onPay} className="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-blue-700">
+            🌊 {fr?"Payer":"Pay"}
+          </button>
+        )}
+        <button onClick={()=>setEditing(true)} title={fr?"Modifier":"Edit"}
+          className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg p-1.5 transition-colors text-sm">
+          ✏️
+        </button>
+        <button onClick={onDelete} title={fr?"Supprimer":"Delete"}
+          className="text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg p-1.5 transition-colors text-sm">
+          🗑️
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // ── Composant Gestion Témoignages Admin ──────────────────────────────
 const AdminTestimonialsTab = ({ lang, user }) => {
   const fr = lang === "fr";
@@ -4644,6 +4725,31 @@ const AdminPage = ({ user, setPage, lang }) => {
             }
           };
 
+          const deleteStaffMember = async (id, name) => {
+            if (!window.confirm(fr ? `Supprimer ${name} du personnel ?` : `Remove ${name} from staff?`)) return;
+            const { error } = await supabase.from("staff_members").delete().eq("id", id);
+            if (!error) {
+              setStaffMembers(prev => prev.filter(m => m.id !== id));
+              auditLog(user, "STAFF_DELETED", name, null, { id });
+            }
+          };
+
+          const updateStaffMember = async (id, updates) => {
+            const { error } = await supabase.from("staff_members").update(updates).eq("id", id);
+            if (!error) {
+              setStaffMembers(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+            }
+            return !error;
+          };
+
+          const deletePayment = async (id) => {
+            if (!window.confirm(fr ? "Supprimer cette transaction ?" : "Delete this transaction?")) return;
+            const { error } = await supabase.from("salary_payments").delete().eq("id", id);
+            if (!error) {
+              setSalaryPayments(prev => prev.filter(p => p.id !== id));
+            }
+          };
+
           const markSalaryPaid = async (staffId, staffName, amount) => {
             const { data, error } = await supabase.from("salary_payments").insert({
               staff_id: staffId,
@@ -4712,29 +4818,13 @@ const AdminPage = ({ user, setPage, lang }) => {
                   <div className="divide-y divide-gray-50">
                     {staffMembers.map(m => {
                       const paid = thisMonthPayments.find(p=>p.staff_id===m.id && p.status==="paid");
+                      const [editingStaff, setEditingStaff] = [null, ()=>{}]; // handled below via inline editing
                       return (
-                        <div key={m.id} className="px-4 py-3 flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-700 font-black text-sm">{(m.name||"?")[0].toUpperCase()}</div>
-                            <div>
-                              <div className="font-semibold text-gray-900 text-sm">{m.name}</div>
-                              <div className="text-xs text-gray-400">{m.role||"—"} · 🌊 {m.wave_number||"—"}</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="text-right">
-                              <div className="font-black text-sm text-gray-900">{fmt(m.monthly_salary)}</div>
-                              <div className="text-[10px] text-gray-400">{fr?"/mois":"/month"}</div>
-                            </div>
-                            {paid ? (
-                              <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded-lg">✅ {fr?"Payé":"Paid"}</span>
-                            ) : (
-                              <button onClick={()=>markSalaryPaid(m.id, m.name, m.monthly_salary)} className="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-blue-700">
-                                🌊 {fr?"Payer via Wave":"Pay via Wave"}
-                              </button>
-                            )}
-                          </div>
-                        </div>
+                        <StaffRow key={m.id} m={m} fr={fr} paid={paid}
+                          onPay={()=>markSalaryPaid(m.id, m.name, m.monthly_salary)}
+                          onDelete={()=>deleteStaffMember(m.id, m.name)}
+                          onUpdate={updateStaffMember}
+                          fmt={fmt} />
                       );
                     })}
                   </div>
@@ -4755,9 +4845,10 @@ const AdminPage = ({ user, setPage, lang }) => {
                         <th className="text-center px-4 py-3">{fr?"Mois":"Month"}</th>
                         <th className="text-center px-4 py-3">{fr?"Méthode":"Method"}</th>
                         <th className="text-center px-4 py-3">Statut</th>
+                        <th className="text-center px-4 py-3">Action</th>
                       </tr></thead>
                       <tbody className="divide-y divide-gray-50">
-                        {salaryPayments.slice(0,20).map(p => (
+                        {salaryPayments.slice(0,50).map(p => (
                           <tr key={p.id} className="hover:bg-gray-50">
                             <td className="px-4 py-3 font-semibold text-gray-900">{p.staff_name||"—"}</td>
                             <td className="px-4 py-3 text-right font-bold text-emerald-700">{fmt(p.amount)}</td>
@@ -4767,6 +4858,13 @@ const AdminPage = ({ user, setPage, lang }) => {
                               <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${p.status==="paid"?"bg-emerald-100 text-emerald-700":"bg-amber-100 text-amber-700"}`}>
                                 {p.status==="paid"?(fr?"Payé":"Paid"):(fr?"En attente":"Pending")}
                               </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <button onClick={()=>deletePayment(p.id)}
+                                className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg px-2 py-1 text-xs font-semibold transition-colors"
+                                title={fr?"Supprimer":"Delete"}>
+                                🗑️
+                              </button>
                             </td>
                           </tr>
                         ))}
