@@ -193,7 +193,7 @@ const T = {
     register: { title: "Créer un compte", roleQ: "Je souhaite...", roles: [{ id:"donor",icon:"💚",title:"Faire des dons",desc:"Aider des patients dans le besoin" },{ id:"beneficiary",icon:"🏥",title:"Recevoir des soins",desc:"Financer une intervention médicale" }], fields: [{ key:"name",label:"Nom complet",p:"Aminata Koné",type:"text" },{ key:"email",label:"Email",p:"vous@exemple.ci",type:"email" },{ key:"phone",label:"Numéro Wave CI",p:"+225 07 XX XX XX XX",type:"tel" },{ key:"password",label:"Mot de passe (min. 6 caractères)",p:"••••••••",type:"password" }], terms: "J'accepte les", termsLink: "conditions d'utilisation", and: "et la", privacyLink: "politique de confidentialité", btn: "Créer mon compte", continue: "Continuer →", back: "← Retour", hasAccount: "Déjà un compte ?", signin: "Se connecter", error: "Erreur lors de la création du compte." },
     admin: {
       title: "Administration Ayyad", sub: "Tableau de bord opérationnel", status: "Système opérationnel",
-      tabs: [{ id:"overview",label:"Vue d'ensemble",icon:"📊" },{ id:"cases",label:"Dossiers",icon:"📋" },{ id:"fraud",label:"Fraude",icon:"🔍" },{ id:"payouts",label:"Virements",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaires",icon:"👔" },{ id:"audit",label:"Audit",icon:"📝" },{ id:"bilan",label:"Bilan",icon:"📈" },{ id:"team",label:"Équipe",icon:"👥" }],
+      tabs: [{ id:"overview",label:"Vue d'ensemble",icon:"📊" },{ id:"cases",label:"Dossiers",icon:"📋" },{ id:"fraud",label:"Fraude",icon:"🔍" },{ id:"payouts",label:"Virements",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaires",icon:"👔" },{ id:"audit",label:"Audit",icon:"📝" },{ id:"bilan",label:"Bilan",icon:"📈" },{ id:"testimonials",label:"Témoignages",icon:"💬" },{ id:"team",label:"Équipe",icon:"👥" }],
       stats: [{ label:"Dossiers actifs",v:"—",icon:"📋" },{ label:"Dons ce mois",v:"—",icon:"💚" },{ label:"Bénéficiaires aidés",v:"—",icon:"🏥" }],
       recentTitle: "Dossiers récents", revenueTitle: "Revenus opérationnels (5%)",
       months: [{ month:"Mars 2025",dons:"24.8M",fees:"1 240 000 FCFA" },{ month:"Fév. 2025",dons:"19.2M",fees:"960 000 FCFA" },{ month:"Jan. 2025",dons:"15.1M",fees:"755 000 FCFA" }],
@@ -227,7 +227,7 @@ const T = {
     register: { title: "Create an account", roleQ: "I want to...", roles: [{ id:"donor",icon:"💚",title:"Make donations",desc:"Help patients in need" },{ id:"beneficiary",icon:"🏥",title:"Receive care",desc:"Fund a medical procedure" }], fields: [{ key:"name",label:"Full name",p:"Aminata Koné",type:"text" },{ key:"email",label:"Email",p:"you@example.ci",type:"email" },{ key:"phone",label:"Wave CI number",p:"+225 07 XX XX XX XX",type:"tel" },{ key:"password",label:"Password (min. 6 characters)",p:"••••••••",type:"password" }], terms: "I accept the", termsLink: "terms of service", and: "and the", privacyLink: "privacy policy", btn: "Create my account", continue: "Continue →", back: "← Back", hasAccount: "Already have an account?", signin: "Sign in", error: "Error creating account." },
     admin: {
       title: "Ayyad Administration", sub: "Operational dashboard", status: "System operational",
-      tabs: [{ id:"overview",label:"Overview",icon:"📊" },{ id:"cases",label:"Cases",icon:"📋" },{ id:"fraud",label:"Fraud",icon:"🔍" },{ id:"payouts",label:"Payouts",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaries",icon:"👔" },{ id:"audit",label:"Audit log",icon:"📝" },{ id:"bilan",label:"Reporting",icon:"📈" },{ id:"team",label:"Team",icon:"👥" }],
+      tabs: [{ id:"overview",label:"Overview",icon:"📊" },{ id:"cases",label:"Cases",icon:"📋" },{ id:"fraud",label:"Fraud",icon:"🔍" },{ id:"payouts",label:"Payouts",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaries",icon:"👔" },{ id:"audit",label:"Audit log",icon:"📝" },{ id:"bilan",label:"Reporting",icon:"📈" },{ id:"testimonials",label:"Testimonials",icon:"💬" },{ id:"team",label:"Team",icon:"👥" }],
       stats: [{ label:"Active cases",v:"—",icon:"📋" },{ label:"Donations this month",v:"—",icon:"💚" },{ label:"Patients helped",v:"—",icon:"🏥" }],
       recentTitle: "Recent cases", revenueTitle: "Operational revenue (5%)",
       months: [{ month:"March 2025",dons:"24.8M",fees:"1,240,000 FCFA" },{ month:"Feb. 2025",dons:"19.2M",fees:"960,000 FCFA" },{ month:"Jan. 2025",dons:"15.1M",fees:"755,000 FCFA" }],
@@ -1552,6 +1552,12 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
 const CollectesPage = ({ setPage, lang }) => {
   const [tab, setTab] = useState("testimonials");
   const funded = MOCK_CASES.filter(c => c.status === "FUNDED");
+  const [dbTestimonials, setDbTestimonials] = useState([]);
+  useEffect(() => {
+    supabase.from("testimonials").select("*").eq("status","approved").order("created_at",{ascending:false}).then(({data})=>{
+      if (data && data.length > 0) setDbTestimonials(data);
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1588,30 +1594,41 @@ const CollectesPage = ({ setPage, lang }) => {
         {/* Témoignages */}
         {tab==="testimonials" && (
           <div className="space-y-6">
-            {TEMOIGNAGES.map(t => (
+            {(dbTestimonials.length > 0 ? dbTestimonials : TEMOIGNAGES.map(t=>({
+              id: t.id, beneficiary: t.name, age: t.age, city: t.city, hospital: t.hospital,
+              category_fr: t.category.fr, category_en: t.category.en, amount: t.amount,
+              message_fr: t.message.fr, message_en: t.message.en, stars: t.stars,
+              created_at: t.date
+            }))).map(t => (
               <div key={t.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="p-6">
                   <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">{t.image}</div>
+                    <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">
+                      {t.photo_url ? <img src={t.photo_url} alt="" className="w-full h-full object-cover rounded-2xl" /> : "💚"}
+                    </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div>
-                          <div className="font-black text-gray-900">{t.name}</div>
-                          <div className="text-xs text-gray-400">{t.age} {lang==="fr"?"ans":"years old"} · {t.city} · {t.hospital}</div>
+                          <div className="font-black text-gray-900">{t.beneficiary}</div>
+                          <div className="text-xs text-gray-400">{t.age && `${t.age} ${lang==="fr"?"ans":"years old"}`}{t.city && ` · ${t.city}`}{t.hospital && ` · ${t.hospital}`}</div>
                         </div>
                         <div className="text-right">
-                          <div className="text-emerald-600 font-bold text-sm">{t.amount.toLocaleString()} FCFA</div>
-                          <div className="text-xs text-gray-400">{t.date}</div>
+                          {t.amount && <div className="text-emerald-600 font-bold text-sm">{Number(t.amount).toLocaleString()} FCFA</div>}
+                          <div className="text-xs text-gray-400">{t.created_at ? new Date(t.created_at).toLocaleDateString("fr-FR",{month:"long",year:"numeric"}) : ""}</div>
                         </div>
                       </div>
-                      <div className="flex mt-1">{"⭐".repeat(t.stars)}</div>
+                      <div className="flex mt-1">{"⭐".repeat(t.stars||5)}</div>
                     </div>
                   </div>
                   <div className="mt-4 bg-emerald-50 rounded-xl p-4 border-l-4 border-emerald-400">
-                    <p className="text-gray-700 text-sm leading-relaxed italic">"{t.message[lang]}"</p>
+                    <p className="text-gray-700 text-sm leading-relaxed italic">"{lang==="fr" ? t.message_fr : (t.message_en || t.message_fr)}"</p>
                   </div>
                   <div className="flex items-center gap-2 mt-3">
-                    <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">{t.category[lang]}</span>
+                    {(t.category_fr || t.category_en) && (
+                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
+                        {lang==="fr" ? t.category_fr : (t.category_en || t.category_fr)}
+                      </span>
+                    )}
                     <span className="text-xs text-gray-400">✅ {lang==="fr"?"Collecte terminée · Virement confirmé":"Campaign completed · Transfer confirmed"}</span>
                   </div>
                 </div>
@@ -3392,6 +3409,189 @@ const auditLog = async (user, action, target, oldVal = null, newVal = null) => {
   } catch(e) { console.warn("auditLog error:", e); }
 };
 
+// ── Composant Gestion Témoignages Admin ──────────────────────────────
+const AdminTestimonialsTab = ({ lang, user }) => {
+  const fr = lang === "fr";
+  const [testimonials, setTestimonials] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("pending"); // pending | approved | rejected | all
+  const [editing, setEditing] = useState(null); // témoignage en cours d'édition
+  const [editForm, setEditForm] = useState({});
+  const [msg, setMsg] = useState("");
+
+  const fetchTestimonials = React.useCallback(async () => {
+    setLoading(true);
+    const query = supabase.from("testimonials").select("*").order("created_at", { ascending: false });
+    const { data, error } = filter === "all" ? await query : await query.eq("status", filter);
+    if (!error) setTestimonials(data || []);
+    setLoading(false);
+  }, [filter]);
+
+  useEffect(() => { fetchTestimonials(); }, [fetchTestimonials]);
+
+  const approve = async (id) => {
+    await supabase.from("testimonials").update({ status: "approved", reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq("id", id);
+    setMsg(fr ? "✓ Témoignage approuvé" : "✓ Testimonial approved");
+    fetchTestimonials();
+    setTimeout(() => setMsg(""), 3000);
+  };
+
+  const reject = async (id) => {
+    await supabase.from("testimonials").update({ status: "rejected", reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq("id", id);
+    setMsg(fr ? "Témoignage rejeté" : "Testimonial rejected");
+    fetchTestimonials();
+    setTimeout(() => setMsg(""), 3000);
+  };
+
+  const deleteTestimonial = async (id) => {
+    if (!window.confirm(fr ? "Supprimer ce témoignage ?" : "Delete this testimonial?")) return;
+    await supabase.from("testimonials").delete().eq("id", id);
+    setMsg(fr ? "Témoignage supprimé" : "Testimonial deleted");
+    fetchTestimonials();
+    setTimeout(() => setMsg(""), 3000);
+  };
+
+  const saveEdit = async () => {
+    await supabase.from("testimonials").update({
+      beneficiary: editForm.beneficiary,
+      message_fr: editForm.message_fr,
+      message_en: editForm.message_en,
+      stars: Number(editForm.stars),
+      admin_note: editForm.admin_note,
+    }).eq("id", editing);
+    setEditing(null);
+    setMsg(fr ? "✓ Témoignage modifié" : "✓ Testimonial updated");
+    fetchTestimonials();
+    setTimeout(() => setMsg(""), 3000);
+  };
+
+  const statusColors = { pending: "bg-yellow-100 text-yellow-700", approved: "bg-green-100 text-green-700", rejected: "bg-red-100 text-red-700" };
+  const statusLabels = { pending: fr ? "En attente" : "Pending", approved: fr ? "Approuvé" : "Approved", rejected: fr ? "Rejeté" : "Rejected" };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h2 className="text-xl font-bold text-gray-800">💬 {fr ? "Gestion des témoignages" : "Testimonial management"}</h2>
+        {msg && <span className="text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">{msg}</span>}
+      </div>
+
+      {/* Filtres */}
+      <div className="flex gap-2 flex-wrap">
+        {["pending","approved","rejected","all"].map(s => (
+          <button key={s} onClick={() => setFilter(s)}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${filter===s ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+            {s==="all" ? (fr?"Tous":"All") : statusLabels[s]}
+          </button>
+        ))}
+      </div>
+
+      {loading && <div className="text-center py-10 text-gray-400">{fr ? "Chargement..." : "Loading..."}</div>}
+
+      {!loading && testimonials.length === 0 && (
+        <div className="text-center py-16 text-gray-400">
+          <div className="text-4xl mb-3">💬</div>
+          <p>{fr ? "Aucun témoignage dans cette catégorie." : "No testimonials in this category."}</p>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {testimonials.map(t => (
+          <div key={t.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            {editing === t.id ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 mb-1 block">{fr?"Nom":"Name"}</label>
+                    <input value={editForm.beneficiary||""} onChange={e=>setEditForm(f=>({...f,beneficiary:e.target.value}))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 mb-1 block">⭐ {fr?"Note":"Stars"}</label>
+                    <select value={editForm.stars||5} onChange={e=>setEditForm(f=>({...f,stars:e.target.value}))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                      {[5,4,3,2,1].map(n=><option key={n} value={n}>{n} ⭐</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Message (FR)</label>
+                  <textarea value={editForm.message_fr||""} onChange={e=>setEditForm(f=>({...f,message_fr:e.target.value}))}
+                    rows={4} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Message (EN)</label>
+                  <textarea value={editForm.message_en||""} onChange={e=>setEditForm(f=>({...f,message_en:e.target.value}))}
+                    rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">{fr?"Note interne (non visible)":"Internal note (not public)"}</label>
+                  <input value={editForm.admin_note||""} onChange={e=>setEditForm(f=>({...f,admin_note:e.target.value}))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button onClick={saveEdit} className="bg-emerald-600 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-emerald-700">
+                    {fr?"Enregistrer":"Save"}
+                  </button>
+                  <button onClick={()=>setEditing(null)} className="bg-gray-100 text-gray-700 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-gray-200">
+                    {fr?"Annuler":"Cancel"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-gray-800">{t.beneficiary}</span>
+                      {t.age && <span className="text-xs text-gray-400">{t.age} ans</span>}
+                      {t.city && <span className="text-xs text-gray-400">· {t.city}</span>}
+                      {t.hospital && <span className="text-xs text-gray-400">· {t.hospital}</span>}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusColors[t.status]}`}>{statusLabels[t.status]}</span>
+                      {t.category_fr && <span className="text-xs text-gray-400">{t.category_fr}</span>}
+                      {t.amount && <span className="text-xs font-semibold text-emerald-700">{t.amount.toLocaleString()} FCFA</span>}
+                      <span className="text-xs text-gray-300">{new Date(t.created_at).toLocaleDateString("fr-FR")}</span>
+                    </div>
+                  </div>
+                  <span className="text-lg">{"⭐".repeat(t.stars||5)}</span>
+                </div>
+                <blockquote className="text-sm text-gray-700 italic border-l-3 border-emerald-300 pl-3 mb-3">
+                  "{t.message_fr}"
+                </blockquote>
+                {t.admin_note && (
+                  <div className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mb-3">
+                    📝 {t.admin_note}
+                  </div>
+                )}
+                <div className="flex gap-2 flex-wrap">
+                  {t.status !== "approved" && (
+                    <button onClick={()=>approve(t.id)} className="text-xs bg-green-600 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-green-700">
+                      ✓ {fr?"Approuver":"Approve"}
+                    </button>
+                  )}
+                  {t.status !== "rejected" && (
+                    <button onClick={()=>reject(t.id)} className="text-xs bg-orange-500 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-orange-600">
+                      ✗ {fr?"Rejeter":"Reject"}
+                    </button>
+                  )}
+                  <button onClick={()=>{ setEditing(t.id); setEditForm({beneficiary:t.beneficiary,message_fr:t.message_fr,message_en:t.message_en,stars:t.stars,admin_note:t.admin_note||""}); }}
+                    className="text-xs bg-gray-100 text-gray-700 font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-200">
+                    ✏️ {fr?"Modifier":"Edit"}
+                  </button>
+                  <button onClick={()=>deleteTestimonial(t.id)} className="text-xs bg-red-50 text-red-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-red-100">
+                    🗑️ {fr?"Supprimer":"Delete"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const AdminPage = ({ user, setPage, lang }) => {
   const [tab, setTab] = useState("overview");
   const [cases, setCases] = useState([]);
@@ -4227,6 +4427,9 @@ const AdminPage = ({ user, setPage, lang }) => {
             })()}
           </div>
         )}
+        {/* ── ONGLET TÉMOIGNAGES ── */}
+        {tab === "testimonials" && <AdminTestimonialsTab lang={lang} user={user} />}
+
         {/* ── ONGLET ÉQUIPE ── */}
         {tab === "team" && (
           <div className="space-y-6">
