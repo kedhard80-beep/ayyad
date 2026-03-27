@@ -2362,14 +2362,6 @@ const LoginPage = ({ setPage, setUser, lang }) => {
     setLoading(true);
     setError("");
 
-    // Nettoyer toute session Supabase existante dans localStorage pour éviter
-    // les conflits qui bloquent signInWithPassword (symptôme : bouton bloqué sur "...")
-    try {
-      Object.keys(localStorage).forEach(k => {
-        if (k.startsWith("sb-")) localStorage.removeItem(k);
-      });
-    } catch(_) {}
-
     // Minuteur de sécurité : reset automatique après 15s si Supabase ne répond pas
     const safetyTimer = setTimeout(() => {
       setLoading(false);
