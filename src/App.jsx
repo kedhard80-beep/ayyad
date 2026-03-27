@@ -193,7 +193,7 @@ const T = {
     register: { title: "Créer un compte", roleQ: "Je souhaite...", roles: [{ id:"donor",icon:"💚",title:"Faire des dons",desc:"Aider des patients dans le besoin" },{ id:"beneficiary",icon:"🏥",title:"Recevoir des soins",desc:"Financer une intervention médicale" }], fields: [{ key:"name",label:"Nom complet",p:"Aminata Koné",type:"text" },{ key:"email",label:"Email",p:"vous@exemple.ci",type:"email" },{ key:"phone",label:"Numéro Wave CI",p:"+225 07 XX XX XX XX",type:"tel" },{ key:"password",label:"Mot de passe (min. 6 caractères)",p:"••••••••",type:"password" }], terms: "J'accepte les", termsLink: "conditions d'utilisation", and: "et la", privacyLink: "politique de confidentialité", btn: "Créer mon compte", continue: "Continuer →", back: "← Retour", hasAccount: "Déjà un compte ?", signin: "Se connecter", error: "Erreur lors de la création du compte." },
     admin: {
       title: "Administration Ayyad", sub: "Tableau de bord opérationnel", status: "Système opérationnel",
-      tabs: [{ id:"overview",label:"Vue d'ensemble",icon:"📊" },{ id:"cases",label:"Dossiers",icon:"📋" },{ id:"fraud",label:"Fraude",icon:"🔍" },{ id:"payouts",label:"Virements",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaires",icon:"👔" },{ id:"audit",label:"Audit",icon:"📝" },{ id:"bilan",label:"Bilan",icon:"📈" },{ id:"testimonials",label:"Témoignages",icon:"💬" },{ id:"team",label:"Équipe",icon:"👥" }],
+      tabs: [{ id:"overview",label:"Vue d'ensemble",icon:"📊" },{ id:"cases",label:"Dossiers",icon:"📋" },{ id:"fraud",label:"Fraude",icon:"🔍" },{ id:"payouts",label:"Virements",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaires",icon:"👔" },{ id:"audit",label:"Audit",icon:"📝" },{ id:"bilan",label:"Bilan",icon:"📈" },{ id:"testimonials",label:"Témoignages",icon:"💬" },{ id:"visitors",label:"Visiteurs",icon:"👁️" },{ id:"team",label:"Équipe",icon:"👥" }],
       stats: [{ label:"Dossiers actifs",v:"—",icon:"📋" },{ label:"Dons ce mois",v:"—",icon:"💚" },{ label:"Bénéficiaires aidés",v:"—",icon:"🏥" }],
       recentTitle: "Dossiers récents", revenueTitle: "Revenus opérationnels (5%)",
       months: [{ month:"Mars 2025",dons:"24.8M",fees:"1 240 000 FCFA" },{ month:"Fév. 2025",dons:"19.2M",fees:"960 000 FCFA" },{ month:"Jan. 2025",dons:"15.1M",fees:"755 000 FCFA" }],
@@ -227,7 +227,7 @@ const T = {
     register: { title: "Create an account", roleQ: "I want to...", roles: [{ id:"donor",icon:"💚",title:"Make donations",desc:"Help patients in need" },{ id:"beneficiary",icon:"🏥",title:"Receive care",desc:"Fund a medical procedure" }], fields: [{ key:"name",label:"Full name",p:"Aminata Koné",type:"text" },{ key:"email",label:"Email",p:"you@example.ci",type:"email" },{ key:"phone",label:"Wave CI number",p:"+225 07 XX XX XX XX",type:"tel" },{ key:"password",label:"Password (min. 6 characters)",p:"••••••••",type:"password" }], terms: "I accept the", termsLink: "terms of service", and: "and the", privacyLink: "privacy policy", btn: "Create my account", continue: "Continue →", back: "← Back", hasAccount: "Already have an account?", signin: "Sign in", error: "Error creating account." },
     admin: {
       title: "Ayyad Administration", sub: "Operational dashboard", status: "System operational",
-      tabs: [{ id:"overview",label:"Overview",icon:"📊" },{ id:"cases",label:"Cases",icon:"📋" },{ id:"fraud",label:"Fraud",icon:"🔍" },{ id:"payouts",label:"Payouts",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaries",icon:"👔" },{ id:"audit",label:"Audit log",icon:"📝" },{ id:"bilan",label:"Reporting",icon:"📈" },{ id:"testimonials",label:"Testimonials",icon:"💬" },{ id:"team",label:"Team",icon:"👥" }],
+      tabs: [{ id:"overview",label:"Overview",icon:"📊" },{ id:"cases",label:"Cases",icon:"📋" },{ id:"fraud",label:"Fraud",icon:"🔍" },{ id:"payouts",label:"Payouts",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaries",icon:"👔" },{ id:"audit",label:"Audit log",icon:"📝" },{ id:"bilan",label:"Reporting",icon:"📈" },{ id:"testimonials",label:"Testimonials",icon:"💬" },{ id:"visitors",label:"Visitors",icon:"👁️" },{ id:"team",label:"Team",icon:"👥" }],
       stats: [{ label:"Active cases",v:"—",icon:"📋" },{ label:"Donations this month",v:"—",icon:"💚" },{ label:"Patients helped",v:"—",icon:"🏥" }],
       recentTitle: "Recent cases", revenueTitle: "Operational revenue (5%)",
       months: [{ month:"March 2025",dons:"24.8M",fees:"1,240,000 FCFA" },{ month:"Feb. 2025",dons:"19.2M",fees:"960,000 FCFA" },{ month:"Jan. 2025",dons:"15.1M",fees:"755,000 FCFA" }],
@@ -2350,7 +2350,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
 };
 
 // ── Login Page ────────────────────────────────────────────────
-const LoginPage = ({ setPage, setUser, lang }) => {
+const LoginPage = ({ setPage, setUser, lang, trackVisit }) => {
   const [email, setEmail] = useState("");
   const [pwd, setPwd] = useState("");
   const [loading, setLoading] = useState(false);
@@ -2383,7 +2383,9 @@ const LoginPage = ({ setPage, setUser, lang }) => {
       if (timedOut) return;
       const isAdmin = !!(adminData && adminData.is_active);
       const adminRole = adminData?.role || null;
-      setUser({ id: data.user.id, name: meta.full_name || email, email, isAdmin, adminRole });
+      const userName = meta.full_name || email;
+      setUser({ id: data.user.id, name: userName, email, isAdmin, adminRole });
+      if (trackVisit) trackVisit(data.user.id, email, userName);
       setPage(isAdmin ? "admin" : "home");
     } catch(e) {
       if (!timedOut) setError("Erreur de connexion. Veuillez réessayer.");
@@ -3509,6 +3511,104 @@ const StaffRow = ({ m, fr, paid, onPay, onDelete, onUpdate, fmt }) => {
   );
 };
 
+// ── Composant Visiteurs connectés Admin ──────────────────────────────
+const AdminVisitorsTab = ({ lang }) => {
+  const fr = lang === "fr";
+  const [visitors, setVisitors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("user_activity")
+      .select("*")
+      .order("last_seen", { ascending: false })
+      .limit(200);
+    setVisitors(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const fmt = (iso) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = Math.floor((now - d) / 1000);
+    if (diff < 60) return fr ? "À l'instant" : "Just now";
+    if (diff < 3600) return Math.floor(diff / 60) + (fr ? " min" : " min ago");
+    if (diff < 86400) return Math.floor(diff / 3600) + (fr ? " h" : " h ago");
+    return Math.floor(diff / 86400) + (fr ? " j" : " d ago");
+  };
+
+  const filtered = visitors.filter(v =>
+    !search || v.email?.toLowerCase().includes(search.toLowerCase()) || v.name?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">👁️ {fr ? "Visiteurs connectés" : "Logged-in visitors"}</h2>
+          <p className="text-sm text-gray-500 mt-0.5">{fr ? "Utilisateurs qui se sont connectés à la plateforme" : "Users who logged into the platform"}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="bg-emerald-100 text-emerald-700 text-sm font-bold px-3 py-1 rounded-full">{visitors.length} {fr ? "utilisateurs" : "users"}</span>
+          <button onClick={load} className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-gray-600">🔄 {fr ? "Actualiser" : "Refresh"}</button>
+        </div>
+      </div>
+
+      <input
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder={fr ? "Rechercher par nom ou email..." : "Search by name or email..."}
+        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+      />
+
+      {loading ? (
+        <div className="text-center text-gray-400 py-12">⏳ {fr ? "Chargement..." : "Loading..."}</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center text-gray-400 py-12">
+          {search ? (fr ? "Aucun résultat" : "No results") : (fr ? "Aucune visite enregistrée pour l'instant" : "No visits recorded yet")}
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{fr ? "Utilisateur" : "User"}</th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3">Email</th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{fr ? "Dernière visite" : "Last seen"}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((v, i) => (
+                <tr key={v.user_id} className={"border-b border-gray-50 hover:bg-gray-50 transition-colors" + (i === filtered.length - 1 ? " border-0" : "")}>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-sm flex-shrink-0">
+                        {(v.name || v.email || "?")[0].toUpperCase()}
+                      </div>
+                      <span className="font-medium text-gray-800 truncate max-w-[140px]">{v.name || "—"}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 truncate max-w-[180px]">{v.email}</td>
+                  <td className="px-4 py-3">
+                    <span className="text-xs font-semibold bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full whitespace-nowrap">
+                      🟢 {fmt(v.last_seen)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Composant Gestion Témoignages Admin ──────────────────────────────
 const AdminTestimonialsTab = ({ lang, user }) => {
   const fr = lang === "fr";
@@ -4562,6 +4662,9 @@ const AdminPage = ({ user, setPage, lang }) => {
         )}
         {/* ── ONGLET TÉMOIGNAGES ── */}
         {tab === "testimonials" && <AdminTestimonialsTab lang={lang} user={user} />}
+
+        {/* ── ONGLET VISITEURS ── */}
+        {tab === "visitors" && <AdminVisitorsTab lang={lang} />}
 
         {/* ── ONGLET ÉQUIPE ── */}
         {tab === "team" && (
@@ -6317,6 +6420,18 @@ export default function AyyadApp() {
   }, []);
   const [allCases, setAllCases] = useState([]);
 
+  // Enregistre la visite d'un utilisateur connecté dans user_activity
+  const trackVisit = async (userId, email, name) => {
+    try {
+      await supabase.from("user_activity").upsert({
+        user_id: userId,
+        email,
+        name: name || email,
+        last_seen: new Date().toISOString(),
+      }, { onConflict: "user_id", ignoreDuplicates: false });
+    } catch(e) { /* silencieux */ }
+  };
+
   // Restore session on load
   useEffect(() => {
     inject();
@@ -6326,7 +6441,9 @@ export default function AyyadApp() {
         const { data: adminData2 } = await supabase.from("admin_users").select("role, is_active").eq("email", session.user.email).single();
         const isAdmin = !!(adminData2 && adminData2.is_active);
         const adminRole = adminData2?.role || null;
-        setUser({ id: session.user.id, name: meta.full_name || session.user.email, email: session.user.email, isAdmin, adminRole });
+        const userName2 = meta.full_name || session.user.email;
+        setUser({ id: session.user.id, name: userName2, email: session.user.email, isAdmin, adminRole });
+        trackVisit(session.user.id, session.user.email, userName2);
         // Restaurer la page depuis l'URL après vérification de session
         const urlPage = new URLSearchParams(window.location.search).get("p");
         if (urlPage && urlPage !== "login" && urlPage !== "register") {
@@ -6388,7 +6505,7 @@ export default function AyyadApp() {
         {page==="refund"&&<RefundPage lang={lang} setPage={setPage} />}
         {page==="legal"&&<LegalPage lang={lang} setPage={setPage} />}
         {page==="urgents"&&<UrgentsPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
-        {page==="login"&&<LoginPage setPage={setPage} setUser={setUser} lang={lang} />}
+        {page==="login"&&<LoginPage setPage={setPage} setUser={setUser} lang={lang} trackVisit={trackVisit} />}
         {page==="register"&&<RegisterPage setPage={setPage} setUser={setUser} lang={lang} />}
         {page==="submit"&&<SubmitPage setPage={setPage} user={user} lang={lang} />}
         {page==="admin"&&<AdminPage user={user} setPage={setPage} lang={lang} />}
