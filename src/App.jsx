@@ -6166,7 +6166,12 @@ const ChangePasswordPage = ({ setPage, lang }) => {
 };
 
 export default function AyyadApp() {
-  const [page, setPage] = useState("home");
+  // Initialiser la page depuis l'URL pour survivre aux rafraîchissements
+  const [page, setPage] = useState(() => {
+    const p = new URLSearchParams(window.location.search).get("p");
+    const valid = ["home","admin","login","collectes","profile","register","case","track","change-password","urgents","specialite"];
+    return (p && valid.includes(p)) ? p : "home";
+  });
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -6200,6 +6205,17 @@ export default function AyyadApp() {
         const isAdmin = !!(adminData2 && adminData2.is_active);
         const adminRole = adminData2?.role || null;
         setUser({ id: session.user.id, name: meta.full_name || session.user.email, email: session.user.email, isAdmin, adminRole });
+        // Restaurer la page depuis l'URL après vérification de session
+        const urlPage = new URLSearchParams(window.location.search).get("p");
+        if (urlPage && urlPage !== "login" && urlPage !== "register") {
+          // Pour les pages protégées, vérifier que l'utilisateur a les droits
+          if (urlPage === "admin" && !isAdmin) setPage("home");
+          else setPage(urlPage);
+        }
+      } else {
+        // Pas de session : rediriger vers login si page protégée
+        const urlPage = new URLSearchParams(window.location.search).get("p");
+        if (urlPage === "admin" || urlPage === "profile") setPage("login");
       }
     });
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
