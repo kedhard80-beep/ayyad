@@ -6202,10 +6202,9 @@ export default function AyyadApp() {
         setUser({ id: session.user.id, name: meta.full_name || session.user.email, email: session.user.email, isAdmin, adminRole });
       }
     });
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         const meta = session.user.user_metadata || {};
-        // Vérification admin depuis la base (pas de email hardcodé)
         const { data: adminCheck } = await supabase
           .from("admin_users")
           .select("role, is_active")
@@ -6214,7 +6213,9 @@ export default function AyyadApp() {
         const isAdmin = !!(adminCheck && adminCheck.is_active);
         const adminRole = adminCheck?.role || null;
         setUser({ id: session.user.id, name: meta.full_name || session.user.email, email: session.user.email, isAdmin, adminRole });
-      } else {
+      } else if (event === "SIGNED_OUT") {
+        // Ne déconnecter QUE sur un vrai logout explicite,
+        // pas sur un échec de renouvellement de token (TOKEN_REFRESH_FAILED)
         setUser(null);
       }
     });
