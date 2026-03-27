@@ -2361,29 +2361,35 @@ const LoginPage = ({ setPage, setUser, lang }) => {
     if (!email || !pwd) return;
     setLoading(true);
     setError("");
+    let timedOut = false;
 
-    // Minuteur de sécurité : reset automatique après 15s si Supabase ne répond pas
+    // Minuteur de sécurité : reset automatique après 10s si Supabase ne répond pas
     const safetyTimer = setTimeout(() => {
+      timedOut = true;
       setLoading(false);
-      setError(lang === "fr" ? "Délai expiré. Vérifiez votre connexion et réessayez." : "Request timed out. Check your connection and try again.");
-    }, 15000);
+      setError(lang === "fr"
+        ? "Connexion impossible. Vérifiez votre réseau ou désactivez les extensions de navigation."
+        : "Connection failed. Check your network or disable browser extensions.");
+    }, 10000);
     try {
       const { data, error: err } = await supabase.auth.signInWithPassword({ email, password: pwd });
+      if (timedOut) return; // la réponse est arrivée trop tard, ignorer
       if (err) {
         setError(t.error);
         return;
       }
       const meta = data.user?.user_metadata || {};
       const { data: adminData } = await supabase.from("admin_users").select("role, is_active").eq("email", email).single();
+      if (timedOut) return;
       const isAdmin = !!(adminData && adminData.is_active);
       const adminRole = adminData?.role || null;
       setUser({ id: data.user.id, name: meta.full_name || email, email, isAdmin, adminRole });
       setPage(isAdmin ? "admin" : "home");
     } catch(e) {
-      setError("Erreur de connexion. Veuillez réessayer.");
+      if (!timedOut) setError("Erreur de connexion. Veuillez réessayer.");
     } finally {
       clearTimeout(safetyTimer);
-      setLoading(false);
+      if (!timedOut) setLoading(false);
     }
   };
 
@@ -6210,21 +6216,17 @@ export default function AyyadApp() {
         if (urlPage === "admin" || urlPage === "profile") setPage("login");
       }
     });
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const meta = session.user.user_metadata || {};
-        const { data: adminCheck } = await supabase
-          .from("admin_users")
-          .select("role, is_active")
-          .eq("email", session.user.email)
-          .single();
-        const isAdmin = !!(adminCheck && adminCheck.is_active);
-        const adminRole = adminCheck?.role || null;
-        setUser({ id: session.user.id, name: meta.full_name || session.user.email, email: session.user.email, isAdmin, adminRole });
-      } else if (event === "SIGNED_OUT") {
-        // Ne déconnecter QUE sur un vrai logout explicite,
-        // pas sur un échec de renouvellement de token (TOKEN_REFRESH_FAILED)
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      // IMPORTANT: Ne jamais faire d'appels async (supabase.from, etc.) ici.
+      // Les requêtes DB dans onAuthStateChange bloquent le verrou interne de Supabase
+      // et empêchent signInWithPassword de terminer → bouton bloqué sur "..."
+      // Le check admin est géré dans handleLogin() et getSession() ci-dessus.
+      if (event === "SIGNED_OUT") {
+        // Déconnexion explicite uniquement (pas TOKEN_REFRESH_FAILED)
         setUser(null);
+        setPage("home");
+      } else if (event === "PASSWORD_RECOVERY") {
+        setPage("change-password");
       }
     });
 
