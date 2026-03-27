@@ -5866,6 +5866,13 @@ const ProfilePage = ({ user, lang, setPage }) => {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
 
+  // Upload nouvelle photo
+  const [editPhotoFile, setEditPhotoFile] = useState(null);
+  const [editPhotoPreview, setEditPhotoPreview] = useState(null);
+  const [editPhotoUploading, setEditPhotoUploading] = useState(false);
+  // Upload nouveaux documents
+  const [editNewDocs, setEditNewDocs] = useState([]); // [{label, file, status, url}]
+
   // Testimonial submission
   const [testimonyMsg, setTestimonyMsg] = useState("");
   const [testimonyStars, setTestimonyStars] = useState(5);
@@ -5908,21 +5915,66 @@ const ProfilePage = ({ user, lang, setPage }) => {
       beneficiary_phone: c.beneficiary_phone || "",
     });
     setSaveMsg("");
+    setEditPhotoFile(null);
+    setEditPhotoPreview(null);
+    setEditNewDocs([]);
   };
 
   const saveEdit = async () => {
     setSaving(true);
-    const { error } = await supabase.from("cases").update({
+    const currentCase = userCases.find(c => c.id === editingCase);
+    const basePath = `dossiers/${user.id}_edit/${editingCase}`;
+    const updates = {
       title: editForm.title,
       description: editForm.description,
       video_url: editForm.video_url || null,
       beneficiary_phone: editForm.beneficiary_phone || null,
-    }).eq("id", editingCase);
+    };
+
+    // Upload nouvelle photo si sélectionnée
+    if (editPhotoFile) {
+      setEditPhotoUploading(true);
+      const ext = editPhotoFile.name.split('.').pop().toLowerCase();
+      const fileName = `${basePath}/photo_${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("medical-documents").upload(fileName, editPhotoFile);
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
+        updates.photo_url = urlData.publicUrl;
+      }
+      setEditPhotoUploading(false);
+    }
+
+    // Upload nouveaux documents si présents
+    const existingDocs = currentCase?.document_urls || {};
+    let newDocUrls = { ...existingDocs };
+    const pendingDocs = editNewDocs.filter(d => d.file && d.status !== "done");
+    for (let i = 0; i < pendingDocs.length; i++) {
+      const d = pendingDocs[i];
+      setEditNewDocs(prev => prev.map(x => x === d ? { ...x, status: "uploading" } : x));
+      const ext = d.file.name.split('.').pop().toLowerCase();
+      const key = `additional_${Date.now()}_${i}`;
+      const fileName = `${basePath}/${key}.${ext}`;
+      const mimeMap = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' };
+      const contentType = mimeMap[ext] || d.file.type || 'application/octet-stream';
+      const { error: docErr } = await supabase.storage.from("medical-documents").upload(fileName, d.file, { contentType });
+      if (!docErr) {
+        const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
+        newDocUrls[key] = urlData.publicUrl;
+        setEditNewDocs(prev => prev.map(x => x === d ? { ...x, status: "done", url: urlData.publicUrl } : x));
+      } else {
+        setEditNewDocs(prev => prev.map(x => x === d ? { ...x, status: "error" } : x));
+      }
+    }
+    if (Object.keys(newDocUrls).length > 0) {
+      updates.document_urls = newDocUrls;
+    }
+
+    const { error } = await supabase.from("cases").update(updates).eq("id", editingCase);
     setSaving(false);
     if (!error) {
-      setUserCases(prev => prev.map(c => c.id === editingCase ? { ...c, ...editForm } : c));
+      setUserCases(prev => prev.map(c => c.id === editingCase ? { ...c, ...updates } : c));
       setSaveMsg(lang === "fr" ? "✅ Modifications enregistrées" : "✅ Changes saved");
-      setTimeout(() => { setEditingCase(null); setSaveMsg(""); }, 1500);
+      setTimeout(() => { setEditingCase(null); setSaveMsg(""); setEditPhotoFile(null); setEditPhotoPreview(null); setEditNewDocs([]); }, 1800);
     } else {
       setSaveMsg(lang === "fr" ? "❌ Erreur lors de la sauvegarde" : "❌ Error saving");
     }
@@ -6028,6 +6080,78 @@ const ProfilePage = ({ user, lang, setPage }) => {
                     <label className="text-xs font-semibold text-gray-600 block mb-1">📱 {lang === "fr" ? "Téléphone mobile money" : "Mobile money phone"}</label>
                     <input type="tel" value={editForm.beneficiary_phone} onChange={e => setEditForm({ ...editForm, beneficiary_phone: e.target.value })} placeholder="+225 07 00 00 00 00" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
                   </div>
+
+                  {/* ── Nouvelle photo ── */}
+                  <div className="border-t border-emerald-100 pt-3">
+                    <div className="text-xs font-bold text-emerald-700 mb-2">📷 {lang === "fr" ? "Nouvelle photo du patient" : "New patient photo"}</div>
+                    {c.photo_url && !editPhotoPreview && (
+                      <div className="mb-2 flex items-center gap-2">
+                        <img src={c.photo_url} alt="photo actuelle" className="w-12 h-12 object-cover rounded-lg border border-gray-200" />
+                        <span className="text-xs text-gray-500">{lang === "fr" ? "Photo actuelle" : "Current photo"}</span>
+                      </div>
+                    )}
+                    {editPhotoPreview && (
+                      <div className="mb-2 flex items-center gap-2">
+                        <img src={editPhotoPreview} alt="nouvelle photo" className="w-12 h-12 object-cover rounded-lg border border-emerald-300" />
+                        <span className="text-xs text-emerald-600 font-semibold">{lang === "fr" ? "Nouvelle photo sélectionnée" : "New photo selected"}</span>
+                        <button onClick={() => { setEditPhotoFile(null); setEditPhotoPreview(null); }} className="text-xs text-red-400 hover:text-red-600">✕</button>
+                      </div>
+                    )}
+                    <label className="flex items-center gap-2 cursor-pointer bg-white border border-dashed border-emerald-300 rounded-lg px-3 py-2 text-xs text-emerald-600 hover:bg-emerald-50 transition-colors w-fit">
+                      📎 {lang === "fr" ? "Choisir une photo" : "Choose a photo"}
+                      <input type="file" accept="image/*" className="hidden" onChange={e => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        setEditPhotoFile(file);
+                        const reader = new FileReader();
+                        reader.onload = ev => setEditPhotoPreview(ev.target.result);
+                        reader.readAsDataURL(file);
+                      }} />
+                    </label>
+                  </div>
+
+                  {/* ── Nouveaux documents ── */}
+                  <div className="border-t border-emerald-100 pt-3">
+                    <div className="text-xs font-bold text-emerald-700 mb-2">📄 {lang === "fr" ? "Ajouter des documents" : "Add documents"}</div>
+                    {/* Docs existants */}
+                    {c.document_urls && Object.keys(c.document_urls).length > 0 && (
+                      <div className="mb-2 space-y-1">
+                        {Object.entries(c.document_urls).map(([k, url]) => (
+                          <a key={k} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-emerald-600 hover:underline">
+                            📎 {k === "medical" ? (lang === "fr" ? "Ordonnance/Devis" : "Medical/Quote") :
+                               k === "quote" ? (lang === "fr" ? "Facture pro-forma" : "Pro-forma invoice") :
+                               k === "id" ? (lang === "fr" ? "Pièce d'identité" : "ID document") :
+                               k === "consent" ? (lang === "fr" ? "Formulaire consentement" : "Consent form") :
+                               (lang === "fr" ? "Document supplémentaire" : "Additional document")}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    {/* Nouveaux docs à uploader */}
+                    {editNewDocs.map((d, i) => (
+                      <div key={i} className="flex items-center gap-2 mb-1.5">
+                        <span className="text-xs text-gray-600 truncate max-w-[160px]">{d.file.name}</span>
+                        {d.status === "uploading" && <span className="text-xs text-blue-500">⏳</span>}
+                        {d.status === "done" && <span className="text-xs text-emerald-500">✅</span>}
+                        {d.status === "error" && <span className="text-xs text-red-500">❌</span>}
+                        {d.status === "pending" && (
+                          <button onClick={() => setEditNewDocs(prev => prev.filter((_, j) => j !== i))} className="text-xs text-red-400 hover:text-red-600">✕</button>
+                        )}
+                      </div>
+                    ))}
+                    {editNewDocs.length < 5 && (
+                      <label className="flex items-center gap-2 cursor-pointer bg-white border border-dashed border-emerald-300 rounded-lg px-3 py-2 text-xs text-emerald-600 hover:bg-emerald-50 transition-colors w-fit">
+                        ➕ {lang === "fr" ? "Ajouter un document (PDF, image)" : "Add a document (PDF, image)"}
+                        <input type="file" accept=".pdf,image/*" className="hidden" onChange={e => {
+                          const file = e.target.files[0];
+                          if (!file) return;
+                          setEditNewDocs(prev => [...prev, { file, status: "pending", url: null }]);
+                          e.target.value = "";
+                        }} />
+                      </label>
+                    )}
+                  </div>
+
                   {saveMsg && (
                     <div className={"text-xs font-semibold px-3 py-2 rounded-lg " + (saveMsg.startsWith("✅") ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600")}>{saveMsg}</div>
                   )}
