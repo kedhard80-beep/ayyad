@@ -2358,7 +2358,12 @@ const LoginPage = ({ setPage, setUser, lang, trackVisit }) => {
   const t = T[lang].login;
 
   const handleLogin = async () => {
-    if (!email || !pwd) return;
+    const emailClean = email.trim().toLowerCase();
+    if (!emailClean || !pwd) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
+      setError(lang === "fr" ? "Adresse email invalide." : "Invalid email address.");
+      return;
+    }
     setLoading(true);
     setError("");
     let timedOut = false;
@@ -2372,14 +2377,14 @@ const LoginPage = ({ setPage, setUser, lang, trackVisit }) => {
         : "Connection failed. Check your network or disable browser extensions.");
     }, 10000);
     try {
-      const { data, error: err } = await supabase.auth.signInWithPassword({ email, password: pwd });
+      const { data, error: err } = await supabase.auth.signInWithPassword({ email: emailClean, password: pwd });
       if (timedOut) return; // la réponse est arrivée trop tard, ignorer
       if (err) {
         setError(t.error);
         return;
       }
       const meta = data.user?.user_metadata || {};
-      const { data: adminData } = await supabase.from("admin_users").select("role, is_active").eq("email", email).single();
+      const { data: adminData } = await supabase.from("admin_users").select("role, is_active").eq("email", emailClean).maybeSingle();
       if (timedOut) return;
       const isAdmin = !!(adminData && adminData.is_active);
       const adminRole = adminData?.role || null;
@@ -2432,19 +2437,30 @@ const RegisterPage = ({ setPage, setUser, lang }) => {
   const [form, setForm] = useState({name:"",email:"",phone:"",password:""});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const t = T[lang].register;
 
   const handleSubmit = async () => {
-    if (!form.email || !form.password) return;
+    const emailClean = form.email.trim().toLowerCase();
+    if (!emailClean || !form.password) return;
+    if (form.password.length < 6) {
+      setError(lang === "fr" ? "Le mot de passe doit contenir au moins 6 caractères." : "Password must be at least 6 characters.");
+      return;
+    }
+    if (!acceptedTerms) {
+      setError(lang === "fr" ? "Veuillez accepter les conditions d'utilisation." : "Please accept the terms of use.");
+      return;
+    }
     setLoading(true);
     setError("");
+    // Ne jamais stocker le role dans les métadonnées — géré uniquement via admin_users
     const { data, error: err } = await supabase.auth.signUp({
-      email: form.email,
+      email: emailClean,
       password: form.password,
-      options: { data: { full_name: form.name, phone: form.phone, role } }
+      options: { data: { full_name: form.name.trim(), phone: form.phone.trim() } }
     });
     if (err) { setError(t.error); setLoading(false); return; }
-    setUser({ id: data.user?.id, name: form.name||form.email, email: form.email, isAdmin: false });
+    setUser({ id: data.user?.id, name: form.name.trim()||emailClean, email: emailClean, isAdmin: false });
     setPage("home");
     setLoading(false);
   };
@@ -2468,16 +2484,19 @@ const RegisterPage = ({ setPage, setUser, lang }) => {
         {step===1&&<div className="space-y-4">
           <p className="text-sm text-gray-600 text-center font-medium">{t.roleQ}</p>
           <div className="grid grid-cols-2 gap-3">{t.roles.map(r=><button key={r.id} onClick={()=>setRole(r.id)} className={`p-5 rounded-2xl border-2 text-left transition-all ${role===r.id?"border-emerald-500 bg-emerald-50 shadow-md":"border-gray-200 hover:border-emerald-300"}`}><div className="text-3xl mb-2">{r.icon}</div><div className="font-bold text-sm text-gray-900">{r.title}</div><div className="text-xs text-gray-500 mt-0.5">{r.desc}</div></button>)}</div>
-          <button onClick={()=>role&&form.title.trim().length>=3&&setStep(2)} disabled={!role||form.title.trim().length<3} className="w-full bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">{t.continue}</button>
+          <button onClick={()=>role&&setStep(2)} disabled={!role} className="w-full bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">{t.continue}</button>
           <div className="text-center"><span className="text-sm text-gray-500">{t.hasAccount} </span><button onClick={()=>setPage("login")} className="text-sm text-emerald-600 font-bold hover:underline">{t.signin}</button></div>
         </div>}
         {step===2&&<div className="space-y-4">
           {error&&<div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600 text-center">{error}</div>}
           {t.fields.map(f=><div key={f.key}><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{f.label}</label><input value={form[f.key]} onChange={e=>setForm({...form,[f.key]:e.target.value})} type={f.type} placeholder={f.p} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>)}
-          <div className="flex items-start gap-2 text-xs text-gray-500"><input type="checkbox" className="mt-0.5 accent-emerald-600" /><span>{t.terms} <a href="#" className="text-emerald-600 underline font-medium">{t.termsLink}</a> {t.and} <a href="#" className="text-emerald-600 underline font-medium">{t.privacyLink}</a>.</span></div>
+          <div className="flex items-start gap-2 text-xs text-gray-500">
+            <input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} className="mt-0.5 accent-emerald-600 cursor-pointer" />
+            <span onClick={()=>setAcceptedTerms(v=>!v)} className="cursor-pointer">{t.terms} <a href="https://ayyad.ci/cgu" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.termsLink}</a> {t.and} <a href="https://ayyad.ci/confidentialite" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.privacyLink}</a>.</span>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <button onClick={()=>setStep(1)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{t.back}</button>
-            <button onClick={handleSubmit} disabled={loading} className="bg-emerald-600 disabled:bg-emerald-400 text-white font-bold py-3 rounded-xl text-sm shadow-md">{loading?"...":t.btn}</button>
+            <button onClick={handleSubmit} disabled={loading||!acceptedTerms} className="bg-emerald-600 disabled:bg-emerald-400 text-white font-bold py-3 rounded-xl text-sm shadow-md">{loading?"...":t.btn}</button>
           </div>
         </div>}
       </div>
@@ -2591,7 +2610,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
       beneficiary_phone: form.beneficiary_phone || null,
       video_url: toEmbedUrl(form.videoUrl) || null,
       status: "PENDING",
-      tracking_id: "AYD-" + new Date().getFullYear() + "-" + String(Math.floor(Math.random() * 900) + 100).padStart(3, "0"),
+      tracking_id: "AYD-" + new Date().getFullYear() + "-" + Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => b.toString(16).padStart(2,"0")).join("").toUpperCase().slice(0,6),
       user_id: user?.id || null,
       deadline_requested: form.deadlineRequested || null,
       document_urls: fileUrls || {},
@@ -2649,7 +2668,12 @@ const SubmitPage = ({ setPage, user, lang }) => {
                 </span>
                 <span className="text-xs text-gray-400 mt-1">JPG, PNG — max 5 MB</span>
                 <input type="file" className="hidden" accept="image/jpeg,image/png,image/webp"
-                  onChange={e => e.target.files[0] && handlePhotoSelect(e.target.files[0])} />
+                  onChange={e => {
+                    const f = e.target.files[0];
+                    if (!f) return;
+                    if (f.size > 5_000_000) { alert(lang==="fr" ? "Photo trop lourde (max 5 MB)" : "Photo too large (max 5 MB)"); return; }
+                    handlePhotoSelect(f);
+                  }} />
               </label>
             )}
           </div>
@@ -2833,7 +2857,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
                   <div className="flex-1 min-w-0"><div className="font-semibold text-sm text-gray-900">{doc.title} <span className="text-red-400">*</span></div><div className="text-xs text-gray-500">{doc.desc}</div></div>
                   <label className={`px-3 py-1.5 rounded-xl text-xs font-bold flex-shrink-0 cursor-pointer transition-colors ${state==="done"?"bg-emerald-600 text-white":state==="uploading"?"bg-gray-300 text-gray-500 cursor-wait":state==="error"?"bg-red-100 text-red-600":"bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
                     {state==="done"?t.uploaded:state==="uploading"?t.uploading:state==="error"?t.error:t.upload}
-                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e=>e.target.files[0]&&handleFileUpload(doc.key,e.target.files[0])} disabled={state==="uploading"||state==="done"} />
+                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e=>{const f=e.target.files[0];if(!f)return;if(f.size>10_000_000){alert(lang==="fr"?"Document trop lourd (max 10 MB)":"File too large (max 10 MB)");return;}handleFileUpload(doc.key,f);}} disabled={state==="uploading"||state==="done"} />
                   </label>
                 </div>
                 {/* Lien de téléchargement du formulaire de consentement */}
@@ -6072,7 +6096,7 @@ const ProfilePage = ({ user, lang, setPage }) => {
       updates.document_urls = newDocUrls;
     }
 
-    const { error } = await supabase.from("cases").update(updates).eq("id", editingCase);
+    const { error } = await supabase.from("cases").update(updates).eq("id", editingCase).eq("user_id", user.id);
     setSaving(false);
     if (!error) {
       setUserCases(prev => prev.map(c => c.id === editingCase ? { ...c, ...updates } : c));
@@ -6438,7 +6462,7 @@ export default function AyyadApp() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         const meta = session.user.user_metadata || {};
-        const { data: adminData2 } = await supabase.from("admin_users").select("role, is_active").eq("email", session.user.email).single();
+        const { data: adminData2 } = await supabase.from("admin_users").select("role, is_active").eq("email", session.user.email).maybeSingle();
         const isAdmin = !!(adminData2 && adminData2.is_active);
         const adminRole = adminData2?.role || null;
         const userName2 = meta.full_name || session.user.email;
@@ -6474,14 +6498,14 @@ export default function AyyadApp() {
     // Deep-link: ?case=AYD-2025-001
     const params = new URLSearchParams(window.location.search);
     const caseId = params.get("case");
-    if (caseId) {
+    if (caseId && /^[A-Z]{3}-\d{4}-[A-Z0-9]{3,8}$/i.test(caseId)) {
       // Try MOCK_CASES first, then Supabase
       const mockMatch = MOCK_CASES.find(c => c.trackingId === caseId);
       if (mockMatch) {
         setSelectedCase(mockMatch);
         setPage("case");
       } else {
-        supabase.from("cases").select("*").eq("tracking_id", caseId).single().then(({ data }) => {
+        supabase.from("cases").select("*").eq("tracking_id", caseId).maybeSingle().then(({ data }) => {
           if (data) { setSelectedCase(data); setPage("case"); }
         });
       }
