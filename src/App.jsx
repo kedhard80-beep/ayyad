@@ -297,6 +297,20 @@ const MOCK_ALERTS = [
 const fmt = (n) => new Intl.NumberFormat("fr-CI").format(n) + " FCFA";
 const pct = (c, r) => Math.min(100, Math.round((c / r) * 100));
 
+// Nettoie un nom de fichier pour un usage sûr dans Supabase Storage
+// Remplace espaces et caractères spéciaux par des underscores, limite la longueur
+const sanitizeFileName = (name) => {
+  const lastDot = name.lastIndexOf('.');
+  const ext = lastDot >= 0 ? name.slice(lastDot + 1).toLowerCase().replace(/[^a-z0-9]/g, '') : 'bin';
+  const base = (lastDot >= 0 ? name.slice(0, lastDot) : name)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // supprime accents
+    .replace(/[^a-zA-Z0-9-]/g, '_')                   // caractères spéciaux → _
+    .replace(/_+/g, '_')                               // underscores multiples → un seul
+    .replace(/^_|_$/g, '')                             // trim underscores
+    .slice(0, 50);                                     // max 50 caractères
+  return `${base || 'file'}.${ext}`;
+};
+
 // ── Règles financières Ayyad ──────────────────────────────────
 // required = devis_hopital * 1.05 (montant à collecter affiché)
 // devis_hopital = required / 1.05
@@ -1383,7 +1397,7 @@ const CAT_ICONS = {
 const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
   const [dbCases, setDbCases] = useState([]);
   useEffect(() => {
-    supabase.from("cases").select("*").eq("status", "COLLECTING").then(({ data }) => {
+    supabase.from("cases").select("*").eq("status", "COLLECTING").limit(200).then(({ data }) => {
       if (data && data.length > 0) setDbCases(data);
     });
   }, []);
@@ -1475,7 +1489,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
 const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite }) => {
   const [dbCases, setDbCases] = useState([]);
   useEffect(() => {
-    supabase.from("cases").select("*").eq("status", "COLLECTING").then(({ data }) => {
+    supabase.from("cases").select("*").eq("status", "COLLECTING").limit(200).then(({ data }) => {
       if (data && data.length > 0) setDbCases(data);
     });
   }, []);
@@ -1560,7 +1574,7 @@ const CollectesPage = ({ setPage, lang }) => {
   const funded = getDisplayCases().filter(c => c.status === "FUNDED");
   const [dbTestimonials, setDbTestimonials] = useState([]);
   useEffect(() => {
-    supabase.from("testimonials").select("*").eq("status","approved").order("created_at",{ascending:false}).then(({data})=>{
+    supabase.from("testimonials").select("*").eq("status","approved").order("created_at",{ascending:false}).limit(50).then(({data})=>{
       if (data && data.length > 0) setDbTestimonials(data);
     });
   }, []);
@@ -1691,7 +1705,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const { data } = await supabase.from("cases").select("collected, status, amount");
+        const { data } = await supabase.from("cases").select("collected, status, amount").limit(500);
         if (data) {
           // Patients aidés = dossiers qui ont été approuvés (pas PENDING/REJECTED)
           const active = data.filter(c => !["PENDING","REJECTED"].includes(c.status));
@@ -1716,7 +1730,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const t = T[lang];
 
   useEffect(() => {
-    supabase.from("cases").select("*").eq("status", "COLLECTING").then(({ data }) => {
+    supabase.from("cases").select("*").eq("status", "COLLECTING").limit(200).then(({ data }) => {
       if (data && data.length > 0) {
         const calcDaysLeft = (c) => {
           if (c.deadline) { const diff = new Date(c.deadline) - new Date(); return Math.max(0, Math.ceil(diff / (1000*60*60*24))); }
@@ -2130,7 +2144,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         setEditPhotoUploading(true);
                         setEditMsg("");
                         try {
-                          const path = `cases/${c.id}/photos/${Date.now()}_${file.name}`;
+                          const path = `cases/${c.id}/photos/${Date.now()}_${sanitizeFileName(file.name)}`;
                           const { error: upErr } = await supabase.storage.from("documents").upload(path, file);
                           if (upErr) { setEditMsg(lang==="fr" ? "Erreur upload : " + upErr.message : "Upload error: " + upErr.message); return; }
                           const { data: urlD } = supabase.storage.from("documents").getPublicUrl(path);
@@ -2164,7 +2178,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                             if (!file || !c.id) return;
                             setEditMsg("");
                             try {
-                              const path = `cases/${c.id}/docs/${doc.key}_${Date.now()}_${file.name}`;
+                              const path = `cases/${c.id}/docs/${doc.key}_${Date.now()}_${sanitizeFileName(file.name)}`;
                               const { error: upErr } = await supabase.storage.from("documents").upload(path, file);
                               if (upErr) { setEditMsg("Erreur : " + upErr.message); return; }
                               const { data: urlD } = supabase.storage.from("documents").getPublicUrl(path);
@@ -2313,6 +2327,19 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   amountDisplay={fmt(Number(amount))}
                   lang={lang}
                   onSuccess={() => {
+                    supabase.from("donations").insert({
+                      case_id: c.id || null,
+                      donor_id: user?.id || null,
+                      donor_name: anonymous ? null : (user?.user_metadata?.name || user?.email || null),
+                      donor_email: anonymous ? null : (user?.email || null),
+                      amount: Number(amount),
+                      amount_fcfa: amountInFcfa,
+                      currency,
+                      payment_method: "CARD",
+                      status: "pending",
+                      message: message || null,
+                      reference: "AYYAD-" + (c.tracking_id || c.id || "DON") + "-" + Date.now()
+                    });
                     setDonMode("success");
                     emailDonConfirm({ donorEmail: null, donorName: anonymous ? "" : "Donateur", amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
                   }}
@@ -2325,6 +2352,19 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 <div className="grid grid-cols-2 gap-2">
                   <button onClick={() => setDonMode(anonymous?"anonymous":"logged")} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{td.modify}</button>
                   <button onClick={() => {
+                    supabase.from("donations").insert({
+                      case_id: c.id || null,
+                      donor_id: user?.id || null,
+                      donor_name: anonymous ? null : (user?.user_metadata?.name || user?.email || null),
+                      donor_email: anonymous ? null : (user?.email || null),
+                      amount: Number(amount),
+                      amount_fcfa: amountInFcfa,
+                      currency,
+                      payment_method: "WAVE",
+                      status: "pending",
+                      message: message || null,
+                      reference: "AYYAD-" + (c.tracking_id || c.id || "DON") + "-" + Date.now()
+                    });
                     setDonMode("success");
                     emailDonConfirm({ donorEmail: null, donorName: anonymous ? "" : "Donateur", amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
                   }} className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md">{td.confirmBtn}</button>
@@ -2541,7 +2581,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
   const handlePhotoUpload = async () => {
     if (!photoFile) return null;
     setPhotoUploading(true);
-    const fileName = `dossiers/${sessionId}/photo_${Date.now()}_${photoFile.name}`;
+    const fileName = `dossiers/${sessionId}/photo_${Date.now()}_${sanitizeFileName(photoFile.name)}`;
     const { error } = await supabase.storage.from("medical-documents").upload(fileName, photoFile);
     if (error) { setPhotoUploading(false); return null; }
     const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
@@ -3645,7 +3685,7 @@ const AdminTestimonialsTab = ({ lang, user }) => {
 
   const fetchTestimonials = React.useCallback(async () => {
     setLoading(true);
-    const query = supabase.from("testimonials").select("*").order("created_at", { ascending: false });
+    const query = supabase.from("testimonials").select("*").order("created_at", { ascending: false }).limit(200);
     const { data, error } = filter === "all" ? await query : await query.eq("status", filter);
     if (!error) setTestimonials(data || []);
     setLoading(false);
@@ -6023,7 +6063,7 @@ const ProfilePage = ({ user, lang, setPage }) => {
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase.from("cases").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+      const { data } = await supabase.from("cases").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100);
       setUserCases(data || []);
       // Check if user already submitted a testimonial
       const { data: tData } = await supabase.from("testimonials").select("id, status, message_fr").eq("submitted_by", user.id).maybeSingle();
