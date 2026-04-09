@@ -210,7 +210,7 @@ const T = {
     video: { title: "Message du patient", watch: "▶ Voir la vidéo", noVideo: "Aucune vidéo disponible pour ce dossier." },
     progress: { collected: "collectés sur", donors: "donateurs", daysLeft: "jours restants", intervention: "✓ Intervention planifiée", progressTitle: "Progression de la collecte", of: "de l'objectif" },
     back: "← Retour aux collectes",
-    footer: { tagline: "Financer la santé pour tous en Afrique.", platform: "Plateforme", trust: "Confiance", legal: "Légal", platformLinks: ["Collectes actives","Comment ça marche","Soumettre un dossier"], trustLinks: ["Vérification dossiers","Sécurité des paiements","Rapport d'impact"], legalLinks: ["Mentions légales","FAQ","Conformité BCEAO"], rights: "© 2025 Ayyad CI — Tous droits réservés" },
+    footer: { tagline: "Financer la santé pour tous en Afrique.", platform: "Plateforme", trust: "Confiance", legal: "Légal", platformLinks: ["Collectes actives","Comment ça marche","Soumettre un dossier"], trustLinks: ["Vérification dossiers","Hôpitaux partenaires","Rapport d'impact"], legalLinks: ["Mentions légales","FAQ","Conformité BCEAO"], rights: "© 2025 Ayyad CI — Tous droits réservés" },
     howPage: { title: "Comment fonctionne Ayyad ?", sub: "Transparent, sécurisé, conçu pour l'Afrique", forDonors: { icon:"💚",title:"Pour les donateurs",steps:["Parcourez les collectes vérifiées actives","Choisissez librement votre montant","Payez via Wave CI ou carte bancaire","Vous êtes débité exactement du montant choisi","L'argent arrive directement à l'hôpital"] }, forBenef: { icon:"🏥",title:"Pour les bénéficiaires",steps:["Créez un compte et soumettez votre dossier médical","Téléchargez rapport médical, devis, pièce d'identité","Notre équipe vérifie avec l'hôpital partenaire","Votre collecte est mise en ligne sous 48h","Les fonds sont versés directement à l'hôpital"] }, feeTitle: "La règle des 5% — Incluse dans l'objectif", feeSub: "Ayyad intègre sa commission de 5% directement dans l'objectif de collecte. Vous donnez 10 000 FCFA, l'hôpital reçoit 10 000 FCFA. Rien n'est prélevé sur votre don.", youGive: "Vous donnez", collectReceives: "L'hôpital reçoit", ayyadFee: "Frais Ayyad (inclus dans l'objectif)" },
   },
   en: {
@@ -244,7 +244,7 @@ const T = {
     video: { title: "Patient's message", watch: "▶ Watch video", noVideo: "No video available for this case." },
     progress: { collected: "raised out of", donors: "donors", daysLeft: "days left", intervention: "✓ Procedure scheduled", progressTitle: "Campaign progress", of: "of goal" },
     back: "← Back to campaigns",
-    footer: { tagline: "Funding healthcare for all in Africa.", platform: "Platform", trust: "Trust", legal: "Legal", platformLinks: ["Active campaigns","How it works","Submit a case"], trustLinks: ["Case verification","Payment security","Impact report"], legalLinks: ["Legal notice","Privacy policy","BCEAO compliance"], rights: "© 2025 Ayyad CI — All rights reserved" },
+    footer: { tagline: "Funding healthcare for all in Africa.", platform: "Platform", trust: "Trust", legal: "Legal", platformLinks: ["Active campaigns","How it works","Submit a case"], trustLinks: ["Case verification","Partner hospitals","Impact report"], legalLinks: ["Legal notice","Privacy policy","BCEAO compliance"], rights: "© 2025 Ayyad CI — All rights reserved" },
     howPage: { title: "How does Ayyad work?", sub: "Transparent, secure, built for Africa", forDonors: { icon:"💚",title:"For donors",steps:["Browse verified active campaigns","Freely choose your amount","Pay via Wave CI or card","You are charged exactly the amount you chose","The money goes directly to the hospital"] }, forBenef: { icon:"🏥",title:"For beneficiaries",steps:["Create an account and submit your medical case","Upload medical report, quote, identity document","Our team verifies with the partner hospital","Your campaign goes live within 48h","Funds are transferred directly to the hospital"] }, feeTitle: "The 5% rule — Built into the goal", feeSub: "Ayyad includes its 5% fee directly in the campaign goal. You give 10,000 FCFA, the hospital receives 10,000 FCFA. Nothing is deducted from your donation.", youGive: "You give", collectReceives: "Hospital receives", ayyadFee: "Ayyad fee (included in goal)" },
   }
 };
@@ -403,6 +403,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
             <div className="flex items-center gap-2">
               <button onClick={() => setPage("profile")} className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-sm hover:bg-emerald-200 transition-colors">{(user.name||user.email||"U")[0].toUpperCase()}</button>
               <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[120px] truncate">{user.name||user.email}</span>
+              <button onClick={() => setPage("monimpact")} className="text-xs text-emerald-600 hover:text-emerald-800 font-semibold ml-1">💚 {lang==="fr"?"Mon impact":"My impact"}</button>
               <button onClick={() => setPage("changepassword")} className="text-xs text-gray-400 hover:text-emerald-600 ml-1">🔑</button>
               <button onClick={handleLogout} className="text-xs text-gray-400 hover:text-red-500">{t.logout}</button>
             </div>
@@ -965,6 +966,82 @@ if (step === "qr" && provider === "CARD") return (
 };
 
 // ── Share Button ──────────────────────────────────────────────
+// ── Confetti pur CSS/JS (aucune dépendance) ──────────────────
+const Confetti = ({ active }) => {
+  if (!active) return null;
+  const colors = ["#10b981","#C9A84C","#3b82f6","#f59e0b","#ef4444","#8b5cf6","#06b6d4"];
+  const pieces = Array.from({length:60},(_,i)=>i);
+  return (
+    <div className="pointer-events-none fixed inset-0 z-[9999] overflow-hidden">
+      <style>{`
+        @keyframes confetti-fall {
+          0%   { transform: translateY(-10px) rotate(0deg); opacity:1; }
+          100% { transform: translateY(110vh) rotate(720deg); opacity:0; }
+        }
+        .confetti-piece { position:absolute; width:8px; height:8px; border-radius:2px; animation: confetti-fall linear forwards; }
+      `}</style>
+      {pieces.map(i => (
+        <div key={i} className="confetti-piece" style={{
+          left: (Math.random()*100)+"%",
+          top: "-10px",
+          background: colors[i % colors.length],
+          animationDuration: (1.5 + Math.random()*2)+"s",
+          animationDelay: (Math.random()*1.5)+"s",
+          width: (6+Math.random()*8)+"px",
+          height: (6+Math.random()*8)+"px",
+          borderRadius: Math.random()>0.5?"50%":"2px",
+        }} />
+      ))}
+    </div>
+  );
+};
+
+// ── Certificat de don HTML print ────────────────────────────
+const printDonationCertificate = ({ donorName, amount, beneficiary, caseTitle, trackingId, date, lang }) => {
+  const fr = lang === "fr";
+  const html = `<!DOCTYPE html><html lang="${lang}"><head><meta charset="UTF-8">
+<title>Certificat de don — Ayyad</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Georgia,serif;background:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+  .cert{max-width:700px;width:100%;border:3px solid #C9A84C;border-radius:12px;padding:50px;text-align:center;position:relative}
+  .cert::before{content:"";position:absolute;inset:8px;border:1px solid #C9A84C;border-radius:8px;pointer-events:none}
+  .logo{font-family:Arial,sans-serif;font-size:28px;font-weight:900;color:#0d5c2e;letter-spacing:3px;margin-bottom:4px}
+  .logo-sub{font-size:11px;color:#6b7280;letter-spacing:2px;text-transform:uppercase;margin-bottom:30px}
+  h1{font-size:22px;color:#0d5c2e;margin-bottom:8px;letter-spacing:1px;text-transform:uppercase}
+  .line{width:80px;height:2px;background:#C9A84C;margin:12px auto 24px}
+  .body{font-size:16px;color:#374151;line-height:1.8;margin-bottom:24px}
+  .name{font-size:26px;color:#0d5c2e;font-style:italic;font-weight:700;margin:8px 0}
+  .amount{font-size:32px;font-weight:900;color:#C9A84C;margin:8px 0}
+  .info{font-size:13px;color:#6b7280;margin-top:20px;padding-top:20px;border-top:1px solid #e5e7eb}
+  .seal{font-size:40px;margin:20px 0 0}
+  @media print{body{min-height:auto}button{display:none}}
+</style></head>
+<body><div class="cert">
+  <div class="logo">AYYAD</div>
+  <div class="logo-sub">Financement médical solidaire · Côte d'Ivoire</div>
+  <h1>${fr?"Certificat de don":"Certificate of Donation"}</h1>
+  <div class="line"></div>
+  <div class="body">
+    ${fr?"Nous certifions que":"We certify that"}
+    <div class="name">${donorName || (fr?"Un donateur anonyme":"An anonymous donor")}</div>
+    ${fr?"a effectué un don de":"has made a donation of"}
+    <div class="amount">${amount.toLocaleString("fr-CI")} FCFA</div>
+    ${fr?"au bénéfice de":"in support of"} <strong>${beneficiary}</strong><br/>
+    ${fr?"pour la collecte ":"for the campaign "}<em>"${caseTitle}"</em>
+  </div>
+  <div class="info">
+    ${fr?"Date":"Date"} : ${date} &nbsp;·&nbsp; Réf : ${trackingId}<br/>
+    ${fr?"Fonds versés directement à l'hôpital partenaire · Aucuns frais prélevés sur ce don":"Funds transferred directly to the partner hospital · No fees deducted from this donation"}
+  </div>
+  <div class="seal">💚</div>
+</div>
+<script>window.onload=()=>window.print();</script>
+</body></html>`;
+  const w = window.open("","_blank","width=800,height:600");
+  if (w) { w.document.write(html); w.document.close(); }
+};
+
 const ShareButton = ({ c, lang, size = "normal" }) => {
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
@@ -1698,6 +1775,43 @@ const CollectesPage = ({ setPage, lang }) => {
   );
 };
 
+const DonationTicker = ({ lang }) => {
+  const [dons, setDons] = useState([]);
+  useEffect(() => {
+    supabase.from("donations").select("donor_name,amount_fcfa,amount,created_at,anonymous")
+      .eq("status","confirmed").order("created_at",{ascending:false}).limit(8)
+      .then(({data}) => { if (data && data.length>0) setDons(data); });
+    const ch = supabase.channel("ticker-donations")
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"donations"},payload=>{
+        if (payload.new.status==="confirmed") {
+          setDons(prev=>[payload.new,...prev].slice(0,8));
+        }
+      }).subscribe();
+    return () => supabase.removeChannel(ch);
+  },[]);
+  if (dons.length===0) return null;
+  const items = [...dons,...dons]; // double pour loop infinie
+  return (
+    <div className="bg-emerald-800 overflow-hidden py-2">
+      <style>{`
+        @keyframes ticker { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+        .ticker-track { display:flex; animation: ticker 25s linear infinite; white-space:nowrap; }
+        .ticker-track:hover { animation-play-state:paused; }
+      `}</style>
+      <div className="ticker-track">
+        {items.map((d,i) => (
+          <span key={i} className="flex items-center gap-2 text-xs text-emerald-100 font-medium px-6 flex-shrink-0">
+            <span className="text-emerald-300">💚</span>
+            <span>{d.anonymous?(lang==="fr"?"Anonyme":"Anonymous"):(d.donor_name||"—")}</span>
+            <span className="text-emerald-300 font-black">{((d.amount_fcfa||d.amount||0)).toLocaleString("fr-CI")} FCFA</span>
+            <span className="text-emerald-500 mx-2">·</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -1806,6 +1920,9 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
         </div>
       </div>
 
+      {/* ── Ticker derniers dons ── */}
+      <DonationTicker lang={lang} />
+
       {/* Urgent Cases Banner — mock + auto-detection */}
       <UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} />
 
@@ -1869,7 +1986,109 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [editPhotoUploading, setEditPhotoUploading] = useState(false);
   // donMode: "choose" | "anonymous" | "logged" | "confirm" | "success"
   const [donMode, setDonMode] = useState("choose");
-  const percent = pct(c.collected, c.required);
+
+  // ── Journal patient ──
+  const [caseUpdates, setCaseUpdates] = useState([]);
+  const [newUpdate, setNewUpdate] = useState("");
+  const [postingUpdate, setPostingUpdate] = useState(false);
+
+  useEffect(() => {
+    if (!c.id || c._isDemo) return;
+    supabase.from("case_updates").select("*").eq("case_id",c.id).order("created_at",{ascending:false}).limit(20)
+      .then(({data}) => { if (data) setCaseUpdates(data); });
+  }, [c.id]);
+
+  const postUpdate = async () => {
+    if (!newUpdate.trim() || !c.id) return;
+    setPostingUpdate(true);
+    const { data, error } = await supabase.from("case_updates").insert({
+      case_id: c.id,
+      author_name: user?.name || user?.email || "Équipe Ayyad",
+      author_role: user?.isAdmin ? "admin" : "patient",
+      content: newUpdate.trim(),
+      created_at: new Date().toISOString(),
+    }).select().single();
+    if (!error && data) {
+      setCaseUpdates(prev => [data, ...prev]);
+      setNewUpdate("");
+    }
+    setPostingUpdate(false);
+  };
+
+  // ── Realtime : suivi live des dons & progression ──
+  const [liveCollected, setLiveCollected] = useState(c.collected || 0);
+  const [liveDonors, setLiveDonors] = useState(c.donors || 0);
+  const [recentDonations, setRecentDonations] = useState([]);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [lastDonation, setLastDonation] = useState(null); // pour le certificat
+
+  useEffect(() => {
+    // Chargement initial des derniers dons
+    const loadRecent = async () => {
+      if (!c.id || c._isDemo) return;
+      const { data } = await supabase.from("donations")
+        .select("id,donor_name,amount_fcfa,amount,currency,created_at,anonymous")
+        .eq("case_id", c.id)
+        .eq("status","confirmed")
+        .order("created_at",{ascending:false})
+        .limit(5);
+      if (data) setRecentDonations(data);
+    };
+    loadRecent();
+
+    if (!c.id || c._isDemo) return;
+
+    // Supabase Realtime — nouveaux dons confirmés
+    const donChannel = supabase.channel("donations-live-"+c.id)
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"donations",filter:`case_id=eq.${c.id}`},
+        payload => {
+          const d = payload.new;
+          if (d.status === "confirmed") {
+            setLiveCollected(prev => prev + (d.amount_fcfa || d.amount || 0));
+            setLiveDonors(prev => prev + 1);
+            setRecentDonations(prev => [d,...prev].slice(0,5));
+          }
+        })
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"donations",filter:`case_id=eq.${c.id}`},
+        payload => {
+          const d = payload.new;
+          const old = payload.old;
+          if (old.status === "pending" && d.status === "confirmed") {
+            setLiveCollected(prev => prev + (d.amount_fcfa || d.amount || 0));
+            setLiveDonors(prev => prev + 1);
+            setRecentDonations(prev => [d,...prev].slice(0,5));
+          }
+        })
+      .subscribe();
+
+    // Supabase Realtime — mise à jour du dossier (collected)
+    const caseChannel = supabase.channel("case-live-"+c.id)
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"cases",filter:`id=eq.${c.id}`},
+        payload => {
+          const wasBelow100 = pct(liveCollected, c.required || 1) < 100;
+          const newCol = payload.new.collected || 0;
+          setLiveCollected(newCol);
+          if (payload.new.donors) setLiveDonors(payload.new.donors);
+          // Confetti si objectif atteint
+          if (wasBelow100 && pct(newCol, c.required || 1) >= 100) {
+            setShowConfetti(true);
+            setTimeout(() => setShowConfetti(false), 4000);
+          }
+        })
+      .subscribe();
+
+    return () => { supabase.removeChannel(donChannel); supabase.removeChannel(caseChannel); };
+  }, [c.id]);
+
+  // Confetti au chargement si déjà à 100%
+  useEffect(() => {
+    if (pct(c.collected || 0, c.required || 1) >= 100 && !c._isDemo) {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3500);
+    }
+  }, []);
+
+  const percent = pct(liveCollected, c.required);
   const funded = c.status==="FUNDED"; // seul FUNDED bloque les dons
   const goalReached = !funded && (c.collected||0) >= (c.required||1); // objectif atteint mais collecte encore ouverte
   const t = T[lang];
@@ -2055,6 +2274,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
+      <Confetti active={showConfetti} />
       <button onClick={() => setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">{t.back}</button>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-5">
@@ -2078,17 +2298,59 @@ const CasePage = ({ c, setPage, lang, user }) => {
             </div>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <h3 className="font-bold text-gray-900 mb-4">{t.progress.progressTitle}</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-900">{t.progress.progressTitle}</h3>
+              <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-semibold">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>
+                {lang==="fr"?"En direct":"Live"}
+              </div>
+            </div>
             <div className="flex justify-between items-end mb-3">
-              <div><div className="text-3xl font-black text-emerald-700">{fmt(c.collected)}</div><div className="text-sm text-gray-500">{t.progress.collected} {fmt(c.required)}</div></div>
-              <div className="text-right"><div className="text-3xl font-black text-gray-900">{percent}%</div><div className="text-sm text-gray-500">{t.progress.of}</div></div>
+              <div><div className="text-3xl font-black text-emerald-700 transition-all">{fmt(liveCollected)}</div><div className="text-sm text-gray-500">{t.progress.collected} {fmt(c.required)}</div></div>
+              <div className="text-right"><div className={`text-3xl font-black transition-all ${percent>=100?"text-emerald-600":"text-gray-900"}`}>{percent}%</div><div className="text-sm text-gray-500">{t.progress.of}</div></div>
             </div>
             <ProgressBar percent={percent} />
+            {percent>=50&&percent<100&&(
+              <div className="mt-2 text-center text-xs text-amber-600 font-semibold animate-pulse">
+                🔥 {lang==="fr"?`Plus que ${fmt(c.required - liveCollected)} pour atteindre l'objectif !`:`Only ${fmt(c.required - liveCollected)} left to reach the goal!`}
+              </div>
+            )}
+            {percent>=100&&(
+              <div className="mt-2 text-center text-sm text-emerald-600 font-black">
+                🎉 {lang==="fr"?"Objectif atteint ! Merci à tous les donateurs.":"Goal reached! Thank you to all donors."}
+              </div>
+            )}
             <div className="flex justify-between mt-3 text-sm text-gray-500">
-              <span>👥 {c.donors} {t.progress.donors}</span>
+              <span>👥 {liveDonors} {t.progress.donors}</span>
               {funded?<span className="text-emerald-600 font-semibold">{t.progress.intervention}</span>:<span className="text-amber-600 font-medium">⏳ {c.daysLeft} {t.progress.daysLeft}</span>}
             </div>
           </div>
+
+          {/* ── Fil des derniers dons en temps réel ── */}
+          {recentDonations.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="font-bold text-gray-900 text-sm">{lang==="fr"?"Derniers donateurs":"Recent donors"}</h3>
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>
+              </div>
+              <div className="space-y-2">
+                {recentDonations.map((d,i) => (
+                  <div key={d.id||i} className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-sm flex-shrink-0">
+                      {d.anonymous ? "🕵️" : "💚"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-semibold text-gray-900">{d.anonymous ? (lang==="fr"?"Anonyme":"Anonymous") : (d.donor_name||"—")}</span>
+                      <span className="text-xs text-gray-400 ml-2">{new Date(d.created_at).toLocaleDateString(lang==="fr"?"fr-CI":"en-US")}</span>
+                    </div>
+                    <div className="text-sm font-black text-emerald-700 flex-shrink-0">
+                      {((d.amount_fcfa||d.amount||0)).toLocaleString("fr-CI")} FCFA
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex gap-3">
             <span className="text-2xl flex-shrink-0">🔒</span>
             <div><div className="font-bold text-emerald-800 text-sm">{t.guarantee.title}</div><div className="text-emerald-700 text-xs mt-1">{t.guarantee.desc}</div></div>
@@ -2096,6 +2358,58 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
           {/* Médias — Photos + Vidéo */}
           <MediaSection c={c} lang={lang} t={t} />
+
+          {/* ── Journal du patient ── */}
+          {(caseUpdates.length > 0 || (user && (user.isAdmin || (c.user_id && user.id===c.user_id)))) && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-gray-100">
+                <h3 className="font-bold text-gray-900 text-sm">📋 {lang==="fr"?"Journal du dossier":"Case journal"}</h3>
+                <p className="text-xs text-gray-400 mt-0.5">{lang==="fr"?"Mises à jour du patient et de l'équipe Ayyad":"Updates from the patient and Ayyad team"}</p>
+              </div>
+              {/* Formulaire — admin ou propriétaire */}
+              {user && (user.isAdmin || (c.user_id && user.id===c.user_id)) && (
+                <div className="p-4 border-b border-gray-50 bg-gray-50">
+                  <textarea
+                    value={newUpdate}
+                    onChange={e=>setNewUpdate(e.target.value)}
+                    placeholder={lang==="fr"?"Partager une mise à jour avec les donateurs...":"Share an update with donors..."}
+                    rows={3}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
+                  />
+                  <button onClick={postUpdate} disabled={postingUpdate||!newUpdate.trim()}
+                    className="mt-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all">
+                    {postingUpdate?(lang==="fr"?"Envoi...":"Sending..."):(lang==="fr"?"Publier la mise à jour":"Publish update")}
+                  </button>
+                </div>
+              )}
+              {/* Liste des mises à jour */}
+              {caseUpdates.length > 0 ? (
+                <div className="divide-y divide-gray-50">
+                  {caseUpdates.map(upd=>(
+                    <div key={upd.id} className="p-4 flex gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${upd.author_role==="admin"?"bg-purple-100":"bg-emerald-100"}`}>
+                        {upd.author_role==="admin"?"👨‍⚕️":"🙋"}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-gray-900">{upd.author_name||"Ayyad"}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${upd.author_role==="admin"?"bg-purple-100 text-purple-700":"bg-emerald-100 text-emerald-700"}`}>
+                            {upd.author_role==="admin"?(lang==="fr"?"Équipe Ayyad":"Ayyad Team"):(lang==="fr"?"Patient":"Patient")}
+                          </span>
+                          <span className="text-xs text-gray-400">{new Date(upd.created_at).toLocaleDateString(lang==="fr"?"fr-CI":"en-US")}</span>
+                        </div>
+                        <p className="text-sm text-gray-700 mt-1 leading-relaxed">{upd.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 text-center text-sm text-gray-400">
+                  {lang==="fr"?"Aucune mise à jour pour le moment.":"No updates yet."}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* ── Panneau d'édition — uniquement pour le propriétaire ── */}
           {user && c.user_id && user.id === c.user_id && (
@@ -2327,10 +2641,11 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   amountDisplay={fmt(Number(amount))}
                   lang={lang}
                   onSuccess={() => {
+                    const _donName = anonymous ? null : (user?.user_metadata?.name || user?.email || null);
                     supabase.from("donations").insert({
                       case_id: c.id || null,
                       donor_id: user?.id || null,
-                      donor_name: anonymous ? null : (user?.user_metadata?.name || user?.email || null),
+                      donor_name: _donName,
                       donor_email: anonymous ? null : (user?.email || null),
                       amount: Number(amount),
                       amount_fcfa: amountInFcfa,
@@ -2340,6 +2655,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       message: message || null,
                       reference: "AYYAD-" + (c.tracking_id || c.id || "DON") + "-" + Date.now()
                     });
+                    setLastDonation({ donorName: anonymous?"Donateur anonyme":(_donName||"Donateur"), amount: amountInFcfa });
                     setDonMode("success");
                     emailDonConfirm({ donorEmail: anonymous ? null : (user?.email || null), donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"), amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
                   }}
@@ -2352,10 +2668,11 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 <div className="grid grid-cols-2 gap-2">
                   <button onClick={() => setDonMode(anonymous?"anonymous":"logged")} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{td.modify}</button>
                   <button onClick={() => {
+                    const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email || null);
                     supabase.from("donations").insert({
                       case_id: c.id || null,
                       donor_id: user?.id || null,
-                      donor_name: anonymous ? null : (user?.user_metadata?.name || user?.email || null),
+                      donor_name: _donName2,
                       donor_email: anonymous ? null : (user?.email || null),
                       amount: Number(amount),
                       amount_fcfa: amountInFcfa,
@@ -2365,6 +2682,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       message: message || null,
                       reference: "AYYAD-" + (c.tracking_id || c.id || "DON") + "-" + Date.now()
                     });
+                    setLastDonation({ donorName: anonymous?"Donateur anonyme":(_donName2||"Donateur"), amount: amountInFcfa });
                     setDonMode("success");
                     emailDonConfirm({ donorEmail: anonymous ? null : (user?.email || null), donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"), amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
                   }} className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md">{td.confirmBtn}</button>
@@ -2380,7 +2698,25 @@ const CasePage = ({ c, setPage, lang, user }) => {
               <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-4 text-sm text-emerald-800 border border-emerald-100">
                 <p className="font-semibold mb-1">{td.impact}</p><p>{td.impactSub} {c.beneficiary} {td.impactEnd}</p>
               </div>
-              <button onClick={() => { setDonMode("choose"); setAmount(""); setMessage(""); }} className="w-full border border-emerald-200 text-emerald-700 font-semibold py-2.5 rounded-xl text-sm hover:bg-emerald-50">{td.again}</button>
+              {lastDonation && (
+                <button
+                  onClick={() => printDonationCertificate({
+                    donorName: lastDonation.donorName,
+                    amount: lastDonation.amount,
+                    beneficiary: c.beneficiary || c.full_name || "",
+                    caseTitle: typeof c.title==="object" ? c.title[lang] : (c.title||""),
+                    trackingId: c.trackingId || c.tracking_id || ("AYD-"+c.id),
+                    date: new Date().toLocaleDateString(lang==="fr"?"fr-CI":"en-US"),
+                    lang,
+                  })}
+                  className="w-full bg-amber-50 border border-amber-200 text-amber-700 font-bold py-2.5 rounded-xl text-sm hover:bg-amber-100 flex items-center justify-center gap-2">
+                  📜 {lang==="fr"?"Télécharger mon certificat de don":"Download my donation certificate"}
+                </button>
+              )}
+              <div className="flex gap-2">
+                <button onClick={() => { setDonMode("choose"); setAmount(""); setMessage(""); setLastDonation(null); }} className="flex-1 border border-emerald-200 text-emerald-700 font-semibold py-2.5 rounded-xl text-sm hover:bg-emerald-50">{td.again}</button>
+                <div className="flex-1"><ShareButton c={c} lang={lang} /></div>
+              </div>
             </div>}
           </div>
         </div>
@@ -6060,6 +6396,164 @@ const AdminPage = ({ user, setPage, lang }) => {
   );
 };
 
+// ── Mon Impact (historique dons donateur) ────────────────────
+const MonImpactPage = ({ user, setPage, lang }) => {
+  const fr = lang === "fr";
+  const [donations, setDonations] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("donations").select("*").eq("donor_id", user.id)
+      .order("created_at",{ascending:false}).limit(100)
+      .then(({data}) => { setDonations(data||[]); setLoading(false); });
+  },[user?.id]);
+
+  const confirmed = donations.filter(d=>d.status==="confirmed");
+  const pending   = donations.filter(d=>d.status==="pending");
+  const totalFcfa = confirmed.reduce((s,d)=>s+(d.amount_fcfa||d.amount||0),0);
+  const uniqueCases = [...new Set(confirmed.map(d=>d.case_id).filter(Boolean))].length;
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="max-w-2xl mx-auto">
+        <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">← {fr?"Retour à l'accueil":"Back to home"}</button>
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-2xl text-3xl mb-4">💚</div>
+          <h1 className="text-2xl font-black text-gray-900">{fr?"Mon Impact":"My Impact"}</h1>
+          <p className="text-gray-500 text-sm mt-2">{user?.name || user?.email}</p>
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          {[
+            { icon:"💰", v: totalFcfa.toLocaleString("fr-CI")+" FCFA", l: fr?"Total donné":"Total given" },
+            { icon:"🏥", v: uniqueCases, l: fr?"Patients soutenus":"Patients supported" },
+            { icon:"✅", v: confirmed.length, l: fr?"Dons confirmés":"Confirmed donations" },
+          ].map(k=>(
+            <div key={k.l} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+              <div className="text-2xl mb-1">{k.icon}</div>
+              <div className="font-black text-gray-900 text-sm">{k.v}</div>
+              <div className="text-xs text-gray-500 mt-0.5">{k.l}</div>
+            </div>
+          ))}
+        </div>
+
+        {loading ? (
+          <div className="text-center py-10 text-gray-400">{fr?"Chargement...":"Loading..."}</div>
+        ) : donations.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-10 text-center">
+            <div className="text-4xl mb-3">💚</div>
+            <p className="font-bold text-gray-700">{fr?"Vous n'avez pas encore fait de don.":"You haven't made any donations yet."}</p>
+            <button onClick={()=>setPage("home")} className="mt-4 bg-emerald-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-emerald-700">
+              {fr?"Découvrir les collectes →":"Browse campaigns →"}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <h2 className="font-bold text-gray-900 text-sm mb-3">{fr?"Historique de vos dons":"Your donation history"}</h2>
+            {donations.map(d=>(
+              <div key={d.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${d.status==="confirmed"?"bg-emerald-100":"bg-amber-100"}`}>
+                  {d.status==="confirmed"?"✅":"⏳"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-gray-900 text-sm truncate">{d.case_id ? ("Dossier #"+d.case_id.slice(0,8)) : (fr?"Don Ayyad":"Ayyad donation")}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{new Date(d.created_at).toLocaleDateString(fr?"fr-CI":"en-US")} · {d.payment_method||"WAVE"}</div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="font-black text-emerald-700 text-sm">{(d.amount_fcfa||d.amount||0).toLocaleString("fr-CI")} FCFA</div>
+                  <div className={`text-[10px] font-bold ${d.status==="confirmed"?"text-emerald-600":"text-amber-500"}`}>
+                    {d.status==="confirmed"?(fr?"Confirmé":"Confirmed"):(fr?"En attente":"Pending")}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Page Hôpitaux Partenaires ─────────────────────────────────
+const HospitauxPage = ({ setPage, lang }) => {
+  const fr = lang === "fr";
+  const hospitals = [
+    { name:"CHU de Cocody",        city:"Abidjan",       spec:fr?"Cardiologie, Neurologie":"Cardiology, Neurology",       cases:12, icon:"🏥", verified:true },
+    { name:"CHU de Yopougon",      city:"Abidjan",       spec:fr?"Pédiatrie, Gynécologie":"Pediatrics, Gynecology",       cases:9,  icon:"🏥", verified:true },
+    { name:"CHU de Bouaké",        city:"Bouaké",        spec:fr?"Néphrologie, Chirurgie":"Nephrology, Surgery",          cases:7,  icon:"🏥", verified:true },
+    { name:"CHR de Daloa",         city:"Daloa",         spec:fr?"Orthopédie, Traumatologie":"Orthopedics, Trauma",       cases:5,  icon:"🏥", verified:true },
+    { name:"Institut National d'Oncologie", city:"Abidjan", spec:fr?"Oncologie":"Oncology",                              cases:8,  icon:"🏥", verified:true },
+    { name:"CHR de Yamoussoukro",  city:"Yamoussoukro",  spec:fr?"Chirurgie générale":"General Surgery",                 cases:4,  icon:"🏥", verified:true },
+    { name:"CHR de Korhogo",       city:"Korhogo",       spec:fr?"Orthopédie, Médecine interne":"Orthopedics, Internal",  cases:3,  icon:"🏥", verified:true },
+    { name:"CHR de Man",           city:"Man",            spec:fr?"Ophtalmologie, Pédiatrie":"Ophthalmology, Pediatrics", cases:3,  icon:"🏥", verified:true },
+    { name:"Clinique Vision CI",   city:"San-Pédro",     spec:fr?"Ophtalmologie":"Ophthalmology",                        cases:2,  icon:"🏥", verified:true },
+  ];
+  return (
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="max-w-3xl mx-auto">
+        <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">← {fr?"Retour":"Back"}</button>
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-2xl text-3xl mb-4">🏥</div>
+          <h1 className="text-2xl font-black text-gray-900">{fr?"Hôpitaux partenaires vérifiés":"Verified Partner Hospitals"}</h1>
+          <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
+            {fr?"Ayyad travaille exclusivement avec des établissements médicaux agréés et vérifiés. Les fonds sont versés directement à ces hôpitaux."
+              :"Ayyad works exclusively with accredited and verified medical facilities. Funds are transferred directly to these hospitals."}
+          </p>
+        </div>
+
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
+          <span className="text-xl">🔒</span>
+          <div className="text-sm text-emerald-800">
+            <strong>{fr?"Virement direct garanti":"Direct transfer guaranteed"}</strong> — {fr?"Aucun fonds ne transite par des tiers. Chaque virement est tracé et audité.":"No funds go through third parties. Every transfer is tracked and audited."}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {[
+            {icon:"🏥",v:hospitals.length,l:fr?"Hôpitaux partenaires":"Partner hospitals"},
+            {icon:"📋",v:hospitals.reduce((s,h)=>s+h.cases,0)+"+",l:fr?"Dossiers traités":"Cases handled"},
+            {icon:"🌍",v:"7",l:fr?"Villes couvertes":"Cities covered"},
+            {icon:"✅",v:"100%",l:fr?"Virements vérifiés":"Verified transfers"},
+          ].map(k=>(
+            <div key={k.l} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
+              <span className="text-2xl">{k.icon}</span>
+              <div><div className="font-black text-gray-900">{k.v}</div><div className="text-xs text-gray-500">{k.l}</div></div>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-3">
+          {hospitals.map(h=>(
+            <div key={h.name} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-start gap-4">
+              <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">{h.icon}</div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-gray-900">{h.name}</span>
+                  {h.verified && <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-full">✓ {fr?"Vérifié":"Verified"}</span>}
+                </div>
+                <div className="text-xs text-gray-500 mt-0.5">📍 {h.city} · {h.spec}</div>
+                <div className="text-xs text-emerald-600 font-semibold mt-1">{h.cases} {fr?"dossiers traités":"cases handled"}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-8 bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center">
+          <h3 className="font-bold text-gray-900 mb-2">{fr?"Votre hôpital n'est pas listé ?":"Your hospital is not listed?"}</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            {fr?"Ayyad est en expansion. Contactez-nous pour soumettre une demande de partenariat.":"Ayyad is expanding. Contact us to submit a partnership request."}
+          </p>
+          <a href="mailto:contact@ayyad.ci" className="inline-flex items-center gap-2 bg-emerald-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-emerald-700">
+            ✉️ contact@ayyad.ci
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Refund Policy Page ────────────────────────────────────────
 const RefundPage = ({ setPage, lang }) => {
   const fr = lang === "fr";
@@ -6720,7 +7214,7 @@ const Footer = ({ setPage, lang }) => {
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1"><div className="flex items-center gap-2 mb-4"><svg width="36" height="36" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="35" cy="35" r="33" fill="#1a6b3a"/><circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" strokeWidth="2.5"/><rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/><rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/><path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/></svg><span className="font-black text-xl" style={{fontFamily:"Georgia, serif", letterSpacing:"1px"}}>AYYAD</span></div><p className="text-gray-400 text-xs leading-relaxed">{t.tagline}</p></div>
-          {[[t.platform, t.platformLinks, ["collectesactives","how","submit"]], [t.trust, t.trustLinks, ["how","how","impact"]], [t.legal, t.legalLinks, ["legal","faq","bceao"]]].map(([title, links, pages]) =>
+          {[[t.platform, t.platformLinks, ["collectesactives","how","submit"]], [t.trust, t.trustLinks, ["how","hopitaux","impact"]], [t.legal, t.legalLinks, ["legal","faq","bceao"]]].map(([title, links, pages]) =>
             <div key={title}>
               <div className="font-bold text-sm mb-4 text-gray-300">{title}</div>
               <ul className="space-y-2.5">
@@ -7558,7 +8052,35 @@ export default function AyyadApp() {
   useEffect(() => {
     window.scrollTo(0, 0);
     window.history.pushState({ page }, "", "?p=" + page);
-  }, [page]);
+    // ── OG Meta tags dynamiques ──
+    const setMeta = (prop, content) => {
+      let el = document.querySelector(`meta[property="${prop}"]`) || document.querySelector(`meta[name="${prop}"]`);
+      if (!el) { el = document.createElement("meta"); el.setAttribute(prop.startsWith("og:")?"property":"name",prop); document.head.appendChild(el); }
+      el.setAttribute("content", content);
+    };
+    if (page === "case" && selectedCase) {
+      const title = typeof selectedCase.title==="object" ? (selectedCase.title.fr||selectedCase.title.en) : (selectedCase.title||"Ayyad");
+      const desc = typeof selectedCase.desc==="object" ? (selectedCase.desc.fr||selectedCase.desc.en||"") : (selectedCase.description||"");
+      const img = selectedCase.photos?.[0] || selectedCase.image || "https://ayyad.vercel.app/og-default.png";
+      const url = "https://ayyad.vercel.app/?p=case&case="+(selectedCase.trackingId||selectedCase.tracking_id||selectedCase.id);
+      document.title = title + " — Ayyad CI";
+      setMeta("og:title", title + " — Ayyad CI");
+      setMeta("og:description", desc.slice(0,200));
+      setMeta("og:image", img);
+      setMeta("og:url", url);
+      setMeta("og:type", "website");
+      setMeta("twitter:card", "summary_large_image");
+      setMeta("twitter:title", title);
+      setMeta("twitter:description", desc.slice(0,200));
+      setMeta("twitter:image", img);
+    } else {
+      document.title = "Ayyad CI — Financement médical solidaire";
+      setMeta("og:title", "Ayyad CI — Financement médical solidaire");
+      setMeta("og:description", "Aidez des patients ivoiriens à financer leurs soins médicaux. Paiement via Wave CI. Fonds versés directement à l'hôpital.");
+      setMeta("og:image", "https://ayyad.vercel.app/og-default.png");
+      setMeta("og:url", "https://ayyad.vercel.app");
+    }
+  }, [page, selectedCase]);
   const [lang, setLang] = useState("fr");
   const [user, setUser] = useState(null);
   const [selectedCase, setSelectedCase] = useState(null);
@@ -7663,6 +8185,8 @@ export default function AyyadApp() {
         {page==="legal"&&<LegalPage lang={lang} setPage={setPage} />}
         {page==="impact"&&<ImpactPage lang={lang} setPage={setPage} />}
         {page==="bceao"&&<BCEAOPage lang={lang} setPage={setPage} />}
+        {page==="hopitaux"&&<HospitauxPage lang={lang} setPage={setPage} />}
+        {page==="monimpact"&&<MonImpactPage user={user} lang={lang} setPage={setPage} />}
         {page==="urgents"&&<UrgentsPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
         {page==="login"&&<LoginPage setPage={setPage} setUser={setUser} lang={lang} trackVisit={trackVisit} />}
         {page==="register"&&<RegisterPage setPage={setPage} setUser={setUser} lang={lang} />}
