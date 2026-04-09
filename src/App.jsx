@@ -5494,7 +5494,7 @@ const AdminPage = ({ user, setPage, lang }) => {
           return (
             <div className="space-y-6">
               {/* KPIs Finance */}
-              {user?.adminRole === "super_admin" && (
+              {["super_admin","finance","admin"].includes(user?.adminRole) && (
                 <div className="flex justify-end">
                   <button onClick={()=>quickXLS("ayyad_finance", fr?["Date","Libellé","Catégorie","Montant (FCFA)","Référence"]:["Date","Label","Category","Amount (FCFA)","Reference"], expenses.map(e=>[e.date?.slice(0,10)||"",e.label||"",e.category||"",e.amount||0,e.reference||""]))}
                     className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all">
@@ -5727,7 +5727,7 @@ const AdminPage = ({ user, setPage, lang }) => {
           return (
             <div className="space-y-6">
               {/* KPIs salaires */}
-              {user?.adminRole === "super_admin" && (
+              {["super_admin","finance","admin"].includes(user?.adminRole) && (
                 <div className="flex justify-end">
                   <button onClick={()=>quickXLS_sal("ayyad_salaires", fr?["Mois","Employé","Rôle","Montant (FCFA)","Méthode","Statut","Date paiement"]:["Month","Employee","Role","Amount (FCFA)","Method","Status","Payment date"], salaryPayments.map(p=>[p.payment_month||"",p.staff_name||"",p.role||"",p.amount||0,p.payment_method||p.method||"WAVE",p.status||"",p.payment_date?.slice(0,10)||""]))}
                     className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all">
@@ -5846,7 +5846,7 @@ const AdminPage = ({ user, setPage, lang }) => {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-gray-900">{lang==="fr"?"Journal d'activité":"Activity log"}</h2>
               <div className="flex items-center gap-2">
-                {user?.adminRole === "super_admin" && auditLogs.length > 0 && (() => {
+                {["super_admin","finance","admin"].includes(user?.adminRole) && auditLogs.length > 0 && (() => {
                   const quickXLS_audit = () => {
                     const headers = lang==="fr"?["Horodatage","Opérateur","Rôle","Action","Cible","Ancienne valeur","Nouvelle valeur"]:["Timestamp","Operator","Role","Action","Target","Old value","New value"];
                     const rows = auditLogs.map(l=>[l.created_at?.slice(0,19).replace("T"," ")||"",l.user_email||"",l.user_role||"",l.action||"",l.target||"",l.old_value||"",l.new_value||""]);
@@ -5999,7 +5999,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                       {(fr?MONTHS_FR:MONTHS_EN).map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}
                     </select>
                   )}
-                  {user?.adminRole === "super_admin" && (
+                  {["super_admin","finance","admin"].includes(user?.adminRole) && (
                     <button onClick={exportBilanXLS} className="ml-auto flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all">
                       📊 {fr?"Exporter Excel":"Export Excel"}
                     </button>
