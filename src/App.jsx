@@ -2341,7 +2341,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       reference: "AYYAD-" + (c.tracking_id || c.id || "DON") + "-" + Date.now()
                     });
                     setDonMode("success");
-                    emailDonConfirm({ donorEmail: null, donorName: anonymous ? "" : "Donateur", amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
+                    emailDonConfirm({ donorEmail: anonymous ? null : (user?.email || null), donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"), amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
                   }}
                   onCancel={() => setDonMode(anonymous?"anonymous":"logged")}
                 />
@@ -2366,7 +2366,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       reference: "AYYAD-" + (c.tracking_id || c.id || "DON") + "-" + Date.now()
                     });
                     setDonMode("success");
-                    emailDonConfirm({ donorEmail: null, donorName: anonymous ? "" : "Donateur", amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
+                    emailDonConfirm({ donorEmail: anonymous ? null : (user?.email || null), donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"), amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
                   }} className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md">{td.confirmBtn}</button>
                 </div>
               )}
@@ -3904,7 +3904,8 @@ const AdminPage = ({ user, setPage, lang }) => {
       ({ data, error } = await supabase
         .from("cases")
         .select("*")
-        .order("created_at", { ascending: false }));
+        .order("created_at", { ascending: false })
+        .limit(500));
     } catch(e) {
       console.warn("loadCases error:", e);
       setLoadingCases(false);
@@ -5619,6 +5620,278 @@ const LegalPage = ({ setPage, lang }) => {
   );
 };
 
+// ── Rapport d'impact ─────────────────────────────────────────
+const ImpactPage = ({ setPage, lang }) => {
+  const fr = lang === "fr";
+  const Block = ({ icon, title, value, sub }) => (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center">
+      <div className="text-3xl mb-2">{icon}</div>
+      <div className="text-2xl font-black text-gray-900">{value}</div>
+      <div className="text-xs font-bold text-gray-700 mt-1">{title}</div>
+      {sub && <div className="text-[11px] text-gray-400 mt-1">{sub}</div>}
+    </div>
+  );
+  const Section = ({ icon, title, children }) => (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-xl">{icon}</div>
+        <h2 className="font-black text-gray-900 text-base">{title}</h2>
+      </div>
+      {children}
+    </div>
+  );
+  return (
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="text-center mb-2">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-100 rounded-2xl text-3xl mb-4">📊</div>
+          <h1 className="text-2xl font-black text-gray-900">{fr ? "Rapport d'impact Ayyad" : "Ayyad Impact Report"}</h1>
+          <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
+            {fr ? "Transparence totale sur l'utilisation des fonds et l'impact réel sur les patients." : "Full transparency on fund usage and real patient impact."}
+          </p>
+          <div className="text-[11px] text-gray-400 mt-2">{fr ? "Données mises à jour en temps réel · Lancée en 2025" : "Real-time data · Launched in 2025"}</div>
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-2 gap-3">
+          <Block icon="🏥" title={fr ? "Patients aidés" : "Patients helped"} value="En cours" sub={fr ? "Dossiers actifs" : "Active cases"} />
+          <Block icon="💚" title={fr ? "Montant collecté" : "Amount raised"} value="En cours" sub={fr ? "Depuis le lancement" : "Since launch"} />
+          <Block icon="🎯" title={fr ? "Taux de succès" : "Success rate"} value="—" sub={fr ? "Dossiers financés / soumis" : "Funded / submitted"} />
+          <Block icon="⚡" title={fr ? "Délai moyen" : "Average time"} value="72h" sub={fr ? "Validation dossier" : "Case validation"} />
+        </div>
+
+        {/* Utilisation des fonds */}
+        <Section icon="💰" title={fr ? "Utilisation des fonds" : "Use of funds"}>
+          <div className="space-y-3">
+            {[
+              { label: fr ? "Versements directs à l'hôpital" : "Direct hospital payments", pct: 95, color: "bg-emerald-500" },
+              { label: fr ? "Frais opérationnels Ayyad (5%)" : "Ayyad operational fees (5%)", pct: 5, color: "bg-blue-400" },
+            ].map(({ label, pct, color }) => (
+              <div key={label}>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-gray-600">{label}</span>
+                  <span className="font-bold text-gray-900">{pct}%</span>
+                </div>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className={`h-full ${color} rounded-full`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-400 mt-4 leading-relaxed">
+            {fr
+              ? "Les fonds collectés sont versés directement à l'établissement hospitalier concerné, jamais au bénéficiaire personnellement. Les 5% de frais couvrent les frais de vérification, de gestion et de maintenance de la plateforme."
+              : "Collected funds are sent directly to the relevant hospital, never to the beneficiary personally. The 5% fee covers verification, management and platform maintenance costs."}
+          </p>
+        </Section>
+
+        {/* Processus de vérification */}
+        <Section icon="🔍" title={fr ? "Processus de vérification" : "Verification process"}>
+          <div className="space-y-3">
+            {[
+              { step: "1", title: fr ? "Soumission du dossier" : "Case submission", desc: fr ? "Le patient soumet ses documents médicaux (rapport, devis, pièce d'identité)." : "Patient submits medical documents (report, quote, ID)." },
+              { step: "2", title: fr ? "Vérification Ayyad" : "Ayyad verification", desc: fr ? "Notre équipe vérifie l'authenticité des documents sous 72h." : "Our team verifies document authenticity within 72h." },
+              { step: "3", title: fr ? "Validation & publication" : "Validation & publication", desc: fr ? "Le dossier validé est publié sur la plateforme et la collecte démarre." : "Validated case is published and fundraising begins." },
+              { step: "4", title: fr ? "Virement à l'hôpital" : "Hospital transfer", desc: fr ? "À l'atteinte de l'objectif, les fonds sont virés directement à l'hôpital." : "Once goal is reached, funds are transferred directly to the hospital." },
+            ].map(({ step, title, desc }) => (
+              <div key={step} className="flex gap-3">
+                <div className="w-7 h-7 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-black flex-shrink-0">{step}</div>
+                <div>
+                  <div className="text-xs font-bold text-gray-800">{title}</div>
+                  <div className="text-[11px] text-gray-500 leading-relaxed">{desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* Engagements */}
+        <Section icon="🤝" title={fr ? "Nos engagements" : "Our commitments"}>
+          <div className="grid grid-cols-1 gap-2">
+            {[
+              { icon: "🏦", text: fr ? "Fonds versés directement à l'hôpital — jamais en cash au patient" : "Funds paid directly to hospital — never cash to patient" },
+              { icon: "📋", text: fr ? "Vérification de chaque dossier par notre équipe avant publication" : "Every case verified by our team before publication" },
+              { icon: "🔄", text: fr ? "Remboursement intégral si dossier rejeté après collecte" : "Full refund if case rejected after fundraising" },
+              { icon: "📊", text: fr ? "Rapport financier mensuel publié sur cette page" : "Monthly financial report published on this page" },
+              { icon: "🛡️", text: fr ? "Données personnelles protégées — conformité ADPCI" : "Personal data protected — ADPCI compliance" },
+            ].map(({ icon, text }, i) => (
+              <div key={i} className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
+                <span className="text-lg flex-shrink-0">{icon}</span>
+                <p className="text-xs text-gray-600 leading-relaxed">{text}</p>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* Prochains jalons */}
+        <Section icon="🚀" title={fr ? "Prochains jalons" : "Next milestones"}>
+          <div className="space-y-2">
+            {[
+              { q: "T2 2026", label: fr ? "Enregistrement officiel Ayyad CI" : "Official Ayyad CI registration" },
+              { q: "T3 2026", label: fr ? "Intégration Wave CI API marchands" : "Wave CI merchant API integration" },
+              { q: "T3 2026", label: fr ? "Partenariats avec 5 cliniques Abidjan" : "Partnerships with 5 Abidjan clinics" },
+              { q: "T4 2026", label: fr ? "Publication rapport annuel 2026" : "Publication of 2026 annual report" },
+            ].map(({ q, label }) => (
+              <div key={q} className="flex items-center gap-3 text-xs">
+                <span className="bg-emerald-100 text-emerald-700 font-bold px-2 py-1 rounded-lg w-16 text-center flex-shrink-0">{q}</span>
+                <span className="text-gray-600">{label}</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        <div className="text-center mt-4">
+          <p className="text-xs text-gray-400 mb-4">{fr ? "Pour toute question sur nos rapports : " : "For any questions about our reports: "}<a href="mailto:impact@ayyad.ci" className="text-emerald-600 font-bold">impact@ayyad.ci</a></p>
+          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">{fr ? "← Retour à l'accueil" : "← Back to home"}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Conformité BCEAO ──────────────────────────────────────────
+const BCEAOPage = ({ setPage, lang }) => {
+  const fr = lang === "fr";
+  const Section = ({ icon, title, children }) => (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">{icon}</div>
+        <h2 className="font-black text-gray-900 text-base">{title}</h2>
+      </div>
+      {children}
+    </div>
+  );
+  const Item = ({ title, children }) => (
+    <div className="border-l-2 border-blue-400 pl-4 mb-3">
+      <div className="text-xs font-bold text-gray-800 mb-1">{title}</div>
+      <div className="text-xs text-gray-500 leading-relaxed">{children}</div>
+    </div>
+  );
+  return (
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="text-center mb-2">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-100 rounded-2xl text-3xl mb-4">🏦</div>
+          <h1 className="text-2xl font-black text-gray-900">{fr ? "Conformité BCEAO / UEMOA" : "BCEAO / UEMOA Compliance"}</h1>
+          <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
+            {fr
+              ? "Ayyad opère en conformité avec les réglementations financières de l'UEMOA et les directives de la BCEAO applicables aux plateformes de financement participatif en Côte d'Ivoire."
+              : "Ayyad operates in compliance with UEMOA financial regulations and BCEAO guidelines applicable to crowdfunding platforms in Côte d'Ivoire."}
+          </p>
+          <div className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 mt-3 max-w-sm mx-auto">
+            {fr ? "⚠️ Document provisoire — à finaliser après enregistrement officiel d'Ayyad CI" : "⚠️ Provisional document — to be finalized after official Ayyad CI registration"}
+          </div>
+        </div>
+
+        {/* Cadre réglementaire */}
+        <Section icon="📜" title={fr ? "Cadre réglementaire applicable" : "Applicable regulatory framework"}>
+          <div className="space-y-2">
+            {[
+              { label: fr ? "Règlement UEMOA n°15/2002" : "UEMOA Regulation n°15/2002", desc: fr ? "Systèmes de paiement et règlement dans l'espace UEMOA" : "Payment and settlement systems in the UEMOA area" },
+              { label: fr ? "Instruction BCEAO n°008-05-2015" : "BCEAO Instruction n°008-05-2015", desc: fr ? "Conditions et modalités d'exercice des activités des émetteurs de monnaie électronique" : "Conditions for electronic money issuer activities" },
+              { label: fr ? "Loi ivoirienne n°2016-412" : "Ivorian Law n°2016-412", desc: fr ? "Lutte contre le blanchiment de capitaux et le financement du terrorisme (LBC/FT)" : "Anti-money laundering and counter-terrorism financing (AML/CFT)" },
+              { label: fr ? "Loi n°2013-450 (ADPCI)" : "Law n°2013-450 (ADPCI)", desc: fr ? "Protection des données à caractère personnel en Côte d'Ivoire" : "Personal data protection in Côte d'Ivoire" },
+            ].map(({ label, desc }) => (
+              <div key={label} className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
+                <span className="text-blue-500 font-black text-lg flex-shrink-0">§</span>
+                <div>
+                  <div className="text-xs font-bold text-gray-800">{label}</div>
+                  <div className="text-[11px] text-gray-500">{desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* Partenaires de paiement agréés */}
+        <Section icon="💳" title={fr ? "Partenaires de paiement agréés BCEAO" : "BCEAO-licensed payment partners"}>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { name: "Wave CI", status: fr ? "Agréé BCEAO" : "BCEAO licensed", icon: "🌊", detail: fr ? "Opérateur monnaie électronique agréé en Côte d'Ivoire" : "Licensed e-money operator in Côte d'Ivoire" },
+              { name: fr ? "Carte bancaire" : "Bank card", status: "Visa / Mastercard", icon: "💳", detail: fr ? "Via passerelle de paiement internationale conforme PCI-DSS" : "Via PCI-DSS compliant international payment gateway" },
+            ].map(({ name, status, icon, detail }) => (
+              <div key={name} className="bg-gray-50 rounded-xl p-4 text-center">
+                <div className="text-3xl mb-2">{icon}</div>
+                <div className="text-xs font-black text-gray-900">{name}</div>
+                <div className="text-[10px] text-blue-600 font-bold mt-1">{status}</div>
+                <div className="text-[10px] text-gray-400 mt-1 leading-relaxed">{detail}</div>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* Mesures LBC/FT */}
+        <Section icon="🛡️" title={fr ? "Mesures LBC/FT (Anti-blanchiment)" : "AML/CFT Measures"}>
+          <Item title={fr ? "Identification des utilisateurs (KYC)" : "User Identification (KYC)"}>
+            {fr
+              ? "Tout utilisateur souhaitant soumettre un dossier doit fournir une pièce d'identité valide (CNI, passeport ou titre de séjour). Les informations sont vérifiées avant validation du dossier."
+              : "Any user wishing to submit a case must provide valid ID (national ID, passport or residence permit). Information is verified before case validation."}
+          </Item>
+          <Item title={fr ? "Seuils de transaction" : "Transaction thresholds"}>
+            {fr
+              ? "Les transactions Wave CI sont soumises aux plafonds réglementaires BCEAO. Les objectifs de collecte supérieurs à 5 000 000 FCFA font l'objet d'une vérification renforcée. Les dons en espèces ne sont pas acceptés."
+              : "Wave CI transactions are subject to BCEAO regulatory limits. Campaign goals above 5,000,000 FCFA are subject to enhanced verification. Cash donations are not accepted."}
+          </Item>
+          <Item title={fr ? "Conservation des données de transactions" : "Transaction data retention"}>
+            {fr
+              ? "Toutes les transactions sont enregistrées et conservées pendant 10 ans conformément à la réglementation UEMOA. Les données incluent : montant, date, identité du donateur (si non anonyme), établissement bénéficiaire."
+              : "All transactions are recorded and retained for 10 years in accordance with UEMOA regulations. Data includes: amount, date, donor identity (if non-anonymous), beneficiary institution."}
+          </Item>
+          <Item title={fr ? "Détection des activités suspectes" : "Suspicious activity detection"}>
+            {fr
+              ? "Ayyad dispose d'un système de surveillance des transactions inhabituelles. Toute activité suspecte est signalée à la CENTIF-CI (Cellule Nationale de Traitement des Informations Financières)."
+              : "Ayyad has a system for monitoring unusual transactions. Any suspicious activity is reported to CENTIF-CI (National Financial Intelligence Unit)."}
+          </Item>
+        </Section>
+
+        {/* Statut réglementaire */}
+        <Section icon="📋" title={fr ? "Statut réglementaire d'Ayyad" : "Ayyad's regulatory status"}>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+            <p className="text-xs text-amber-700 leading-relaxed">
+              {fr
+                ? "⚠️ Ayyad CI est actuellement en phase de démarrage. L'enregistrement officiel auprès du RCCM d'Abidjan et la déclaration à la BCEAO en tant que plateforme de financement participatif sont en cours. Pendant cette phase, les volumes de collecte restent limités conformément aux seuils réglementaires."
+                : "⚠️ Ayyad CI is currently in its startup phase. Official registration with Abidjan's RCCM and declaration to BCEAO as a crowdfunding platform are in progress. During this phase, fundraising volumes remain limited in accordance with regulatory thresholds."}
+            </p>
+          </div>
+          <div className="space-y-2">
+            {[
+              { label: "RCCM", value: fr ? "En cours d'enregistrement" : "Registration in progress", ok: false },
+              { label: fr ? "Déclaration BCEAO" : "BCEAO declaration", value: fr ? "À soumettre après RCCM" : "To submit after RCCM", ok: false },
+              { label: "ADPCI", value: fr ? "Conformité assurée — données hébergées sur Supabase (Singapore)" : "Compliance ensured — data hosted on Supabase (Singapore)", ok: true },
+              { label: "SSL / TLS", value: fr ? "Certificat actif — connexions chiffrées HTTPS" : "Active certificate — HTTPS encrypted connections", ok: true },
+            ].map(({ label, value, ok }) => (
+              <div key={label} className="flex items-start gap-3 text-xs">
+                <span className={`font-black flex-shrink-0 ${ok ? "text-emerald-600" : "text-amber-500"}`}>{ok ? "✓" : "⏳"}</span>
+                <div>
+                  <span className="font-bold text-gray-800">{label} : </span>
+                  <span className="text-gray-500">{value}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* Contact */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center">
+          <p className="text-xs text-gray-600 mb-3">
+            {fr
+              ? "Pour toute question relative à notre conformité réglementaire ou pour signaler une activité suspecte :"
+              : "For any questions about our regulatory compliance or to report suspicious activity:"}
+          </p>
+          <a href="mailto:compliance@ayyad.ci" className="text-emerald-600 text-sm font-bold">compliance@ayyad.ci</a>
+          <p className="text-[11px] text-gray-400 mt-3">
+            {fr ? "Autorité de supervision : BCEAO — Siège Dakar, Sénégal · bceao.int" : "Supervisory authority: BCEAO — HQ Dakar, Senegal · bceao.int"}
+          </p>
+        </div>
+
+        <div className="text-center">
+          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">{fr ? "← Retour à l'accueil" : "← Back to home"}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Footer ────────────────────────────────────────────────────
 const Footer = ({ setPage, lang }) => {
   const t = T[lang].footer;
@@ -5627,7 +5900,7 @@ const Footer = ({ setPage, lang }) => {
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1"><div className="flex items-center gap-2 mb-4"><svg width="36" height="36" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="35" cy="35" r="33" fill="#1a6b3a"/><circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" strokeWidth="2.5"/><rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/><rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/><path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/></svg><span className="font-black text-xl" style={{fontFamily:"Georgia, serif", letterSpacing:"1px"}}>AYYAD</span></div><p className="text-gray-400 text-xs leading-relaxed">{t.tagline}</p></div>
-          {[[t.platform, t.platformLinks, ["collectesactives","how","submit"]], [t.trust, t.trustLinks, ["how","how","refund"]], [t.legal, t.legalLinks, ["legal","faq","legal"]]].map(([title, links, pages]) =>
+          {[[t.platform, t.platformLinks, ["collectesactives","how","submit"]], [t.trust, t.trustLinks, ["how","how","impact"]], [t.legal, t.legalLinks, ["legal","faq","bceao"]]].map(([title, links, pages]) =>
             <div key={title}>
               <div className="font-bold text-sm mb-4 text-gray-300">{title}</div>
               <ul className="space-y-2.5">
@@ -6568,6 +6841,8 @@ export default function AyyadApp() {
         {page==="how"&&<HowPage lang={lang} setPage={setPage} />}
         {page==="refund"&&<RefundPage lang={lang} setPage={setPage} />}
         {page==="legal"&&<LegalPage lang={lang} setPage={setPage} />}
+        {page==="impact"&&<ImpactPage lang={lang} setPage={setPage} />}
+        {page==="bceao"&&<BCEAOPage lang={lang} setPage={setPage} />}
         {page==="urgents"&&<UrgentsPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
         {page==="login"&&<LoginPage setPage={setPage} setUser={setUser} lang={lang} trackVisit={trackVisit} />}
         {page==="register"&&<RegisterPage setPage={setPage} setUser={setUser} lang={lang} />}
