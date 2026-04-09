@@ -2482,9 +2482,33 @@ const RegisterPage = ({ setPage, setUser, lang }) => {
 
   const handleSubmit = async () => {
     const emailClean = form.email.trim().toLowerCase();
-    if (!emailClean || !form.password) return;
-    if (form.password.length < 6) {
-      setError(lang === "fr" ? "Le mot de passe doit contenir au moins 6 caractères." : "Password must be at least 6 characters.");
+    if (!form.name.trim()) {
+      setError(lang === "fr" ? "Veuillez entrer votre nom." : "Please enter your name.");
+      return;
+    }
+    if (!emailClean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
+      setError(lang === "fr" ? "Adresse email invalide." : "Invalid email address.");
+      return;
+    }
+    // Validation téléphone (optionnel mais format CI si renseigné)
+    if (form.phone.trim()) {
+      const phoneClean = form.phone.trim().replace(/\s/g, "");
+      const ciLocal = /^(01|03|05|07|08|09|27)\d{8}$/.test(phoneClean);
+      const ciIntl  = /^\+225(01|03|05|07|08|09|27)\d{8}$/.test(phoneClean);
+      if (!ciLocal && !ciIntl) {
+        setError(lang === "fr"
+          ? "Numéro invalide. Format attendu : 07 XX XX XX XX ou +225 07 XX XX XX XX"
+          : "Invalid number. Expected format: 07 XX XX XX XX or +225 07 XX XX XX XX");
+        return;
+      }
+    }
+    // Validation mot de passe
+    if (form.password.length < 8) {
+      setError(lang === "fr" ? "Le mot de passe doit contenir au moins 8 caractères." : "Password must be at least 8 characters.");
+      return;
+    }
+    if (!/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password)) {
+      setError(lang === "fr" ? "Le mot de passe doit contenir au moins une lettre et un chiffre." : "Password must contain at least one letter and one number.");
       return;
     }
     if (!acceptedTerms) {
@@ -2529,7 +2553,60 @@ const RegisterPage = ({ setPage, setUser, lang }) => {
         </div>}
         {step===2&&<div className="space-y-4">
           {error&&<div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600 text-center">{error}</div>}
-          {t.fields.map(f=><div key={f.key}><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{f.label}</label><input value={form[f.key]} onChange={e=>setForm({...form,[f.key]:e.target.value})} type={f.type} placeholder={f.p} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>)}
+          {t.fields.map(f=>(
+            <div key={f.key}>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{f.label}</label>
+              <input
+                value={form[f.key]}
+                onChange={e => {
+                  let val = e.target.value;
+                  // Téléphone : n'autoriser que chiffres, +, espaces
+                  if (f.key === "phone") val = val.replace(/[^0-9+\s]/g, "").slice(0, 16);
+                  // Mot de passe : indicateur de force visuel via bordure
+                  setForm({...form, [f.key]: val});
+                }}
+                type={f.type}
+                placeholder={f.p}
+                inputMode={f.key === "phone" ? "tel" : undefined}
+                className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${
+                  f.key === "password" && form.password.length > 0
+                    ? form.password.length >= 8 && /[A-Za-z]/.test(form.password) && /[0-9]/.test(form.password)
+                      ? "border-emerald-400"
+                      : "border-amber-400"
+                    : "border-gray-200"
+                }`}
+              />
+              {/* Indicateur force mot de passe */}
+              {f.key === "password" && form.password.length > 0 && (
+                <div className="mt-1.5 space-y-1">
+                  <div className="flex gap-1">
+                    {[8, 10, 12].map((min, i) => (
+                      <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${
+                        form.password.length >= min && /[A-Za-z]/.test(form.password) && /[0-9]/.test(form.password)
+                          ? ["bg-red-400","bg-amber-400","bg-emerald-500"][i]
+                          : "bg-gray-200"
+                      }`} />
+                    ))}
+                  </div>
+                  <p className={`text-[10px] ${
+                    form.password.length >= 8 && /[A-Za-z]/.test(form.password) && /[0-9]/.test(form.password)
+                      ? "text-emerald-600" : "text-amber-600"
+                  }`}>
+                    {lang === "fr"
+                      ? form.password.length < 8 ? "Min. 8 caractères" : !/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password) ? "Ajoutez une lettre et un chiffre" : "✓ Mot de passe valide"
+                      : form.password.length < 8 ? "Min. 8 characters" : !/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password) ? "Add a letter and a number" : "✓ Valid password"
+                    }
+                  </p>
+                </div>
+              )}
+              {/* Hint téléphone */}
+              {f.key === "phone" && (
+                <p className="text-[10px] text-gray-400 mt-1">
+                  {lang === "fr" ? "Format CI : 07 XX XX XX XX ou +225 07 XX XX XX XX" : "CI format: 07 XX XX XX XX or +225 07 XX XX XX XX"}
+                </p>
+              )}
+            </div>
+          ))}
           <div className="flex items-start gap-2 text-xs text-gray-500">
             <input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} className="mt-0.5 accent-emerald-600 cursor-pointer" />
             <span onClick={()=>setAcceptedTerms(v=>!v)} className="cursor-pointer">{t.terms} <a href="https://ayyad.ci/cgu" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.termsLink}</a> {t.and} <a href="https://ayyad.ci/confidentialite" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.privacyLink}</a>.</span>
