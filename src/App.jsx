@@ -5742,8 +5742,8 @@ const LegalPage = ({ setPage, lang }) => {
 
               <Heading>{fr ? "4. Dons et paiements" : "4. Donations and payments"}</Heading>
               <P>{fr
-                ? "Les dons sont effectués via des opérateurs de paiement mobile (Wave CI, carte bancaire). Chaque don est définitif sauf dans les cas prévus par la politique de remboursement d'Ayyad. Ayyad prélève une commission opérationnelle de 5%, intégrée dans l'objectif de collecte et invisible pour le donateur."
-                : "Donations are made via Wave CI or international card payment. Each donation is final except in cases provided for by Ayyad's refund policy. Ayyad charges a 5% operational fee, included in the campaign goal and invisible to the donor."}</P>
+                ? "Les dons sont effectués via des opérateurs de paiement mobile (Wave CI, carte bancaire). Chaque don est définitif sauf dans les cas prévus par la politique de remboursement d'Ayyad. L'objectif de collecte affiché est égal au devis médical + 5% de frais opérationnels Ayyad. Ces 5% sont intégrés dans l'objectif dès le départ : le donateur paie exactement le montant qu'il a choisi, et l'hôpital reçoit exactement le montant du devis."
+                : "Donations are made via Wave CI or international card payment. Each donation is final except in cases provided for by Ayyad's refund policy. The displayed campaign goal equals the medical quote + 5% Ayyad operational fee. This 5% is built into the goal from the start: the donor pays exactly the amount they chose, and the hospital receives exactly the quoted amount."}</P>
 
               <Heading>{fr ? "5. Soumission de dossiers" : "5. Case submission"}</Heading>
               <P>{fr
@@ -5828,27 +5828,61 @@ const ImpactPage = ({ setPage, lang }) => {
         </div>
 
         {/* Utilisation des fonds */}
-        <Section icon="💰" title={fr ? "Utilisation des fonds" : "Use of funds"}>
-          <div className="space-y-3">
-            {[
-              { label: fr ? "Versements directs à l'hôpital" : "Direct hospital payments", pct: 95, color: "bg-emerald-500" },
-              { label: fr ? "Frais opérationnels Ayyad (5%)" : "Ayyad operational fees (5%)", pct: 5, color: "bg-blue-400" },
-            ].map(({ label, pct, color }) => (
-              <div key={label}>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-gray-600">{label}</span>
-                  <span className="font-bold text-gray-900">{pct}%</span>
-                </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div className={`h-full ${color} rounded-full`} style={{ width: `${pct}%` }} />
-                </div>
-              </div>
-            ))}
+        <Section icon="💰" title={fr ? "Comment sont calculés les frais Ayyad ?" : "How are Ayyad fees calculated?"}>
+          {/* Principe */}
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4">
+            <p className="text-xs font-bold text-emerald-800 mb-1">
+              {fr ? "✅ Principe : les 5% sont intégrés dans l'objectif de collecte dès le départ" : "✅ Principle: the 5% is built into the campaign goal from the start"}
+            </p>
+            <p className="text-xs text-emerald-700 leading-relaxed">
+              {fr
+                ? "Ayyad n'a aucuns frais cachés. Les 5% ne sont jamais prélevés sur le montant que vous donnez. Ils sont calculés à partir du devis médical et intégrés dans l'objectif de collecte."
+                : "Ayyad has no hidden fees. The 5% is never deducted from the amount you donate. It is calculated from the medical quote and built into the campaign goal."}
+            </p>
           </div>
-          <p className="text-[11px] text-gray-400 mt-4 leading-relaxed">
+
+          {/* Exemple concret */}
+          <div className="text-xs font-bold text-gray-700 mb-2">{fr ? "Exemple concret :" : "Concrete example:"}</div>
+          <div className="space-y-2 mb-4">
+            <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+              <span className="text-lg">🏥</span>
+              <div className="flex-1">
+                <div className="text-xs text-gray-500">{fr ? "Devis médical de l'hôpital" : "Hospital medical quote"}</div>
+                <div className="font-black text-gray-900">1 000 000 FCFA</div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center text-gray-400 text-xs font-bold">+ 5% frais Ayyad = 50 000 FCFA</div>
+            <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl p-3">
+              <span className="text-lg">🎯</span>
+              <div className="flex-1">
+                <div className="text-xs text-blue-600 font-bold">{fr ? "Objectif de collecte affiché" : "Displayed campaign goal"}</div>
+                <div className="font-black text-blue-800">1 050 000 FCFA</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Résultat */}
+          <div className="text-xs font-bold text-gray-700 mb-2">{fr ? "Quand l'objectif est atteint :" : "When the goal is reached:"}</div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center bg-emerald-50 rounded-xl px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span>🏥</span>
+                <span className="text-xs font-semibold text-gray-700">{fr ? "L'hôpital reçoit" : "Hospital receives"}</span>
+              </div>
+              <span className="font-black text-emerald-700">1 000 000 FCFA</span>
+            </div>
+            <div className="flex justify-between items-center bg-gray-50 rounded-xl px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span>⚙️</span>
+                <span className="text-xs font-semibold text-gray-700">{fr ? "Frais Ayyad (vérification, plateforme)" : "Ayyad fees (verification, platform)"}</span>
+              </div>
+              <span className="font-black text-gray-500">50 000 FCFA</span>
+            </div>
+          </div>
+          <p className="text-[11px] text-gray-400 mt-4 leading-relaxed border-t border-gray-100 pt-3">
             {fr
-              ? "Les fonds collectés sont versés directement à l'établissement hospitalier concerné, jamais au bénéficiaire personnellement. Les 5% de frais couvrent les frais de vérification, de gestion et de maintenance de la plateforme."
-              : "Collected funds are sent directly to the relevant hospital, never to the beneficiary personally. The 5% fee covers verification, management and platform maintenance costs."}
+              ? "👤 En tant que donateur, vous payez exactement le montant que vous avez choisi. L'hôpital reçoit exactement le montant du devis. Personne ne perd rien : les frais Ayyad sont dans l'objectif, pas en plus."
+              : "👤 As a donor, you pay exactly the amount you chose. The hospital receives exactly the quote amount. Nobody loses anything: Ayyad fees are inside the goal, not on top of it."}
           </p>
         </Section>
 
