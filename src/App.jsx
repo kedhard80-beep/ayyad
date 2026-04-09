@@ -193,7 +193,7 @@ const T = {
     register: { title: "Créer un compte", roleQ: "Je souhaite...", roles: [{ id:"donor",icon:"💚",title:"Faire des dons",desc:"Aider des patients dans le besoin" },{ id:"beneficiary",icon:"🏥",title:"Recevoir des soins",desc:"Financer une intervention médicale" }], fields: [{ key:"name",label:"Nom complet",p:"Aminata Koné",type:"text" },{ key:"email",label:"Email",p:"vous@exemple.ci",type:"email" },{ key:"phone",label:"Numéro Wave CI",p:"+225 07 XX XX XX XX",type:"tel" },{ key:"password",label:"Mot de passe (min. 6 caractères)",p:"••••••••",type:"password" }], terms: "J'accepte les", termsLink: "conditions d'utilisation", and: "et la", privacyLink: "politique de confidentialité", btn: "Créer mon compte", continue: "Continuer →", back: "← Retour", hasAccount: "Déjà un compte ?", signin: "Se connecter", error: "Erreur lors de la création du compte." },
     admin: {
       title: "Administration Ayyad", sub: "Tableau de bord opérationnel", status: "Système opérationnel",
-      tabs: [{ id:"overview",label:"Vue d'ensemble",icon:"📊" },{ id:"cases",label:"Dossiers",icon:"📋" },{ id:"fraud",label:"Fraude",icon:"🔍" },{ id:"payouts",label:"Virements",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaires",icon:"👔" },{ id:"audit",label:"Audit",icon:"📝" },{ id:"bilan",label:"Bilan",icon:"📈" },{ id:"testimonials",label:"Témoignages",icon:"💬" },{ id:"visitors",label:"Visiteurs",icon:"👁️" },{ id:"team",label:"Équipe",icon:"👥" }],
+      tabs: [{ id:"overview",label:"Vue d'ensemble",icon:"📊" },{ id:"cases",label:"Dossiers",icon:"📋" },{ id:"donations",label:"Dons",icon:"💚" },{ id:"fraud",label:"Fraude",icon:"🔍" },{ id:"payouts",label:"Virements",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaires",icon:"👔" },{ id:"audit",label:"Audit",icon:"📝" },{ id:"bilan",label:"Bilan",icon:"📈" },{ id:"testimonials",label:"Témoignages",icon:"💬" },{ id:"visitors",label:"Visiteurs",icon:"👁️" },{ id:"team",label:"Équipe",icon:"👥" }],
       stats: [{ label:"Dossiers actifs",v:"—",icon:"📋" },{ label:"Dons ce mois",v:"—",icon:"💚" },{ label:"Bénéficiaires aidés",v:"—",icon:"🏥" }],
       recentTitle: "Dossiers récents", revenueTitle: "Revenus opérationnels (5%)",
       months: [{ month:"Mars 2025",dons:"24.8M",fees:"1 240 000 FCFA" },{ month:"Fév. 2025",dons:"19.2M",fees:"960 000 FCFA" },{ month:"Jan. 2025",dons:"15.1M",fees:"755 000 FCFA" }],
@@ -227,7 +227,7 @@ const T = {
     register: { title: "Create an account", roleQ: "I want to...", roles: [{ id:"donor",icon:"💚",title:"Make donations",desc:"Help patients in need" },{ id:"beneficiary",icon:"🏥",title:"Receive care",desc:"Fund a medical procedure" }], fields: [{ key:"name",label:"Full name",p:"Aminata Koné",type:"text" },{ key:"email",label:"Email",p:"you@example.ci",type:"email" },{ key:"phone",label:"Wave CI number",p:"+225 07 XX XX XX XX",type:"tel" },{ key:"password",label:"Password (min. 6 characters)",p:"••••••••",type:"password" }], terms: "I accept the", termsLink: "terms of service", and: "and the", privacyLink: "privacy policy", btn: "Create my account", continue: "Continue →", back: "← Back", hasAccount: "Already have an account?", signin: "Sign in", error: "Error creating account." },
     admin: {
       title: "Ayyad Administration", sub: "Operational dashboard", status: "System operational",
-      tabs: [{ id:"overview",label:"Overview",icon:"📊" },{ id:"cases",label:"Cases",icon:"📋" },{ id:"fraud",label:"Fraud",icon:"🔍" },{ id:"payouts",label:"Payouts",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaries",icon:"👔" },{ id:"audit",label:"Audit log",icon:"📝" },{ id:"bilan",label:"Reporting",icon:"📈" },{ id:"testimonials",label:"Testimonials",icon:"💬" },{ id:"visitors",label:"Visitors",icon:"👁️" },{ id:"team",label:"Team",icon:"👥" }],
+      tabs: [{ id:"overview",label:"Overview",icon:"📊" },{ id:"cases",label:"Cases",icon:"📋" },{ id:"donations",label:"Donations",icon:"💚" },{ id:"fraud",label:"Fraud",icon:"🔍" },{ id:"payouts",label:"Payouts",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaries",icon:"👔" },{ id:"audit",label:"Audit log",icon:"📝" },{ id:"bilan",label:"Reporting",icon:"📈" },{ id:"testimonials",label:"Testimonials",icon:"💬" },{ id:"visitors",label:"Visitors",icon:"👁️" },{ id:"team",label:"Team",icon:"👥" }],
       stats: [{ label:"Active cases",v:"—",icon:"📋" },{ label:"Donations this month",v:"—",icon:"💚" },{ label:"Patients helped",v:"—",icon:"🏥" }],
       recentTitle: "Recent cases", revenueTitle: "Operational revenue (5%)",
       months: [{ month:"March 2025",dons:"24.8M",fees:"1,240,000 FCFA" },{ month:"Feb. 2025",dons:"19.2M",fees:"960,000 FCFA" },{ month:"Jan. 2025",dons:"15.1M",fees:"755,000 FCFA" }],
@@ -3576,6 +3576,170 @@ const StaffRow = ({ m, fr, paid, onPay, onDelete, onUpdate, fmt }) => {
 };
 
 // ── Composant Visiteurs connectés Admin ──────────────────────────────
+// ── Onglet Dons (Admin) ───────────────────────────────────────
+const AdminDonationsTab = ({ lang }) => {
+  const fr = lang === "fr";
+  const [donations, setDonations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [msg, setMsg] = useState("");
+
+  const fetchDonations = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("donations")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(300);
+      if (!error) setDonations(data || []);
+    } catch(e) { console.warn("fetchDonations error:", e); }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchDonations(); }, []);
+
+  const confirm = async (id) => {
+    const { error } = await supabase.from("donations").update({ status: "confirmed" }).eq("id", id);
+    if (!error) {
+      setMsg(fr ? "✅ Don confirmé !" : "✅ Donation confirmed!");
+      setTimeout(() => setMsg(""), 3000);
+      fetchDonations();
+    }
+  };
+
+  const cancel = async (id) => {
+    const { error } = await supabase.from("donations").update({ status: "cancelled" }).eq("id", id);
+    if (!error) {
+      setMsg(fr ? "Don annulé." : "Donation cancelled.");
+      setTimeout(() => setMsg(""), 3000);
+      fetchDonations();
+    }
+  };
+
+  const filtered = donations.filter(d => {
+    const matchStatus = filterStatus === "all" || d.status === filterStatus;
+    const q = search.toLowerCase();
+    const matchSearch = !q ||
+      (d.donor_name || "").toLowerCase().includes(q) ||
+      (d.donor_email || "").toLowerCase().includes(q) ||
+      (d.reference || "").toLowerCase().includes(q) ||
+      String(d.amount || "").includes(q);
+    return matchStatus && matchSearch;
+  });
+
+  const totalConfirmed = donations.filter(d => d.status === "confirmed").reduce((s, d) => s + (d.amount_fcfa || d.amount || 0), 0);
+  const totalPending   = donations.filter(d => d.status === "pending").reduce((s, d) => s + (d.amount_fcfa || d.amount || 0), 0);
+
+  const statusBadge = (s) => {
+    if (s === "confirmed") return <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{fr?"Confirmé":"Confirmed"}</span>;
+    if (s === "cancelled") return <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">{fr?"Annulé":"Cancelled"}</span>;
+    return <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{fr?"En attente":"Pending"}</span>;
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">💚 {fr ? "Gestion des dons" : "Donations"}</h2>
+          <p className="text-xs text-gray-400 mt-0.5">{donations.length} {fr ? "dons enregistrés" : "donations recorded"}</p>
+        </div>
+        <button onClick={fetchDonations} className="text-xs text-emerald-600 hover:underline font-medium self-start sm:self-auto">↻ {fr?"Actualiser":"Refresh"}</button>
+      </div>
+
+      {msg && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold px-4 py-3 rounded-xl">{msg}</div>}
+
+      {/* KPIs */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+          <div className="text-xl font-black text-gray-900">{donations.filter(d=>d.status==="pending").length}</div>
+          <div className="text-[11px] text-amber-600 font-bold mt-0.5">{fr?"En attente":"Pending"}</div>
+          <div className="text-[10px] text-gray-400">{new Intl.NumberFormat("fr").format(totalPending)} FCFA</div>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+          <div className="text-xl font-black text-emerald-700">{donations.filter(d=>d.status==="confirmed").length}</div>
+          <div className="text-[11px] text-emerald-600 font-bold mt-0.5">{fr?"Confirmés":"Confirmed"}</div>
+          <div className="text-[10px] text-gray-400">{new Intl.NumberFormat("fr").format(totalConfirmed)} FCFA</div>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+          <div className="text-xl font-black text-red-500">{donations.filter(d=>d.status==="cancelled").length}</div>
+          <div className="text-[11px] text-red-500 font-bold mt-0.5">{fr?"Annulés":"Cancelled"}</div>
+        </div>
+      </div>
+
+      {/* Filtres */}
+      <div className="flex gap-2 flex-wrap">
+        <input
+          value={search} onChange={e=>setSearch(e.target.value)}
+          placeholder={fr?"🔍 Rechercher donateur, référence…":"🔍 Search donor, reference…"}
+          className="flex-1 min-w-[180px] border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400"
+        />
+        {["all","pending","confirmed","cancelled"].map(s => (
+          <button key={s} onClick={()=>setFilterStatus(s)}
+            className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${filterStatus===s?"bg-emerald-600 text-white border-emerald-600":"bg-white text-gray-500 border-gray-200 hover:border-emerald-400"}`}>
+            {s==="all"?(fr?"Tous":"All"):s==="pending"?(fr?"En attente":"Pending"):s==="confirmed"?(fr?"Confirmés":"Confirmed"):(fr?"Annulés":"Cancelled")}
+          </button>
+        ))}
+      </div>
+
+      {/* Liste */}
+      {loading ? (
+        <div className="text-center py-12 text-gray-400 text-sm">{fr?"Chargement…":"Loading…"}</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 text-gray-400 text-sm">{fr?"Aucun don trouvé.":"No donations found."}</div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map(d => (
+            <div key={d.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  {/* Ligne 1 : montant + statut */}
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-black text-gray-900 text-base">{new Intl.NumberFormat("fr").format(d.amount_fcfa || d.amount)} FCFA</span>
+                    {d.currency !== "FCFA" && <span className="text-[10px] text-gray-400">({d.amount} {d.currency})</span>}
+                    {statusBadge(d.status)}
+                    <span className="text-[10px] text-gray-400">{d.payment_method === "WAVE" ? "🌊 Wave" : "💳 Carte"}</span>
+                  </div>
+                  {/* Ligne 2 : dossier */}
+                  {d.reference && (
+                    <div className="text-[11px] text-blue-600 font-mono mb-1">📂 {d.reference}</div>
+                  )}
+                  {/* Ligne 3 : donateur */}
+                  <div className="text-xs text-gray-500">
+                    {d.donor_name
+                      ? <><span className="font-semibold text-gray-700">{d.donor_name}</span>{d.donor_email && ` · ${d.donor_email}`}</>
+                      : <span className="italic text-gray-400">{fr?"Donateur anonyme":"Anonymous donor"}</span>
+                    }
+                  </div>
+                  {/* Message */}
+                  {d.message && <div className="text-[11px] text-emerald-600 italic mt-1">"{d.message}"</div>}
+                  {/* Date */}
+                  <div className="text-[10px] text-gray-300 mt-1">{new Date(d.created_at).toLocaleString(fr?"fr-CI":"en-US")}</div>
+                </div>
+                {/* Actions */}
+                {d.status === "pending" && (
+                  <div className="flex flex-col gap-1.5 flex-shrink-0">
+                    <button onClick={() => confirm(d.id)}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-colors">
+                      ✓ {fr?"Confirmer":"Confirm"}
+                    </button>
+                    <button onClick={() => cancel(d.id)}
+                      className="border border-red-200 text-red-500 hover:bg-red-50 text-xs font-bold px-3 py-1.5 rounded-xl transition-colors">
+                      ✕ {fr?"Annuler":"Cancel"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const AdminVisitorsTab = ({ lang }) => {
   const fr = lang === "fr";
   const [visitors, setVisitors] = useState([]);
@@ -4725,6 +4889,9 @@ const AdminPage = ({ user, setPage, lang }) => {
             })()}
           </div>
         )}
+        {/* ── ONGLET DONS ── */}
+        {tab === "donations" && <AdminDonationsTab lang={lang} />}
+
         {/* ── ONGLET TÉMOIGNAGES ── */}
         {tab === "testimonials" && <AdminTestimonialsTab lang={lang} user={user} />}
 
