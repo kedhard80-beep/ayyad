@@ -193,7 +193,7 @@ const T = {
     register: { title: "Créer un compte", roleQ: "Je souhaite...", roles: [{ id:"donor",icon:"💚",title:"Faire des dons",desc:"Aider des patients dans le besoin" },{ id:"beneficiary",icon:"🏥",title:"Recevoir des soins",desc:"Financer une intervention médicale" }], fields: [{ key:"name",label:"Nom complet",p:"Aminata Koné",type:"text" },{ key:"email",label:"Email",p:"vous@exemple.ci",type:"email" },{ key:"phone",label:"Numéro Wave CI",p:"+225 07 XX XX XX XX",type:"tel" },{ key:"password",label:"Mot de passe (min. 6 caractères)",p:"••••••••",type:"password" }], terms: "J'accepte les", termsLink: "conditions d'utilisation", and: "et la", privacyLink: "politique de confidentialité", btn: "Créer mon compte", continue: "Continuer →", back: "← Retour", hasAccount: "Déjà un compte ?", signin: "Se connecter", error: "Erreur lors de la création du compte." },
     admin: {
       title: "Administration Ayyad", sub: "Tableau de bord opérationnel", status: "Système opérationnel",
-      tabs: [{ id:"overview",label:"Vue d'ensemble",icon:"📊" },{ id:"cases",label:"Dossiers",icon:"📋" },{ id:"donations",label:"Dons",icon:"💚" },{ id:"fraud",label:"Fraude",icon:"🔍" },{ id:"payouts",label:"Virements",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaires",icon:"👔" },{ id:"audit",label:"Audit",icon:"📝" },{ id:"bilan",label:"Bilan",icon:"📈" },{ id:"testimonials",label:"Témoignages",icon:"💬" },{ id:"visitors",label:"Visiteurs",icon:"👁️" },{ id:"team",label:"Équipe",icon:"👥" }],
+      tabs: [{ id:"overview",label:"Vue d'ensemble",icon:"📊" },{ id:"cases",label:"Dossiers",icon:"📋" },{ id:"donations",label:"Dons",icon:"💚" },{ id:"fraud",label:"Fraude",icon:"🔍" },{ id:"payouts",label:"Virements",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaires",icon:"👔" },{ id:"audit",label:"Audit",icon:"📝" },{ id:"bilan",label:"Bilan",icon:"📈" },{ id:"testimonials",label:"Témoignages",icon:"💬" },{ id:"visitors",label:"Visiteurs",icon:"👁️" },{ id:"team",label:"Équipe",icon:"👥" },{ id:"export",label:"Export",icon:"📤",superAdminOnly:true }],
       stats: [{ label:"Dossiers actifs",v:"—",icon:"📋" },{ label:"Dons ce mois",v:"—",icon:"💚" },{ label:"Bénéficiaires aidés",v:"—",icon:"🏥" }],
       recentTitle: "Dossiers récents", revenueTitle: "Revenus opérationnels (5%)",
       months: [{ month:"Mars 2025",dons:"24.8M",fees:"1 240 000 FCFA" },{ month:"Fév. 2025",dons:"19.2M",fees:"960 000 FCFA" },{ month:"Jan. 2025",dons:"15.1M",fees:"755 000 FCFA" }],
@@ -227,7 +227,7 @@ const T = {
     register: { title: "Create an account", roleQ: "I want to...", roles: [{ id:"donor",icon:"💚",title:"Make donations",desc:"Help patients in need" },{ id:"beneficiary",icon:"🏥",title:"Receive care",desc:"Fund a medical procedure" }], fields: [{ key:"name",label:"Full name",p:"Aminata Koné",type:"text" },{ key:"email",label:"Email",p:"you@example.ci",type:"email" },{ key:"phone",label:"Wave CI number",p:"+225 07 XX XX XX XX",type:"tel" },{ key:"password",label:"Password (min. 6 characters)",p:"••••••••",type:"password" }], terms: "I accept the", termsLink: "terms of service", and: "and the", privacyLink: "privacy policy", btn: "Create my account", continue: "Continue →", back: "← Back", hasAccount: "Already have an account?", signin: "Sign in", error: "Error creating account." },
     admin: {
       title: "Ayyad Administration", sub: "Operational dashboard", status: "System operational",
-      tabs: [{ id:"overview",label:"Overview",icon:"📊" },{ id:"cases",label:"Cases",icon:"📋" },{ id:"donations",label:"Donations",icon:"💚" },{ id:"fraud",label:"Fraud",icon:"🔍" },{ id:"payouts",label:"Payouts",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaries",icon:"👔" },{ id:"audit",label:"Audit log",icon:"📝" },{ id:"bilan",label:"Reporting",icon:"📈" },{ id:"testimonials",label:"Testimonials",icon:"💬" },{ id:"visitors",label:"Visitors",icon:"👁️" },{ id:"team",label:"Team",icon:"👥" }],
+      tabs: [{ id:"overview",label:"Overview",icon:"📊" },{ id:"cases",label:"Cases",icon:"📋" },{ id:"donations",label:"Donations",icon:"💚" },{ id:"fraud",label:"Fraud",icon:"🔍" },{ id:"payouts",label:"Payouts",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaries",icon:"👔" },{ id:"audit",label:"Audit log",icon:"📝" },{ id:"bilan",label:"Reporting",icon:"📈" },{ id:"testimonials",label:"Testimonials",icon:"💬" },{ id:"visitors",label:"Visitors",icon:"👁️" },{ id:"team",label:"Team",icon:"👥" },{ id:"export",label:"Export",icon:"📤",superAdminOnly:true }],
       stats: [{ label:"Active cases",v:"—",icon:"📋" },{ label:"Donations this month",v:"—",icon:"💚" },{ label:"Patients helped",v:"—",icon:"🏥" }],
       recentTitle: "Recent cases", revenueTitle: "Operational revenue (5%)",
       months: [{ month:"March 2025",dons:"24.8M",fees:"1,240,000 FCFA" },{ month:"Feb. 2025",dons:"19.2M",fees:"960,000 FCFA" },{ month:"Jan. 2025",dons:"15.1M",fees:"755,000 FCFA" }],
@@ -4097,6 +4097,460 @@ const AdminTestimonialsTab = ({ lang, user }) => {
   );
 };
 
+// ── AdminExportTab — super_admin uniquement ───────────────────
+const AdminExportTab = ({ lang, user }) => {
+  const fr = lang === "fr";
+  const fmtN = n => (n||0).toLocaleString("fr-FR");
+
+  // État
+  const today = new Date().toISOString().slice(0,10);
+  const firstDay = new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0,10);
+  const [dateFrom, setDateFrom] = useState(firstDay);
+  const [dateTo,   setDateTo]   = useState(today);
+  const [loading,  setLoading]  = useState(false);
+  const [sections, setSections] = useState({
+    dossiers: true, dons: true, virements: true,
+    finance: true, salaires: true, bilan: true, audit: true
+  });
+
+  const toggleSection = k => setSections(p => ({...p, [k]: !p[k]}));
+
+  // Labels sections
+  const SECTION_LABELS = {
+    dossiers:  fr ? "📋 Dossiers"        : "📋 Cases",
+    dons:      fr ? "💚 Dons"            : "💚 Donations",
+    virements: fr ? "🏦 Virements"       : "🏦 Payouts",
+    finance:   fr ? "💰 Finance"         : "💰 Finance",
+    salaires:  fr ? "👔 Salaires"        : "👔 Salaries",
+    bilan:     fr ? "📈 Bilan"           : "📈 Reporting",
+    audit:     fr ? "📝 Journal d'audit" : "📝 Audit log",
+  };
+
+  // ── Fetch toutes les données ──
+  const fetchData = async () => {
+    const from = dateFrom ? new Date(dateFrom).toISOString() : null;
+    const to   = dateTo   ? new Date(dateTo + "T23:59:59").toISOString() : null;
+    const applyRange = (q, field) => {
+      if (from) q = q.gte(field, from);
+      if (to)   q = q.lte(field, to);
+      return q;
+    };
+
+    const fetches = {};
+    if (sections.dossiers || sections.bilan || sections.virements) {
+      let q = supabase.from("cases").select("*").order("created_at", {ascending:false}).limit(1000);
+      q = applyRange(q, "created_at");
+      fetches.cases = q;
+    }
+    if (sections.dons) {
+      let q = supabase.from("donations").select("*").order("created_at", {ascending:false}).limit(1000);
+      q = applyRange(q, "created_at");
+      fetches.donations = q;
+    }
+    if (sections.salaires || sections.bilan) {
+      let q = supabase.from("salary_payments").select("*, staff_members(name,role)").order("payment_date", {ascending:false}).limit(500);
+      q = applyRange(q, "payment_date");
+      fetches.salaries = q;
+    }
+    if (sections.finance || sections.bilan) {
+      let q = supabase.from("ayyad_expenses").select("*").order("date", {ascending:false}).limit(500);
+      q = applyRange(q, "date");
+      fetches.expenses = q;
+    }
+    if (sections.audit) {
+      let q = supabase.from("audit_log").select("*").order("created_at", {ascending:false}).limit(500);
+      q = applyRange(q, "created_at");
+      fetches.audit = q;
+    }
+
+    const keys = Object.keys(fetches);
+    const results = await Promise.all(keys.map(k => fetches[k]));
+    const data = {};
+    keys.forEach((k,i) => { data[k] = results[i].data || []; });
+    return data;
+  };
+
+  // ── Helpers XML ──
+  const xmlCell = (val, type="String") => {
+    const safe = String(val ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    if (type==="Number") return `<Cell><Data ss:Type="Number">${safe}</Data></Cell>`;
+    return `<Cell><Data ss:Type="String">${safe}</Data></Cell>`;
+  };
+  const xmlRow = cols => `<Row>${cols.join("")}</Row>`;
+  const xmlHeader = cols => `<Row>${cols.map(c=>`<Cell ss:StyleID="header"><Data ss:Type="String">${String(c).replace(/&/g,"&amp;")}</Data></Cell>`).join("")}</Row>`;
+
+  const buildSheet = (name, headers, rows) => {
+    const headerRow = xmlHeader(headers);
+    const dataRows = rows.map(r => xmlRow(r.map((v,i) => {
+      const isNum = typeof v === "number";
+      return xmlCell(v ?? "", isNum ? "Number" : "String");
+    }))).join("\n");
+    return `<Worksheet ss:Name="${name.replace(/[\\/*?[\]]/g,"_").slice(0,31)}">
+<Table>
+${headerRow}
+${dataRows}
+</Table>
+</Worksheet>`;
+  };
+
+  // ── Export Excel (SpreadsheetML) ──
+  const exportExcel = async () => {
+    setLoading(true);
+    try {
+      const d = await fetchData();
+      const sheets = [];
+
+      if (sections.dossiers && d.cases) {
+        const headers = fr
+          ? ["Ref","Titre","Bénéficiaire","Hôpital","Ville","Catégorie","Objectif","Collecté","Donateurs","Statut","Urgent","Date"]
+          : ["Ref","Title","Beneficiary","Hospital","City","Category","Goal","Collected","Donors","Status","Urgent","Date"];
+        const rows = d.cases.map(c => [
+          c.tracking_id||"", c.title||"", c.full_name||"", c.hospital||"", c.city||"",
+          c.category||"", c.amount||0, c.collected||0, c.donors||0,
+          c.status||"", c.urgent?"Oui":"Non", c.created_at?.slice(0,10)||""
+        ]);
+        sheets.push(buildSheet(fr?"Dossiers":"Cases", headers, rows));
+      }
+
+      if (sections.dons && d.donations) {
+        const headers = fr
+          ? ["Date","Donateur","Email","Montant (FCFA)","Devise","Méthode","Statut","Message","Référence"]
+          : ["Date","Donor","Email","Amount (FCFA)","Currency","Method","Status","Message","Reference"];
+        const rows = d.donations.map(r => [
+          r.created_at?.slice(0,10)||"", r.donor_name||"Anonyme", r.donor_email||"",
+          r.amount_fcfa||r.amount||0, r.currency||"FCFA", r.payment_method||"",
+          r.status||"", r.message||"", r.reference||""
+        ]);
+        sheets.push(buildSheet(fr?"Dons":"Donations", headers, rows));
+      }
+
+      if (sections.virements && d.cases) {
+        const payouts = d.cases.filter(c=>c.payout_status);
+        const headers = fr
+          ? ["Ref","Titre","Hôpital","Collecté","Montant hôpital","Frais Ayyad","Statut virement","Date virement"]
+          : ["Ref","Title","Hospital","Collected","Hospital amount","Ayyad fee","Payout status","Payout date"];
+        const rows = payouts.map(c => {
+          const col = c.collected||0;
+          const fee = Math.round(col*0.05);
+          return [c.tracking_id||"", c.title||"", c.hospital||"", col, col-fee, fee, c.payout_status||"", c.payout_date?.slice(0,10)||""];
+        });
+        sheets.push(buildSheet(fr?"Virements":"Payouts", headers, rows));
+      }
+
+      if (sections.finance && d.expenses) {
+        const headers = fr
+          ? ["Date","Libellé","Catégorie","Montant (FCFA)","Référence"]
+          : ["Date","Label","Category","Amount (FCFA)","Reference"];
+        const rows = d.expenses.map(e => [e.date?.slice(0,10)||"", e.label||"", e.category||"", e.amount||0, e.reference||""]);
+        sheets.push(buildSheet(fr?"Finance":"Finance", headers, rows));
+      }
+
+      if (sections.salaires && d.salaries) {
+        const headers = fr
+          ? ["Mois","Employé","Rôle","Montant (FCFA)","Méthode","Statut","Date paiement"]
+          : ["Month","Employee","Role","Amount (FCFA)","Method","Status","Payment date"];
+        const rows = d.salaries.map(p => [
+          p.payment_month||"", p.staff_members?.name||"", p.staff_members?.role||"",
+          p.amount||0, p.payment_method||"WAVE", p.status||"", p.payment_date?.slice(0,10)||""
+        ]);
+        sheets.push(buildSheet(fr?"Salaires":"Salaries", headers, rows));
+      }
+
+      if (sections.bilan && d.cases) {
+        const allActive = d.cases.filter(c=>!["PENDING","REJECTED"].includes(c.status));
+        const totalCol = allActive.reduce((s,c)=>s+(c.collected||0),0);
+        const fees = Math.round(totalCol*0.05);
+        const totalSal = (d.salaries||[]).reduce((s,p)=>s+(p.amount||0),0);
+        const totalExp = (d.expenses||[]).reduce((s,e)=>s+(e.amount||0),0);
+        const headers = fr ? ["Indicateur","Valeur"] : ["Indicator","Value"];
+        const rows = [
+          [fr?"Période":"Period", `${dateFrom} → ${dateTo}`],
+          [fr?"Nombre de dossiers":"Number of cases", allActive.length],
+          [fr?"Total collecté (FCFA)":"Total raised (FCFA)", totalCol],
+          [fr?"Frais Ayyad 5% (FCFA)":"Ayyad 5% fee (FCFA)", fees],
+          [fr?"Total salaires (FCFA)":"Total salaries (FCFA)", totalSal],
+          [fr?"Total charges (FCFA)":"Total expenses (FCFA)", totalExp],
+          [fr?"Solde (FCFA)":"Balance (FCFA)", fees - totalSal - totalExp],
+          [fr?"Dossiers objectif atteint":"Cases goal reached", allActive.filter(c=>(c.collected||0)>=(c.amount||1)).length],
+          [fr?"Virements confirmés":"Confirmed payouts", allActive.filter(c=>c.payout_status==="confirmed").length],
+        ];
+        sheets.push(buildSheet(fr?"Bilan":"Reporting", headers, rows));
+      }
+
+      if (sections.audit && d.audit) {
+        const headers = fr
+          ? ["Horodatage","Opérateur","Rôle","Action","Cible","Ancienne valeur","Nouvelle valeur"]
+          : ["Timestamp","Operator","Role","Action","Target","Old value","New value"];
+        const rows = d.audit.map(l => [
+          l.created_at?.slice(0,19).replace("T"," ")||"",
+          l.user_email||"", l.user_role||"", l.action||"",
+          l.target||"", l.old_value||"", l.new_value||""
+        ]);
+        sheets.push(buildSheet(fr?"Journal audit":"Audit log", headers, rows));
+      }
+
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:x="urn:schemas-microsoft-com:office:excel">
+<Styles>
+  <Style ss:ID="header">
+    <Font ss:Bold="1" ss:Color="#FFFFFF"/>
+    <Interior ss:Color="#0d5c2e" ss:Pattern="Solid"/>
+  </Style>
+</Styles>
+${sheets.join("\n")}
+</Workbook>`;
+
+      const blob = new Blob([xml], {type:"application/vnd.ms-excel;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `ayyad_export_${dateFrom}_${dateTo}.xls`;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch(e) { console.error("Export Excel error:", e); alert(fr?"Erreur lors de l'export.":"Export error."); }
+    setLoading(false);
+  };
+
+  // ── Export PDF (HTML print) ──
+  const exportPDF = async () => {
+    setLoading(true);
+    try {
+      const d = await fetchData();
+      const period = `${dateFrom} → ${dateTo}`;
+      const now = new Date().toLocaleString("fr");
+
+      let html = `<!DOCTYPE html><html lang="${lang}"><head><meta charset="UTF-8">
+<title>Ayyad — Export ${period}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111;background:#fff;padding:20px}
+  h1{font-size:18px;color:#0d5c2e;margin-bottom:4px}
+  .sub{color:#6b7280;font-size:10px;margin-bottom:20px}
+  h2{font-size:13px;color:#0d5c2e;margin:24px 0 8px;border-bottom:2px solid #0d5c2e;padding-bottom:4px}
+  table{width:100%;border-collapse:collapse;margin-bottom:12px}
+  th{background:#0d5c2e;color:#fff;padding:5px 7px;text-align:left;font-size:10px}
+  td{padding:4px 7px;border-bottom:1px solid #e5e7eb;font-size:10px}
+  tr:nth-child(even) td{background:#f9fafb}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+  .kpi{border:1px solid #e5e7eb;border-radius:6px;padding:8px;text-align:center}
+  .kpi-v{font-size:14px;font-weight:700;color:#0d5c2e}
+  .kpi-l{font-size:9px;color:#6b7280;margin-top:2px}
+  .footer{margin-top:30px;border-top:1px solid #e5e7eb;padding-top:10px;font-size:9px;color:#9ca3af}
+  @media print{body{padding:10px}.no-print{display:none}}
+</style></head><body>
+<h1>AYYAD — ${fr?"Rapport d'export":"Export Report"}</h1>
+<div class="sub">${fr?"Période":"Period"} : ${period} · ${fr?"Généré le":"Generated"} : ${now}</div>`;
+
+      if (sections.bilan && d.cases) {
+        const allActive = d.cases.filter(c=>!["PENDING","REJECTED"].includes(c.status));
+        const totalCol = allActive.reduce((s,c)=>s+(c.collected||0),0);
+        const fees = Math.round(totalCol*0.05);
+        const totalSal = (d.salaries||[]).reduce((s,p)=>s+(p.amount||0),0);
+        const totalExp = (d.expenses||[]).reduce((s,e)=>s+(e.amount||0),0);
+        const balance = fees - totalSal - totalExp;
+        html += `<h2>${fr?"Bilan de la période":"Period Summary"}</h2>
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-v">${allActive.length}</div><div class="kpi-l">${fr?"Dossiers":"Cases"}</div></div>
+  <div class="kpi"><div class="kpi-v">${fmtN(totalCol)}</div><div class="kpi-l">${fr?"Collecté (FCFA)":"Raised (FCFA)"}</div></div>
+  <div class="kpi"><div class="kpi-v">${fmtN(fees)}</div><div class="kpi-l">${fr?"Frais Ayyad 5%":"Ayyad 5% fee"}</div></div>
+  <div class="kpi"><div class="kpi-v" style="color:${balance<0?"#dc2626":"#0d5c2e"}">${fmtN(balance)}</div><div class="kpi-l">${fr?"Solde":"Balance"}</div></div>
+</div>`;
+      }
+
+      if (sections.dossiers && d.cases) {
+        html += `<h2>${fr?"Dossiers":"Cases"}</h2>
+<table><thead><tr>
+  <th>${fr?"Référence":"Ref"}</th><th>${fr?"Titre":"Title"}</th><th>${fr?"Bénéficiaire":"Beneficiary"}</th>
+  <th>${fr?"Hôpital":"Hospital"}</th><th>${fr?"Objectif":"Goal"}</th><th>${fr?"Collecté":"Raised"}</th><th>Statut</th>
+</tr></thead><tbody>`;
+        d.cases.forEach(c => {
+          html += `<tr><td>${c.tracking_id||""}</td><td>${c.title||""}</td><td>${c.full_name||""}</td>
+<td>${c.hospital||""}</td><td>${fmtN(c.amount||0)}</td><td>${fmtN(c.collected||0)}</td><td>${c.status||""}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+
+      if (sections.dons && d.donations) {
+        const totalDons = d.donations.filter(d=>d.status==="confirmed").reduce((s,d)=>s+(d.amount_fcfa||d.amount||0),0);
+        html += `<h2>${fr?"Dons":"Donations"} (${d.donations.length} — ${fmtN(totalDons)} FCFA ${fr?"confirmés":"confirmed"})</h2>
+<table><thead><tr>
+  <th>${fr?"Date":"Date"}</th><th>${fr?"Donateur":"Donor"}</th><th>${fr?"Montant":"Amount"}</th>
+  <th>${fr?"Méthode":"Method"}</th><th>Statut</th>
+</tr></thead><tbody>`;
+        d.donations.forEach(r => {
+          html += `<tr><td>${r.created_at?.slice(0,10)||""}</td><td>${r.donor_name||"Anonyme"}</td>
+<td>${fmtN(r.amount_fcfa||r.amount||0)} FCFA</td><td>${r.payment_method||""}</td><td>${r.status||""}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+
+      if (sections.virements && d.cases) {
+        const payouts = d.cases.filter(c=>c.payout_status);
+        if (payouts.length > 0) {
+          html += `<h2>${fr?"Virements hospitaliers":"Hospital Payouts"}</h2>
+<table><thead><tr>
+  <th>${fr?"Référence":"Ref"}</th><th>${fr?"Hôpital":"Hospital"}</th><th>${fr?"Collecté":"Raised"}</th>
+  <th>${fr?"Montant hôpital":"Hospital amount"}</th><th>${fr?"Frais Ayyad":"Ayyad fee"}</th><th>Statut</th>
+</tr></thead><tbody>`;
+          payouts.forEach(c => {
+            const col = c.collected||0;
+            const fee = Math.round(col*0.05);
+            html += `<tr><td>${c.tracking_id||""}</td><td>${c.hospital||""}</td><td>${fmtN(col)}</td>
+<td>${fmtN(col-fee)}</td><td>${fmtN(fee)}</td><td>${c.payout_status||""}</td></tr>`;
+          });
+          html += `</tbody></table>`;
+        }
+      }
+
+      if (sections.salaires && d.salaries) {
+        html += `<h2>${fr?"Salaires":"Salaries"}</h2>
+<table><thead><tr>
+  <th>${fr?"Mois":"Month"}</th><th>${fr?"Employé":"Employee"}</th><th>${fr?"Rôle":"Role"}</th>
+  <th>${fr?"Montant":"Amount"}</th><th>Statut</th>
+</tr></thead><tbody>`;
+        d.salaries.forEach(p => {
+          html += `<tr><td>${p.payment_month||""}</td><td>${p.staff_members?.name||""}</td>
+<td>${p.staff_members?.role||""}</td><td>${fmtN(p.amount||0)} FCFA</td><td>${p.status||""}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+
+      if (sections.finance && d.expenses) {
+        html += `<h2>${fr?"Charges de fonctionnement":"Operating Expenses"}</h2>
+<table><thead><tr>
+  <th>${fr?"Date":"Date"}</th><th>${fr?"Libellé":"Label"}</th><th>${fr?"Catégorie":"Category"}</th><th>${fr?"Montant":"Amount"}</th>
+</tr></thead><tbody>`;
+        d.expenses.forEach(e => {
+          html += `<tr><td>${e.date?.slice(0,10)||""}</td><td>${e.label||""}</td><td>${e.category||""}</td><td>${fmtN(e.amount||0)} FCFA</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+
+      if (sections.audit && d.audit) {
+        html += `<h2>${fr?"Journal d'audit":"Audit Log"}</h2>
+<table><thead><tr>
+  <th>${fr?"Horodatage":"Timestamp"}</th><th>${fr?"Opérateur":"Operator"}</th><th>${fr?"Rôle":"Role"}</th>
+  <th>${fr?"Action":"Action"}</th><th>${fr?"Cible":"Target"}</th>
+</tr></thead><tbody>`;
+        d.audit.forEach(l => {
+          html += `<tr><td>${l.created_at?.slice(0,19).replace("T"," ")||""}</td><td>${l.user_email||""}</td>
+<td>${l.user_role||""}</td><td>${l.action||""}</td><td>${l.target||""}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+
+      html += `<div class="footer">AYYAD CI · ${fr?"Rapport généré automatiquement":"Automatically generated report"} · ${now}</div>
+<script>window.onload=()=>window.print();</script>
+</body></html>`;
+
+      const w = window.open("","_blank","width=1000,height=700");
+      if (w) { w.document.write(html); w.document.close(); }
+      else alert(fr?"Autorisez les pop-ups pour générer le PDF.":"Please allow pop-ups to generate the PDF.");
+    } catch(e) { console.error("Export PDF error:", e); alert(fr?"Erreur lors de l'export PDF.":"PDF export error."); }
+    setLoading(false);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-emerald-800 to-emerald-600 rounded-2xl p-5 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <span className="text-2xl">📤</span>
+          <h2 className="text-lg font-black">{fr?"Export des données":"Data Export"}</h2>
+          <span className="ml-auto bg-purple-200 text-purple-800 text-xs font-bold px-2 py-0.5 rounded-full">super_admin</span>
+        </div>
+        <p className="text-emerald-100 text-xs">
+          {fr?"Exportez les données de la plateforme au format Excel ou PDF.":"Export platform data in Excel or PDF format."}
+        </p>
+      </div>
+
+      {/* Plage de dates */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <h3 className="font-bold text-gray-900 text-sm mb-4">📅 {fr?"Plage de dates":"Date range"}</h3>
+        <div className="flex flex-wrap gap-4 items-center">
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">{fr?"Du":"From"}</label>
+            <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">{fr?"Au":"To"}</label>
+            <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+          </div>
+          <div className="flex gap-2 mt-4">
+            {[
+              {label:fr?"Ce mois":"This month", fn:()=>{const n=new Date();const y=n.getFullYear();const m=n.getMonth();setDateFrom(`${y}-${String(m+1).padStart(2,"0")}-01`);setDateTo(today);}},
+              {label:fr?"Cette année":"This year",  fn:()=>{setDateFrom(`${new Date().getFullYear()}-01-01`);setDateTo(today);}},
+              {label:fr?"Tout":"All",                fn:()=>{setDateFrom("2024-01-01");setDateTo(today);}},
+            ].map(b=>(
+              <button key={b.label} onClick={b.fn}
+                className="text-xs bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-300 text-gray-600 hover:text-emerald-700 px-3 py-1.5 rounded-lg font-medium transition-all">
+                {b.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Sections */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <h3 className="font-bold text-gray-900 text-sm mb-4">📂 {fr?"Sections à inclure":"Sections to include"}</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {Object.keys(SECTION_LABELS).map(k=>(
+            <button key={k} onClick={()=>toggleSection(k)}
+              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-semibold transition-all ${sections[k]?"bg-emerald-50 border-emerald-300 text-emerald-700":"bg-gray-50 border-gray-200 text-gray-500"}`}>
+              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${sections[k]?"bg-emerald-600 border-emerald-600":"border-gray-300"}`}>
+                {sections[k]&&<span className="text-white text-[10px]">✓</span>}
+              </div>
+              {SECTION_LABELS[k]}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 mt-3">
+          <button onClick={()=>setSections({dossiers:true,dons:true,virements:true,finance:true,salaires:true,bilan:true,audit:true})}
+            className="text-xs text-emerald-600 hover:underline font-semibold">{fr?"Tout sélectionner":"Select all"}</button>
+          <span className="text-gray-300">·</span>
+          <button onClick={()=>setSections({dossiers:false,dons:false,virements:false,finance:false,salaires:false,bilan:false,audit:false})}
+            className="text-xs text-gray-400 hover:underline font-semibold">{fr?"Tout désélectionner":"Deselect all"}</button>
+        </div>
+      </div>
+
+      {/* Boutons export */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <button onClick={exportExcel} disabled={loading || !Object.values(sections).some(Boolean)}
+          className="flex items-center justify-center gap-3 bg-emerald-700 hover:bg-emerald-800 disabled:bg-gray-300 text-white font-black py-4 rounded-2xl shadow-md transition-all text-base">
+          <span className="text-2xl">📊</span>
+          <div className="text-left">
+            <div>{loading ? (fr?"Chargement...":"Loading...") : (fr?"Exporter Excel":"Export Excel")}</div>
+            <div className="text-xs text-emerald-200 font-normal">{fr?"Fichier .xls (compatible Excel & LibreOffice)":".xls file (Excel & LibreOffice)"}</div>
+          </div>
+        </button>
+
+        <button onClick={exportPDF} disabled={loading || !Object.values(sections).some(Boolean)}
+          className="flex items-center justify-center gap-3 bg-gray-800 hover:bg-gray-900 disabled:bg-gray-300 text-white font-black py-4 rounded-2xl shadow-md transition-all text-base">
+          <span className="text-2xl">📄</span>
+          <div className="text-left">
+            <div>{loading ? (fr?"Chargement...":"Loading...") : (fr?"Exporter PDF":"Export PDF")}</div>
+            <div className="text-xs text-gray-400 font-normal">{fr?"Impression → Enregistrer en PDF":"Print → Save as PDF"}</div>
+          </div>
+        </button>
+      </div>
+
+      {/* Note */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
+        🔐 {fr
+          ? "Cette fonctionnalité est réservée aux super administrateurs. Toutes les exportations sont enregistrées dans le journal d'audit."
+          : "This feature is restricted to super administrators. All exports are recorded in the audit log."}
+      </div>
+    </div>
+  );
+};
+
 const AdminPage = ({ user, setPage, lang }) => {
   const [tab, setTab] = useState("overview");
   const [cases, setCases] = useState([]);
@@ -4236,8 +4690,8 @@ const AdminPage = ({ user, setPage, lang }) => {
   };
 
   useEffect(() => {
-    if (tab === "finance" || tab === "salary" || tab === "bilan") loadFinanceData();
-    if (tab === "audit") loadAuditLogs();
+    if (tab === "finance" || tab === "salary" || tab === "bilan" || tab === "export") loadFinanceData();
+    if (tab === "audit" || tab === "export") loadAuditLogs();
   }, [tab]);
 
   // ── Toggle urgent ──
@@ -4327,7 +4781,7 @@ const AdminPage = ({ user, setPage, lang }) => {
 
         {/* Tabs */}
         <div className="flex gap-1 bg-white border border-gray-200 rounded-2xl p-1 mb-6 overflow-x-auto shadow-sm">
-          {t.tabs.map(tab_=>(
+          {t.tabs.filter(tab_ => !tab_.superAdminOnly || user?.adminRole === "super_admin").map(tab_=>(
             <button key={tab_.id} onClick={()=>setTab(tab_.id)} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${tab===tab_.id?"bg-emerald-600 text-white shadow-sm":"text-gray-600 hover:bg-gray-100"}`}>
               {tab_.icon} {tab_.label}
               {tab_.id==="cases"&&pendingCases.length>0&&<span className="bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{pendingCases.length}</span>}
@@ -4969,6 +5423,15 @@ const AdminPage = ({ user, setPage, lang }) => {
         {/* ── ONGLET DONS ── */}
         {tab === "donations" && <AdminDonationsTab lang={lang} />}
 
+        {/* ── ONGLET EXPORT — super_admin uniquement ── */}
+        {tab === "export" && user?.adminRole === "super_admin" && <AdminExportTab lang={lang} user={user} />}
+        {tab === "export" && user?.adminRole !== "super_admin" && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
+            <div className="text-4xl mb-3">🔒</div>
+            <div className="font-bold text-red-700">{lang==="fr"?"Accès réservé aux super administrateurs.":"Access restricted to super administrators."}</div>
+          </div>
+        )}
+
         {/* ── ONGLET TÉMOIGNAGES ── */}
         {tab === "testimonials" && <AdminTestimonialsTab lang={lang} user={user} />}
 
@@ -5018,9 +5481,27 @@ const AdminPage = ({ user, setPage, lang }) => {
           const totalRevenusAyyad = total5pct + revDonsDirect;
           const balance = totalRevenusAyyad - totalSalariesPaid - totalExpenses;
           const fr = lang==="fr";
+          // ── Export rapide XLS ──
+          const quickXLS = (filename, headers, rows) => {
+            const hRow = `<Row>${headers.map(h=>`<Cell ss:StyleID="h"><Data ss:Type="String">${String(h).replace(/&/g,"&amp;")}</Data></Cell>`).join("")}</Row>`;
+            const dRows = rows.map(r=>`<Row>${r.map(v=>`<Cell><Data ss:Type="${typeof v==="number"?"Number":"String"}">${String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</Data></Cell>`).join("")}</Row>`).join("\n");
+            const xml = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="h"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#0d5c2e" ss:Pattern="Solid"/></Style></Styles><Worksheet ss:Name="Export"><Table>${hRow}\n${dRows}</Table></Worksheet></Workbook>`;
+            const blob = new Blob([xml],{type:"application/vnd.ms-excel;charset=utf-8"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href=url; a.download=filename+".xls"; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+          };
+
           return (
             <div className="space-y-6">
               {/* KPIs Finance */}
+              {user?.adminRole === "super_admin" && (
+                <div className="flex justify-end">
+                  <button onClick={()=>quickXLS("ayyad_finance", fr?["Date","Libellé","Catégorie","Montant (FCFA)","Référence"]:["Date","Label","Category","Amount (FCFA)","Reference"], expenses.map(e=>[e.date?.slice(0,10)||"",e.label||"",e.category||"",e.amount||0,e.reference||""]))}
+                    className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all">
+                    📊 {fr?"Exporter Excel":"Export Excel"}
+                  </button>
+                </div>
+              )}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                   { label: fr?"Total collecté":"Total raised",          v: fmt(totalCollected),     icon:"💚", color:"emerald" },
@@ -5233,9 +5714,27 @@ const AdminPage = ({ user, setPage, lang }) => {
           const totalMonthlySalaries = staffMembers.reduce((s,m)=>s+m.monthly_salary,0);
           const totalPaidThisMonth = thisMonthPayments.filter(p=>p.status==="paid").reduce((s,p)=>s+p.amount,0);
 
+          // ── Export rapide XLS ──
+          const quickXLS_sal = (filename, headers, rows) => {
+            const hRow = `<Row>${headers.map(h=>`<Cell ss:StyleID="h"><Data ss:Type="String">${String(h).replace(/&/g,"&amp;")}</Data></Cell>`).join("")}</Row>`;
+            const dRows = rows.map(r=>`<Row>${r.map(v=>`<Cell><Data ss:Type="${typeof v==="number"?"Number":"String"}">${String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</Data></Cell>`).join("")}</Row>`).join("\n");
+            const xml = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="h"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#0d5c2e" ss:Pattern="Solid"/></Style></Styles><Worksheet ss:Name="Export"><Table>${hRow}\n${dRows}</Table></Worksheet></Workbook>`;
+            const blob = new Blob([xml],{type:"application/vnd.ms-excel;charset=utf-8"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href=url; a.download=filename+".xls"; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+          };
+
           return (
             <div className="space-y-6">
               {/* KPIs salaires */}
+              {user?.adminRole === "super_admin" && (
+                <div className="flex justify-end">
+                  <button onClick={()=>quickXLS_sal("ayyad_salaires", fr?["Mois","Employé","Rôle","Montant (FCFA)","Méthode","Statut","Date paiement"]:["Month","Employee","Role","Amount (FCFA)","Method","Status","Payment date"], salaryPayments.map(p=>[p.payment_month||"",p.staff_name||"",p.role||"",p.amount||0,p.payment_method||p.method||"WAVE",p.status||"",p.payment_date?.slice(0,10)||""]))}
+                    className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all">
+                    📊 {fr?"Exporter Excel":"Export Excel"}
+                  </button>
+                </div>
+              )}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {[
                   { label: fr?"Masse salariale mensuelle":"Monthly payroll",  v: fmt(totalMonthlySalaries), icon:"👥" },
@@ -5346,7 +5845,22 @@ const AdminPage = ({ user, setPage, lang }) => {
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-gray-900">{lang==="fr"?"Journal d'activité":"Activity log"}</h2>
-              <button onClick={loadAuditLogs} className="text-xs text-emerald-600 hover:underline font-semibold">↻ {lang==="fr"?"Actualiser":"Refresh"}</button>
+              <div className="flex items-center gap-2">
+                {user?.adminRole === "super_admin" && auditLogs.length > 0 && (() => {
+                  const quickXLS_audit = () => {
+                    const headers = lang==="fr"?["Horodatage","Opérateur","Rôle","Action","Cible","Ancienne valeur","Nouvelle valeur"]:["Timestamp","Operator","Role","Action","Target","Old value","New value"];
+                    const rows = auditLogs.map(l=>[l.created_at?.slice(0,19).replace("T"," ")||"",l.user_email||"",l.user_role||"",l.action||"",l.target||"",l.old_value||"",l.new_value||""]);
+                    const hRow = `<Row>${headers.map(h=>`<Cell ss:StyleID="h"><Data ss:Type="String">${h}</Data></Cell>`).join("")}</Row>`;
+                    const dRows = rows.map(r=>`<Row>${r.map(v=>`<Cell><Data ss:Type="String">${String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</Data></Cell>`).join("")}</Row>`).join("\n");
+                    const xml = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="h"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#0d5c2e" ss:Pattern="Solid"/></Style></Styles><Worksheet ss:Name="Audit"><Table>${hRow}\n${dRows}</Table></Worksheet></Workbook>`;
+                    const blob = new Blob([xml],{type:"application/vnd.ms-excel;charset=utf-8"});
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a"); a.href=url; a.download="ayyad_audit.xls"; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                  };
+                  return <button onClick={quickXLS_audit} className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm transition-all">📊 {lang==="fr"?"Excel":"Excel"}</button>;
+                })()}
+                <button onClick={loadAuditLogs} className="text-xs text-emerald-600 hover:underline font-semibold">↻ {lang==="fr"?"Actualiser":"Refresh"}</button>
+              </div>
             </div>
 
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
@@ -5442,6 +5956,29 @@ const AdminPage = ({ user, setPage, lang }) => {
           const MONTHS_FR = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
           const MONTHS_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+          // ── Export rapide bilan XLS ──
+          const exportBilanXLS = () => {
+            const periodLabel = isMonthly ? `${(fr?MONTHS_FR:MONTHS_EN)[bilanMonth-1]} ${bilanYear}` : String(bilanYear);
+            const headers = fr?["Indicateur","Valeur"]:["Indicator","Value"];
+            const rows = [
+              [fr?"Période":"Period", periodLabel],
+              [fr?"Dossiers actifs":"Active cases", filteredCases.length],
+              [fr?"Objectifs atteints":"Goals reached", goalReached],
+              [fr?"Total collecté (FCFA)":"Total raised (FCFA)", collected],
+              [fr?"Frais Ayyad 5% (FCFA)":"Ayyad 5% fee (FCFA)", fees5pct],
+              [fr?"Salaires payés (FCFA)":"Salaries paid (FCFA)", totalSalaries],
+              [fr?"Charges diverses (FCFA)":"Misc expenses (FCFA)", totalExp],
+              [fr?"Montant redistribué (FCFA)":"Redistributed (FCFA)", redistributed],
+              [fr?"Solde disponible (FCFA)":"Available balance (FCFA)", balance],
+            ];
+            const hRow = `<Row>${headers.map(h=>`<Cell ss:StyleID="h"><Data ss:Type="String">${h}</Data></Cell>`).join("")}</Row>`;
+            const dRows = rows.map(r=>`<Row>${r.map(v=>`<Cell><Data ss:Type="${typeof v==="number"?"Number":"String"}">${String(v??"")}</Data></Cell>`).join("")}</Row>`).join("\n");
+            const xml = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="h"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#0d5c2e" ss:Pattern="Solid"/></Style></Styles><Worksheet ss:Name="Bilan"><Table>${hRow}\n${dRows}</Table></Worksheet></Workbook>`;
+            const blob = new Blob([xml],{type:"application/vnd.ms-excel;charset=utf-8"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href=url; a.download=`ayyad_bilan_${periodLabel.replace(/\s/g,"_")}.xls`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+          };
+
           return (
             <div className="space-y-6">
               {/* Sélecteur période */}
@@ -5461,6 +5998,11 @@ const AdminPage = ({ user, setPage, lang }) => {
                     <select value={bilanMonth} onChange={e=>setBilanMonth(Number(e.target.value))} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
                       {(fr?MONTHS_FR:MONTHS_EN).map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}
                     </select>
+                  )}
+                  {user?.adminRole === "super_admin" && (
+                    <button onClick={exportBilanXLS} className="ml-auto flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all">
+                      📊 {fr?"Exporter Excel":"Export Excel"}
+                    </button>
                   )}
                 </div>
               </div>
