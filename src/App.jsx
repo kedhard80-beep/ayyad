@@ -193,7 +193,7 @@ const T = {
     register: { title: "Créer un compte", roleQ: "Je souhaite...", roles: [{ id:"donor",icon:"💚",title:"Faire des dons",desc:"Aider des patients dans le besoin" },{ id:"beneficiary",icon:"🏥",title:"Recevoir des soins",desc:"Financer une intervention médicale" }], fields: [{ key:"name",label:"Nom complet",p:"Aminata Koné",type:"text" },{ key:"email",label:"Email",p:"vous@exemple.ci",type:"email" },{ key:"phone",label:"Numéro Wave CI",p:"+225 07 XX XX XX XX",type:"tel" },{ key:"password",label:"Mot de passe (min. 6 caractères)",p:"••••••••",type:"password" }], terms: "J'accepte les", termsLink: "conditions d'utilisation", and: "et la", privacyLink: "politique de confidentialité", btn: "Créer mon compte", continue: "Continuer →", back: "← Retour", hasAccount: "Déjà un compte ?", signin: "Se connecter", error: "Erreur lors de la création du compte." },
     admin: {
       title: "Administration Ayyad", sub: "Tableau de bord opérationnel", status: "Système opérationnel",
-      tabs: [{ id:"overview",label:"Vue d'ensemble",icon:"📊" },{ id:"cases",label:"Dossiers",icon:"📋" },{ id:"donations",label:"Dons",icon:"💚" },{ id:"fraud",label:"Fraude",icon:"🔍" },{ id:"payouts",label:"Virements",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaires",icon:"👔" },{ id:"audit",label:"Audit",icon:"📝" },{ id:"bilan",label:"Bilan",icon:"📈" },{ id:"testimonials",label:"Témoignages",icon:"💬" },{ id:"visitors",label:"Visiteurs",icon:"👁️" },{ id:"team",label:"Équipe",icon:"👥" },{ id:"export",label:"Export",icon:"📤",superAdminOnly:true }],
+      tabs: [{ id:"overview",label:"Vue d'ensemble",icon:"📊" },{ id:"cases",label:"Dossiers",icon:"📋" },{ id:"donations",label:"Dons",icon:"💚" },{ id:"fraud",label:"Fraude",icon:"🔍" },{ id:"payouts",label:"Virements",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaires",icon:"👔" },{ id:"audit",label:"Audit",icon:"📝" },{ id:"bilan",label:"Bilan",icon:"📈" },{ id:"testimonials",label:"Témoignages",icon:"💬" },{ id:"visitors",label:"Visiteurs",icon:"👁️" },{ id:"accounts",label:"Comptes",icon:"👤" },{ id:"team",label:"Équipe",icon:"👥" },{ id:"export",label:"Export",icon:"📤",superAdminOnly:true }],
       stats: [{ label:"Dossiers actifs",v:"—",icon:"📋" },{ label:"Dons ce mois",v:"—",icon:"💚" },{ label:"Bénéficiaires aidés",v:"—",icon:"🏥" }],
       recentTitle: "Dossiers récents", revenueTitle: "Revenus opérationnels (5%)",
       months: [{ month:"Mars 2025",dons:"24.8M",fees:"1 240 000 FCFA" },{ month:"Fév. 2025",dons:"19.2M",fees:"960 000 FCFA" },{ month:"Jan. 2025",dons:"15.1M",fees:"755 000 FCFA" }],
@@ -227,7 +227,7 @@ const T = {
     register: { title: "Create an account", roleQ: "I want to...", roles: [{ id:"donor",icon:"💚",title:"Make donations",desc:"Help patients in need" },{ id:"beneficiary",icon:"🏥",title:"Receive care",desc:"Fund a medical procedure" }], fields: [{ key:"name",label:"Full name",p:"Aminata Koné",type:"text" },{ key:"email",label:"Email",p:"you@example.ci",type:"email" },{ key:"phone",label:"Wave CI number",p:"+225 07 XX XX XX XX",type:"tel" },{ key:"password",label:"Password (min. 6 characters)",p:"••••••••",type:"password" }], terms: "I accept the", termsLink: "terms of service", and: "and the", privacyLink: "privacy policy", btn: "Create my account", continue: "Continue →", back: "← Back", hasAccount: "Already have an account?", signin: "Sign in", error: "Error creating account." },
     admin: {
       title: "Ayyad Administration", sub: "Operational dashboard", status: "System operational",
-      tabs: [{ id:"overview",label:"Overview",icon:"📊" },{ id:"cases",label:"Cases",icon:"📋" },{ id:"donations",label:"Donations",icon:"💚" },{ id:"fraud",label:"Fraud",icon:"🔍" },{ id:"payouts",label:"Payouts",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaries",icon:"👔" },{ id:"audit",label:"Audit log",icon:"📝" },{ id:"bilan",label:"Reporting",icon:"📈" },{ id:"testimonials",label:"Testimonials",icon:"💬" },{ id:"visitors",label:"Visitors",icon:"👁️" },{ id:"team",label:"Team",icon:"👥" },{ id:"export",label:"Export",icon:"📤",superAdminOnly:true }],
+      tabs: [{ id:"overview",label:"Overview",icon:"📊" },{ id:"cases",label:"Cases",icon:"📋" },{ id:"donations",label:"Donations",icon:"💚" },{ id:"fraud",label:"Fraud",icon:"🔍" },{ id:"payouts",label:"Payouts",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaries",icon:"👔" },{ id:"audit",label:"Audit log",icon:"📝" },{ id:"bilan",label:"Reporting",icon:"📈" },{ id:"testimonials",label:"Testimonials",icon:"💬" },{ id:"visitors",label:"Visitors",icon:"👁️" },{ id:"accounts",label:"Accounts",icon:"👤" },{ id:"team",label:"Team",icon:"👥" },{ id:"export",label:"Export",icon:"📤",superAdminOnly:true }],
       stats: [{ label:"Active cases",v:"—",icon:"📋" },{ label:"Donations this month",v:"—",icon:"💚" },{ label:"Patients helped",v:"—",icon:"🏥" }],
       recentTitle: "Recent cases", revenueTitle: "Operational revenue (5%)",
       months: [{ month:"March 2025",dons:"24.8M",fees:"1,240,000 FCFA" },{ month:"Feb. 2025",dons:"19.2M",fees:"960,000 FCFA" },{ month:"Jan. 2025",dons:"15.1M",fees:"755,000 FCFA" }],
@@ -4155,6 +4155,222 @@ const AdminDonationsTab = ({ lang }) => {
   );
 };
 
+// ── Composant Gestion des comptes Admin ──────────────────────────────
+const AdminAccountsTab = ({ lang, user: currentUser }) => {
+  const fr = lang === "fr";
+  const [accounts, setAccounts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all"); // all | admin | banned | regular
+  const [actionModal, setActionModal] = useState(null); // { account, action }
+  const [banReason, setBanReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [stats, setStats] = useState({ total: 0, admins: 0, banned: 0, thisMonth: 0 });
+
+  const load = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      setAccounts(data);
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      setStats({
+        total: data.length,
+        admins: data.filter(a => a.is_admin).length,
+        banned: data.filter(a => a.is_banned).length,
+        thisMonth: data.filter(a => new Date(a.created_at) >= monthStart).length,
+      });
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const fmtDate = (iso) => {
+    if (!iso) return "—";
+    return new Date(iso).toLocaleDateString(fr ? "fr-CI" : "en-US", { day:"2-digit", month:"short", year:"numeric" });
+  };
+
+  const fmtLast = (iso) => {
+    if (!iso) return fr ? "Jamais connecté" : "Never logged in";
+    const diff = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (diff < 60) return fr ? "À l'instant" : "Just now";
+    if (diff < 3600) return Math.floor(diff/60) + (fr ? " min" : " min ago");
+    if (diff < 86400) return Math.floor(diff/3600) + (fr ? " h" : " h ago");
+    if (diff < 2592000) return Math.floor(diff/86400) + (fr ? " j" : " d ago");
+    return fmtDate(iso);
+  };
+
+  const doAction = async () => {
+    if (!actionModal) return;
+    setSaving(true);
+    const { account, action } = actionModal;
+    let update = {};
+    if (action === "ban") update = { is_banned: true, ban_reason: banReason || (fr ? "Violation des conditions" : "Terms violation") };
+    if (action === "unban") update = { is_banned: false, ban_reason: null };
+    if (action === "promote") update = { is_admin: true };
+    if (action === "demote") update = { is_admin: false };
+    const { error } = await supabase.from("profiles").update(update).eq("id", account.id);
+    if (!error) {
+      setAccounts(prev => prev.map(a => a.id === account.id ? { ...a, ...update } : a));
+      setStats(s => ({
+        ...s,
+        admins: action === "promote" ? s.admins + 1 : action === "demote" ? s.admins - 1 : s.admins,
+        banned: action === "ban" ? s.banned + 1 : action === "unban" ? s.banned - 1 : s.banned,
+      }));
+    }
+    setSaving(false);
+    setActionModal(null);
+    setBanReason("");
+  };
+
+  const filtered = accounts.filter(a => {
+    if (filter === "admin" && !a.is_admin) return false;
+    if (filter === "banned" && !a.is_banned) return false;
+    if (filter === "regular" && (a.is_admin || a.is_banned)) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return (a.email||"").toLowerCase().includes(q) || (a.name||"").toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  const statCards = [
+    { label: fr ? "Comptes total" : "Total accounts", value: stats.total, icon: "👤", color: "emerald" },
+    { label: fr ? "Ce mois" : "This month", value: stats.thisMonth, icon: "🆕", color: "blue" },
+    { label: fr ? "Admins" : "Admins", value: stats.admins, icon: "🛡️", color: "purple" },
+    { label: fr ? "Bannis" : "Banned", value: stats.banned, icon: "🚫", color: "red" },
+  ];
+
+  const colorMap = { emerald: "bg-emerald-50 text-emerald-700 border-emerald-100", blue: "bg-blue-50 text-blue-700 border-blue-100", purple: "bg-purple-50 text-purple-700 border-purple-100", red: "bg-red-50 text-red-700 border-red-100" };
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">👤 {fr ? "Gestion des comptes" : "Account Management"}</h2>
+          <p className="text-sm text-gray-500 mt-0.5">{fr ? "Tous les comptes inscrits sur la plateforme" : "All accounts registered on the platform"}</p>
+        </div>
+        <button onClick={load} className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-gray-600">🔄 {fr ? "Actualiser" : "Refresh"}</button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {statCards.map(s => (
+          <div key={s.label} className={`rounded-xl border p-4 ${colorMap[s.color]}`}>
+            <div className="text-2xl font-black">{loading ? "—" : s.value}</div>
+            <div className="text-xs font-medium mt-1 opacity-80">{s.icon} {s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters + Search */}
+      <div className="flex flex-wrap gap-2">
+        {[["all", fr?"Tous":"All"],["regular",fr?"Standard":"Regular"],["admin","Admin"],["banned",fr?"Bannis":"Banned"]].map(([id,lbl]) => (
+          <button key={id} onClick={() => setFilter(id)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filter===id ? "bg-emerald-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>{lbl}</button>
+        ))}
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder={fr ? "Rechercher nom ou email..." : "Search name or email..."}
+          className="flex-1 min-w-[200px] border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400"
+        />
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <div className="text-center text-gray-400 py-12">⏳ {fr ? "Chargement..." : "Loading..."}</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center text-gray-400 py-12">{fr ? "Aucun compte trouvé" : "No accounts found"}</div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+            <span className="text-xs text-gray-500 font-medium">{filtered.length} {fr ? "compte(s)" : "account(s)"}</span>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {filtered.map(a => (
+              <div key={a.id} className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${a.is_banned ? "opacity-60" : ""}`}>
+                {/* Avatar */}
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${a.is_admin ? "bg-purple-100 text-purple-700" : a.is_banned ? "bg-red-100 text-red-500" : "bg-emerald-100 text-emerald-700"}`}>
+                  {(a.name || a.email || "?")[0].toUpperCase()}
+                </div>
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-sm text-gray-800 truncate">{a.name || "—"}</span>
+                    {a.is_admin && <span className="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded-full">🛡️ Admin</span>}
+                    {a.is_banned && <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">🚫 {fr?"Banni":"Banned"}</span>}
+                  </div>
+                  <div className="text-xs text-gray-400 truncate">{a.email || "—"}</div>
+                </div>
+                {/* Dates */}
+                <div className="hidden sm:block text-right flex-shrink-0">
+                  <div className="text-xs text-gray-500">{fr ? "Inscrit" : "Joined"}: {fmtDate(a.created_at)}</div>
+                  <div className="text-xs text-gray-400">{fr ? "Dernière co." : "Last login"}: {fmtLast(a.last_login)}</div>
+                </div>
+                {/* Actions */}
+                {a.id !== currentUser?.id && (
+                  <div className="flex gap-1 flex-shrink-0">
+                    {a.is_banned ? (
+                      <button onClick={() => setActionModal({ account: a, action: "unban" })} className="text-xs bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-lg hover:bg-green-100 font-medium">✓ {fr?"Réactiver":"Unban"}</button>
+                    ) : (
+                      <button onClick={() => setActionModal({ account: a, action: "ban" })} className="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg hover:bg-red-100 font-medium">🚫 {fr?"Bannir":"Ban"}</button>
+                    )}
+                    {a.is_admin ? (
+                      <button onClick={() => setActionModal({ account: a, action: "demote" })} className="text-xs bg-purple-50 text-purple-600 border border-purple-200 px-2.5 py-1 rounded-lg hover:bg-purple-100 font-medium">↓ {fr?"Retirer admin":"Remove admin"}</button>
+                    ) : (
+                      <button onClick={() => setActionModal({ account: a, action: "promote" })} className="text-xs bg-purple-50 text-purple-600 border border-purple-200 px-2.5 py-1 rounded-lg hover:bg-purple-100 font-medium">🛡️ {fr?"Promouvoir":"Promote"}</button>
+                    )}
+                  </div>
+                )}
+                {a.id === currentUser?.id && (
+                  <span className="text-xs text-gray-400 italic flex-shrink-0">{fr?"(vous)":"(you)"}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Action Modal */}
+      {actionModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+            <h3 className="font-black text-lg text-gray-900 mb-2">
+              {actionModal.action === "ban" && (fr ? "🚫 Bannir ce compte" : "🚫 Ban this account")}
+              {actionModal.action === "unban" && (fr ? "✓ Réactiver ce compte" : "✓ Unban this account")}
+              {actionModal.action === "promote" && (fr ? "🛡️ Promouvoir en admin" : "🛡️ Promote to admin")}
+              {actionModal.action === "demote" && (fr ? "↓ Retirer les droits admin" : "↓ Remove admin rights")}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              <strong>{actionModal.account.name || actionModal.account.email}</strong>
+            </p>
+            {actionModal.action === "ban" && (
+              <textarea
+                value={banReason}
+                onChange={e => setBanReason(e.target.value)}
+                rows={2}
+                placeholder={fr ? "Motif du bannissement..." : "Ban reason..."}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400 mb-4"
+              />
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => { setActionModal(null); setBanReason(""); }} className="border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl text-sm">{fr?"Annuler":"Cancel"}</button>
+              <button onClick={doAction} disabled={saving} className={`font-bold py-2.5 rounded-xl text-sm text-white shadow-md ${actionModal.action==="ban"?"bg-red-600":actionModal.action==="promote"?"bg-purple-600":"bg-emerald-600"}`}>
+                {saving ? "..." : (fr?"Confirmer":"Confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const AdminVisitorsTab = ({ lang }) => {
   const fr = lang === "fr";
   const [visitors, setVisitors] = useState([]);
@@ -5775,6 +5991,9 @@ const AdminPage = ({ user, setPage, lang }) => {
 
         {/* ── ONGLET VISITEURS ── */}
         {tab === "visitors" && <AdminVisitorsTab lang={lang} />}
+
+        {/* ── ONGLET COMPTES ── */}
+        {tab === "accounts" && <AdminAccountsTab lang={lang} user={user} />}
 
         {/* ── ONGLET ÉQUIPE ── */}
         {tab === "team" && (
