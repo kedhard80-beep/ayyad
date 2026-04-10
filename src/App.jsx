@@ -8048,6 +8048,11 @@ export default function AyyadApp() {
     const valid = ["home","admin","login","collectes","profile","register","case","track","change-password","urgents","specialite"];
     return (p && valid.includes(p)) ? p : "home";
   });
+  // ── IMPORTANT: declare all state BEFORE any useEffect that references them ──
+  const [lang, setLang] = useState("fr");
+  const [user, setUser] = useState(null);
+  const [selectedCase, setSelectedCase] = useState(null);
+  const [specialite, setSpecialite] = useState("");
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -8081,10 +8086,6 @@ export default function AyyadApp() {
       setMeta("og:url", "https://ayyad.vercel.app");
     }
   }, [page, selectedCase]);
-  const [lang, setLang] = useState("fr");
-  const [user, setUser] = useState(null);
-  const [selectedCase, setSelectedCase] = useState(null);
-  const [specialite, setSpecialite] = useState("");
 
   // Fix bouton précédent navigateur
   useEffect(() => {
