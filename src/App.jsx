@@ -1871,8 +1871,10 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 
   const catMap = lang==="fr" ? ["Tous","Cardiologie","Oncologie","Néphrologie","Orthopédie"] : ["All","Cardiology","Oncology","Nephrology","Orthopedics"];
   const allCases = dbCases.length > 0 ? [...dbCases, ...getDisplayCases().filter(c => c.status !== "FUNDED")] : getDisplayCases();
-  const filtered = (filter==="all"||filter===catMap[0] ? allCases : allCases.filter(c => c.category[lang].toLowerCase()===filter.toLowerCase()))
-    .filter(c => !search.trim() || (c.title||"").toLowerCase().includes(search.toLowerCase()) || (c.hospital||"").toLowerCase().includes(search.toLowerCase()) || (c.city||"").toLowerCase().includes(search.toLowerCase()));
+  // Helper: extracts string from title/category whether stored as string or {fr,en} object
+  const gs = (val) => typeof val === "object" && val !== null ? (val[lang] || val.fr || val.en || "") : (val || "");
+  const filtered = (filter==="all"||filter===catMap[0] ? allCases : allCases.filter(c => gs(c.category).toLowerCase()===filter.toLowerCase()))
+    .filter(c => !search.trim() || gs(c.title).toLowerCase().includes(search.toLowerCase()) || (c.hospital||"").toLowerCase().includes(search.toLowerCase()) || (c.city||"").toLowerCase().includes(search.toLowerCase()));
   return (
     <div onClick={() => setHeroMenu(false)}>
       <div className="bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-600 text-white">
