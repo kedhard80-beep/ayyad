@@ -4233,7 +4233,7 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
     if (filter === "regular" && (a.is_admin || a.is_banned)) return false;
     if (search) {
       const q = search.toLowerCase();
-      return (a.email||"").toLowerCase().includes(q) || (a.name||"").toLowerCase().includes(q);
+      return (a.email||"").toLowerCase().includes(q) || (a.full_name||a.name||"").toLowerCase().includes(q);
     }
     return true;
   });
@@ -4296,12 +4296,12 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
               <div key={a.id} className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${a.is_banned ? "opacity-60" : ""}`}>
                 {/* Avatar */}
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${a.is_admin ? "bg-purple-100 text-purple-700" : a.is_banned ? "bg-red-100 text-red-500" : "bg-emerald-100 text-emerald-700"}`}>
-                  {(a.name || a.email || "?")[0].toUpperCase()}
+                  {(a.full_name || a.name || a.email || "?")[0].toUpperCase()}
                 </div>
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-sm text-gray-800 truncate">{a.name || "—"}</span>
+                    <span className="font-semibold text-sm text-gray-800 truncate">{a.full_name || a.name || "—"}</span>
                     {a.is_admin && <span className="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded-full">🛡️ Admin</span>}
                     {a.is_banned && <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">🚫 {fr?"Banni":"Banned"}</span>}
                   </div>
@@ -4347,7 +4347,7 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
               {actionModal.action === "demote" && (fr ? "↓ Retirer les droits admin" : "↓ Remove admin rights")}
             </h3>
             <p className="text-sm text-gray-500 mb-4">
-              <strong>{actionModal.account.name || actionModal.account.email}</strong>
+              <strong>{actionModal.account.full_name || actionModal.account.name || actionModal.account.email}</strong>
             </p>
             {actionModal.action === "ban" && (
               <textarea
