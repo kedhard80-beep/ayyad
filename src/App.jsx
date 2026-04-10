@@ -3710,9 +3710,13 @@ const AdminTeamList = ({ user, fr }) => {
     setAdding(true);
     setMsg("");
     try {
+      const cleanEmail = newEmail.trim().toLowerCase();
+      // Chercher le full_name dans profiles, sinon utiliser le préfixe email
+      const { data: profileData } = await supabase.from("profiles").select("full_name").eq("email", cleanEmail).maybeSingle();
+      const fullName = profileData?.full_name || cleanEmail.split("@")[0];
       const { error } = await supabase
         .from("admin_users")
-        .insert({ email: newEmail.trim().toLowerCase(), role: newRole, is_active: true });
+        .insert({ email: cleanEmail, role: newRole, is_active: true, full_name: fullName });
       if (error) {
         setMsg(fr ? "Erreur : " + error.message : "Error: " + error.message);
       } else {
@@ -4214,6 +4218,14 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
     if (action === "promote") update = { is_admin: true };
     if (action === "demote") update = { is_admin: false };
     const { error } = await supabase.from("profiles").update(update).eq("id", account.id);
+    // Synchroniser avec admin_users pour que l'accès admin soit effectif
+    if (!error && action === "promote") {
+      const fullName = account.full_name || account.name || (account.email||"").split("@")[0];
+      await supabase.from("admin_users").upsert({ email: account.email, role: "admin", is_active: true, full_name: fullName }, { onConflict: "email" });
+    }
+    if (!error && action === "demote") {
+      await supabase.from("admin_users").update({ is_active: false }).eq("email", account.email);
+    }
     if (!error) {
       setAccounts(prev => prev.map(a => a.id === account.id ? { ...a, ...update } : a));
       setStats(s => ({
