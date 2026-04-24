@@ -7439,6 +7439,152 @@ const BCEAOPage = ({ setPage, lang }) => {
   );
 };
 
+// ── ChatWidget ────────────────────────────────────────────────
+// Widget flottant bas-droite : choix entre Chat en direct (Tawk.to) et WhatsApp.
+// Tawk.to est chargé de manière paresseuse (au premier clic) pour ne pas ralentir
+// le premier rendu. Le bouton natif de Tawk.to est masqué — on garde un seul CTA unifié.
+const CHAT_CONFIG = {
+  whatsappNumber: "2250501855991", // Serge — perso pour l'instant, à basculer vers WA Business plus tard
+  tawkPropertyId: "69eb8627f851631c32b88f6b",
+  tawkWidgetId: "1jn0082u0",
+};
+
+const ChatWidget = ({ lang }) => {
+  const [open, setOpen] = useState(false);
+  const [tawkReady, setTawkReady] = useState(false);
+  const fr = lang === "fr";
+
+  // Injection paresseuse du script Tawk.to la première fois qu'on en a besoin
+  const ensureTawkLoaded = () => {
+    if (tawkReady) return Promise.resolve();
+    return new Promise((resolve) => {
+      window.Tawk_API = window.Tawk_API || {};
+      window.Tawk_LoadStart = new Date();
+      window.Tawk_API.onLoad = function () {
+        try { window.Tawk_API.hideWidget && window.Tawk_API.hideWidget(); } catch(_) {}
+        setTawkReady(true);
+        resolve();
+      };
+      const s = document.createElement("script");
+      s.async = true;
+      s.src = `https://embed.tawk.to/${CHAT_CONFIG.tawkPropertyId}/${CHAT_CONFIG.tawkWidgetId}`;
+      s.charset = "UTF-8";
+      s.setAttribute("crossorigin", "*");
+      document.body.appendChild(s);
+    });
+  };
+
+  const openLiveChat = async () => {
+    setOpen(false);
+    await ensureTawkLoaded();
+    try {
+      if (window.Tawk_API) {
+        window.Tawk_API.showWidget && window.Tawk_API.showWidget();
+        window.Tawk_API.maximize && window.Tawk_API.maximize();
+      }
+    } catch (e) { console.warn("Tawk open error:", e); }
+  };
+
+  const openWhatsApp = () => {
+    setOpen(false);
+    const msg = fr
+      ? "Bonjour Ayyad, j'ai une question concernant "
+      : "Hello Ayyad, I have a question about ";
+    const url = `https://wa.me/${CHAT_CONFIG.whatsappNumber}?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  return (
+    <>
+      {/* Panneau de choix */}
+      {open && (
+        <div
+          role="dialog"
+          aria-label={fr ? "Choisir un moyen de contact" : "Choose how to contact us"}
+          className="fixed bottom-24 right-4 sm:right-6 z-[9999] w-[calc(100vw-2rem)] sm:w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
+          style={{ animation: "fadeInUp .2s ease-out" }}
+        >
+          <div style={{ background: "#0d5c2e" }} className="text-white px-5 py-4">
+            <div className="font-extrabold text-base">{fr ? "💬 Parlons !" : "💬 Let's chat!"}</div>
+            <div className="text-xs mt-1" style={{ color: "#a7f3d0" }}>
+              {fr ? "Comment souhaitez-vous nous contacter ?" : "How would you like to reach us?"}
+            </div>
+          </div>
+          <div className="p-3 space-y-2">
+            <button
+              onClick={openLiveChat}
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-left transition"
+            >
+              <div
+                className="w-11 h-11 rounded-full flex items-center justify-center text-white text-xl shrink-0"
+                style={{ background: "#0d5c2e" }}
+              >
+                💬
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-sm text-gray-900">
+                  {fr ? "Chat en direct" : "Live chat"}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {fr ? "Notre équipe répond rapidement" : "Our team replies quickly"}
+                </div>
+              </div>
+            </button>
+            <button
+              onClick={openWhatsApp}
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-left transition"
+            >
+              <div
+                className="w-11 h-11 rounded-full flex items-center justify-center text-white text-xl shrink-0"
+                style={{ background: "#25D366" }}
+              >
+                📱
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-sm text-gray-900">WhatsApp</div>
+                <div className="text-xs text-gray-500">
+                  {fr ? "Discutez sur WhatsApp" : "Chat on WhatsApp"}
+                </div>
+              </div>
+            </button>
+          </div>
+          <div className="px-4 pb-3 text-[10px] text-gray-400 text-center">
+            {fr ? "Ayyad · Financement médical solidaire" : "Ayyad · Solidarity medical funding"}
+          </div>
+        </div>
+      )}
+
+      {/* Bouton flottant */}
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        aria-label={fr ? "Ouvrir le chat" : "Open chat"}
+        className="fixed bottom-5 right-4 sm:right-6 z-[9999] w-14 h-14 rounded-full text-white shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+        style={{ background: "#0d5c2e" }}
+      >
+        {open ? (
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        ) : (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        )}
+      </button>
+
+      {/* Animation keyframes */}
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </>
+  );
+};
+
 // ── Footer ────────────────────────────────────────────────────
 const Footer = ({ setPage, lang }) => {
   const t = T[lang].footer;
@@ -8432,6 +8578,7 @@ export default function AyyadApp() {
         {page==="faq"&&<FAQPage setPage={setPage} lang={lang} />}
       </main>
       {showFooter&&<Footer setPage={setPage} lang={lang} />}
+      <ChatWidget lang={lang} />
     </div>
   );
 }
