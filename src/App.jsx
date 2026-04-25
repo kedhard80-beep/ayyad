@@ -1916,7 +1916,14 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [editMsg, setEditMsg] = useState("");
   const [editPhotoUploading, setEditPhotoUploading] = useState(false);
   // donMode: "choose" | "anonymous" | "logged" | "confirm" | "success"
-  const [donMode, setDonMode] = useState("choose");
+  // Si l'utilisateur est déjà connecté, on saute l'écran de choix et on va direct au formulaire connecté
+  const [donMode, setDonMode] = useState(user ? "logged" : "choose");
+
+  // Si l'utilisateur se connecte/déconnecte pendant qu'il est sur la page, on resynchronise
+  useEffect(() => {
+    if (user && donMode === "choose") setDonMode("logged");
+    if (!user && donMode === "logged") setDonMode("choose");
+  }, [user]);
 
   // ── Journal patient ──
   const [caseUpdates, setCaseUpdates] = useState([]);
