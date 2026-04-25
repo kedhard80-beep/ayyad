@@ -33,19 +33,44 @@ const wrap = (inner) => `
     </div>
   </div>`;
 
+// ── Helpers pour normaliser les valeurs envoyées par le frontend ─────────────
+// title peut arriver comme string OU comme objet { fr, en } selon le call site
+const normTitle = (t) => {
+  if (!t) return "—";
+  if (typeof t === "string") return t;
+  if (typeof t === "object") return t.fr || t.en || Object.values(t)[0] || "—";
+  return String(t);
+};
+
+// amount peut arriver formaté ("1 000 FCFA") ou brut (1000) — on évite la duplication
+const normAmount = (a) => {
+  if (a === null || a === undefined || a === "") return "—";
+  if (typeof a === "string") return /FCFA|EUR|USD|€|\$/i.test(a) ? a : (a + " FCFA");
+  if (typeof a === "number") return new Intl.NumberFormat("fr-FR").format(a) + " FCFA";
+  return String(a);
+};
+
+// Nom : peut arriver en object aussi (rare mais on sécurise)
+const normName = (n) => {
+  if (!n) return "";
+  if (typeof n === "string") return n;
+  if (typeof n === "object") return n.fr || n.en || Object.values(n)[0] || "";
+  return String(n);
+};
+
 // ── Templates ────────────────────────────────────────────────────────────────
 const templates = {
 
   // 1) Confirmation de don envoyée au donateur
   donConfirm: ({ donorName, amount, beneficiary, caseTitle, trackingId }) => ({
-    subject: `✅ Don de ${amount} FCFA enregistré — Ayyad`,
+    subject: `✅ Don de ${normAmount(amount)} enregistré — Ayyad`,
     html: wrap(`
-      <h2 style="color:#111;margin-top:0">Merci ${donorName || ""} pour votre don 💚</h2>
+      <h2 style="color:#111;margin-top:0">Merci ${normName(donorName)} pour votre don 💚</h2>
       <p style="color:#6b7280">Votre don a bien été enregistré :</p>
       <div style="background:#f0fdf4;border-radius:8px;padding:16px;margin:16px 0">
-        <p style="margin:4px 0"><strong>Montant :</strong> ${amount} FCFA</p>
-        <p style="margin:4px 0"><strong>Bénéficiaire :</strong> ${beneficiary || "—"}</p>
-        <p style="margin:4px 0"><strong>Collecte :</strong> ${caseTitle || "—"}</p>
+        <p style="margin:4px 0"><strong>Montant :</strong> ${normAmount(amount)}</p>
+        <p style="margin:4px 0"><strong>Bénéficiaire :</strong> ${normName(beneficiary) || "—"}</p>
+        <p style="margin:4px 0"><strong>Collecte :</strong> ${normTitle(caseTitle)}</p>
       </div>
       <p style="color:#6b7280;font-size:14px">Les fonds seront versés directement à l'hôpital partenaire. Aucuns frais cachés.</p>
       <p style="color:#6b7280;font-size:14px">Merci de soutenir la vie. 🙏</p>
@@ -55,14 +80,14 @@ const templates = {
 
   // 2) Notification admin : nouveau dossier soumis
   newCase: ({ caseTitle, hospital, city, amount, trackingId }) => ({
-    subject: `📋 Nouveau dossier soumis : ${caseTitle}`,
+    subject: `📋 Nouveau dossier soumis : ${normTitle(caseTitle)}`,
     html: wrap(`
       <h2 style="color:#111;margin-top:0">📋 Nouveau dossier à vérifier</h2>
       <div style="background:#fefce8;border-radius:8px;padding:16px;margin:16px 0;border:1px solid #fde047">
-        <p style="margin:4px 0"><strong>Titre :</strong> ${caseTitle || "—"}</p>
+        <p style="margin:4px 0"><strong>Titre :</strong> ${normTitle(caseTitle)}</p>
         <p style="margin:4px 0"><strong>Hôpital :</strong> ${hospital || "—"}</p>
         <p style="margin:4px 0"><strong>Ville :</strong> ${city || "—"}</p>
-        <p style="margin:4px 0"><strong>Montant demandé :</strong> ${amount || 0} FCFA</p>
+        <p style="margin:4px 0"><strong>Montant demandé :</strong> ${normAmount(amount)}</p>
         ${trackingId ? `<p style="margin:4px 0"><strong>Tracking :</strong> <span style="font-family:monospace">${trackingId}</span></p>` : ""}
       </div>
       <a href="${SITE_URL}/admin" style="background:#0d5c2e;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px">Ouvrir le dashboard Admin →</a>
@@ -73,8 +98,8 @@ const templates = {
   caseApproved: ({ beneficiaryName, caseTitle, trackingId }) => ({
     subject: `🎉 Votre dossier a été approuvé — Ayyad`,
     html: wrap(`
-      <h2 style="color:#111;margin-top:0">🎉 Bonne nouvelle, ${beneficiaryName || ""}!</h2>
-      <p style="color:#6b7280">Votre dossier <strong>${caseTitle || ""}</strong> a été vérifié et approuvé par l'équipe Ayyad. La collecte est maintenant en ligne.</p>
+      <h2 style="color:#111;margin-top:0">🎉 Bonne nouvelle, ${normName(beneficiaryName)}!</h2>
+      <p style="color:#6b7280">Votre dossier <strong>${normTitle(caseTitle)}</strong> a été vérifié et approuvé par l'équipe Ayyad. La collecte est maintenant en ligne.</p>
       <div style="background:#f0fdf4;border-radius:8px;padding:16px;margin:16px 0">
         <p style="margin:4px 0"><strong>ID de suivi :</strong> <span style="font-family:monospace;color:#0d5c2e">${trackingId || "—"}</span></p>
         <p style="margin:4px 0;font-size:13px;color:#6b7280">Conservez cet identifiant pour suivre votre collecte.</p>
@@ -88,8 +113,8 @@ const templates = {
   caseRejected: ({ beneficiaryName, caseTitle, reason }) => ({
     subject: `ℹ️ Mise à jour de votre dossier — Ayyad`,
     html: wrap(`
-      <h2 style="color:#111;margin-top:0">Mise à jour de votre dossier</h2>
-      <p style="color:#6b7280">Après vérification, votre dossier <strong>${caseTitle || ""}</strong> n'a pas pu être approuvé en l'état.</p>
+      <h2 style="color:#111;margin-top:0">Mise à jour de votre dossier${beneficiaryName ? ", " + normName(beneficiaryName) : ""}</h2>
+      <p style="color:#6b7280">Après vérification, votre dossier <strong>${normTitle(caseTitle)}</strong> n'a pas pu être approuvé en l'état.</p>
       ${reason ? `<div style="background:#fef2f2;border-radius:8px;padding:16px;margin:16px 0;border:1px solid #fecaca"><p style="margin:0;color:#b91c1c"><strong>Motif :</strong> ${reason}</p></div>` : ""}
       <p style="color:#6b7280;font-size:14px">Vous pouvez soumettre un nouveau dossier avec des documents complets et conformes.</p>
       <p style="color:#6b7280;font-size:14px">Pour toute question, contactez-nous à <a href="mailto:${REPLY_TO}" style="color:#0d5c2e">${REPLY_TO}</a>.</p>
@@ -101,8 +126,8 @@ const templates = {
   welcomePatient: ({ beneficiaryName, caseTitle, trackingId }) => ({
     subject: `📨 Votre dossier a bien été reçu — Ayyad`,
     html: wrap(`
-      <h2 style="color:#111;margin-top:0">Bonjour ${beneficiaryName || ""}, merci pour votre confiance 🙏</h2>
-      <p style="color:#6b7280">Votre dossier <strong>${caseTitle || ""}</strong> a bien été reçu par notre équipe.</p>
+      <h2 style="color:#111;margin-top:0">Bonjour ${normName(beneficiaryName)}, merci pour votre confiance 🙏</h2>
+      <p style="color:#6b7280">Votre dossier <strong>${normTitle(caseTitle)}</strong> a bien été reçu par notre équipe.</p>
       <div style="background:#f0fdf4;border-radius:8px;padding:16px;margin:16px 0">
         <p style="margin:4px 0"><strong>ID de suivi :</strong> <span style="font-family:monospace;color:#0d5c2e">${trackingId || "—"}</span></p>
         <p style="margin:4px 0;font-size:13px;color:#6b7280">Notez bien cet identifiant — il vous permettra de suivre l'avancement.</p>
@@ -120,17 +145,17 @@ const templates = {
 
   // 6) Collecte atteinte : envoyé à chaque donateur quand l'objectif est atteint
   caseFunded: ({ donorName, caseTitle, beneficiary, totalRaised, trackingId }) => ({
-    subject: `🎯 Objectif atteint pour ${beneficiary || caseTitle || "la collecte"} ! Merci 💚`,
+    subject: `🎯 Objectif atteint pour ${normName(beneficiary) || normTitle(caseTitle) || "la collecte"} ! Merci 💚`,
     html: wrap(`
-      <h2 style="color:#111;margin-top:0">🎯 Objectif atteint, ${donorName || ""}!</h2>
+      <h2 style="color:#111;margin-top:0">🎯 Objectif atteint, ${normName(donorName)}!</h2>
       <p style="color:#6b7280">Grâce à votre soutien et celui de la communauté, la collecte a atteint son objectif.</p>
       <div style="background:#f0fdf4;border-radius:8px;padding:20px;margin:16px 0;text-align:center;border:2px solid #0d5c2e">
         <p style="margin:0;color:#6b7280;font-size:13px">Collecte</p>
-        <p style="margin:4px 0 12px;font-weight:600;color:#111;font-size:16px">${caseTitle || "—"}</p>
-        <p style="margin:0;color:#0d5c2e;font-size:28px;font-weight:700">${(totalRaised || 0).toLocaleString("fr-FR")} FCFA</p>
+        <p style="margin:4px 0 12px;font-weight:600;color:#111;font-size:16px">${normTitle(caseTitle)}</p>
+        <p style="margin:0;color:#0d5c2e;font-size:28px;font-weight:700">${normAmount(totalRaised)}</p>
         <p style="margin:4px 0 0;color:#6b7280;font-size:12px">collectés au total</p>
       </div>
-      <p style="color:#6b7280;font-size:14px">Les fonds vont être versés à l'hôpital partenaire pour la prise en charge de <strong>${beneficiary || ""}</strong>.</p>
+      <p style="color:#6b7280;font-size:14px">Les fonds vont être versés à l'hôpital partenaire pour la prise en charge de <strong>${normName(beneficiary)}</strong>.</p>
       <p style="color:#6b7280;font-size:14px">Vous recevrez une mise à jour avec un retour sur l'opération dès qu'elle sera disponible.</p>
       <p style="color:#6b7280;font-size:14px">Merci de transformer une vie. 💚</p>
       <a href="${SITE_URL}/?case=${trackingId || ""}" style="background:#0d5c2e;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px">Voir le détail →</a>
