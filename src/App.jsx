@@ -8,115 +8,44 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_KEY
 );
 
-// ── Resend Email ─────────────────────────────────────────────
-const RESEND_API_KEY = import.meta.env.VITE_RESEND_KEY || "";
+// ── Email helpers (appellent /api/send-email côté serveur) ───────────────────
+// Les templates HTML et la clé Resend vivent dans /api/send-email.js (server-side).
+// Ici on n'expose plus aucune clé API au client.
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "kedhard80@gmail.com";
 
-const sendEmail = async ({ to, subject, html }) => {
-  if (!RESEND_API_KEY) { console.warn("Resend key manquante"); return; }
+const sendEmail = async ({ type, to, data }) => {
   try {
-    const res = await fetch("https://api.resend.com/emails", {
+    const res = await fetch("/api/send-email", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${RESEND_API_KEY}` },
-      body: JSON.stringify({ from: "Ayyad <onboarding@resend.dev>", to: [ADMIN_EMAIL], subject, html })
-      // ⚠️ En mode test Resend, tous les emails sont redirigés vers ADMIN_EMAIL
-      // Quand le domaine ayyad.ci sera vérifié sur Resend, remplacer "to: [ADMIN_EMAIL]" par "to: Array.isArray(to) ? to : [to]"
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, to, data })
     });
-    const data = await res.json();
-    if (!res.ok) console.error("Resend error:", data);
-    else console.log("Email envoyé:", data.id);
-  } catch(e) { console.log("Email error:", e); }
+    const result = await res.json();
+    if (!res.ok) console.error("Email error:", result);
+    else console.log("Email envoyé:", type, result.id);
+    return result;
+  } catch (e) { console.log("Email fetch error:", e); }
 };
 
-const emailDonConfirm = ({ donorEmail, donorName, amount, beneficiary, caseTitle }) =>
-  sendEmail({
-    to: donorEmail || ADMIN_EMAIL,
-    subject: `✅ Don de ${amount} FCFA enregistré — Ayyad`,
-    html: `<div style="font-family:sans-serif;max-width:500px;margin:auto">
-      <div style="background:#0d5c2e;padding:24px;text-align:center;border-radius:12px 12px 0 0">
-        <h1 style="color:#C9A84C;margin:0;font-size:24px">AYYAD</h1>
-        <p style="color:#a7f3d0;margin:4px 0 0">Financement médical solidaire</p>
-      </div>
-      <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
-        <h2 style="color:#111">Merci ${donorName || ""} pour votre don 💚</h2>
-        <p style="color:#6b7280">Votre don a bien été enregistré :</p>
-        <div style="background:#f0fdf4;border-radius:8px;padding:16px;margin:16px 0">
-          <p style="margin:4px 0"><strong>Montant :</strong> ${amount} FCFA</p>
-          <p style="margin:4px 0"><strong>Bénéficiaire :</strong> ${beneficiary}</p>
-          <p style="margin:4px 0"><strong>Collecte :</strong> ${caseTitle}</p>
-        </div>
-        <p style="color:#6b7280;font-size:14px">Les fonds seront versés directement à l'hôpital partenaire. Aucuns frais cachés.</p>
-        <p style="color:#6b7280;font-size:14px">Merci de soutenir la vie. 🙏</p>
-        <a href="https://ayyad.vercel.app" style="background:#0d5c2e;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px;font-size:13px">Suivre la collecte →</a>
-        <p style="color:#9ca3af;font-size:12px;margin-top:24px">© 2025 Ayyad CI · ayyad.vercel.app</p>
-      </div>
-    </div>`
-  });
+// Wrappers — mêmes signatures qu'avant pour ne pas casser les call sites
+const emailDonConfirm = ({ donorEmail, ...data }) =>
+  sendEmail({ type: "donConfirm", to: donorEmail || ADMIN_EMAIL, data });
 
-const emailNewCase = ({ caseTitle, hospital, city, amount }) =>
-  sendEmail({
-    to: ADMIN_EMAIL,
-    subject: `📋 Nouveau dossier soumis : ${caseTitle}`,
-    html: `<div style="font-family:sans-serif;max-width:500px;margin:auto">
-      <div style="background:#0d5c2e;padding:24px;text-align:center;border-radius:12px 12px 0 0">
-        <h1 style="color:#C9A84C;margin:0">AYYAD — Admin</h1>
-      </div>
-      <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
-        <h2 style="color:#111">📋 Nouveau dossier à vérifier</h2>
-        <div style="background:#fefce8;border-radius:8px;padding:16px;margin:16px 0;border:1px solid #fde047">
-          <p style="margin:4px 0"><strong>Titre :</strong> ${caseTitle}</p>
-          <p style="margin:4px 0"><strong>Hôpital :</strong> ${hospital}</p>
-          <p style="margin:4px 0"><strong>Ville :</strong> ${city}</p>
-          <p style="margin:4px 0"><strong>Montant demandé :</strong> ${amount} FCFA</p>
-        </div>
-        <a href="https://ayyad.vercel.app" style="background:#0d5c2e;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px">Voir le dashboard Admin →</a>
-      </div>
-    </div>`
-  });
+const emailNewCase = (data) =>
+  sendEmail({ type: "newCase", to: ADMIN_EMAIL, data });
 
-const emailCaseApproved = ({ beneficiaryEmail, beneficiaryName, caseTitle, trackingId }) =>
-  sendEmail({
-    to: beneficiaryEmail || ADMIN_EMAIL,
-    subject: `🎉 Votre dossier a été approuvé — Ayyad`,
-    html: `<div style="font-family:sans-serif;max-width:500px;margin:auto">
-      <div style="background:#0d5c2e;padding:24px;text-align:center;border-radius:12px 12px 0 0">
-        <h1 style="color:#C9A84C;margin:0">AYYAD</h1>
-        <p style="color:#a7f3d0;margin:4px 0 0">Financement médical solidaire</p>
-      </div>
-      <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
-        <h2 style="color:#111">🎉 Bonne nouvelle, ${beneficiaryName || ""}!</h2>
-        <p style="color:#6b7280">Votre dossier <strong>${caseTitle}</strong> a été vérifié et approuvé par l'équipe Ayyad. La collecte est maintenant en ligne.</p>
-        <div style="background:#f0fdf4;border-radius:8px;padding:16px;margin:16px 0">
-          <p style="margin:4px 0"><strong>ID de suivi :</strong> <span style="font-family:monospace;color:#0d5c2e">${trackingId || "—"}</span></p>
-          <p style="margin:4px 0;font-size:13px;color:#6b7280">Conservez cet identifiant pour suivre votre collecte.</p>
-        </div>
-        <p style="color:#6b7280;font-size:14px">Partagez le lien de votre collecte avec vos proches pour maximiser les dons.</p>
-        <a href="https://ayyad.vercel.app/?case=${trackingId}" style="background:#0d5c2e;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px">Voir ma collecte →</a>
-        <p style="color:#9ca3af;font-size:12px;margin-top:24px">© 2025 Ayyad CI · ayyad.vercel.app</p>
-      </div>
-    </div>`
-  });
+const emailCaseApproved = ({ beneficiaryEmail, ...data }) =>
+  sendEmail({ type: "caseApproved", to: beneficiaryEmail || ADMIN_EMAIL, data });
 
-const emailCaseRejected = ({ beneficiaryEmail, beneficiaryName, caseTitle, reason }) =>
-  sendEmail({
-    to: beneficiaryEmail || ADMIN_EMAIL,
-    subject: `ℹ️ Mise à jour de votre dossier — Ayyad`,
-    html: `<div style="font-family:sans-serif;max-width:500px;margin:auto">
-      <div style="background:#0d5c2e;padding:24px;text-align:center;border-radius:12px 12px 0 0">
-        <h1 style="color:#C9A84C;margin:0">AYYAD</h1>
-        <p style="color:#a7f3d0;margin:4px 0 0">Financement médical solidaire</p>
-      </div>
-      <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
-        <h2 style="color:#111">Mise à jour de votre dossier</h2>
-        <p style="color:#6b7280">Après vérification, votre dossier <strong>${caseTitle}</strong> n'a pas pu être approuvé en l'état.</p>
-        ${reason ? `<div style="background:#fef2f2;border-radius:8px;padding:16px;margin:16px 0;border:1px solid #fecaca"><p style="margin:0;color:#b91c1c"><strong>Motif :</strong> ${reason}</p></div>` : ""}
-        <p style="color:#6b7280;font-size:14px">Vous pouvez soumettre un nouveau dossier avec des documents complets et conformes.</p>
-        <p style="color:#6b7280;font-size:14px">Pour toute question : <a href="mailto:support@ayyad.ci" style="color:#0d5c2e">support@ayyad.ci</a></p>
-        <a href="https://ayyad.vercel.app" style="background:#6b7280;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px">Soumettre un nouveau dossier →</a>
-        <p style="color:#9ca3af;font-size:12px;margin-top:24px">© 2025 Ayyad CI · ayyad.vercel.app</p>
-      </div>
-    </div>`
-  });
+const emailCaseRejected = ({ beneficiaryEmail, ...data }) =>
+  sendEmail({ type: "caseRejected", to: beneficiaryEmail || ADMIN_EMAIL, data });
+
+// Nouveaux templates (à appeler depuis le code métier)
+const emailWelcomePatient = ({ beneficiaryEmail, ...data }) =>
+  sendEmail({ type: "welcomePatient", to: beneficiaryEmail || ADMIN_EMAIL, data });
+
+const emailCaseFunded = ({ donorEmail, ...data }) =>
+  sendEmail({ type: "caseFunded", to: donorEmail || ADMIN_EMAIL, data });
 const CI_VILLES = [
   "Abengourou","Abidjan","Aboisso","Adzopé","Agboville","Anyama","Bondoukou",
   "Bouna","Boundiali","Daloa","Dimbokro","Divo","Ferkessédougou","Gagnoa",
@@ -3072,6 +3001,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
     });
     if (error) { setSubmitError(lang==="fr"?"Erreur lors de la soumission. Réessayez.":"Submission error. Please try again."); setSubmitting(false); return; }
     try { emailNewCase({ caseTitle: form.title, hospital: form.hospital, city: form.city, amount: form.amount }); } catch(e) { console.warn("Email non envoyé:", e); }
+    try { emailWelcomePatient({ beneficiaryEmail: user?.email || null, beneficiaryName: user?.name || user?.email?.split("@")[0] || "Patient", caseTitle: form.title }); } catch(e) { console.warn("Email bienvenue non envoyé:", e); }
     setStep(3);
     setSubmitting(false);
   };
