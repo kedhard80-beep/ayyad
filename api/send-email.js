@@ -42,11 +42,23 @@ const normTitle = (t) => {
   return String(t);
 };
 
-// amount peut arriver formaté ("1 000 FCFA") ou brut (1000) — on évite la duplication
+// amount peut arriver formaté ("1 000 FCFA"), brut (1000), ou string numérique ("5000000")
+// On évite la duplication "FCFA FCFA" et on formate les nombres avec espaces
 const normAmount = (a) => {
   if (a === null || a === undefined || a === "") return "—";
-  if (typeof a === "string") return /FCFA|EUR|USD|€|\$/i.test(a) ? a : (a + " FCFA");
+  // Déjà un nombre → format français + FCFA
   if (typeof a === "number") return new Intl.NumberFormat("fr-FR").format(a) + " FCFA";
+  if (typeof a === "string") {
+    // Déjà formaté avec une devise → on retourne tel quel
+    if (/FCFA|EUR|USD|€|\$/i.test(a)) return a;
+    // String purement numérique (avec ou sans espaces) → on parse et reformate
+    const cleaned = a.replace(/\s/g, "");
+    if (/^\d+(\.\d+)?$/.test(cleaned)) {
+      return new Intl.NumberFormat("fr-FR").format(Number(cleaned)) + " FCFA";
+    }
+    // Sinon on append FCFA brut
+    return a + " FCFA";
+  }
   return String(a);
 };
 

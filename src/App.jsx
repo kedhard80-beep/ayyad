@@ -982,7 +982,7 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
   }, [open]);
 
   const trackingId = c.trackingId || c.tracking_id || ("AYD-" + c.id);
-  const shareUrl = "https://ayyad.vercel.app/?case=" + trackingId;
+  const shareUrl = "https://ayyadci.com/?case=" + trackingId;
   const title = typeof c.title === "object" ? c.title[lang] : (c.title || "");
   const beneficiary = c.beneficiary || c.full_name || "";
   const pct = c.required ? Math.min(100, Math.round(((c.collected||0)/c.required)*100)) : 0;
@@ -1061,7 +1061,7 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
             </div>
             <div>
               <div className="text-sm font-bold text-gray-900">{copied ? (lang === "fr" ? "Lien copié !" : "Link copied!") : (lang === "fr" ? "Copier le lien" : "Copy link")}</div>
-              <div className="text-[10px] text-gray-400 font-mono truncate">ayyad.vercel.app/?case={trackingId}</div>
+              <div className="text-[10px] text-gray-400 font-mono truncate">ayyadci.com/?case={trackingId}</div>
             </div>
           </button>
 
@@ -2883,7 +2883,7 @@ const RegisterPage = ({ setPage, setUser, lang }) => {
           ))}
           <div className="flex items-start gap-2 text-xs text-gray-500">
             <input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} className="mt-0.5 accent-emerald-600 cursor-pointer" />
-            <span onClick={()=>setAcceptedTerms(v=>!v)} className="cursor-pointer">{t.terms} <a href="https://ayyad.ci/cgu" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.termsLink}</a> {t.and} <a href="https://ayyad.ci/confidentialite" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.privacyLink}</a>.</span>
+            <span onClick={()=>setAcceptedTerms(v=>!v)} className="cursor-pointer">{t.terms} <a href="https://ayyadci.com/cgu" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.termsLink}</a> {t.and} <a href="https://ayyadci.com/confidentialite" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.privacyLink}</a>.</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button onClick={()=>setStep(1)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{t.back}</button>
@@ -2989,6 +2989,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
     if (photoFile && !photoUrl) {
       finalPhotoUrl = await handlePhotoUpload();
     }
+    const trackingId = "AYD-" + new Date().getFullYear() + "-" + Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => b.toString(16).padStart(2,"0")).join("").toUpperCase().slice(0,6);
     const { error } = await supabase.from("cases").insert({
       title: form.title,
       description: form.description,
@@ -3001,14 +3002,14 @@ const SubmitPage = ({ setPage, user, lang }) => {
       beneficiary_phone: form.beneficiary_phone || null,
       video_url: toEmbedUrl(form.videoUrl) || null,
       status: "PENDING",
-      tracking_id: "AYD-" + new Date().getFullYear() + "-" + Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => b.toString(16).padStart(2,"0")).join("").toUpperCase().slice(0,6),
+      tracking_id: trackingId,
       user_id: user?.id || null,
       deadline_requested: form.deadlineRequested || null,
       document_urls: fileUrls || {},
     });
     if (error) { setSubmitError(lang==="fr"?"Erreur lors de la soumission. Réessayez.":"Submission error. Please try again."); setSubmitting(false); return; }
-    try { emailNewCase({ caseTitle: form.title, hospital: form.hospital, city: form.city, amount: form.amount }); } catch(e) { console.warn("Email non envoyé:", e); }
-    try { emailWelcomePatient({ beneficiaryEmail: user?.email || null, beneficiaryName: user?.name || user?.email?.split("@")[0] || "Patient", caseTitle: form.title }); } catch(e) { console.warn("Email bienvenue non envoyé:", e); }
+    try { emailNewCase({ caseTitle: form.title, hospital: form.hospital, city: form.city, amount: form.amount, trackingId }); } catch(e) { console.warn("Email non envoyé:", e); }
+    try { emailWelcomePatient({ beneficiaryEmail: user?.email || null, beneficiaryName: user?.name || user?.email?.split("@")[0] || "Patient", caseTitle: form.title, trackingId }); } catch(e) { console.warn("Email bienvenue non envoyé:", e); }
     setStep(3);
     setSubmitting(false);
   };
@@ -5396,7 +5397,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                               {c.document_urls?.quote&&<a href={c.document_urls.quote} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">💊 Devis</a>}
                               {c.document_urls?.id&&<a href={c.document_urls.id} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">🪪 Pièce d'identité</a>}
                               {c.document_urls?.consent&&<a href={c.document_urls.consent} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">✍️ Consentement</a>}
-                            <button className="px-3 py-1.5 border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50">{t.reject}</button>
+                            <button onClick={() => setRejectModal(c.id)} className="px-3 py-1.5 border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50">{t.reject}</button>
                         <button onClick={async()=>{if(editDeadline[c.id])await supabase.from("cases").update({deadline:editDeadline[c.id]}).eq("id",c.id);if(editVideoUrl[c.id])await supabase.from("cases").update({video_url:editVideoUrl[c.id]}).eq("id",c.id);approveCase(c.id);}} className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm">{t.approve}</button>
                       </div>
                     </div>
@@ -6715,8 +6716,8 @@ const HospitauxPage = ({ setPage, lang }) => {
           <p className="text-sm text-gray-500 mb-4">
             {fr?"Ayyad est en expansion. Contactez-nous pour soumettre une demande de partenariat.":"Ayyad is expanding. Contact us to submit a partnership request."}
           </p>
-          <a href="mailto:contact@ayyad.ci" className="inline-flex items-center gap-2 bg-emerald-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-emerald-700">
-            ✉️ contact@ayyad.ci
+          <a href="mailto:contact@ayyadci.com" className="inline-flex items-center gap-2 bg-emerald-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-emerald-700">
+            ✉️ contact@ayyadci.com
           </a>
         </div>
       </div>
@@ -6894,8 +6895,8 @@ const RefundPage = ({ setPage, lang }) => {
                 ? "Notre équipe répond sous 24h ouvrées."
                 : "Our team responds within 24 business hours."}
             </div>
-            <a href="mailto:support@ayyad.ci" className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl">
-              support@ayyad.ci
+            <a href="mailto:support@ayyadci.com" className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl">
+              support@ayyadci.com
             </a>
           </div>
 
@@ -6962,7 +6963,7 @@ const LegalPage = ({ setPage, lang }) => {
               <Heading>{fr ? "1. Éditeur de la plateforme" : "1. Platform editor"}</Heading>
               <P>
                 {fr ? "La plateforme Ayyad (accessible à l'adresse " : "The Ayyad platform (accessible at "}
-                <strong>ayyad.vercel.app</strong>
+                <strong>ayyadci.com</strong>
                 {fr ? ") est éditée par :" : ") is published by:"}
               </P>
               <div className="bg-gray-50 rounded-xl p-4 text-xs space-y-1.5 mb-3">
@@ -6972,7 +6973,7 @@ const LegalPage = ({ setPage, lang }) => {
                 <div><span className="text-gray-400 w-32 inline-block">RCCM</span><Placeholder>{fr?"Numéro RCCM — À compléter":"RCCM number — To complete"}</Placeholder></div>
                 <div><span className="text-gray-400 w-32 inline-block">{fr?"Siège social":"Registered office"}</span>Abidjan, Côte d'Ivoire <Placeholder>{fr?"Commune — À préciser":"District — To specify"}</Placeholder></div>
                 <div><span className="text-gray-400 w-32 inline-block">{fr?"Directeur de pub.":"Publisher"}</span><strong>Bly Kedhard Serge Ismael</strong></div>
-                <div><span className="text-gray-400 w-32 inline-block">Email</span><a href="mailto:contact@ayyad.ci" className="text-emerald-600">contact@ayyad.ci</a></div>
+                <div><span className="text-gray-400 w-32 inline-block">Email</span><a href="mailto:contact@ayyadci.com" className="text-emerald-600">contact@ayyadci.com</a></div>
               </div>
 
               <Heading>{fr ? "2. Hébergement" : "2. Hosting"}</Heading>
@@ -7035,8 +7036,8 @@ const LegalPage = ({ setPage, lang }) => {
 
               <Heading>{fr ? "6. Protection des données personnelles" : "6. Personal data protection"}</Heading>
               <P>{fr
-                ? "Les données personnelles collectées sont traitées conformément à la loi ivoirienne n°2013-450 du 19 juin 2013 relative à la protection des données à caractère personnel et aux directives de l'ARTCI. Les utilisateurs disposent d'un droit d'accès, de rectification et de suppression de leurs données en contactant contact@ayyad.ci."
-                : "Personal data collected is processed in accordance with Ivorian law n°2013-450 of June 19, 2013 on personal data protection and ARTCI guidelines. Users have the right to access, correct and delete their data by contacting contact@ayyad.ci."}</P>
+                ? "Les données personnelles collectées sont traitées conformément à la loi ivoirienne n°2013-450 du 19 juin 2013 relative à la protection des données à caractère personnel et aux directives de l'ARTCI. Les utilisateurs disposent d'un droit d'accès, de rectification et de suppression de leurs données en contactant contact@ayyadci.com."
+                : "Personal data collected is processed in accordance with Ivorian law n°2013-450 of June 19, 2013 on personal data protection and ARTCI guidelines. Users have the right to access, correct and delete their data by contacting contact@ayyadci.com."}</P>
 
               <Heading>{fr ? "7. Responsabilité des utilisateurs" : "7. User responsibility"}</Heading>
               <P>{fr
@@ -7052,7 +7053,7 @@ const LegalPage = ({ setPage, lang }) => {
               <P>{fr
                 ? "Pour toute question relative aux présentes CGU, contactez-nous à :"
                 : "For any questions regarding these Terms, contact us at:"}</P>
-              <a href="mailto:legal@ayyad.ci" className="text-emerald-600 text-xs font-bold">legal@ayyad.ci</a>
+              <a href="mailto:legal@ayyadci.com" className="text-emerald-600 text-xs font-bold">legal@ayyadci.com</a>
             </div>
           )}
         </div>
@@ -7225,7 +7226,7 @@ const ImpactPage = ({ setPage, lang }) => {
         </Section>
 
         <div className="text-center mt-4">
-          <p className="text-xs text-gray-400 mb-4">{fr ? "Pour toute question sur nos rapports : " : "For any questions about our reports: "}<a href="mailto:impact@ayyad.ci" className="text-emerald-600 font-bold">impact@ayyad.ci</a></p>
+          <p className="text-xs text-gray-400 mb-4">{fr ? "Pour toute question sur nos rapports : " : "For any questions about our reports: "}<a href="mailto:impact@ayyadci.com" className="text-emerald-600 font-bold">impact@ayyadci.com</a></p>
           <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">{fr ? "← Retour à l'accueil" : "← Back to home"}</button>
         </div>
       </div>
@@ -7362,7 +7363,7 @@ const BCEAOPage = ({ setPage, lang }) => {
               ? "Pour toute question relative à notre conformité réglementaire ou pour signaler une activité suspecte :"
               : "For any questions about our regulatory compliance or to report suspicious activity:"}
           </p>
-          <a href="mailto:compliance@ayyad.ci" className="text-emerald-600 text-sm font-bold">compliance@ayyad.ci</a>
+          <a href="mailto:compliance@ayyadci.com" className="text-emerald-600 text-sm font-bold">compliance@ayyadci.com</a>
           <p className="text-[11px] text-gray-400 mt-3">
             {fr ? "Autorité de supervision : BCEAO — Siège Dakar, Sénégal · bceao.int" : "Supervisory authority: BCEAO — HQ Dakar, Senegal · bceao.int"}
           </p>
@@ -8382,8 +8383,8 @@ export default function AyyadApp() {
     if (page === "case" && selectedCase) {
       const title = typeof selectedCase.title==="object" ? (selectedCase.title.fr||selectedCase.title.en) : (selectedCase.title||"Ayyad");
       const desc = typeof selectedCase.desc==="object" ? (selectedCase.desc.fr||selectedCase.desc.en||"") : (selectedCase.description||"");
-      const img = selectedCase.photos?.[0] || selectedCase.image || "https://ayyad.vercel.app/og-default.png";
-      const url = "https://ayyad.vercel.app/?p=case&case="+(selectedCase.trackingId||selectedCase.tracking_id||selectedCase.id);
+      const img = selectedCase.photos?.[0] || selectedCase.image || "https://ayyadci.com/og-default.png";
+      const url = "https://ayyadci.com/?p=case&case="+(selectedCase.trackingId||selectedCase.tracking_id||selectedCase.id);
       document.title = title + " — Ayyad CI";
       setMeta("og:title", title + " — Ayyad CI");
       setMeta("og:description", desc.slice(0,200));
@@ -8398,8 +8399,8 @@ export default function AyyadApp() {
       document.title = "Ayyad CI — Financement médical solidaire";
       setMeta("og:title", "Ayyad CI — Financement médical solidaire");
       setMeta("og:description", "Aidez des patients ivoiriens à financer leurs soins médicaux. Paiement via Wave CI. Fonds versés directement à l'hôpital.");
-      setMeta("og:image", "https://ayyad.vercel.app/og-default.png");
-      setMeta("og:url", "https://ayyad.vercel.app");
+      setMeta("og:image", "https://ayyadci.com/og-default.png");
+      setMeta("og:url", "https://ayyadci.com");
     }
   }, [page, selectedCase]);
 
