@@ -54,6 +54,34 @@ function buildPaymentRef(caseObj) {
   return "AYYAD-" + (short || "DON");
 }
 
+// Insère un don via l'endpoint serveur /api/donate (bypass RLS via service_role).
+// Fallback automatique sur supabase direct si l'endpoint n'est pas dispo.
+// Retourne { error?: string } — pas d'erreur = succès.
+async function createDonation(payload) {
+  try {
+    const r = await fetch("/api/donate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (r.ok) return { error: null };
+    // Si l'API renvoie 404 (endpoint pas déployé) ou 500 (config manquante),
+    // on tombe sur le fallback Supabase direct
+    const result = await r.json().catch(() => ({}));
+    if (r.status === 404 || r.status === 500) {
+      console.warn("[/api/donate] indispo, fallback supabase direct:", result);
+    } else {
+      return { error: result?.details?.message || result?.error || `HTTP ${r.status}` };
+    }
+  } catch (err) {
+    console.warn("[/api/donate] échec réseau, fallback supabase direct:", err);
+  }
+  // Fallback : insertion directe via le client Supabase (anon)
+  const { error } = await supabase.from("donations").insert(payload).select().single();
+  if (error) return { error: (error.message || "Erreur Supabase") + (error.code ? " (code "+error.code+")" : "") };
+  return { error: null };
+}
+
 // Applique fetchConfirmedTotals à une liste de cases et retourne la liste enrichie
 async function enrichCasesWithTotals(cases) {
   if (!Array.isArray(cases) || cases.length === 0) return cases || [];
@@ -2647,7 +2675,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         if (donSubmitting) return;
                         const _donName = anonymous ? null : (user?.user_metadata?.name || user?.email || null);
                         const refToUse = paymentRef || buildPaymentRef(c);
-                        supabase.from("donations").insert({
+                        // Fire-and-forget — on ne bloque pas la nav vers Wave
+                        createDonation({
                           case_id: c.id || null,
                           donor_id: user?.id || null,
                           donor_name: _donName,
@@ -2757,9 +2786,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email || null);
                         const refToUse = paymentRef || buildPaymentRef(c);
                         try {
-                          // ⚠️ On AWAIT l'insert + on lit l'erreur. Avant, l'insert était fire-and-forget,
-                          // donc un échec RLS Supabase passait totalement silencieux et l'email partait quand même.
-                          const { data: ins, error: insErr } = await supabase.from("donations").insert({
+                          // Création du don via /api/donate (bypass RLS) avec fallback Supabase
+                          const { error: insErr } = await createDonation({
                             case_id: c.id || null,
                             donor_id: user?.id || null,
                             donor_name: _donName2,
@@ -2771,10 +2799,10 @@ const CasePage = ({ c, setPage, lang, user }) => {
                             status: "pending",
                             message: message || null,
                             reference: refToUse,
-                          }).select().single();
+                          });
                           if (insErr) {
                             console.error("[donation insert] échec:", insErr);
-                            setDonError((insErr.message || "Erreur Supabase") + (insErr.code ? " (code "+insErr.code+")" : ""));
+                            setDonError(insErr);
                             setDonSubmitting(false);
                             return; // pas d'email, pas de success
                           }
@@ -4183,7 +4211,8 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
     if (!amt || amt <= 0) { setManualError(fr?"Montant invalide.":"Invalid amount."); return; }
     setManualSaving(true);
     try {
-      const { error } = await supabase.from("donations").insert({
+      // Via /api/donate (bypass RLS) avec fallback Supabase direct
+      const { error } = await createDonation({
         case_id: manualForm.case_id,
         donor_name: manualForm.donor_name || null,
         donor_email: manualForm.donor_email || null,
@@ -4196,7 +4225,7 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
         reference: manualForm.reference || ("MANUEL-" + Date.now()),
       });
       if (error) {
-        setManualError((error.message || "Erreur Supabase") + (error.code ? " (code " + error.code + ")" : ""));
+        setManualError(error);
         setManualSaving(false);
         return;
       }
