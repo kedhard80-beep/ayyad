@@ -39,6 +39,20 @@ async function fetchConfirmedTotals(caseIds) {
   return out;
 }
 
+// Construit une référence de paiement courte et lisible.
+// Format préféré : AYYAD-<tracking_id>-<6 derniers chiffres timestamp>
+// Si pas de tracking_id (cas hérité) : AYYAD-<8 derniers UUID>-<6 chiffres>
+// Le donateur recopie ce code dans le motif Wave → l'admin retrouve le don.
+function buildPaymentRef(caseObj) {
+  const stamp = String(Date.now()).slice(-6);
+  const tracking = caseObj?.tracking_id || caseObj?.trackingId;
+  if (tracking) return "AYYAD-" + tracking + "-" + stamp;
+  // Fallback : on prend les 8 derniers caractères hex de l'UUID, en majuscules
+  const idStr = String(caseObj?.id || "");
+  const short = idStr.replace(/-/g, "").slice(-8).toUpperCase();
+  return "AYYAD-" + (short || "DON") + "-" + stamp;
+}
+
 // Applique fetchConfirmedTotals à une liste de cases et retourne la liste enrichie
 async function enrichCasesWithTotals(cases) {
   if (!Array.isArray(cases) || cases.length === 0) return cases || [];
@@ -2263,8 +2277,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
           <button
             onClick={() => {
               // Génère la référence de paiement UNE seule fois au passage à confirm
-              const ref = "AYYAD-" + (c.tracking_id || c.trackingId || c.id || "DON") + "-" + String(Date.now()).slice(-6);
-              setPaymentRef(ref);
+              setPaymentRef(buildPaymentRef(c));
               setDonMode("confirm");
             }}
             className="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-md hover:bg-emerald-700"
@@ -2608,7 +2621,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
               {/* ── QR Code Wave CI (compte marchand statique) ── */}
               {provider === "WAVE" && (() => {
-                const waveRef = paymentRef || ("AYYAD-" + (c.tracking_id || c.trackingId || c.id || "DON") + "-" + String(Date.now()).slice(-6));
+                const waveRef = paymentRef || buildPaymentRef(c);
                 const amountTxt = Math.round(Number(amount)).toLocaleString("fr-FR");
                 return (
                   <div className="flex flex-col items-center gap-3 bg-blue-50 border border-blue-100 rounded-2xl p-5">
@@ -2689,7 +2702,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         setDonError("");
                         setDonSubmitting(true);
                         const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email || null);
-                        const refToUse = paymentRef || ("AYYAD-" + (c.tracking_id || c.id || "DON") + "-" + Date.now());
+                        const refToUse = paymentRef || buildPaymentRef(c);
                         try {
                           // ⚠️ On AWAIT l'insert + on lit l'erreur. Avant, l'insert était fire-and-forget,
                           // donc un échec RLS Supabase passait totalement silencieux et l'email partait quand même.
