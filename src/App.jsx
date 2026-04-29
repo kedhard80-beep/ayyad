@@ -1773,7 +1773,8 @@ const CollectesPage = ({ setPage, lang }) => {
 const DonationTicker = ({ lang }) => {
   const [dons, setDons] = useState([]);
   useEffect(() => {
-    supabase.from("donations").select("donor_name,amount_fcfa,amount,created_at,anonymous")
+    // anonymous est dérivé de donor_name === null (pas une colonne dédiée)
+    supabase.from("donations").select("donor_name,amount_fcfa,amount,created_at")
       .eq("status","confirmed").order("created_at",{ascending:false}).limit(8)
       .then(({data}) => { if (data && data.length>0) setDons(data); });
     const ch = supabase.channel("ticker-donations")
@@ -1797,7 +1798,7 @@ const DonationTicker = ({ lang }) => {
         {items.map((d,i) => (
           <span key={i} className="flex items-center gap-2 text-xs text-emerald-100 font-medium px-6 flex-shrink-0">
             <span className="text-emerald-300">💚</span>
-            <span>{d.anonymous?(lang==="fr"?"Anonyme":"Anonymous"):(d.donor_name||"—")}</span>
+            <span>{!d.donor_name?(lang==="fr"?"Anonyme":"Anonymous"):d.donor_name}</span>
             <span className="text-emerald-300 font-black">{((d.amount_fcfa||d.amount||0)).toLocaleString("fr-CI")} FCFA</span>
             <span className="text-emerald-500 mx-2">·</span>
           </span>
@@ -2042,7 +2043,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
     const loadRecent = async () => {
       if (!c.id || c._isDemo) return;
       const { data } = await supabase.from("donations")
-        .select("id,donor_name,amount_fcfa,amount,currency,created_at,anonymous")
+        .select("id,donor_name,amount_fcfa,amount,currency,created_at")
         .eq("case_id", c.id)
         .eq("status","confirmed")
         .order("created_at",{ascending:false})
@@ -2363,10 +2364,10 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 {recentDonations.map((d,i) => (
                   <div key={d.id||i} className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-sm flex-shrink-0">
-                      {d.anonymous ? "🕵️" : "💚"}
+                      {!d.donor_name ? "🕵️" : "💚"}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm font-semibold text-gray-900">{d.anonymous ? (lang==="fr"?"Anonyme":"Anonymous") : (d.donor_name||"—")}</span>
+                      <span className="text-sm font-semibold text-gray-900">{!d.donor_name ? (lang==="fr"?"Anonyme":"Anonymous") : d.donor_name}</span>
                       <span className="text-xs text-gray-400 ml-2">{new Date(d.created_at).toLocaleDateString(lang==="fr"?"fr-CI":"en-US")}</span>
                     </div>
                     <div className="text-sm font-black text-emerald-700 flex-shrink-0">
