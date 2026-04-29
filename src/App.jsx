@@ -5666,6 +5666,28 @@ const AdminPage = ({ user, setPage, lang }) => {
   const pendingCases = cases.filter(c => c.status==="PENDING");
   const activeCases = cases.filter(c => ["APPROVED","COLLECTING"].includes(c.status));
 
+  // ── Compteur des dons en attente de validation ──
+  // Affiché en badge sur l'onglet Dons + mis à jour en realtime quand
+  // un nouveau don tombe (pré-insert via QR mobile, manuel, etc.)
+  const [pendingDonationsCount, setPendingDonationsCount] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const refreshCount = async () => {
+      const { count } = await supabase
+        .from("donations")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+      if (alive) setPendingDonationsCount(count || 0);
+    };
+    refreshCount();
+
+    // Realtime: le badge bouge quand un nouveau don arrive ou change de statut
+    const ch = supabase.channel("admin-pending-dons")
+      .on("postgres_changes", { event: "*", schema: "public", table: "donations" }, () => refreshCount())
+      .subscribe();
+    return () => { alive = false; supabase.removeChannel(ch); };
+  }, []);
+
   const statusColor = (s) => ({ PENDING:"yellow", APPROVED:"blue", COLLECTING:"green", FUNDED:"green", REJECTED:"red" }[s] || "gray");
 
   if (!user?.isAdmin) return (
@@ -5704,6 +5726,7 @@ const AdminPage = ({ user, setPage, lang }) => {
             <button key={tab_.id} onClick={()=>setTab(tab_.id)} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${tab===tab_.id?"bg-emerald-600 text-white shadow-sm":"text-gray-600 hover:bg-gray-100"}`}>
               {tab_.icon} {tab_.label}
               {tab_.id==="cases"&&pendingCases.length>0&&<span className="bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{pendingCases.length}</span>}
+              {tab_.id==="donations"&&pendingDonationsCount>0&&<span className="bg-emerald-500 text-white text-xs rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center font-bold animate-pulse">{pendingDonationsCount}</span>}
               {tab_.id==="fraud"&&unresolved>0&&<span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{unresolved}</span>}
             </button>
           ))}
