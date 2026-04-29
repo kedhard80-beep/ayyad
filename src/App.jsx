@@ -2637,6 +2637,42 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/"
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => {
+                        // ⚠️ Pré-insert : on enregistre le don côté Ayyad AVANT que le donateur
+                        // ne quitte la page pour Wave. Sinon, sur mobile, le flow se termine
+                        // dans l'app Wave et le donateur ne revient jamais cliquer "Confirmer"
+                        // → l'argent arrive sur le marchand mais aucune trace côté Ayyad.
+                        // On ne bloque PAS la navigation (pas de e.preventDefault) — fire-and-forget.
+                        if (donSubmitting) return;
+                        const _donName = anonymous ? null : (user?.user_metadata?.name || user?.email || null);
+                        const refToUse = paymentRef || buildPaymentRef(c);
+                        supabase.from("donations").insert({
+                          case_id: c.id || null,
+                          donor_id: user?.id || null,
+                          donor_name: _donName,
+                          donor_email: anonymous ? null : (user?.email || null),
+                          amount: Number(amount),
+                          amount_fcfa: amountInFcfa,
+                          currency,
+                          payment_method: "WAVE",
+                          status: "pending",
+                          message: message || null,
+                          reference: refToUse,
+                        }).then(({ error }) => {
+                          if (error) console.warn("[pré-insert QR tap] échec:", error);
+                        });
+                        // Email léger en parallèle (ne bloque pas la nav)
+                        try {
+                          emailDonConfirm({
+                            donorEmail: anonymous ? null : (user?.email || null),
+                            donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"),
+                            amount: fmt(Number(amount)),
+                            beneficiary: c.beneficiary,
+                            caseTitle: c.title,
+                            trackingId: c.tracking_id || c.trackingId,
+                          });
+                        } catch(e) { /* silent */ }
+                      }}
                       className="relative block group"
                       title={lang==="fr"?"Toucher pour payer (mobile)":"Tap to pay (mobile)"}
                     >
@@ -4117,6 +4153,24 @@ const AdminDonationsTab = ({ lang }) => {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [msg, setMsg] = useState("");
+  // ── Modal "Saisir un don manuel" ──
+  // Usage : un donateur paie sur Wave (ou autre canal) sans passer par le bouton Confirmer
+  // d'Ayyad → l'admin reçoit la notif Wave Business mais aucune ligne pending côté Ayyad.
+  // Cette modale permet de créer la ligne à la main pour faire avancer la jauge.
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualCases, setManualCases] = useState([]);
+  const [manualForm, setManualForm] = useState({
+    case_id: "",
+    amount: "",
+    donor_name: "",
+    donor_email: "",
+    payment_method: "WAVE",
+    reference: "",
+    message: "",
+    status: "confirmed", // par défaut confirmé puisqu'on saisit en réaction à un paiement reçu
+  });
+  const [manualSaving, setManualSaving] = useState(false);
+  const [manualError, setManualError] = useState("");
 
   const fetchDonations = async () => {
     setLoading(true);
@@ -4132,6 +4186,60 @@ const AdminDonationsTab = ({ lang }) => {
   };
 
   useEffect(() => { fetchDonations(); }, []);
+
+  // Charge la liste des dossiers actifs pour le sélecteur de la modale
+  const openManualModal = async () => {
+    setManualError("");
+    setManualForm({
+      case_id: "", amount: "", donor_name: "", donor_email: "",
+      payment_method: "WAVE", reference: "", message: "", status: "confirmed",
+    });
+    try {
+      const { data } = await supabase
+        .from("cases")
+        .select("id, title, tracking_id, full_name, beneficiary, status")
+        .in("status", ["COLLECTING", "FUNDED", "APPROVED"])
+        .order("created_at", { ascending: false })
+        .limit(200);
+      setManualCases(data || []);
+    } catch(e) { setManualCases([]); }
+    setManualOpen(true);
+  };
+
+  const submitManualDonation = async () => {
+    setManualError("");
+    if (!manualForm.case_id) { setManualError(fr?"Sélectionnez un dossier.":"Select a case."); return; }
+    const amt = Number(manualForm.amount);
+    if (!amt || amt <= 0) { setManualError(fr?"Montant invalide.":"Invalid amount."); return; }
+    setManualSaving(true);
+    try {
+      const { error } = await supabase.from("donations").insert({
+        case_id: manualForm.case_id,
+        donor_name: manualForm.donor_name || null,
+        donor_email: manualForm.donor_email || null,
+        amount: amt,
+        amount_fcfa: amt,
+        currency: "FCFA",
+        payment_method: manualForm.payment_method,
+        status: manualForm.status,
+        message: manualForm.message || null,
+        reference: manualForm.reference || ("MANUEL-" + Date.now()),
+      });
+      if (error) {
+        setManualError((error.message || "Erreur Supabase") + (error.code ? " (code " + error.code + ")" : ""));
+        setManualSaving(false);
+        return;
+      }
+      setMsg(fr?"✅ Don manuel enregistré !":"✅ Manual donation recorded!");
+      setTimeout(() => setMsg(""), 3000);
+      setManualOpen(false);
+      fetchDonations();
+    } catch(e) {
+      setManualError(e?.message || String(e));
+    } finally {
+      setManualSaving(false);
+    }
+  };
 
   const confirm = async (id) => {
     const { error } = await supabase.from("donations").update({ status: "confirmed" }).eq("id", id);
@@ -4179,8 +4287,121 @@ const AdminDonationsTab = ({ lang }) => {
           <h2 className="text-xl font-bold text-gray-800">💚 {fr ? "Gestion des dons" : "Donations"}</h2>
           <p className="text-xs text-gray-400 mt-0.5">{donations.length} {fr ? "dons enregistrés" : "donations recorded"}</p>
         </div>
-        <button onClick={fetchDonations} className="text-xs text-emerald-600 hover:underline font-medium self-start sm:self-auto">↻ {fr?"Actualiser":"Refresh"}</button>
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          <button
+            onClick={openManualModal}
+            className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm"
+          >
+            ＋ {fr?"Saisir un don manuel":"Add manual donation"}
+          </button>
+          <button onClick={fetchDonations} className="text-xs text-emerald-600 hover:underline font-medium">↻ {fr?"Actualiser":"Refresh"}</button>
+        </div>
       </div>
+
+      {/* Modale de saisie manuelle d'un don */}
+      {manualOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => !manualSaving && setManualOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-5 space-y-4 my-8" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="font-black text-lg text-gray-900">📝 {fr?"Don manuel":"Manual donation"}</h3>
+              <button onClick={() => setManualOpen(false)} disabled={manualSaving} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+            </div>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              {fr
+                ? "À utiliser quand tu reçois un paiement Wave (ou autre) sans qu'aucune ligne pending n'apparaisse dans Ayyad. Tu remplis ce que tu vois dans la notif Wave Business."
+                : "Use this when you receive a Wave payment (or other) but no pending line appears in Ayyad. Fill in what you see in the Wave Business notification."}
+            </p>
+            {manualError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-xs text-red-700">{manualError}</div>
+            )}
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-600 font-semibold">{fr?"Dossier *":"Case *"}</label>
+                <select
+                  value={manualForm.case_id}
+                  onChange={e => setManualForm(f => ({...f, case_id: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 bg-white"
+                >
+                  <option value="">— {fr?"Sélectionner":"Select"} —</option>
+                  {manualCases.map(c => {
+                    const t = typeof c.title === "object" ? (c.title.fr || c.title.en) : c.title;
+                    return <option key={c.id} value={c.id}>{(c.tracking_id || c.id.slice(0,8)) + " — " + (t || c.full_name || c.beneficiary || "—")}</option>;
+                  })}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-600 font-semibold">{fr?"Montant (FCFA) *":"Amount (FCFA) *"}</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={manualForm.amount}
+                  onChange={e => setManualForm(f => ({...f, amount: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1"
+                  placeholder="500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-gray-600 font-semibold">{fr?"Méthode":"Method"}</label>
+                  <select
+                    value={manualForm.payment_method}
+                    onChange={e => setManualForm(f => ({...f, payment_method: e.target.value}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 bg-white"
+                  >
+                    <option value="WAVE">🌊 Wave</option>
+                    <option value="CASH">💵 {fr?"Espèces":"Cash"}</option>
+                    <option value="BANK">🏦 {fr?"Virement banc.":"Bank transfer"}</option>
+                    <option value="OTHER">{fr?"Autre":"Other"}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 font-semibold">{fr?"Statut":"Status"}</label>
+                  <select
+                    value={manualForm.status}
+                    onChange={e => setManualForm(f => ({...f, status: e.target.value}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 bg-white"
+                  >
+                    <option value="confirmed">{fr?"Confirmé":"Confirmed"}</option>
+                    <option value="pending">{fr?"En attente":"Pending"}</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-gray-600 font-semibold">{fr?"Nom du donateur":"Donor name"}</label>
+                <input
+                  type="text"
+                  value={manualForm.donor_name}
+                  onChange={e => setManualForm(f => ({...f, donor_name: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1"
+                  placeholder={fr?"(optionnel — anonyme par défaut)":"(optional — anonymous by default)"}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-600 font-semibold">{fr?"Référence Wave / N° transaction":"Wave reference / Tx number"}</label>
+                <input
+                  type="text"
+                  value={manualForm.reference}
+                  onChange={e => setManualForm(f => ({...f, reference: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 font-mono"
+                  placeholder="TAUW20260429..."
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                disabled={manualSaving}
+                onClick={() => setManualOpen(false)}
+                className="border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl text-sm disabled:opacity-50"
+              >{fr?"Annuler":"Cancel"}</button>
+              <button
+                disabled={manualSaving}
+                onClick={submitManualDonation}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm shadow-sm disabled:opacity-60"
+              >{manualSaving ? (fr?"Enregistrement…":"Saving…") : (fr?"Enregistrer le don":"Save donation")}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {msg && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold px-4 py-3 rounded-xl">{msg}</div>}
 
