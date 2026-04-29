@@ -4146,7 +4146,8 @@ const StaffRow = ({ m, fr, paid, onPay, onDelete, onUpdate, fmt }) => {
 
 // ── Composant Visiteurs connectés Admin ──────────────────────────────
 // ── Onglet Dons (Admin) ───────────────────────────────────────
-const AdminDonationsTab = ({ lang }) => {
+// adminCases: liste des cases déjà chargée par AdminPage (utilisée pour le sélecteur du don manuel)
+const AdminDonationsTab = ({ lang, adminCases = [] }) => {
   const fr = lang === "fr";
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -4187,22 +4188,22 @@ const AdminDonationsTab = ({ lang }) => {
 
   useEffect(() => { fetchDonations(); }, []);
 
-  // Charge la liste des dossiers actifs pour le sélecteur de la modale
-  const openManualModal = async () => {
+  // Ouvre la modale + utilise les cases déjà chargées par le parent AdminPage
+  // (au lieu de refetcher — ça nous évite tout souci de RLS/colonnes/_isDemo)
+  const openManualModal = () => {
     setManualError("");
     setManualForm({
       case_id: "", amount: "", donor_name: "", donor_email: "",
       payment_method: "WAVE", reference: "", message: "", status: "confirmed",
     });
-    try {
-      const { data } = await supabase
-        .from("cases")
-        .select("id, title, tracking_id, full_name, beneficiary, status")
-        .in("status", ["COLLECTING", "FUNDED", "APPROVED"])
-        .order("created_at", { ascending: false })
-        .limit(200);
-      setManualCases(data || []);
-    } catch(e) { setManualCases([]); }
+    // On filtre côté client : on ne propose que les dossiers utilisables (pas PENDING/REJECTED, pas démo)
+    const usable = (adminCases || []).filter(c => !["PENDING", "REJECTED"].includes(c.status) && !c._isDemo);
+    setManualCases(usable);
+    if (usable.length === 0) {
+      setManualError(fr
+        ? "Aucun dossier validé trouvé. Vérifie que des dossiers sont en statut Approuvé/Collecte/Financé."
+        : "No approved case found. Check that some cases have status Approved/Collecting/Funded.");
+    }
     setManualOpen(true);
   };
 
@@ -6363,7 +6364,7 @@ const AdminPage = ({ user, setPage, lang }) => {
           </div>
         )}
         {/* ── ONGLET DONS ── */}
-        {tab === "donations" && <AdminDonationsTab lang={lang} />}
+        {tab === "donations" && <AdminDonationsTab lang={lang} adminCases={cases} />}
 
         {/* ── ONGLET EXPORT — super_admin uniquement ── */}
         {tab === "export" && user?.adminRole === "super_admin" && <AdminExportTab lang={lang} user={user} />}
