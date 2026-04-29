@@ -1977,6 +1977,9 @@ const CasePage = ({ c, setPage, lang, user }) => {
   // Permet d'avoir EXACTEMENT la même référence affichée dans le QR Wave et stockée dans la table donations,
   // pour que l'admin puisse rattacher manuellement le paiement reçu sur Wave Business au bon dossier.
   const [paymentRef, setPaymentRef] = useState("");
+  // États pour l'enregistrement du don (évite l'insert silencieux + double-clic)
+  const [donSubmitting, setDonSubmitting] = useState(false);
+  const [donError, setDonError] = useState("");
 
   // Si l'utilisateur se connecte/déconnecte pendant qu'il est sur la page, on resynchronise
   useEffect(() => {
@@ -2665,28 +2668,78 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
               {/* Boutons Modifier / Confirmer (Wave uniquement — carte a son propre bouton) */}
               {provider !== "CARD" && (
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => setDonMode(anonymous?"anonymous":"logged")} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{td.modify}</button>
-                  <button onClick={() => {
-                    const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email || null);
-                    supabase.from("donations").insert({
-                      case_id: c.id || null,
-                      donor_id: user?.id || null,
-                      donor_name: _donName2,
-                      donor_email: anonymous ? null : (user?.email || null),
-                      amount: Number(amount),
-                      amount_fcfa: amountInFcfa,
-                      currency,
-                      payment_method: "WAVE",
-                      status: "pending",
-                      message: message || null,
-                      reference: paymentRef || ("AYYAD-" + (c.tracking_id || c.id || "DON") + "-" + Date.now())
-                    });
-                    setLastDonation({ donorName: anonymous?"Donateur anonyme":(_donName2||"Donateur"), amount: amountInFcfa });
-                    setDonMode("success");
-                    emailDonConfirm({ donorEmail: anonymous ? null : (user?.email || null), donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"), amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
-                  }} className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md">{td.confirmBtn}</button>
-                </div>
+                <>
+                  {donError && (
+                    <div className="bg-red-50 border-2 border-red-200 rounded-xl p-3 text-xs text-red-700">
+                      <div className="font-bold mb-1">⚠️ {lang==="fr"?"Erreur lors de l'enregistrement du don":"Error recording donation"}</div>
+                      <div className="break-words">{donError}</div>
+                      <div className="mt-1 text-[11px] text-red-500">{lang==="fr"?"Aucun email n'a été envoyé. Réessayez ou contactez le support.":"No email was sent. Please retry or contact support."}</div>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      disabled={donSubmitting}
+                      onClick={() => { setDonError(""); setDonMode(anonymous?"anonymous":"logged"); }}
+                      className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm disabled:opacity-50"
+                    >{td.modify}</button>
+                    <button
+                      disabled={donSubmitting}
+                      onClick={async () => {
+                        if (donSubmitting) return;
+                        setDonError("");
+                        setDonSubmitting(true);
+                        const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email || null);
+                        const refToUse = paymentRef || ("AYYAD-" + (c.tracking_id || c.id || "DON") + "-" + Date.now());
+                        try {
+                          // ⚠️ On AWAIT l'insert + on lit l'erreur. Avant, l'insert était fire-and-forget,
+                          // donc un échec RLS Supabase passait totalement silencieux et l'email partait quand même.
+                          const { data: ins, error: insErr } = await supabase.from("donations").insert({
+                            case_id: c.id || null,
+                            donor_id: user?.id || null,
+                            donor_name: _donName2,
+                            donor_email: anonymous ? null : (user?.email || null),
+                            amount: Number(amount),
+                            amount_fcfa: amountInFcfa,
+                            currency,
+                            payment_method: "WAVE",
+                            status: "pending",
+                            message: message || null,
+                            reference: refToUse,
+                          }).select().single();
+                          if (insErr) {
+                            console.error("[donation insert] échec:", insErr);
+                            setDonError((insErr.message || "Erreur Supabase") + (insErr.code ? " (code "+insErr.code+")" : ""));
+                            setDonSubmitting(false);
+                            return; // pas d'email, pas de success
+                          }
+                          // Succès → on stocke le contexte pour le certificat, on bascule sur l'écran de remerciement, on envoie l'email
+                          setLastDonation({ donorName: anonymous?"Donateur anonyme":(_donName2||"Donateur"), amount: amountInFcfa });
+                          setDonMode("success");
+                          try {
+                            await emailDonConfirm({
+                              donorEmail: anonymous ? null : (user?.email || null),
+                              donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"),
+                              amount: fmt(Number(amount)),
+                              beneficiary: c.beneficiary,
+                              caseTitle: c.title,
+                              trackingId: c.tracking_id || c.trackingId,
+                            });
+                          } catch(emailErr) {
+                            console.warn("[donation email] échec (non bloquant):", emailErr);
+                          }
+                        } catch(err) {
+                          console.error("[donation flow] exception:", err);
+                          setDonError(err?.message || String(err));
+                        } finally {
+                          setDonSubmitting(false);
+                        }
+                      }}
+                      className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md disabled:opacity-60"
+                    >
+                      {donSubmitting ? (lang==="fr"?"Enregistrement…":"Saving…") : td.confirmBtn}
+                    </button>
+                  </div>
+                </>
               )}
             </div>}
 
