@@ -2695,39 +2695,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         <span className="font-mono font-black text-blue-700 text-base">{amountTxt} FCFA</span>
                       </div>
                     </div>
-                    {/* Référence du don — bouton copier en évidence */}
-                    <div className="w-full bg-white rounded-xl p-4 border-2 border-blue-200">
-                      <div className="text-[11px] text-gray-500 text-center mb-2">
-                        {lang==="fr"?"Référence à coller dans la note Wave (optionnel) :":"Reference to paste in the Wave note (optional):"}
-                      </div>
-                      <div className="flex flex-col items-center gap-2">
-                        <span className="font-mono font-black text-blue-700 text-base sm:text-lg tracking-wide select-all break-all text-center">{waveRef}</span>
-                        <button
-                          type="button"
-                          onClick={async (e) => {
-                            try {
-                              await navigator.clipboard.writeText(waveRef);
-                              const btn = e.currentTarget;
-                              const original = btn.innerHTML;
-                              btn.innerHTML = "✅ " + (lang==="fr"?"Copié !":"Copied!");
-                              setTimeout(() => { btn.innerHTML = original; }, 1500);
-                            } catch(err) {
-                              // Fallback : sélection auto pour copie manuelle si clipboard bloqué (mobile/iframe)
-                              try {
-                                const range = document.createRange();
-                                range.selectNodeContents(e.currentTarget.previousElementSibling);
-                                const sel = window.getSelection();
-                                sel.removeAllRanges();
-                                sel.addRange(range);
-                              } catch(_) {}
-                            }
-                          }}
-                          className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2.5 rounded-lg text-sm shadow-sm transition-colors"
-                        >
-                          📋 {lang==="fr"?"Copier la référence":"Copy reference"}
-                        </button>
-                      </div>
-                    </div>
+                    {/* Instructions de paiement — concises, sans champ "référence" inutile */}
                     <div className="text-xs text-blue-700 text-center leading-relaxed">
                       {lang==="fr"
                         ? <>Ouvrez <strong>Wave CI</strong> → <strong>Scanner</strong> → saisissez <strong>{amountTxt} FCFA</strong> → validez</>
@@ -2735,8 +2703,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     </div>
                     <div className="text-[11px] text-gray-500 text-center bg-white/60 px-3 py-2 rounded leading-relaxed">
                       {lang==="fr"
-                        ? <>💡 Le code ci-dessus est <strong>facultatif</strong> — il aide juste à valider votre don plus vite. Si vous l'oubliez, on retrouve votre don grâce au montant et à votre numéro Wave. Cliquez sur Confirmer après avoir payé.</>
-                        : <>💡 The code above is <strong>optional</strong> — it just helps validate your donation faster. If you forget, we'll match by amount and Wave number. Click Confirm after payment.</>}
+                        ? <>💡 Pas besoin d'ajouter de référence dans Wave — votre don est <strong>déjà rattaché à cette collecte</strong> automatiquement. Cliquez sur <strong>Confirmer</strong> ci-dessous après avoir effectué le paiement.</>
+                        : <>💡 No need to add a reference in Wave — your donation is <strong>already linked to this campaign</strong> automatically. Click <strong>Confirm</strong> below after completing payment.</>}
                     </div>
                   </div>
                 );
