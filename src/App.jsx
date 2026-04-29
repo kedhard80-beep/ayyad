@@ -8,6 +8,51 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_KEY
 );
 
+// ── Helper : calcule le total collecté + nb de donateurs par case_id ─────────
+// Lit les dons CONFIRMÉS pour les ids passés en paramètre et retourne
+// un objet { caseId: { collected, donors } }. Garantit que la jauge progresse
+// uniquement après validation manuelle d'un don par l'admin (statut "confirmed"),
+// et que chaque don est attribué au bon dossier via case_id.
+async function fetchConfirmedTotals(caseIds) {
+  if (!caseIds || caseIds.length === 0) return {};
+  const ids = [...new Set(caseIds.filter(Boolean))];
+  if (ids.length === 0) return {};
+  const { data, error } = await supabase
+    .from("donations")
+    .select("case_id, amount_fcfa, amount, donor_id, donor_email, id")
+    .in("case_id", ids)
+    .eq("status", "confirmed");
+  if (error || !data) return {};
+  const map = {};
+  for (const d of data) {
+    const k = d.case_id;
+    if (!map[k]) map[k] = { collected: 0, donorKeys: new Set() };
+    map[k].collected += Number(d.amount_fcfa || d.amount || 0);
+    // Comptage donateurs : par donor_id si connecté, sinon par donor_email,
+    // sinon chaque don anonyme = 1 donateur (id de la donation)
+    map[k].donorKeys.add(d.donor_id || d.donor_email || ("anon-" + d.id));
+  }
+  const out = {};
+  for (const k of Object.keys(map)) {
+    out[k] = { collected: map[k].collected, donors: map[k].donorKeys.size };
+  }
+  return out;
+}
+
+// Applique fetchConfirmedTotals à une liste de cases et retourne la liste enrichie
+async function enrichCasesWithTotals(cases) {
+  if (!Array.isArray(cases) || cases.length === 0) return cases || [];
+  const totals = await fetchConfirmedTotals(cases.map(c => c.id));
+  return cases.map(c => {
+    const t = totals[c.id];
+    return {
+      ...c,
+      collected: t ? t.collected : Number(c.collected || 0),
+      donors:    t ? t.donors    : Number(c.donors || 0),
+    };
+  });
+}
+
 // ── Email helpers (appellent /api/send-email côté serveur) ───────────────────
 // Les templates HTML et la clé Resend vivent dans /api/send-email.js (server-side).
 // Ici on n'expose plus aucune clé API au client.
@@ -1403,8 +1448,11 @@ const CAT_ICONS = {
 const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
   const [dbCases, setDbCases] = useState([]);
   useEffect(() => {
-    supabase.from("cases").select("*").eq("status", "COLLECTING").limit(200).then(({ data }) => {
-      if (data && data.length > 0) setDbCases(data);
+    supabase.from("cases").select("*").eq("status", "COLLECTING").limit(200).then(async ({ data }) => {
+      if (data && data.length > 0) {
+        const enriched = await enrichCasesWithTotals(data);
+        setDbCases(enriched);
+      }
     });
   }, []);
   const calcDaysLeft = (c) => {
@@ -1495,8 +1543,11 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
 const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite }) => {
   const [dbCases, setDbCases] = useState([]);
   useEffect(() => {
-    supabase.from("cases").select("*").eq("status", "COLLECTING").limit(200).then(({ data }) => {
-      if (data && data.length > 0) setDbCases(data);
+    supabase.from("cases").select("*").eq("status", "COLLECTING").limit(200).then(async ({ data }) => {
+      if (data && data.length > 0) {
+        const enriched = await enrichCasesWithTotals(data);
+        setDbCases(enriched);
+      }
     });
   }, []);
   const calcDaysLeft = (c) => {
@@ -1748,11 +1799,13 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const { data } = await supabase.from("cases").select("collected, status, amount").limit(500);
+        const { data } = await supabase.from("cases").select("id, status, amount").limit(500);
         if (data) {
           // Patients aidés = dossiers qui ont été approuvés (pas PENDING/REJECTED)
           const active = data.filter(c => !["PENDING","REJECTED"].includes(c.status));
-          const totalCollected = active.reduce((s, c) => s + (c.collected || 0), 0);
+          // Total collecté = somme des dons CONFIRMÉS sur les dossiers actifs
+          const totals = await fetchConfirmedTotals(active.map(c => c.id));
+          const totalCollected = Object.values(totals).reduce((s, t) => s + (t.collected || 0), 0);
           const fmtCollected = totalCollected >= 1000000
             ? (totalCollected / 1000000).toFixed(1).replace(".0","") + "M"
             : totalCollected >= 1000
@@ -1773,13 +1826,15 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const t = T[lang];
 
   useEffect(() => {
-    supabase.from("cases").select("*").eq("status", "COLLECTING").limit(200).then(({ data }) => {
+    supabase.from("cases").select("*").eq("status", "COLLECTING").limit(200).then(async ({ data }) => {
       if (data && data.length > 0) {
+        // On enrichit d'abord avec les totaux confirmés (collected + donors live depuis les dons)
+        const enriched = await enrichCasesWithTotals(data);
         const calcDaysLeft = (c) => {
           if (c.deadline) { const diff = new Date(c.deadline) - new Date(); return Math.max(0, Math.ceil(diff / (1000*60*60*24))); }
           return 30;
         };
-        const normalized = data.map(c => ({
+        const normalized = enriched.map(c => ({
           ...c,
           title: typeof c.title === "object" ? c.title : { fr: c.title || "Sans titre", en: c.title || "Untitled" },
           category: typeof c.category === "object" ? c.category : { fr: c.category || "Autre", en: c.category || "Other" },
@@ -1918,6 +1973,10 @@ const CasePage = ({ c, setPage, lang, user }) => {
   // donMode: "choose" | "anonymous" | "logged" | "confirm" | "success"
   // Si l'utilisateur est déjà connecté, on saute l'écran de choix et on va direct au formulaire connecté
   const [donMode, setDonMode] = useState(user ? "logged" : "choose");
+  // Référence unique du paiement, générée au passage à l'étape "confirm".
+  // Permet d'avoir EXACTEMENT la même référence affichée dans le QR Wave et stockée dans la table donations,
+  // pour que l'admin puisse rattacher manuellement le paiement reçu sur Wave Business au bon dossier.
+  const [paymentRef, setPaymentRef] = useState("");
 
   // Si l'utilisateur se connecte/déconnecte pendant qu'il est sur la page, on resynchronise
   useEffect(() => {
@@ -2174,17 +2233,24 @@ const CasePage = ({ c, setPage, lang, user }) => {
         <div className="text-xs font-semibold text-gray-600 mb-2">{lang==="fr" ? "Moyen de paiement :" : "Payment method:"}</div>
         <div className="grid grid-cols-2 gap-2">
           {[
-            { id:"WAVE", emoji:"🌊", label:"Wave CI", active:"bg-blue-600 text-white border-blue-600", inactive:"bg-white text-gray-700 border-gray-200 hover:border-blue-400" },
-            { id:"CARD", emoji:"💳", label:lang==="fr"?"Carte bancaire":"Bank card", active:"bg-gray-800 text-white border-gray-800", inactive:"bg-white text-gray-700 border-gray-200 hover:border-gray-500" },
+            { id:"WAVE", emoji:"🌊", label:"Wave CI", active:"bg-blue-600 text-white border-blue-600", inactive:"bg-white text-gray-700 border-gray-200 hover:border-blue-400", disabled:false },
+            { id:"CARD", emoji:"💳", label:lang==="fr"?"Carte bancaire":"Bank card", active:"bg-gray-800 text-white border-gray-800", inactive:"bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed", disabled:true },
           ].map(opt => (
             <button
               key={opt.id}
               type="button"
-              onClick={() => setProvider(opt.id)}
-              className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${provider===opt.id ? opt.active : opt.inactive}`}
+              disabled={opt.disabled}
+              onClick={() => { if (!opt.disabled) setProvider(opt.id); }}
+              title={opt.disabled ? (lang==="fr"?"Bientôt disponible":"Coming soon") : ""}
+              className={`relative flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${provider===opt.id ? opt.active : opt.inactive}`}
             >
               <span className="text-base">{opt.emoji}</span>
               <span>{opt.label}</span>
+              {opt.disabled && (
+                <span className="absolute -top-2 -right-2 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow">
+                  {lang==="fr"?"BIENTÔT":"SOON"}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -2192,7 +2258,12 @@ const CasePage = ({ c, setPage, lang, user }) => {
       {/* Widget paiement mobile — Wave / Carte bancaire */}
         {amount && amountInFcfa >= 500 ? (
           <button
-            onClick={() => setDonMode("confirm")}
+            onClick={() => {
+              // Génère la référence de paiement UNE seule fois au passage à confirm
+              const ref = "AYYAD-" + (c.tracking_id || c.trackingId || c.id || "DON") + "-" + String(Date.now()).slice(-6);
+              setPaymentRef(ref);
+              setDonMode("confirm");
+            }}
             className="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-md hover:bg-emerald-700"
           >
             {(() => {
@@ -2532,73 +2603,64 @@ const CasePage = ({ c, setPage, lang, user }) => {
               </div>
               {message&&<div className="bg-emerald-50 rounded-xl p-3 text-sm text-emerald-700 italic border border-emerald-100">"{message}"</div>}
 
-              {/* ── QR Code Wave CI ── */}
+              {/* ── QR Code Wave CI (compte marchand statique) ── */}
               {provider === "WAVE" && (() => {
-                const waveNum = AYYAD_ACCOUNTS.WAVE.numero.replace(/[\s]/g,"");
-                const waveNote = "AYYAD-" + (c.tracking_id || c.trackingId || "DON");
-                const waveData = `wave://pay?to=${waveNum}&amount=${Math.round(Number(amount))}&note=${waveNote}`;
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(waveData)}&size=180x180&margin=10&color=1d4ed8`;
+                const waveRef = paymentRef || ("AYYAD-" + (c.tracking_id || c.trackingId || c.id || "DON") + "-" + String(Date.now()).slice(-6));
+                const amountTxt = Math.round(Number(amount)).toLocaleString("fr-FR");
                 return (
                   <div className="flex flex-col items-center gap-3 bg-blue-50 border border-blue-100 rounded-2xl p-5">
                     <div className="text-sm font-black text-blue-800">📱 {lang==="fr" ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
                     <div className="relative">
                       <img
-                        src={qrUrl}
-                        alt="QR Code Wave CI"
-                        width={180}
-                        height={180}
-                        className="rounded-xl border-2 border-blue-200 bg-white shadow-sm"
-                        onError={e => { e.target.style.display="none"; e.target.nextSibling.style.display="flex"; }}
+                        src="/wave_qr.png"
+                        alt="QR Code Wave Ayyad"
+                        width={200}
+                        height={200}
+                        className="rounded-xl border-2 border-blue-200 bg-white shadow-sm p-2"
                       />
-                      <div style={{display:"none"}} className="w-44 h-44 bg-blue-100 rounded-xl items-center justify-center text-blue-400 text-xs text-center p-3 flex-col gap-2">
-                        <span className="text-3xl">🌊</span>
-                        <span>QR non disponible — utilisez le bouton ci-dessous</span>
+                    </div>
+                    {/* Montant et référence à saisir manuellement (QR statique = compte marchand seul) */}
+                    <div className="w-full bg-white rounded-xl p-3 border border-blue-200 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">{lang==="fr"?"Montant à envoyer :":"Amount to send:"}</span>
+                        <span className="font-mono font-black text-blue-700 text-base">{amountTxt} FCFA</span>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-xs text-gray-500 shrink-0">{lang==="fr"?"Référence :":"Reference:"}</span>
+                        <span className="font-mono text-[11px] text-gray-700 truncate" title={waveRef}>{waveRef}</span>
                       </div>
                     </div>
                     <div className="text-xs text-blue-700 text-center leading-relaxed">
                       {lang==="fr"
-                        ? <>Ouvrez <strong>Wave CI</strong> → touchez <strong>Scanner</strong> → scannez ce code → confirmez le paiement</>
-                        : <>Open <strong>Wave CI</strong> → tap <strong>Scan</strong> → scan this code → confirm payment</>}
+                        ? <>Ouvrez <strong>Wave CI</strong> → <strong>Scanner</strong> → saisissez le montant <strong>{amountTxt} FCFA</strong> → ajoutez la référence ci-dessus dans le motif → validez</>
+                        : <>Open <strong>Wave CI</strong> → <strong>Scan</strong> → enter the amount <strong>{amountTxt} FCFA</strong> → add the reference above as note → confirm</>}
                     </div>
-                    <a
-                      href={waveData}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm text-center"
-                    >
-                      📱 {lang==="fr" ? "Ouvrir Wave CI directement" : "Open Wave CI directly"}
-                    </a>
-                    <div className="text-[11px] text-blue-400 text-center">
-                      {lang==="fr" ? "Cliquez sur Confirmer uniquement après avoir effectué le paiement" : "Click Confirm only after completing your payment"}
+                    <div className="text-[11px] text-blue-400 text-center bg-blue-50 px-2 py-1 rounded">
+                      ⚠️ {lang==="fr" ? "La référence permet d'attribuer votre don à la bonne collecte. Cliquez sur Confirmer uniquement après le paiement." : "The reference is used to attribute your donation to the correct case. Click Confirm only after payment."}
                     </div>
                   </div>
                 );
               })()}
 
-              {/* ── Formulaire carte bancaire ── */}
+              {/* ── Carte bancaire — Bientôt disponible ── */}
               {provider === "CARD" && (
-                <CardPayForm
-                  amountDisplay={fmt(Number(amount))}
-                  lang={lang}
-                  onSuccess={() => {
-                    const _donName = anonymous ? null : (user?.user_metadata?.name || user?.email || null);
-                    supabase.from("donations").insert({
-                      case_id: c.id || null,
-                      donor_id: user?.id || null,
-                      donor_name: _donName,
-                      donor_email: anonymous ? null : (user?.email || null),
-                      amount: Number(amount),
-                      amount_fcfa: amountInFcfa,
-                      currency,
-                      payment_method: "CARD",
-                      status: "pending",
-                      message: message || null,
-                      reference: "AYYAD-" + (c.tracking_id || c.id || "DON") + "-" + Date.now()
-                    });
-                    setLastDonation({ donorName: anonymous?"Donateur anonyme":(_donName||"Donateur"), amount: amountInFcfa });
-                    setDonMode("success");
-                    emailDonConfirm({ donorEmail: anonymous ? null : (user?.email || null), donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"), amount: fmt(Number(amount)), beneficiary: c.beneficiary, caseTitle: c.title });
-                  }}
-                  onCancel={() => setDonMode(anonymous?"anonymous":"logged")}
-                />
+                <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 text-center space-y-3">
+                  <div className="text-4xl">🏗️</div>
+                  <div className="font-black text-amber-800">
+                    {lang==="fr" ? "Paiement par carte bancaire — Bientôt disponible" : "Card payment — Coming soon"}
+                  </div>
+                  <p className="text-sm text-amber-700 leading-relaxed">
+                    {lang==="fr"
+                      ? "Nous travaillons à l'intégration des cartes Visa et Mastercard. En attendant, vous pouvez utiliser Wave CI (sans frais)."
+                      : "We're working on Visa and Mastercard integration. In the meantime, you can use Wave CI (no fees)."}
+                  </p>
+                  <button
+                    onClick={() => setProvider("WAVE")}
+                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm"
+                  >
+                    🌊 {lang==="fr" ? "Utiliser Wave CI à la place" : "Use Wave CI instead"}
+                  </button>
+                </div>
               )}
 
               {/* Boutons Modifier / Confirmer (Wave uniquement — carte a son propre bouton) */}
@@ -2618,7 +2680,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       payment_method: "WAVE",
                       status: "pending",
                       message: message || null,
-                      reference: "AYYAD-" + (c.tracking_id || c.id || "DON") + "-" + Date.now()
+                      reference: paymentRef || ("AYYAD-" + (c.tracking_id || c.id || "DON") + "-" + Date.now())
                     });
                     setLastDonation({ donorName: anonymous?"Donateur anonyme":(_donName2||"Donateur"), amount: amountInFcfa });
                     setDonMode("success");
@@ -5128,7 +5190,11 @@ const AdminPage = ({ user, setPage, lang }) => {
       created_at: new Date().toISOString(),
       _isDemo: true,
     };
-    if (!error) setCases([demoFunded, ...(data || [])]);
+    if (!error) {
+      // Enrichit chaque dossier avec son total de dons confirmés (collected/donors live)
+      const enriched = await enrichCasesWithTotals(data || []);
+      setCases([demoFunded, ...enriched]);
+    }
     setLoadingCases(false);
   };
 
@@ -7573,7 +7639,11 @@ const TrackingPage = ({ setPage, setSelectedCase, lang }) => {
     if (mock) { setCaseData({...mock, _mock: true}); setLoading(false); return; }
     // Supabase
     const { data } = await supabase.from("cases").select("*").eq("tracking_id", q).maybeSingle();
-    if (data) setCaseData(data);
+    if (data) {
+      // Enrichi avec total des dons confirmés
+      const [enriched] = await enrichCasesWithTotals([data]);
+      setCaseData(enriched);
+    }
     else setNotFound(true);
     setLoading(false);
   };
@@ -7968,7 +8038,9 @@ const ProfilePage = ({ user, lang, setPage }) => {
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.from("cases").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100);
-      setUserCases(data || []);
+      // Enrichi avec totaux confirmés (le patient voit la jauge progresser quand l'admin valide ses dons)
+      const enriched = await enrichCasesWithTotals(data || []);
+      setUserCases(enriched);
       // Check if user already submitted a testimonial
       const { data: tData } = await supabase.from("testimonials").select("id, status, message_fr").eq("submitted_by", user.id).maybeSingle();
       if (tData) setExistingTestimonial(tData);
@@ -8478,8 +8550,12 @@ export default function AyyadApp() {
         setSelectedCase(mockMatch);
         setPage("case");
       } else {
-        supabase.from("cases").select("*").eq("tracking_id", caseId).maybeSingle().then(({ data }) => {
-          if (data) { setSelectedCase(data); setPage("case"); }
+        supabase.from("cases").select("*").eq("tracking_id", caseId).maybeSingle().then(async ({ data }) => {
+          if (data) {
+            const [enriched] = await enrichCasesWithTotals([data]);
+            setSelectedCase(enriched);
+            setPage("case");
+          }
         });
       }
     }
