@@ -39,18 +39,19 @@ async function fetchConfirmedTotals(caseIds) {
   return out;
 }
 
-// Construit une référence de paiement courte et lisible.
-// Format préféré : AYYAD-<tracking_id>-<6 derniers chiffres timestamp>
-// Si pas de tracking_id (cas hérité) : AYYAD-<8 derniers UUID>-<6 chiffres>
-// Le donateur recopie ce code dans le motif Wave → l'admin retrouve le don.
-function buildPaymentRef(caseObj) {
-  const stamp = String(Date.now()).slice(-6);
-  const tracking = caseObj?.tracking_id || caseObj?.trackingId;
-  if (tracking) return "AYYAD-" + tracking + "-" + stamp;
-  // Fallback : on prend les 8 derniers caractères hex de l'UUID, en majuscules
-  const idStr = String(caseObj?.id || "");
-  const short = idStr.replace(/-/g, "").slice(-8).toUpperCase();
-  return "AYYAD-" + (short || "DON") + "-" + stamp;
+// Construit un code de paiement court à recopier dans la note Wave.
+// 6 caractères dans un alphabet sans ambiguïté (pas de 0/O, 1/I/L) :
+// → "K7M3PF", "X8H4QN" — facile à lire, à dicter, à taper.
+// Le code est OPTIONNEL pour le donateur ; l'admin peut aussi rapprocher
+// le don par montant + horodatage + numéro Wave de l'expéditeur.
+const REF_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // 31 chars (sans 0,O,I,L,1)
+function buildPaymentRef() {
+  const arr = new Uint8Array(6);
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) crypto.getRandomValues(arr);
+  else for (let i = 0; i < 6; i++) arr[i] = Math.floor(Math.random() * 256);
+  let out = "";
+  for (let i = 0; i < 6; i++) out += REF_ALPHABET[arr[i] % REF_ALPHABET.length];
+  return out;
 }
 
 // Applique fetchConfirmedTotals à une liste de cases et retourne la liste enrichie
@@ -2277,7 +2278,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
           <button
             onClick={() => {
               // Génère la référence de paiement UNE seule fois au passage à confirm
-              setPaymentRef(buildPaymentRef(c));
+              setPaymentRef(buildPaymentRef());
               setDonMode("confirm");
             }}
             className="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-md hover:bg-emerald-700"
@@ -2621,7 +2622,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
               {/* ── QR Code Wave CI (compte marchand statique) ── */}
               {provider === "WAVE" && (() => {
-                const waveRef = paymentRef || buildPaymentRef(c);
+                const waveRef = paymentRef || buildPaymentRef();
                 const amountTxt = Math.round(Number(amount)).toLocaleString("fr-FR");
                 return (
                   <div className="flex flex-col items-center gap-3 bg-blue-50 border border-blue-100 rounded-2xl p-5">
@@ -2635,24 +2636,42 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         className="rounded-xl border-2 border-blue-200 bg-white shadow-sm p-2"
                       />
                     </div>
-                    {/* Montant et référence à saisir manuellement (QR statique = compte marchand seul) */}
-                    <div className="w-full bg-white rounded-xl p-3 border border-blue-200 space-y-2">
+                    {/* Montant à envoyer */}
+                    <div className="w-full bg-white rounded-xl p-3 border border-blue-200">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500">{lang==="fr"?"Montant à envoyer :":"Amount to send:"}</span>
                         <span className="font-mono font-black text-blue-700 text-base">{amountTxt} FCFA</span>
                       </div>
-                      <div className="flex justify-between items-center gap-2">
-                        <span className="text-xs text-gray-500 shrink-0">{lang==="fr"?"Référence :":"Reference:"}</span>
-                        <span className="font-mono text-[11px] text-gray-700 truncate" title={waveRef}>{waveRef}</span>
+                    </div>
+                    {/* Code court optionnel — gros + bouton copier */}
+                    <div className="w-full bg-white rounded-xl p-4 border-2 border-blue-200">
+                      <div className="text-[11px] text-gray-500 text-center mb-1">
+                        {lang==="fr"?"Code à coller dans la note Wave (optionnel) :":"Code to paste in the Wave note (optional):"}
+                      </div>
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="font-mono font-black text-blue-700 text-3xl tracking-[0.25em] select-all">{waveRef}</span>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try { await navigator.clipboard.writeText(waveRef); }
+                            catch(e) { /* certains navigateurs mobiles bloquent — pas grave, le donateur peut sélectionner et copier à la main */ }
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-lg shrink-0"
+                          title={lang==="fr"?"Copier le code":"Copy code"}
+                        >
+                          📋 {lang==="fr"?"Copier":"Copy"}
+                        </button>
                       </div>
                     </div>
                     <div className="text-xs text-blue-700 text-center leading-relaxed">
                       {lang==="fr"
-                        ? <>Ouvrez <strong>Wave CI</strong> → <strong>Scanner</strong> → saisissez le montant <strong>{amountTxt} FCFA</strong> → ajoutez la référence ci-dessus dans le motif → validez</>
-                        : <>Open <strong>Wave CI</strong> → <strong>Scan</strong> → enter the amount <strong>{amountTxt} FCFA</strong> → add the reference above as note → confirm</>}
+                        ? <>Ouvrez <strong>Wave CI</strong> → <strong>Scanner</strong> → saisissez <strong>{amountTxt} FCFA</strong> → validez</>
+                        : <>Open <strong>Wave CI</strong> → <strong>Scan</strong> → enter <strong>{amountTxt} FCFA</strong> → confirm</>}
                     </div>
-                    <div className="text-[11px] text-blue-400 text-center bg-blue-50 px-2 py-1 rounded">
-                      ⚠️ {lang==="fr" ? "La référence permet d'attribuer votre don à la bonne collecte. Cliquez sur Confirmer uniquement après le paiement." : "The reference is used to attribute your donation to the correct case. Click Confirm only after payment."}
+                    <div className="text-[11px] text-gray-500 text-center bg-white/60 px-3 py-2 rounded leading-relaxed">
+                      {lang==="fr"
+                        ? <>💡 Le code ci-dessus est <strong>facultatif</strong> — il aide juste à valider votre don plus vite. Si vous l'oubliez, on retrouve votre don grâce au montant et à votre numéro Wave. Cliquez sur Confirmer après avoir payé.</>
+                        : <>💡 The code above is <strong>optional</strong> — it just helps validate your donation faster. If you forget, we'll match by amount and Wave number. Click Confirm after payment.</>}
                     </div>
                   </div>
                 );
@@ -2702,7 +2721,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         setDonError("");
                         setDonSubmitting(true);
                         const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email || null);
-                        const refToUse = paymentRef || buildPaymentRef(c);
+                        const refToUse = paymentRef || buildPaymentRef();
                         try {
                           // ⚠️ On AWAIT l'insert + on lit l'erreur. Avant, l'insert était fire-and-forget,
                           // donc un échec RLS Supabase passait totalement silencieux et l'email partait quand même.
