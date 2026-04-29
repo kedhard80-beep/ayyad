@@ -39,19 +39,19 @@ async function fetchConfirmedTotals(caseIds) {
   return out;
 }
 
-// Construit un code de paiement court à recopier dans la note Wave.
-// 6 caractères dans un alphabet sans ambiguïté (pas de 0/O, 1/I/L) :
-// → "K7M3PF", "X8H4QN" — facile à lire, à dicter, à taper.
-// Le code est OPTIONNEL pour le donateur ; l'admin peut aussi rapprocher
-// le don par montant + horodatage + numéro Wave de l'expéditeur.
-const REF_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // 31 chars (sans 0,O,I,L,1)
-function buildPaymentRef() {
-  const arr = new Uint8Array(6);
-  if (typeof crypto !== "undefined" && crypto.getRandomValues) crypto.getRandomValues(arr);
-  else for (let i = 0; i < 6; i++) arr[i] = Math.floor(Math.random() * 256);
-  let out = "";
-  for (let i = 0; i < 6; i++) out += REF_ALPHABET[arr[i] % REF_ALPHABET.length];
-  return out;
+// Construit la référence de paiement à recopier dans la note Wave.
+// Format : AYYAD-<tracking_id>  →  ex: "AYYAD-AYD-2026-04-001"
+// Le tracking_id est assigné à l'approbation (année-mois-rang dans le mois),
+// ce qui rend la référence parlante : on lit directement le numéro de dossier.
+// Le donateur a un bouton "Copier" pour ne pas avoir à retaper.
+function buildPaymentRef(caseObj) {
+  const tracking = caseObj?.tracking_id || caseObj?.trackingId;
+  if (tracking) return "AYYAD-" + tracking;
+  // Fallback ultime (ne devrait jamais arriver après backfill) :
+  // 8 derniers caractères de l'UUID en majuscules
+  const idStr = String(caseObj?.id || "");
+  const short = idStr.replace(/-/g, "").slice(-8).toUpperCase();
+  return "AYYAD-" + (short || "DON");
 }
 
 // Applique fetchConfirmedTotals à une liste de cases et retourne la liste enrichie
@@ -2278,7 +2278,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
           <button
             onClick={() => {
               // Génère la référence de paiement UNE seule fois au passage à confirm
-              setPaymentRef(buildPaymentRef());
+              setPaymentRef(buildPaymentRef(c));
               setDonMode("confirm");
             }}
             className="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-md hover:bg-emerald-700"
@@ -2622,19 +2622,35 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
               {/* ── QR Code Wave CI (compte marchand statique) ── */}
               {provider === "WAVE" && (() => {
-                const waveRef = paymentRef || buildPaymentRef();
+                const waveRef = paymentRef || buildPaymentRef(c);
                 const amountTxt = Math.round(Number(amount)).toLocaleString("fr-FR");
                 return (
                   <div className="flex flex-col items-center gap-3 bg-blue-50 border border-blue-100 rounded-2xl p-5">
                     <div className="text-sm font-black text-blue-800">📱 {lang==="fr" ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
-                    <div className="relative">
+                    {/*
+                      Le QR est cliquable : sur mobile, ça ouvre directement l'app Wave
+                      sur la page de paiement du marchand AYYAD SANTE.
+                      Sur desktop, le clic n'a pas d'effet utile (la page web s'ouvre)
+                      mais on garde le scan classique avec l'app mobile.
+                    */}
+                    <a
+                      href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="relative block group"
+                      title={lang==="fr"?"Toucher pour payer (mobile)":"Tap to pay (mobile)"}
+                    >
                       <img
                         src="/wave_qr.png"
                         alt="QR Code Wave Ayyad"
                         width={200}
                         height={200}
-                        className="rounded-xl border-2 border-blue-200 bg-white shadow-sm p-2"
+                        className="rounded-xl border-2 border-blue-200 bg-white shadow-sm p-2 group-hover:border-blue-400 group-active:scale-95 transition-all"
                       />
+                    </a>
+                    {/* Hint mobile — visible sur tous les écrans, mais surtout utile aux mobiles */}
+                    <div className="text-[11px] font-semibold text-blue-600 text-center bg-blue-100/60 px-3 py-1.5 rounded-full">
+                      👆 {lang==="fr" ? "Touchez le QR si vous êtes sur téléphone" : "Tap the QR if you're on mobile"}
                     </div>
                     {/* Montant à envoyer */}
                     <div className="w-full bg-white rounded-xl p-3 border border-blue-200">
@@ -2643,23 +2659,36 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         <span className="font-mono font-black text-blue-700 text-base">{amountTxt} FCFA</span>
                       </div>
                     </div>
-                    {/* Code court optionnel — gros + bouton copier */}
+                    {/* Référence du don — bouton copier en évidence */}
                     <div className="w-full bg-white rounded-xl p-4 border-2 border-blue-200">
-                      <div className="text-[11px] text-gray-500 text-center mb-1">
-                        {lang==="fr"?"Code à coller dans la note Wave (optionnel) :":"Code to paste in the Wave note (optional):"}
+                      <div className="text-[11px] text-gray-500 text-center mb-2">
+                        {lang==="fr"?"Référence à coller dans la note Wave (optionnel) :":"Reference to paste in the Wave note (optional):"}
                       </div>
-                      <div className="flex items-center justify-center gap-2">
-                        <span className="font-mono font-black text-blue-700 text-3xl tracking-[0.25em] select-all">{waveRef}</span>
+                      <div className="flex flex-col items-center gap-2">
+                        <span className="font-mono font-black text-blue-700 text-base sm:text-lg tracking-wide select-all break-all text-center">{waveRef}</span>
                         <button
                           type="button"
-                          onClick={async () => {
-                            try { await navigator.clipboard.writeText(waveRef); }
-                            catch(e) { /* certains navigateurs mobiles bloquent — pas grave, le donateur peut sélectionner et copier à la main */ }
+                          onClick={async (e) => {
+                            try {
+                              await navigator.clipboard.writeText(waveRef);
+                              const btn = e.currentTarget;
+                              const original = btn.innerHTML;
+                              btn.innerHTML = "✅ " + (lang==="fr"?"Copié !":"Copied!");
+                              setTimeout(() => { btn.innerHTML = original; }, 1500);
+                            } catch(err) {
+                              // Fallback : sélection auto pour copie manuelle si clipboard bloqué (mobile/iframe)
+                              try {
+                                const range = document.createRange();
+                                range.selectNodeContents(e.currentTarget.previousElementSibling);
+                                const sel = window.getSelection();
+                                sel.removeAllRanges();
+                                sel.addRange(range);
+                              } catch(_) {}
+                            }
                           }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-lg shrink-0"
-                          title={lang==="fr"?"Copier le code":"Copy code"}
+                          className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2.5 rounded-lg text-sm shadow-sm transition-colors"
                         >
-                          📋 {lang==="fr"?"Copier":"Copy"}
+                          📋 {lang==="fr"?"Copier la référence":"Copy reference"}
                         </button>
                       </div>
                     </div>
@@ -2721,7 +2750,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         setDonError("");
                         setDonSubmitting(true);
                         const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email || null);
-                        const refToUse = paymentRef || buildPaymentRef();
+                        const refToUse = paymentRef || buildPaymentRef(c);
                         try {
                           // ⚠️ On AWAIT l'insert + on lit l'erreur. Avant, l'insert était fire-and-forget,
                           // donc un échec RLS Supabase passait totalement silencieux et l'email partait quand même.
@@ -5364,17 +5393,31 @@ const AdminPage = ({ user, setPage, lang }) => {
     return c.days_left <= 7 && (c.collected / c.amount) < 0.5;
   };
   const approveCase = async (id) => {
+    // Assigne un tracking_id parlant au moment de l'approbation :
+    // format AYD-YYYY-MM-NNN où NNN = rang du dossier dans le mois (001, 002…)
+    const now = new Date();
+    const yr = now.getFullYear();
+    const mo = String(now.getMonth() + 1).padStart(2, "0");
+    const prefix = `AYD-${yr}-${mo}-`;
+    // Compte combien de dossiers ont DÉJÀ ce préfixe (= rang du nouveau)
+    const { data: existing } = await supabase
+      .from("cases")
+      .select("tracking_id")
+      .like("tracking_id", prefix + "%");
+    const rank = String((existing?.length || 0) + 1).padStart(3, "0");
+    const newTrackingId = prefix + rank;
+
     const { error } = await supabase
       .from("cases")
-      .update({ status: "COLLECTING" })
+      .update({ status: "COLLECTING", tracking_id: newTrackingId })
       .eq("id", id);
     if (!error) {
       const c = cases.find(x => x.id === id);
-      setCases(prev => prev.map(x => x.id===id ? {...x, status:"COLLECTING"} : x));
-      // Email notification au bénéficiaire + admin
+      setCases(prev => prev.map(x => x.id===id ? {...x, status:"COLLECTING", tracking_id: newTrackingId} : x));
+      // Email notification au bénéficiaire + admin (avec le NOUVEAU tracking_id)
       if (c) {
-        emailCaseApproved({ beneficiaryEmail: c.email || null, beneficiaryName: c.full_name || c.beneficiary, caseTitle: c.title, trackingId: c.tracking_id });
-        emailNewCase({ caseTitle: "✅ APPROUVÉ — " + (c.title || id), hospital: c.hospital, city: c.city, amount: c.amount });
+        emailCaseApproved({ beneficiaryEmail: c.email || null, beneficiaryName: c.full_name || c.beneficiary, caseTitle: c.title, trackingId: newTrackingId });
+        emailNewCase({ caseTitle: "✅ APPROUVÉ — " + (c.title || id) + " (" + newTrackingId + ")", hospital: c.hospital, city: c.city, amount: c.amount });
         auditLog(user, "CASE_APPROVED", c.title || id, "PENDING", "COLLECTING");
       }
     }
