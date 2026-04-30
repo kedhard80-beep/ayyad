@@ -54,6 +54,22 @@ function buildPaymentRef(caseObj) {
   return "AYYAD-" + (short || "DON");
 }
 
+// Affichage public d'un nom de donateur — masque les emails par RGPD.
+// "kedhard80@gmail.com" → "kedhard80"
+// "John Doe"            → "John Doe"
+// null/""               → "Anonyme" / "Anonymous" (selon lang)
+// Utilisé sur les surfaces publiques (ticker, fiche collecte). L'admin voit la
+// donnée brute pour pouvoir matcher avec les notifs Wave Business.
+function publicDonorName(rawName, lang) {
+  const fr = lang !== "en";
+  if (!rawName) return fr ? "Anonyme" : "Anonymous";
+  const s = String(rawName).trim();
+  if (!s) return fr ? "Anonyme" : "Anonymous";
+  // Si ça ressemble à un email, on garde juste la partie avant @
+  if (s.includes("@")) return s.split("@")[0];
+  return s;
+}
+
 // Insère un don via l'endpoint serveur /api/donate (bypass RLS via service_role).
 // Fallback automatique sur supabase direct si l'endpoint n'est pas dispo.
 // Retourne { error?: string } — pas d'erreur = succès.
@@ -1826,7 +1842,7 @@ const DonationTicker = ({ lang }) => {
         {items.map((d,i) => (
           <span key={i} className="flex items-center gap-2 text-xs text-emerald-100 font-medium px-6 flex-shrink-0">
             <span className="text-emerald-300">💚</span>
-            <span>{!d.donor_name?(lang==="fr"?"Anonyme":"Anonymous"):d.donor_name}</span>
+            <span>{publicDonorName(d.donor_name, lang)}</span>
             <span className="text-emerald-300 font-black">{((d.amount_fcfa||d.amount||0)).toLocaleString("fr-CI")} FCFA</span>
             <span className="text-emerald-500 mx-2">·</span>
           </span>
@@ -2395,7 +2411,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       {!d.donor_name ? "🕵️" : "💚"}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm font-semibold text-gray-900">{!d.donor_name ? (lang==="fr"?"Anonyme":"Anonymous") : d.donor_name}</span>
+                      <span className="text-sm font-semibold text-gray-900">{publicDonorName(d.donor_name, lang)}</span>
                       <span className="text-xs text-gray-400 ml-2">{new Date(d.created_at).toLocaleDateString(lang==="fr"?"fr-CI":"en-US")}</span>
                     </div>
                     <div className="text-sm font-black text-emerald-700 flex-shrink-0">
@@ -2673,7 +2689,9 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         // → l'argent arrive sur le marchand mais aucune trace côté Ayyad.
                         // On ne bloque PAS la navigation (pas de e.preventDefault) — fire-and-forget.
                         if (donSubmitting) return;
-                        const _donName = anonymous ? null : (user?.user_metadata?.name || user?.email || null);
+                        // On évite de stocker l'email entier comme nom public (RGPD).
+                        // Si pas de prénom dans le metadata, on prend la partie avant @ de l'email.
+                        const _donName = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
                         const refToUse = paymentRef || buildPaymentRef(c);
                         // Fire-and-forget — on ne bloque pas la nav vers Wave
                         createDonation({
@@ -2783,7 +2801,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         if (donSubmitting) return;
                         setDonError("");
                         setDonSubmitting(true);
-                        const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email || null);
+                        // On évite de stocker l'email entier comme nom public (RGPD)
+                        const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
                         const refToUse = paymentRef || buildPaymentRef(c);
                         try {
                           // Création du don via /api/donate (bypass RLS) avec fallback Supabase
