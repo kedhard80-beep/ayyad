@@ -4260,12 +4260,77 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
   };
 
   const confirm = async (id) => {
-    const { error } = await supabase.from("donations").update({ status: "confirmed" }).eq("id", id);
-    if (!error) {
-      setMsg(fr ? "✅ Don confirmé !" : "✅ Donation confirmed!");
-      setTimeout(() => setMsg(""), 3000);
-      fetchDonations();
+    // 1) Marquer le don comme confirmé
+    const { data: donation, error } = await supabase.from("donations")
+      .update({ status: "confirmed" })
+      .eq("id", id)
+      .select()
+      .single();
+    if (error || !donation) {
+      console.error("[confirm donation] échec:", error);
+      return;
     }
+
+    const caseId = donation.case_id;
+    if (caseId) {
+      // 2) Recalculer le total des dons confirmés pour ce dossier
+      const { data: confirmedDons } = await supabase.from("donations")
+        .select("amount_fcfa, amount, donor_email, donor_name")
+        .eq("case_id", caseId)
+        .eq("status", "confirmed");
+      const totalCollected = (confirmedDons || []).reduce(
+        (s, d) => s + Number(d.amount_fcfa || d.amount || 0), 0
+      );
+      const donorsCount = (confirmedDons || []).length;
+
+      // 3) Lire l'état actuel du dossier pour décider si l'objectif vient d'être atteint
+      const { data: caseRow } = await supabase.from("cases")
+        .select("amount, goal_reached_at, status, title, full_name, beneficiary, tracking_id")
+        .eq("id", caseId)
+        .single();
+
+      if (caseRow) {
+        const target = Number(caseRow.amount || 0);
+        const justReached = totalCollected >= target && target > 0 && !caseRow.goal_reached_at;
+
+        // 4) Mettre à jour cases.collected, donors et goal_reached_at si premier passage
+        const updates = { collected: totalCollected, donors: donorsCount };
+        if (justReached) updates.goal_reached_at = new Date().toISOString();
+        await supabase.from("cases").update(updates).eq("id", caseId);
+
+        // 5) Si l'objectif vient d'être atteint, envoyer l'email caseFunded à TOUS les donateurs
+        if (justReached) {
+          const beneficiaryName = caseRow.full_name || caseRow.beneficiary || "le bénéficiaire";
+          const caseTitleStr = typeof caseRow.title === "object"
+            ? (caseRow.title?.fr || caseRow.title?.en)
+            : caseRow.title;
+          for (const d of (confirmedDons || [])) {
+            if (d.donor_email) {
+              try {
+                await emailCaseFunded({
+                  donorEmail: d.donor_email,
+                  donorName: d.donor_name || "Donateur",
+                  caseTitle: caseTitleStr,
+                  beneficiary: beneficiaryName,
+                  totalRaised: totalCollected,
+                  trackingId: caseRow.tracking_id,
+                });
+              } catch(e) { console.warn("[caseFunded email] échec:", e); }
+            }
+          }
+          setMsg(fr ? "🎉 Objectif atteint ! Emails envoyés aux donateurs." : "🎉 Goal reached! Emails sent to donors.");
+        } else {
+          setMsg(fr ? "✅ Don confirmé !" : "✅ Donation confirmed!");
+        }
+      } else {
+        setMsg(fr ? "✅ Don confirmé !" : "✅ Donation confirmed!");
+      }
+    } else {
+      setMsg(fr ? "✅ Don confirmé !" : "✅ Donation confirmed!");
+    }
+
+    setTimeout(() => setMsg(""), 4000);
+    fetchDonations();
   };
 
   const cancel = async (id) => {
@@ -5646,13 +5711,22 @@ const AdminPage = ({ user, setPage, lang }) => {
     const rank = String((existing?.length || 0) + 1).padStart(3, "0");
     const newTrackingId = prefix + rank;
 
+    // Deadline = 30 jours à partir de l'approbation. Le champ daysLeft de l'UI sera
+    // calculé live depuis (deadline - now) → diminue chaque jour.
+    const deadlineDate = new Date(now);
+    deadlineDate.setDate(deadlineDate.getDate() + 30);
+
     const { error } = await supabase
       .from("cases")
-      .update({ status: "COLLECTING", tracking_id: newTrackingId })
+      .update({
+        status: "COLLECTING",
+        tracking_id: newTrackingId,
+        deadline: deadlineDate.toISOString(),
+      })
       .eq("id", id);
     if (!error) {
       const c = cases.find(x => x.id === id);
-      setCases(prev => prev.map(x => x.id===id ? {...x, status:"COLLECTING", tracking_id: newTrackingId} : x));
+      setCases(prev => prev.map(x => x.id===id ? {...x, status:"COLLECTING", tracking_id: newTrackingId, deadline: deadlineDate.toISOString()} : x));
       // Email notification au bénéficiaire + admin (avec le NOUVEAU tracking_id)
       if (c) {
         emailCaseApproved({ beneficiaryEmail: c.email || null, beneficiaryName: c.full_name || c.beneficiary, caseTitle: c.title, trackingId: newTrackingId });
