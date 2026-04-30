@@ -4248,8 +4248,19 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
         setManualSaving(false);
         return;
       }
-      setMsg(fr?"✅ Don manuel enregistré !":"✅ Manual donation recorded!");
-      setTimeout(() => setMsg(""), 3000);
+      // Si le don manuel est saisi en 'confirmed' direct, on déclenche le même
+      // recompute + email caseFunded que pour le flow normal de confirmation.
+      let justReached = false;
+      if (manualForm.status === "confirmed" && manualForm.case_id) {
+        try {
+          const r = await recomputeCaseTotalsAndNotify(manualForm.case_id);
+          justReached = r.justReached;
+        } catch(e) { console.warn("[manual donation recompute] échec:", e); }
+      }
+      setMsg(justReached
+        ? (fr ? "🎉 Objectif atteint ! Emails envoyés aux donateurs." : "🎉 Goal reached! Emails sent to donors.")
+        : (fr ? "✅ Don manuel enregistré !" : "✅ Manual donation recorded!"));
+      setTimeout(() => setMsg(""), 4000);
       setManualOpen(false);
       fetchDonations();
     } catch(e) {
@@ -4259,8 +4270,63 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
     }
   };
 
+  // Helper partagé : recalcule cases.collected/donors/goal_reached_at pour un dossier,
+  // et envoie l'email caseFunded à tous les donateurs si l'objectif vient d'être atteint
+  // (premier passage seulement, contrôlé par goal_reached_at).
+  // Retourne { justReached: bool, total: number, donors: number }
+  const recomputeCaseTotalsAndNotify = async (caseId) => {
+    if (!caseId) return { justReached: false, total: 0, donors: 0 };
+    // 1) Total des dons confirmés
+    const { data: confirmedDons } = await supabase.from("donations")
+      .select("amount_fcfa, amount, donor_email, donor_name")
+      .eq("case_id", caseId)
+      .eq("status", "confirmed");
+    const totalCollected = (confirmedDons || []).reduce(
+      (s, d) => s + Number(d.amount_fcfa || d.amount || 0), 0
+    );
+    const donorsCount = (confirmedDons || []).length;
+
+    // 2) État actuel du dossier
+    const { data: caseRow } = await supabase.from("cases")
+      .select("amount, goal_reached_at, status, title, full_name, beneficiary, tracking_id")
+      .eq("id", caseId)
+      .single();
+    if (!caseRow) return { justReached: false, total: totalCollected, donors: donorsCount };
+
+    const target = Number(caseRow.amount || 0);
+    const justReached = totalCollected >= target && target > 0 && !caseRow.goal_reached_at;
+
+    // 3) Update cases.collected/donors + goal_reached_at si premier passage
+    const updates = { collected: totalCollected, donors: donorsCount };
+    if (justReached) updates.goal_reached_at = new Date().toISOString();
+    await supabase.from("cases").update(updates).eq("id", caseId);
+
+    // 4) Email caseFunded à tous les donateurs (premier passage uniquement)
+    if (justReached) {
+      const beneficiaryName = caseRow.full_name || caseRow.beneficiary || "le bénéficiaire";
+      const caseTitleStr = typeof caseRow.title === "object"
+        ? (caseRow.title?.fr || caseRow.title?.en)
+        : caseRow.title;
+      for (const d of (confirmedDons || [])) {
+        if (d.donor_email) {
+          try {
+            await emailCaseFunded({
+              donorEmail: d.donor_email,
+              donorName: d.donor_name || "Donateur",
+              caseTitle: caseTitleStr,
+              beneficiary: beneficiaryName,
+              totalRaised: totalCollected,
+              trackingId: caseRow.tracking_id,
+            });
+          } catch(e) { console.warn("[caseFunded email] échec:", e); }
+        }
+      }
+    }
+    return { justReached, total: totalCollected, donors: donorsCount };
+  };
+
   const confirm = async (id) => {
-    // 1) Marquer le don comme confirmé
+    // Flip pending → confirmed
     const { data: donation, error } = await supabase.from("donations")
       .update({ status: "confirmed" })
       .eq("id", id)
@@ -4270,65 +4336,10 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
       console.error("[confirm donation] échec:", error);
       return;
     }
-
-    const caseId = donation.case_id;
-    if (caseId) {
-      // 2) Recalculer le total des dons confirmés pour ce dossier
-      const { data: confirmedDons } = await supabase.from("donations")
-        .select("amount_fcfa, amount, donor_email, donor_name")
-        .eq("case_id", caseId)
-        .eq("status", "confirmed");
-      const totalCollected = (confirmedDons || []).reduce(
-        (s, d) => s + Number(d.amount_fcfa || d.amount || 0), 0
-      );
-      const donorsCount = (confirmedDons || []).length;
-
-      // 3) Lire l'état actuel du dossier pour décider si l'objectif vient d'être atteint
-      const { data: caseRow } = await supabase.from("cases")
-        .select("amount, goal_reached_at, status, title, full_name, beneficiary, tracking_id")
-        .eq("id", caseId)
-        .single();
-
-      if (caseRow) {
-        const target = Number(caseRow.amount || 0);
-        const justReached = totalCollected >= target && target > 0 && !caseRow.goal_reached_at;
-
-        // 4) Mettre à jour cases.collected, donors et goal_reached_at si premier passage
-        const updates = { collected: totalCollected, donors: donorsCount };
-        if (justReached) updates.goal_reached_at = new Date().toISOString();
-        await supabase.from("cases").update(updates).eq("id", caseId);
-
-        // 5) Si l'objectif vient d'être atteint, envoyer l'email caseFunded à TOUS les donateurs
-        if (justReached) {
-          const beneficiaryName = caseRow.full_name || caseRow.beneficiary || "le bénéficiaire";
-          const caseTitleStr = typeof caseRow.title === "object"
-            ? (caseRow.title?.fr || caseRow.title?.en)
-            : caseRow.title;
-          for (const d of (confirmedDons || [])) {
-            if (d.donor_email) {
-              try {
-                await emailCaseFunded({
-                  donorEmail: d.donor_email,
-                  donorName: d.donor_name || "Donateur",
-                  caseTitle: caseTitleStr,
-                  beneficiary: beneficiaryName,
-                  totalRaised: totalCollected,
-                  trackingId: caseRow.tracking_id,
-                });
-              } catch(e) { console.warn("[caseFunded email] échec:", e); }
-            }
-          }
-          setMsg(fr ? "🎉 Objectif atteint ! Emails envoyés aux donateurs." : "🎉 Goal reached! Emails sent to donors.");
-        } else {
-          setMsg(fr ? "✅ Don confirmé !" : "✅ Donation confirmed!");
-        }
-      } else {
-        setMsg(fr ? "✅ Don confirmé !" : "✅ Donation confirmed!");
-      }
-    } else {
-      setMsg(fr ? "✅ Don confirmé !" : "✅ Donation confirmed!");
-    }
-
+    const { justReached } = await recomputeCaseTotalsAndNotify(donation.case_id);
+    setMsg(justReached
+      ? (fr ? "🎉 Objectif atteint ! Emails envoyés aux donateurs." : "🎉 Goal reached! Emails sent to donors.")
+      : (fr ? "✅ Don confirmé !" : "✅ Donation confirmed!"));
     setTimeout(() => setMsg(""), 4000);
     fetchDonations();
   };
