@@ -2382,8 +2382,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
         <div className="text-xs font-semibold text-gray-600 mb-2">{lang==="fr" ? "Moyen de paiement :" : "Payment method:"}</div>
         <div className="grid grid-cols-2 gap-2">
           {[
-            { id:"WAVE", emoji:"🌊", label:"Wave CI", active:"bg-blue-600 text-white border-blue-600", inactive:"bg-white text-gray-700 border-gray-200 hover:border-blue-400", disabled:false },
-            { id:"CARD", emoji:"💳", label:lang==="fr"?"Carte bancaire":"Bank card", active:"bg-gray-800 text-white border-gray-800", inactive:"bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed", disabled:true },
+            { id:"WAVE", emoji:"🌊", label:"Wave CI (QR)", active:"bg-blue-600 text-white border-blue-600", inactive:"bg-white text-gray-700 border-gray-200 hover:border-blue-400", disabled:false },
+            { id:"DUNYA", emoji:"💳", label:lang==="fr"?"Carte / Mobile Money":"Card / Mobile Money", active:"bg-emerald-600 text-white border-emerald-600", inactive:"bg-white text-gray-700 border-gray-200 hover:border-emerald-400", disabled:false },
           ].map(opt => (
             <button
               key={opt.id}
@@ -2844,28 +2844,35 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 );
               })()}
 
-              {/* ── Carte bancaire — Bientôt disponible ── */}
-              {provider === "CARD" && (
-                <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 text-center space-y-3">
-                  <div className="text-4xl">🏗️</div>
-                  <div className="font-black text-amber-800">
-                    {lang==="fr" ? "Paiement par carte bancaire — Bientôt disponible" : "Card payment — Coming soon"}
+              {/* ── Paiement PayDunya (Carte / Mobile Money / Wave / OM / MTN / Moov / DJAMO) ── */}
+              {provider === "DUNYA" && (
+                <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-5 text-center space-y-3">
+                  <div className="text-4xl">💳</div>
+                  <div className="font-black text-emerald-800">
+                    {lang==="fr" ? "Paiement sécurisé multi-méthodes" : "Secure multi-method payment"}
                   </div>
-                  <p className="text-sm text-amber-700 leading-relaxed">
+                  <p className="text-xs text-emerald-700 leading-relaxed">
                     {lang==="fr"
-                      ? "Nous travaillons à l'intégration des cartes Visa et Mastercard. En attendant, vous pouvez utiliser Wave CI (sans frais)."
-                      : "We're working on Visa and Mastercard integration. In the meantime, you can use Wave CI (no fees)."}
+                      ? "Vous allez être redirigé vers une page sécurisée où vous pourrez payer avec :"
+                      : "You'll be redirected to a secure page where you can pay with:"}
                   </p>
-                  <button
-                    onClick={() => setProvider("WAVE")}
-                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm"
-                  >
-                    🌊 {lang==="fr" ? "Utiliser Wave CI à la place" : "Use Wave CI instead"}
-                  </button>
+                  <div className="flex flex-wrap justify-center gap-1.5 text-[10px] text-emerald-700">
+                    <span className="bg-white px-2 py-1 rounded-full border border-emerald-200">💳 Visa/Mastercard</span>
+                    <span className="bg-white px-2 py-1 rounded-full border border-emerald-200">🌊 Wave</span>
+                    <span className="bg-white px-2 py-1 rounded-full border border-emerald-200">🟠 Orange Money</span>
+                    <span className="bg-white px-2 py-1 rounded-full border border-emerald-200">🟡 MTN MoMo</span>
+                    <span className="bg-white px-2 py-1 rounded-full border border-emerald-200">🔵 Moov</span>
+                    <span className="bg-white px-2 py-1 rounded-full border border-emerald-200">⚫ DJAMO</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-600 leading-relaxed">
+                    {lang==="fr"
+                      ? "Votre don sera automatiquement validé après paiement — pas besoin de revenir sur Ayyad."
+                      : "Your donation will be automatically validated after payment — no need to return to Ayyad."}
+                  </p>
                 </div>
               )}
 
-              {/* Boutons Modifier / Confirmer (Wave uniquement — carte a son propre bouton) */}
+              {/* Boutons Modifier / Confirmer */}
               {provider !== "CARD" && (
                 <>
                   {donError && (
@@ -2887,11 +2894,44 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         if (donSubmitting) return;
                         setDonError("");
                         setDonSubmitting(true);
-                        // On évite de stocker l'email entier comme nom public (RGPD)
                         const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
+
+                        // ── Cas DUNYA: on appelle /api/dunya/create-invoice et on redirige ──
+                        if (provider === "DUNYA") {
+                          try {
+                            const r = await fetch("/api/dunya/create-invoice", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                case_id: c.id,
+                                donor_id: user?.id || null,
+                                donor_name: _donName2,
+                                donor_email: anonymous ? null : (user?.email || null),
+                                amount: Number(amount),
+                                message: message || null,
+                                case_title: typeof c.title === "object" ? (c.title?.fr || c.title?.en) : c.title,
+                                tracking_id: c.tracking_id || c.trackingId,
+                                beneficiary: c.beneficiary,
+                              }),
+                            });
+                            const data = await r.json().catch(() => ({}));
+                            if (!r.ok || !data.payment_url) {
+                              setDonError(data.error || "Erreur lors de l'initialisation du paiement.");
+                              setDonSubmitting(false);
+                              return;
+                            }
+                            // Redirige vers PayDunya — le webhook fera la confirmation
+                            window.location.href = data.payment_url;
+                          } catch(err) {
+                            setDonError(err?.message || String(err));
+                            setDonSubmitting(false);
+                          }
+                          return;
+                        }
+
+                        // ── Cas WAVE (QR statique): flow actuel — insert pending + email ──
                         const refToUse = paymentRef || buildPaymentRef(c);
                         try {
-                          // Création du don via /api/donate (bypass RLS) avec fallback Supabase
                           const { error: insErr } = await createDonation({
                             case_id: c.id || null,
                             donor_id: user?.id || null,
@@ -2909,9 +2949,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
                             console.error("[donation insert] échec:", insErr);
                             setDonError(insErr);
                             setDonSubmitting(false);
-                            return; // pas d'email, pas de success
+                            return;
                           }
-                          // Succès → on stocke le contexte pour le certificat, on bascule sur l'écran de remerciement, on envoie l'email
                           setLastDonation({ donorName: anonymous?"Donateur anonyme":(_donName2||"Donateur"), amount: amountInFcfa });
                           setDonMode("success");
                           try {
@@ -2935,7 +2974,9 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       }}
                       className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md disabled:opacity-60"
                     >
-                      {donSubmitting ? (lang==="fr"?"Enregistrement…":"Saving…") : td.confirmBtn}
+                      {donSubmitting
+                        ? (provider === "DUNYA" ? (lang==="fr"?"Redirection…":"Redirecting…") : (lang==="fr"?"Enregistrement…":"Saving…"))
+                        : (provider === "DUNYA" ? (lang==="fr"?"Procéder au paiement →":"Proceed to payment →") : td.confirmBtn)}
                     </button>
                   </div>
                 </>
@@ -8519,6 +8560,144 @@ const TrackingPage = ({ setPage, setSelectedCase, lang }) => {
   );
 };
 
+// ── Page de retour PayDunya ──────────────────────────────────────────────────
+// Affichée après que le donateur ait terminé son paiement sur PayDunya.
+// L'URL contient ?p=dunya-return&don=<donation_id>
+// On poll /api/dunya/status pour suivre l'évolution (le webhook met du temps).
+const DunyaReturnPage = ({ setPage, lang }) => {
+  const fr = lang !== "en";
+  const [status, setStatus] = useState("loading"); // loading | confirmed | pending | cancelled | error
+  const [amount, setAmount] = useState(null);
+  const [pollCount, setPollCount] = useState(0);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const donId = params.get("don");
+    if (!donId) { setStatus("error"); return; }
+
+    let cancelled = false;
+    let pollTimer = null;
+    const maxPolls = 15; // ~30s à raison d'1 poll toutes les 2s
+    let polls = 0;
+
+    const pollStatus = async () => {
+      if (cancelled) return;
+      polls++;
+      setPollCount(polls);
+      try {
+        const r = await fetch(`/api/dunya/status?id=${encodeURIComponent(donId)}`);
+        if (!r.ok) {
+          if (polls >= maxPolls) { setStatus("error"); return; }
+          pollTimer = setTimeout(pollStatus, 2000);
+          return;
+        }
+        const data = await r.json();
+        if (data.amount) setAmount(data.amount);
+        if (data.status === "confirmed") {
+          setStatus("confirmed");
+          return;
+        }
+        if (data.status === "cancelled") {
+          setStatus("cancelled");
+          return;
+        }
+        // Encore pending — on continue à poller
+        if (polls >= maxPolls) {
+          setStatus("pending"); // on abandonne, le webhook viendra plus tard
+          return;
+        }
+        pollTimer = setTimeout(pollStatus, 2000);
+      } catch (e) {
+        if (polls >= maxPolls) setStatus("error");
+        else pollTimer = setTimeout(pollStatus, 2000);
+      }
+    };
+    pollStatus();
+    return () => { cancelled = true; if (pollTimer) clearTimeout(pollTimer); };
+  }, []);
+
+  return (
+    <div className="max-w-md mx-auto px-4 py-12 text-center">
+      {status === "loading" && (
+        <div className="space-y-4">
+          <div className="w-16 h-16 mx-auto rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin" />
+          <h2 className="text-xl font-black text-gray-900">{fr ? "Vérification du paiement…" : "Verifying payment…"}</h2>
+          <p className="text-sm text-gray-500">{fr ? "Cela peut prendre quelques secondes." : "This may take a few seconds."}</p>
+          <p className="text-xs text-gray-400">{fr ? "Tentative " : "Attempt "}{pollCount}/15</p>
+        </div>
+      )}
+
+      {status === "confirmed" && (
+        <div className="space-y-4">
+          <div className="w-20 h-20 mx-auto bg-emerald-100 rounded-full flex items-center justify-center text-4xl">🎉</div>
+          <h2 className="text-2xl font-black text-gray-900">{fr ? "Paiement confirmé !" : "Payment confirmed!"}</h2>
+          <p className="text-base text-gray-600">{fr ? "Merci pour votre don 💚" : "Thank you for your donation 💚"}</p>
+          {amount && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+              <p className="text-xs text-emerald-700">{fr ? "Montant débité" : "Amount charged"}</p>
+              <p className="text-2xl font-black text-emerald-700">{Math.round(amount).toLocaleString("fr-FR")} FCFA</p>
+            </div>
+          )}
+          <p className="text-sm text-gray-500 leading-relaxed">
+            {fr
+              ? "Un email de confirmation vient de vous être envoyé. Les fonds seront versés directement à l'hôpital partenaire."
+              : "A confirmation email has just been sent to you. The funds will be transferred directly to the partner hospital."}
+          </p>
+          <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
+            {fr ? "← Retour à l'accueil" : "← Back to home"}
+          </button>
+        </div>
+      )}
+
+      {status === "pending" && (
+        <div className="space-y-4">
+          <div className="w-20 h-20 mx-auto bg-amber-100 rounded-full flex items-center justify-center text-4xl">⏳</div>
+          <h2 className="text-xl font-black text-gray-900">{fr ? "Paiement en cours de traitement" : "Payment being processed"}</h2>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            {fr
+              ? "Votre paiement met un peu plus de temps que prévu à se confirmer. Pas d'inquiétude : si le débit a réussi, votre don sera validé automatiquement dans quelques minutes."
+              : "Your payment is taking longer than expected to confirm. Don't worry: if the debit succeeded, your donation will be validated automatically in a few minutes."}
+          </p>
+          <p className="text-xs text-gray-400">
+            {fr ? "Vous recevrez un email dès que c'est validé." : "You'll receive an email as soon as it's validated."}
+          </p>
+          <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
+            {fr ? "← Retour à l'accueil" : "← Back to home"}
+          </button>
+        </div>
+      )}
+
+      {status === "cancelled" && (
+        <div className="space-y-4">
+          <div className="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center text-4xl">❌</div>
+          <h2 className="text-xl font-black text-gray-900">{fr ? "Paiement annulé" : "Payment cancelled"}</h2>
+          <p className="text-sm text-gray-600">
+            {fr ? "Le paiement n'a pas été effectué. Vous n'avez pas été débité." : "The payment was not completed. You have not been charged."}
+          </p>
+          <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
+            {fr ? "← Retour à l'accueil" : "← Back to home"}
+          </button>
+        </div>
+      )}
+
+      {status === "error" && (
+        <div className="space-y-4">
+          <div className="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center text-4xl">⚠️</div>
+          <h2 className="text-xl font-black text-gray-900">{fr ? "Erreur" : "Error"}</h2>
+          <p className="text-sm text-gray-600">
+            {fr
+              ? "Impossible de vérifier l'état du paiement. Si vous avez été débité, contactez-nous : contact@ayyadci.com"
+              : "Unable to verify payment status. If you were charged, contact us at contact@ayyadci.com"}
+          </p>
+          <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
+            {fr ? "← Retour à l'accueil" : "← Back to home"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── FAQ Page ─────────────────────────────────────────────
 const FAQPage = ({ setPage, lang }) => {
   const [open, setOpen] = useState(null);
@@ -9163,6 +9342,7 @@ export default function AyyadApp() {
         {page==="changepassword"&&<ChangePasswordPage setPage={setPage} lang={lang} />}
       {page === "profile" && user && <ProfilePage user={user} lang={lang} setPage={setPage} />}
         {page==="faq"&&<FAQPage setPage={setPage} lang={lang} />}
+        {page==="dunya-return"&&<DunyaReturnPage setPage={setPage} lang={lang} />}
       </main>
       {showFooter&&<Footer setPage={setPage} lang={lang} />}
       <ChatWidget lang={lang} />
