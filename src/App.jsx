@@ -98,6 +98,90 @@ async function createDonation(payload) {
   return { error: null };
 }
 
+// ── Storage helpers ───────────────────────────────────────────────────────────
+// Configuration des 2 buckets :
+// - "case-photos"      : public, contient uniquement les visuels affichés sur les fiches collecte
+// - "medical-documents": privé, contient les pièces sensibles (CNI, rapports, devis, consentements)
+//   → accessibles uniquement via signed URL (admin ou propriétaire du dossier)
+const BUCKET_PUBLIC = "case-photos";
+const BUCKET_PRIVATE = "medical-documents";
+
+// Détecte si une valeur stockée est un path Storage (à signer) ou une URL publique (rétro-compat).
+// Les anciens uploads stockaient l'URL complète https://...supabase.co/storage/v1/object/public/...
+// Les nouveaux uploads stockent juste le path "dossiers/xxx/file.pdf".
+function isStoragePath(value) {
+  if (!value || typeof value !== "string") return false;
+  return !/^https?:\/\//i.test(value);
+}
+
+// Demande une signed URL au backend pour un path donné dans un bucket privé.
+// Renvoie l'URL signée (TTL 5 min) ou null en cas d'erreur.
+async function fetchSignedUrl({ bucket, path, caseId }) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) return null;
+    const r = await fetch("/api/sign-url", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({ bucket, path, case_id: caseId || null }),
+    });
+    if (!r.ok) return null;
+    const data = await r.json().catch(() => ({}));
+    return data.url || null;
+  } catch (e) {
+    console.warn("[fetchSignedUrl] échec:", e);
+    return null;
+  }
+}
+
+// React component : affiche un lien vers un document, en gérant URL publique
+// (legacy) ET path privé (nouveau format avec signed URL).
+// Usage : <SecureDocLink value={c.document_urls.medical} caseId={c.id}>🏥 Rapport médical</SecureDocLink>
+function SecureDocLink({ value, caseId, bucket = BUCKET_PRIVATE, className = "", children }) {
+  const [resolvedUrl, setResolvedUrl] = useState(null);
+  const [loading, setLoading] = useState(false);
+  if (!value) return null;
+  // Cas legacy : URL publique stockée → on l'utilise directement
+  const isLegacyPublicUrl = !isStoragePath(value);
+  if (isLegacyPublicUrl) {
+    return (
+      <a href={value} target="_blank" rel="noopener noreferrer" className={className}>
+        {children}
+      </a>
+    );
+  }
+  // Cas nouveau : path privé → on signe à la demande
+  const handleClick = async (e) => {
+    if (resolvedUrl) return; // déjà signé, laisse le lien naviguer
+    e.preventDefault();
+    if (loading) return;
+    setLoading(true);
+    const url = await fetchSignedUrl({ bucket, path: value, caseId });
+    setLoading(false);
+    if (url) {
+      setResolvedUrl(url);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } else {
+      alert("Impossible d'ouvrir ce document. Vérifiez vos droits.");
+    }
+  };
+  return (
+    <a
+      href={resolvedUrl || "#"}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={handleClick}
+      className={className}
+    >
+      {loading ? "⏳ Génération du lien..." : children}
+    </a>
+  );
+}
+
 // Applique fetchConfirmedTotals à une liste de cases et retourne la liste enrichie
 async function enrichCasesWithTotals(cases) {
   if (!Array.isArray(cases) || cases.length === 0) return cases || [];
@@ -3159,18 +3243,26 @@ const SubmitPage = ({ setPage, user, lang }) => {
     reader.readAsDataURL(file);
   };
 
+  // Photo de la collecte → bucket PUBLIC (case-photos), affichée à tous les visiteurs
   const handlePhotoUpload = async () => {
     if (!photoFile) return null;
     setPhotoUploading(true);
     const fileName = `dossiers/${sessionId}/photo_${Date.now()}_${sanitizeFileName(photoFile.name)}`;
-    const { error } = await supabase.storage.from("medical-documents").upload(fileName, photoFile);
-    if (error) { setPhotoUploading(false); return null; }
-    const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
+    const { error } = await supabase.storage.from(BUCKET_PUBLIC).upload(fileName, photoFile);
+    if (error) {
+      setPhotoUploading(false);
+      console.warn("[photo upload] échec:", error);
+      return null;
+    }
+    const { data: urlData } = supabase.storage.from(BUCKET_PUBLIC).getPublicUrl(fileName);
     setPhotoUrl(urlData.publicUrl);
     setPhotoUploading(false);
     return urlData.publicUrl;
   };
 
+  // Documents sensibles (medical, quote, id, consent) → bucket PRIVÉ
+  // On stocke uniquement le PATH dans la BDD, pas l'URL publique.
+  // L'admin / le propriétaire les consulte via /api/sign-url (signed URL TTL 5 min).
   const handleFileUpload = async (key, file) => {
     if (!file) return;
     setFileStates(prev => ({...prev, [key]: "uploading"}));
@@ -3178,10 +3270,14 @@ const SubmitPage = ({ setPage, user, lang }) => {
     const mimeMap = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' };
     const contentType = mimeMap[ext] || file.type || 'application/octet-stream';
     const fileName = `dossiers/${sessionId}/${key}_${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("medical-documents").upload(fileName, file, { contentType });
-    if (error) { setFileStates(prev => ({...prev, [key]: "error"})); return; }
-    const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
-    setFileUrls(prev => ({...prev, [key]: urlData.publicUrl}));
+    const { error } = await supabase.storage.from(BUCKET_PRIVATE).upload(fileName, file, { contentType });
+    if (error) {
+      setFileStates(prev => ({...prev, [key]: "error"}));
+      console.warn("[file upload] échec:", error);
+      return;
+    }
+    // ⚠️ On stocke le PATH (pas getPublicUrl) — le bucket sera privé
+    setFileUrls(prev => ({...prev, [key]: fileName}));
     setFileStates(prev => ({...prev, [key]: "done"}));
   };
 
@@ -5936,10 +6032,10 @@ const AdminPage = ({ user, setPage, lang }) => {
                         </div>
                         {c.description&&<p className="text-xs text-gray-600 line-clamp-2 mb-2">{c.description}</p>}
                         {c.photo_url&&<a href={c.photo_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline font-medium">📷 Photo</a>}
-                              {c.document_urls?.medical&&<a href={c.document_urls.medical} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">🏥 Rapport médical</a>}
-                              {c.document_urls?.quote&&<a href={c.document_urls.quote} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">💊 Devis</a>}
-                              {c.document_urls?.id&&<a href={c.document_urls.id} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">🪪 Pièce d'identité</a>}
-                              {c.document_urls?.consent&&<a href={c.document_urls.consent} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">✍️ Consentement</a>}
+                              {c.document_urls?.medical && <SecureDocLink value={c.document_urls.medical} caseId={c.id} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">🏥 Rapport médical</SecureDocLink>}
+                              {c.document_urls?.quote && <SecureDocLink value={c.document_urls.quote} caseId={c.id} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">💊 Devis</SecureDocLink>}
+                              {c.document_urls?.id && <SecureDocLink value={c.document_urls.id} caseId={c.id} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">🪪 Pièce d'identité</SecureDocLink>}
+                              {c.document_urls?.consent && <SecureDocLink value={c.document_urls.consent} caseId={c.id} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">✍️ Consentement</SecureDocLink>}
                             <button onClick={() => setRejectModal(c.id)} className="px-3 py-1.5 border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50">{t.reject}</button>
                         <button onClick={async()=>{if(editDeadline[c.id])await supabase.from("cases").update({deadline:editDeadline[c.id]}).eq("id",c.id);if(editVideoUrl[c.id])await supabase.from("cases").update({video_url:editVideoUrl[c.id]}).eq("id",c.id);approveCase(c.id);}} className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm">{t.approve}</button>
                       </div>
@@ -8556,15 +8652,15 @@ const ProfilePage = ({ user, lang, setPage }) => {
       setEditPhotoUploading(true);
       const ext = editPhotoFile.name.split('.').pop().toLowerCase();
       const fileName = `${basePath}/photo_${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("medical-documents").upload(fileName, editPhotoFile);
+      const { error: upErr } = await supabase.storage.from(BUCKET_PUBLIC).upload(fileName, editPhotoFile);
       if (!upErr) {
-        const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
+        const { data: urlData } = supabase.storage.from(BUCKET_PUBLIC).getPublicUrl(fileName);
         updates.photo_url = urlData.publicUrl;
       }
       setEditPhotoUploading(false);
     }
 
-    // Upload nouveaux documents si présents
+    // Upload nouveaux documents privés si présents (on stocke le PATH, pas l'URL)
     const existingDocs = currentCase?.document_urls || {};
     let newDocUrls = { ...existingDocs };
     const pendingDocs = editNewDocs.filter(d => d.file && d.status !== "done");
@@ -8576,11 +8672,11 @@ const ProfilePage = ({ user, lang, setPage }) => {
       const fileName = `${basePath}/${key}.${ext}`;
       const mimeMap = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' };
       const contentType = mimeMap[ext] || d.file.type || 'application/octet-stream';
-      const { error: docErr } = await supabase.storage.from("medical-documents").upload(fileName, d.file, { contentType });
+      const { error: docErr } = await supabase.storage.from(BUCKET_PRIVATE).upload(fileName, d.file, { contentType });
       if (!docErr) {
-        const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
-        newDocUrls[key] = urlData.publicUrl;
-        setEditNewDocs(prev => prev.map(x => x === d ? { ...x, status: "done", url: urlData.publicUrl } : x));
+        // ⚠️ On stocke le PATH (le bucket sera privé, accessible via signed URL)
+        newDocUrls[key] = fileName;
+        setEditNewDocs(prev => prev.map(x => x === d ? { ...x, status: "done", url: fileName } : x));
       } else {
         setEditNewDocs(prev => prev.map(x => x === d ? { ...x, status: "error" } : x));
       }
@@ -8737,13 +8833,13 @@ const ProfilePage = ({ user, lang, setPage }) => {
                     {c.document_urls && Object.keys(c.document_urls).length > 0 && (
                       <div className="mb-2 space-y-1">
                         {Object.entries(c.document_urls).map(([k, url]) => (
-                          <a key={k} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-emerald-600 hover:underline">
+                          <SecureDocLink key={k} value={url} caseId={c.id} className="flex items-center gap-1.5 text-xs text-emerald-600 hover:underline">
                             📎 {k === "medical" ? (lang === "fr" ? "Ordonnance/Devis" : "Medical/Quote") :
                                k === "quote" ? (lang === "fr" ? "Facture pro-forma" : "Pro-forma invoice") :
                                k === "id" ? (lang === "fr" ? "Pièce d'identité" : "ID document") :
                                k === "consent" ? (lang === "fr" ? "Formulaire consentement" : "Consent form") :
                                (lang === "fr" ? "Document supplémentaire" : "Additional document")}
-                          </a>
+                          </SecureDocLink>
                         ))}
                       </div>
                     )}

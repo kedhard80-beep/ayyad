@@ -52,24 +52,46 @@ export default async function handler(req, res) {
     const userData = await userRes.json();
     const email = (userData?.email || "").toLowerCase();
 
-    // Allowlist : seuls les admins déclarés peuvent demander une signed URL
-    if (ADMIN_EMAILS.length > 0 && !ADMIN_EMAILS.includes(email)) {
-      // Fallback : on vérifie aussi via la table admin_users (au cas où ADMIN_EMAILS pas configuré)
-      const adminCheck = await fetch(
-        `${SUPABASE_URL}/rest/v1/admin_users?email=eq.${encodeURIComponent(email)}&is_active=eq.true&select=email`,
-        { headers: { "apikey": SERVICE_KEY, "Authorization": `Bearer ${SERVICE_KEY}` } }
-      );
-      const rows = await adminCheck.json().catch(() => []);
-      if (!Array.isArray(rows) || rows.length === 0) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
+    const userId = userData?.id || null;
 
     // ── Validation des paramètres ────────────────────────────────────────
     const body = req.body || {};
     const bucket = String(body.bucket || "");
     const path = String(body.path || "");
+    const caseId = body.case_id || null; // optionnel : permet au patient de voir SES docs
     const expiresIn = Math.min(Number(body.expiresIn) || 300, 600); // 5 min par défaut, 10 min max
+
+    // ── Autorisation ─────────────────────────────────────────────────────
+    // Cas 1 : utilisateur admin (allowlist email + table admin_users)
+    let isAdmin = false;
+    if (ADMIN_EMAILS.length > 0 && ADMIN_EMAILS.includes(email)) {
+      isAdmin = true;
+    } else {
+      const adminCheck = await fetch(
+        `${SUPABASE_URL}/rest/v1/admin_users?email=eq.${encodeURIComponent(email)}&is_active=eq.true&select=email`,
+        { headers: { "apikey": SERVICE_KEY, "Authorization": `Bearer ${SERVICE_KEY}` } }
+      );
+      const rows = await adminCheck.json().catch(() => []);
+      if (Array.isArray(rows) && rows.length > 0) isAdmin = true;
+    }
+
+    // Cas 2 : propriétaire du dossier (le patient consulte SES propres docs)
+    let isOwner = false;
+    if (!isAdmin && caseId && userId) {
+      // Validation case_id format UUID
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(caseId)) {
+        const ownerCheck = await fetch(
+          `${SUPABASE_URL}/rest/v1/cases?id=eq.${caseId}&user_id=eq.${userId}&select=id`,
+          { headers: { "apikey": SERVICE_KEY, "Authorization": `Bearer ${SERVICE_KEY}` } }
+        );
+        const rows = await ownerCheck.json().catch(() => []);
+        if (Array.isArray(rows) && rows.length > 0) isOwner = true;
+      }
+    }
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
 
     if (!ALLOWED_BUCKETS.has(bucket)) return res.status(400).json({ error: "Invalid bucket" });
     if (!path || !SAFE_PATH.test(path) || path.includes("..")) return res.status(400).json({ error: "Invalid path" });
