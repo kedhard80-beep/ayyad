@@ -2743,6 +2743,26 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
             {/* ÉTAPE 3 — Confirmation */}
             {donMode==="confirm" && <div className="space-y-5">
+              {/* Protection contre les dossiers de démonstration : empêche les vrais paiements sur des collectes de vitrine */}
+              {(c._isDemo || c._mock) && (
+                <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 text-center space-y-2">
+                  <div className="text-3xl">🎬</div>
+                  <div className="font-black text-amber-800 text-sm">
+                    {lang==="fr" ? "Collecte de démonstration" : "Demo campaign"}
+                  </div>
+                  <p className="text-xs text-amber-700 leading-relaxed">
+                    {lang==="fr"
+                      ? "Cette fiche est un exemple présenté à des fins de démonstration. Pour faire un vrai don, choisissez une collecte active depuis la liste."
+                      : "This is a demonstration example. To make a real donation, choose an active campaign from the list."}
+                  </p>
+                  <button
+                    onClick={() => setPage("collectes")}
+                    className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs"
+                  >
+                    {lang==="fr" ? "Voir les vraies collectes →" : "See real campaigns →"}
+                  </button>
+                </div>
+              )}
               <div className="text-center"><div className="text-4xl mb-2">💚</div><h3 className="font-black text-lg text-gray-900">{td.confirm}</h3><p className="text-sm text-gray-500">{td.verifyDon}</p></div>
               <div className="bg-gray-50 rounded-2xl p-4 space-y-3 text-sm">
                 {[[td.debited,fmt(Number(amount))],[td.beneficiary,c.beneficiary],[td.via,provider==="WAVE"?"🌊 Wave":"💳 "+(lang==="fr"?"Carte":"Card")],[td.anonymity, anonymous ? "👤"+(lang==="fr"?"Anonyme":"Anonymous") : "👤 "+(lang==="fr"?"Avec compte":"With account")]].map(([k,v],i) => (
@@ -2889,9 +2909,13 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm disabled:opacity-50"
                     >{td.modify}</button>
                     <button
-                      disabled={donSubmitting}
+                      disabled={donSubmitting || c._isDemo || c._mock}
                       onClick={async () => {
                         if (donSubmitting) return;
+                        if (c._isDemo || c._mock) {
+                          setDonError(lang==="fr" ? "Cette collecte est un exemple. Choisissez une vraie collecte." : "This is a demo. Pick a real campaign.");
+                          return;
+                        }
                         setDonError("");
                         setDonSubmitting(true);
                         const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
