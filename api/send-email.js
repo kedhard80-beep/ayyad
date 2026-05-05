@@ -6,10 +6,45 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || "kedhard80@gmail.com";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || "";
 const FROM_EMAIL = "Ayyad <noreply@ayyadci.com>";
 const REPLY_TO = "contact@ayyadci.com";
 const SITE_URL = "https://ayyadci.com";
+
+// ── CORS strict : on n'autorise que les origines de confiance ────────────────
+const ALLOWED_ORIGINS = new Set([
+  "https://ayyadci.com",
+  "https://www.ayyadci.com",
+  "https://ayyad.vercel.app", // legacy
+]);
+
+// ── Anti-XSS : escape des variables avant injection HTML ─────────────────────
+const escapeHtml = (v) => {
+  if (v === null || v === undefined) return "";
+  return String(v)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+};
+
+// ── Rate-limit en mémoire (best-effort, par instance) ────────────────────────
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 min
+const RATE_LIMIT_MAX = 10;          // 10 emails/min/IP
+const ipBuckets = new Map();
+const rateLimitOk = (ip) => {
+  const now = Date.now();
+  const bucket = ipBuckets.get(ip) || [];
+  const recent = bucket.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT_MAX) return false;
+  recent.push(now);
+  ipBuckets.set(ip, recent);
+  return true;
+};
+
+// ── Validation email basique (RFC light) ─────────────────────────────────────
+const isEmail = (s) => typeof s === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s) && s.length <= 254;
 
 // ── Header HTML commun à tous les emails ─────────────────────────────────────
 const header = () => `
@@ -34,48 +69,52 @@ const wrap = (inner) => `
   </div>`;
 
 // ── Helpers pour normaliser les valeurs envoyées par le frontend ─────────────
-// title peut arriver comme string OU comme objet { fr, en } selon le call site
+// Toutes les valeurs sont escape() après normalisation pour anti-XSS dans les emails.
 const normTitle = (t) => {
   if (!t) return "—";
-  if (typeof t === "string") return t;
-  if (typeof t === "object") return t.fr || t.en || Object.values(t)[0] || "—";
-  return String(t);
+  if (typeof t === "string") return escapeHtml(t.slice(0, 200));
+  if (typeof t === "object") return escapeHtml(String(t.fr || t.en || Object.values(t)[0] || "—").slice(0, 200));
+  return escapeHtml(String(t).slice(0, 200));
 };
 
-// amount peut arriver formaté ("1 000 FCFA"), brut (1000), ou string numérique ("5000000")
-// On évite la duplication "FCFA FCFA" et on formate les nombres avec espaces
 const normAmount = (a) => {
   if (a === null || a === undefined || a === "") return "—";
-  // Déjà un nombre → format français + FCFA
-  if (typeof a === "number") return new Intl.NumberFormat("fr-FR").format(a) + " FCFA";
+  if (typeof a === "number") return new Intl.NumberFormat("fr-FR").format(Math.max(0, Math.min(1e10, a))) + " FCFA";
   if (typeof a === "string") {
-    // Déjà formaté avec une devise → on retourne tel quel
-    if (/FCFA|EUR|USD|€|\$/i.test(a)) return a;
-    // String purement numérique (avec ou sans espaces) → on parse et reformate
-    const cleaned = a.replace(/\s/g, "");
+    const s = a.slice(0, 50); // borne taille
+    if (/FCFA|EUR|USD|€|\$/i.test(s)) return escapeHtml(s);
+    const cleaned = s.replace(/\s/g, "");
     if (/^\d+(\.\d+)?$/.test(cleaned)) {
-      return new Intl.NumberFormat("fr-FR").format(Number(cleaned)) + " FCFA";
+      const n = Math.max(0, Math.min(1e10, Number(cleaned)));
+      return new Intl.NumberFormat("fr-FR").format(n) + " FCFA";
     }
-    // Sinon on append FCFA brut
-    return a + " FCFA";
+    return escapeHtml(s) + " FCFA";
   }
-  return String(a);
+  return escapeHtml(String(a));
 };
 
-// Nom : peut arriver en object aussi (rare mais on sécurise)
 const normName = (n) => {
   if (!n) return "";
-  if (typeof n === "string") return n;
-  if (typeof n === "object") return n.fr || n.en || Object.values(n)[0] || "";
-  return String(n);
+  if (typeof n === "string") return escapeHtml(n.slice(0, 80));
+  if (typeof n === "object") return escapeHtml(String(n.fr || n.en || Object.values(n)[0] || "").slice(0, 80));
+  return escapeHtml(String(n).slice(0, 80));
 };
+
+// trackingId doit être strictement alphanumérique + tirets (format AYD-2026-MM-NNN ou hex legacy)
+const normTrackingId = (t) => {
+  if (!t) return "";
+  const s = String(t).slice(0, 32);
+  return /^[A-Z0-9-]+$/i.test(s) ? s : "";
+};
+
+// reason (motif rejet) — texte libre mais on escape + on borne taille
+const normReason = (r) => escapeHtml(String(r || "").slice(0, 500));
 
 // ── Templates ────────────────────────────────────────────────────────────────
 const templates = {
 
-  // 1) Confirmation de don envoyée au donateur
   donConfirm: ({ donorName, amount, beneficiary, caseTitle, trackingId }) => ({
-    subject: `✅ Don de ${normAmount(amount)} enregistré — Ayyad`,
+    subject: `Don de ${normAmount(amount)} enregistre - Ayyad`,
     html: wrap(`
       <h2 style="color:#111;margin-top:0">Merci ${normName(donorName)} pour votre don 💚</h2>
       <p style="color:#6b7280">Votre don a bien été enregistré :</p>
@@ -86,62 +125,58 @@ const templates = {
       </div>
       <p style="color:#6b7280;font-size:14px">Les fonds seront versés directement à l'hôpital partenaire. Aucuns frais cachés.</p>
       <p style="color:#6b7280;font-size:14px">Merci de soutenir la vie. 🙏</p>
-      <a href="${SITE_URL}${trackingId ? `/?case=${trackingId}` : ""}" style="background:#0d5c2e;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px;font-size:13px">Suivre la collecte →</a>
+      <a href="${SITE_URL}${normTrackingId(trackingId) ? `/?case=${normTrackingId(trackingId)}` : ""}" style="background:#0d5c2e;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px;font-size:13px">Suivre la collecte →</a>
     `)
   }),
 
-  // 2) Notification admin : nouveau dossier soumis
   newCase: ({ caseTitle, hospital, city, amount, trackingId }) => ({
-    subject: `📋 Nouveau dossier soumis : ${normTitle(caseTitle)}`,
+    subject: `Nouveau dossier soumis : ${normTitle(caseTitle)}`,
     html: wrap(`
       <h2 style="color:#111;margin-top:0">📋 Nouveau dossier à vérifier</h2>
       <div style="background:#fefce8;border-radius:8px;padding:16px;margin:16px 0;border:1px solid #fde047">
         <p style="margin:4px 0"><strong>Titre :</strong> ${normTitle(caseTitle)}</p>
-        <p style="margin:4px 0"><strong>Hôpital :</strong> ${hospital || "—"}</p>
-        <p style="margin:4px 0"><strong>Ville :</strong> ${city || "—"}</p>
+        <p style="margin:4px 0"><strong>Hôpital :</strong> ${normName(hospital) || "—"}</p>
+        <p style="margin:4px 0"><strong>Ville :</strong> ${normName(city) || "—"}</p>
         <p style="margin:4px 0"><strong>Montant demandé :</strong> ${normAmount(amount)}</p>
-        ${trackingId ? `<p style="margin:4px 0"><strong>Tracking :</strong> <span style="font-family:monospace">${trackingId}</span></p>` : ""}
+        ${normTrackingId(trackingId) ? `<p style="margin:4px 0"><strong>Tracking :</strong> <span style="font-family:monospace">${normTrackingId(trackingId)}</span></p>` : ""}
       </div>
       <a href="${SITE_URL}/admin" style="background:#0d5c2e;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px">Ouvrir le dashboard Admin →</a>
     `)
   }),
 
-  // 3) Dossier approuvé : envoyé au patient
   caseApproved: ({ beneficiaryName, caseTitle, trackingId }) => ({
-    subject: `🎉 Votre dossier a été approuvé — Ayyad`,
+    subject: `Votre dossier a ete approuve - Ayyad`,
     html: wrap(`
       <h2 style="color:#111;margin-top:0">🎉 Bonne nouvelle, ${normName(beneficiaryName)}!</h2>
       <p style="color:#6b7280">Votre dossier <strong>${normTitle(caseTitle)}</strong> a été vérifié et approuvé par l'équipe Ayyad. La collecte est maintenant en ligne.</p>
       <div style="background:#f0fdf4;border-radius:8px;padding:16px;margin:16px 0">
-        <p style="margin:4px 0"><strong>ID de suivi :</strong> <span style="font-family:monospace;color:#0d5c2e">${trackingId || "—"}</span></p>
+        <p style="margin:4px 0"><strong>ID de suivi :</strong> <span style="font-family:monospace;color:#0d5c2e">${normTrackingId(trackingId) || "—"}</span></p>
         <p style="margin:4px 0;font-size:13px;color:#6b7280">Conservez cet identifiant pour suivre votre collecte.</p>
       </div>
       <p style="color:#6b7280;font-size:14px">Partagez le lien de votre collecte avec vos proches pour maximiser les dons.</p>
-      <a href="${SITE_URL}/?case=${trackingId || ""}" style="background:#0d5c2e;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px">Voir ma collecte →</a>
+      <a href="${SITE_URL}/?case=${normTrackingId(trackingId)}" style="background:#0d5c2e;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px">Voir ma collecte →</a>
     `)
   }),
 
-  // 4) Dossier rejeté : envoyé au patient
   caseRejected: ({ beneficiaryName, caseTitle, reason }) => ({
-    subject: `ℹ️ Mise à jour de votre dossier — Ayyad`,
+    subject: `Mise a jour de votre dossier - Ayyad`,
     html: wrap(`
       <h2 style="color:#111;margin-top:0">Mise à jour de votre dossier${beneficiaryName ? ", " + normName(beneficiaryName) : ""}</h2>
       <p style="color:#6b7280">Après vérification, votre dossier <strong>${normTitle(caseTitle)}</strong> n'a pas pu être approuvé en l'état.</p>
-      ${reason ? `<div style="background:#fef2f2;border-radius:8px;padding:16px;margin:16px 0;border:1px solid #fecaca"><p style="margin:0;color:#b91c1c"><strong>Motif :</strong> ${reason}</p></div>` : ""}
+      ${reason ? `<div style="background:#fef2f2;border-radius:8px;padding:16px;margin:16px 0;border:1px solid #fecaca"><p style="margin:0;color:#b91c1c"><strong>Motif :</strong> ${normReason(reason)}</p></div>` : ""}
       <p style="color:#6b7280;font-size:14px">Vous pouvez soumettre un nouveau dossier avec des documents complets et conformes.</p>
       <p style="color:#6b7280;font-size:14px">Pour toute question, contactez-nous à <a href="mailto:${REPLY_TO}" style="color:#0d5c2e">${REPLY_TO}</a>.</p>
       <a href="${SITE_URL}" style="background:#6b7280;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px">Soumettre un nouveau dossier →</a>
     `)
   }),
 
-  // 5) Bienvenue patient : envoyé juste après soumission (avant validation admin)
   welcomePatient: ({ beneficiaryName, caseTitle, trackingId }) => ({
-    subject: `📨 Votre dossier a bien été reçu — Ayyad`,
+    subject: `Votre dossier a bien ete recu - Ayyad`,
     html: wrap(`
       <h2 style="color:#111;margin-top:0">Bonjour ${normName(beneficiaryName)}, merci pour votre confiance 🙏</h2>
       <p style="color:#6b7280">Votre dossier <strong>${normTitle(caseTitle)}</strong> a bien été reçu par notre équipe.</p>
       <div style="background:#f0fdf4;border-radius:8px;padding:16px;margin:16px 0">
-        <p style="margin:4px 0"><strong>ID de suivi :</strong> <span style="font-family:monospace;color:#0d5c2e">${trackingId || "—"}</span></p>
+        <p style="margin:4px 0"><strong>ID de suivi :</strong> <span style="font-family:monospace;color:#0d5c2e">${normTrackingId(trackingId) || "—"}</span></p>
         <p style="margin:4px 0;font-size:13px;color:#6b7280">Notez bien cet identifiant — il vous permettra de suivre l'avancement.</p>
       </div>
       <h3 style="color:#111;font-size:16px;margin-top:24px">📋 Prochaines étapes</h3>
@@ -155,9 +190,8 @@ const templates = {
     `)
   }),
 
-  // 6) Collecte atteinte : envoyé à chaque donateur quand l'objectif est atteint
   caseFunded: ({ donorName, caseTitle, beneficiary, totalRaised, trackingId }) => ({
-    subject: `🎯 Objectif atteint pour ${normName(beneficiary) || normTitle(caseTitle) || "la collecte"} ! Merci 💚`,
+    subject: `Objectif atteint pour ${normName(beneficiary) || normTitle(caseTitle) || "la collecte"} - Merci 💚`,
     html: wrap(`
       <h2 style="color:#111;margin-top:0">🎯 Objectif atteint, ${normName(donorName)}!</h2>
       <p style="color:#6b7280">Grâce à votre soutien et celui de la communauté, la collecte a atteint son objectif.</p>
@@ -170,20 +204,29 @@ const templates = {
       <p style="color:#6b7280;font-size:14px">Les fonds vont être versés à l'hôpital partenaire pour la prise en charge de <strong>${normName(beneficiary)}</strong>.</p>
       <p style="color:#6b7280;font-size:14px">Vous recevrez une mise à jour avec un retour sur l'opération dès qu'elle sera disponible.</p>
       <p style="color:#6b7280;font-size:14px">Merci de transformer une vie. 💚</p>
-      <a href="${SITE_URL}/?case=${trackingId || ""}" style="background:#0d5c2e;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px">Voir le détail →</a>
+      <a href="${SITE_URL}/?case=${normTrackingId(trackingId)}" style="background:#0d5c2e;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px">Voir le détail →</a>
     `)
   }),
 };
 
 // ── Handler principal ────────────────────────────────────────────────────────
 export default async function handler(req, res) {
-  // CORS (utile pour vercel dev local)
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  // CORS strict : on autorise uniquement les origines de confiance
+  const origin = req.headers.origin || "";
+  const allowedOrigin = ALLOWED_ORIGINS.has(origin) ? origin : "https://ayyadci.com";
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  // Rate-limiting basique par IP
+  const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket?.remoteAddress || "unknown";
+  if (!rateLimitOk(ip)) {
+    return res.status(429).json({ error: "Too many requests" });
+  }
 
   if (!RESEND_API_KEY) {
     console.error("RESEND_API_KEY manquante dans les variables d'environnement");
@@ -191,20 +234,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { type, to, data } = req.body || {};
+    const body = req.body || {};
+    const type = String(body.type || "").slice(0, 50);
+    const data = (body.data && typeof body.data === "object") ? body.data : {};
+    const to = body.to;
 
     if (!type || !templates[type]) {
-      return res.status(400).json({ error: `Unknown template type: ${type}` });
+      return res.status(400).json({ error: "Invalid template type" });
     }
 
-    const { subject, html } = templates[type](data || {});
+    const { subject, html } = templates[type](data);
 
     // Destinataires : si vide, fallback admin (pour les notifications internes)
-    let recipients = Array.isArray(to) ? to : (to ? [to] : [ADMIN_EMAIL]);
-    recipients = recipients.filter(Boolean);
+    let recipients = Array.isArray(to) ? to : (to ? [to] : (ADMIN_EMAIL ? [ADMIN_EMAIL] : []));
+    recipients = recipients.filter(isEmail).slice(0, 10); // max 10 destinataires par appel
 
     if (recipients.length === 0) {
-      return res.status(400).json({ error: "No recipients provided" });
+      return res.status(400).json({ error: "No valid recipients" });
     }
 
     // Appel Resend
@@ -223,17 +269,18 @@ export default async function handler(req, res) {
       }),
     });
 
-    const result = await resendRes.json();
+    const result = await resendRes.json().catch(() => ({}));
 
     if (!resendRes.ok) {
-      console.error("Resend API error:", result);
-      return res.status(resendRes.status).json({ error: "Resend API error", details: result });
+      // On log côté serveur mais on ne renvoie PAS le détail au client
+      console.error("Resend API error:", resendRes.status, result);
+      return res.status(502).json({ error: "Email provider error" });
     }
 
-    return res.status(200).json({ success: true, id: result.id, type, recipients });
+    return res.status(200).json({ success: true, id: result.id });
 
   } catch (err) {
     console.error("Email handler error:", err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: "Internal server error" });
   }
 }

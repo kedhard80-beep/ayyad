@@ -115,7 +115,9 @@ async function enrichCasesWithTotals(cases) {
 // ── Email helpers (appellent /api/send-email côté serveur) ───────────────────
 // Les templates HTML et la clé Resend vivent dans /api/send-email.js (server-side).
 // Ici on n'expose plus aucune clé API au client.
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "kedhard80@gmail.com";
+// L'email admin est résolu côté serveur dans /api/send-email (process.env.ADMIN_EMAIL).
+// On ne le hardcode plus dans le bundle JS pour éviter le doxing du fondateur.
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "";
 
 const sendEmail = async ({ type, to, data }) => {
   try {
