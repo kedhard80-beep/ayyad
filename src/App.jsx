@@ -5598,6 +5598,8 @@ const AdminPage = ({ user, setPage, lang }) => {
   const [showAddStaff,    setShowAddStaff]    = useState(false);
   const [alerts, setAlerts] = useState(MOCK_ALERTS);
   const [rejectModal, setRejectModal] = useState(null);
+  const [deleteModal, setDeleteModal] = useState(null); // { id, title, donationsCount, collected }
+  const [deleting, setDeleting] = useState(false);
   const [editDeadline, setEditDeadline] = useState({});
   const [editVideoUrl, setEditVideoUrl] = useState({}); // { caseId: "https://..." }
   const [rejectReason, setRejectReason] = useState("");
@@ -5798,6 +5800,59 @@ const AdminPage = ({ user, setPage, lang }) => {
     }
   };
 
+  // Ouvre la modal de suppression d'une collecte (avec décompte des dons à supprimer)
+  const askDeleteCase = async (id) => {
+    const c = cases.find(x => x.id === id);
+    if (!c) return;
+    // On compte les dons confirmés liés pour bien prévenir l'admin
+    const { data: dons } = await supabase
+      .from("donations")
+      .select("id, amount_fcfa, amount, status")
+      .eq("case_id", id);
+    const confirmedDons = (dons || []).filter(d => d.status === "confirmed");
+    const totalCollected = confirmedDons.reduce((s, d) => s + Number(d.amount_fcfa || d.amount || 0), 0);
+    setDeleteModal({
+      id,
+      title: typeof c.title === "object" ? (c.title.fr || c.title.en) : (c.title || id),
+      tracking: c.tracking_id || id.slice(0, 8),
+      donationsCount: (dons || []).length,
+      collected: totalCollected,
+    });
+  };
+
+  // Suppression cascade : donations → case_updates → cases.
+  // Réservé aux super_admin. Audit log obligatoire.
+  const deleteCase = async () => {
+    if (!deleteModal) return;
+    if (user?.adminRole !== "super_admin") {
+      alert(lang==="fr" ? "Seuls les super_admin peuvent supprimer une collecte." : "Only super_admins can delete a case.");
+      return;
+    }
+    setDeleting(true);
+    const id = deleteModal.id;
+    try {
+      // 1) Supprimer les dons liés (sinon contrainte FK bloque)
+      const { error: e1 } = await supabase.from("donations").delete().eq("case_id", id);
+      if (e1) throw new Error("Donations: " + e1.message);
+
+      // 2) Supprimer les case_updates liés (journal patient — best effort, on ne bloque pas)
+      try { await supabase.from("case_updates").delete().eq("case_id", id); } catch(_) {}
+
+      // 3) Supprimer la collecte
+      const { error: e3 } = await supabase.from("cases").delete().eq("id", id);
+      if (e3) throw new Error("Cases: " + e3.message);
+
+      // Audit + UI refresh
+      auditLog(user, "CASE_DELETED", deleteModal.title, deleteModal.tracking, "DELETED");
+      setCases(prev => prev.filter(x => x.id !== id));
+      setDeleteModal(null);
+    } catch(err) {
+      alert((lang==="fr" ? "Erreur lors de la suppression : " : "Delete error: ") + err.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const pendingCases = cases.filter(c => c.status==="PENDING");
   const activeCases = cases.filter(c => ["APPROVED","COLLECTING"].includes(c.status));
 
@@ -5844,6 +5899,53 @@ const AdminPage = ({ user, setPage, lang }) => {
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => setRejectModal(null)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{lang==="fr"?"Annuler":"Cancel"}</button>
               <button onClick={() => rejectCase(rejectModal)} className="bg-red-600 text-white font-bold py-3 rounded-xl text-sm shadow-md">{t.rejectBtn}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmation de suppression de collecte */}
+      {deleteModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4" onClick={() => !deleting && setDeleteModal(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-2xl shrink-0">⚠️</div>
+              <div>
+                <h3 className="font-black text-lg text-gray-900">
+                  {lang==="fr" ? "Supprimer définitivement cette collecte ?" : "Delete this case permanently?"}
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  {lang==="fr" ? "Cette action est irréversible." : "This action cannot be undone."}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-3 text-sm space-y-1.5 mb-4">
+              <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Tracking :":"Tracking:"}</span><span className="font-mono font-semibold">{deleteModal.tracking}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Titre :":"Title:"}</span><span className="font-semibold text-right truncate ml-2 max-w-[60%]" title={deleteModal.title}>{deleteModal.title}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Dons à supprimer :":"Donations to delete:"}</span><span className="font-bold text-red-600">{deleteModal.donationsCount}</span></div>
+              {deleteModal.collected > 0 && (
+                <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Montant collecté :":"Total collected:"}</span><span className="font-bold text-red-600">{deleteModal.collected.toLocaleString("fr-FR")} FCFA</span></div>
+              )}
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 mb-4 leading-relaxed">
+              {lang==="fr"
+                ? <>⚠️ Tous les dons confirmés associés seront <strong>définitivement supprimés</strong>. Si des donateurs ont versé de l'argent sur cette collecte, cela <strong>n'annule pas</strong> les transactions Wave/PayDunya — il s'agit d'une suppression côté Ayyad uniquement.</>
+                : <>⚠️ All confirmed donations associated will be <strong>permanently deleted</strong>. If donors paid for this case, this <strong>does not refund</strong> the Wave/PayDunya transactions — this is an Ayyad-side deletion only.</>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                disabled={deleting}
+                onClick={() => setDeleteModal(null)}
+                className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm disabled:opacity-50"
+              >{lang==="fr"?"Annuler":"Cancel"}</button>
+              <button
+                disabled={deleting}
+                onClick={deleteCase}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl text-sm shadow-md disabled:opacity-60"
+              >{deleting ? (lang==="fr"?"Suppression…":"Deleting…") : (lang==="fr"?"🗑️ Supprimer définitivement":"🗑️ Delete permanently")}</button>
             </div>
           </div>
         </div>
@@ -6006,6 +6108,16 @@ const AdminPage = ({ user, setPage, lang }) => {
                             }}
                             className={`text-xs px-2.5 py-1 rounded-full font-bold border transition-all flex-shrink-0 ${c.urgent ? "bg-red-100 text-red-600 border-red-200 hover:bg-red-200" : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200"}`}>
                             {c.urgent ? "🔕 Retirer urgent" : "🚨 Marquer urgent"}
+                          </button>
+                        )}
+                        {/* Bouton Supprimer — visible uniquement pour super_admin */}
+                        {user?.adminRole === "super_admin" && !c._isDemo && !c._mock && (
+                          <button
+                            onClick={() => askDeleteCase(c.id)}
+                            title={lang==="fr"?"Supprimer définitivement":"Delete permanently"}
+                            className="text-xs px-2.5 py-1 rounded-full font-bold border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-all flex-shrink-0"
+                          >
+                            🗑️ {lang==="fr"?"Supprimer":"Delete"}
                           </button>
                         )}
                       </div>
