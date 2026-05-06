@@ -191,7 +191,11 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({ status: "cancelled" }),
       }).catch(() => {});
-      return res.status(502).json({ error: "Payment provider error" });
+      // En mode test on expose le vrai message PayDunya pour faciliter le debug
+      const debugMsg = PAYDUNYA_MODE !== "live"
+        ? (dunyaResult.response_text || dunyaResult.description || JSON.stringify(dunyaResult).slice(0, 300))
+        : "Payment provider error";
+      return res.status(502).json({ error: "Payment provider error", debug: debugMsg, code: dunyaResult.response_code });
     }
 
     // ── 3) Stocker le token PayDunya dans la donation pour matching webhook ──

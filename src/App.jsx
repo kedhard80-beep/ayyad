@@ -1395,7 +1395,8 @@ const SupportAyyadSection = ({ lang }) => {
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok || !data.payment_url) {
-        setError(data.error || (fr ? "Erreur lors de l'initialisation du paiement." : "Payment initialization error."));
+        const detail = data.debug ? ` — ${data.debug}` : "";
+        setError((data.error || (fr ? "Erreur lors de l'initialisation du paiement." : "Payment initialization error.")) + detail);
         setSubmitting(false);
         return;
       }
@@ -2807,7 +2808,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
                             });
                             const data = await r.json().catch(() => ({}));
                             if (!r.ok || !data.payment_url) {
-                              setDonError(data.error || "Erreur lors de l'initialisation du paiement.");
+                              const detail = data.debug ? ` — ${data.debug}` : "";
+                              setDonError((data.error || "Erreur lors de l'initialisation du paiement.") + detail);
                               setDonSubmitting(false);
                               return;
                             }
