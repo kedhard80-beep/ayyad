@@ -1357,10 +1357,9 @@ const SupportAyyadSection = ({ lang }) => {
   const fr = lang === "fr";
   const [currency, setCurrency] = useState("FCFA");
   const [amount,   setAmount]   = useState("");
-  const [payMode,  setPayMode]  = useState("WAVE"); // WAVE | CARD
-  const [step,     setStep]     = useState("form"); // form | wave_qr | card_form | success
+  const [submitting, setSubmitting] = useState(false);
+  const [error,    setError]    = useState("");
 
-  const WAVE_NUMBER = AYYAD_ACCOUNTS.WAVE.numero.replace(/\s/g,"");
   const CURRENCIES = [
     { code:"FCFA", symbol:"FCFA", min:500, step:500 },
     { code:"EUR",  symbol:"€",    min:1,   step:1   },
@@ -1371,8 +1370,6 @@ const SupportAyyadSection = ({ lang }) => {
   const isValid      = numericAmount >= curInfo.min;
   const RATES        = { FCFA:1, EUR:655.957, USD:600 };
   const amountFCFA   = Math.round(numericAmount * (RATES[currency] || 1));
-  const waveData     = `wave://pay?to=${WAVE_NUMBER}&amount=${amountFCFA}&note=Don+Ayyad`;
-  const qrUrl        = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(waveData)}&size=200x200&margin=10&color=1d4ed8`;
 
   const displayAmount = amount
     ? (currency === "FCFA"
@@ -1380,7 +1377,34 @@ const SupportAyyadSection = ({ lang }) => {
         : `${curInfo.symbol}${Number(amount).toLocaleString("fr")}`)
     : "";
 
-  const reset = () => { setStep("form"); setAmount(""); };
+  const handlePay = async () => {
+    if (!isValid || submitting) return;
+    setError("");
+    setSubmitting(true);
+    try {
+      const r = await fetch("/api/dunya/create-invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          // Pas de case_id : c'est un don direct à la plateforme Ayyad
+          amount: amountFCFA,
+          currency: "FCFA",
+          case_title: fr ? "Soutien à la plateforme Ayyad" : "Support to the Ayyad platform",
+          beneficiary: "Ayyad CI",
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data.payment_url) {
+        setError(data.error || (fr ? "Erreur lors de l'initialisation du paiement." : "Payment initialization error."));
+        setSubmitting(false);
+        return;
+      }
+      window.location.href = data.payment_url;
+    } catch (err) {
+      setError(err?.message || String(err));
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 text-white">
@@ -1396,121 +1420,67 @@ const SupportAyyadSection = ({ lang }) => {
         </p>
 
         <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 max-w-sm mx-auto space-y-4">
-
-          {/* ── SUCCÈS ── */}
-          {step === "success" && (
-            <div className="text-center space-y-4 py-2">
-              <div className="w-16 h-16 bg-emerald-500/30 rounded-full flex items-center justify-center mx-auto text-3xl">🎉</div>
-              <h3 className="font-black text-xl">{fr ? "Merci pour votre soutien !" : "Thank you for your support!"}</h3>
-              <p className="text-emerald-200 text-sm">{fr ? "Chaque contribution aide Ayyad à rester gratuit pour les patients." : "Every contribution helps Ayyad stay free for patients."}</p>
-              <button onClick={reset} className="w-full border border-white/30 text-white font-semibold py-2.5 rounded-xl text-sm hover:bg-white/10">
-                {fr ? "Faire un autre don" : "Donate again"}
-              </button>
+          {/* Devise */}
+          <div>
+            <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Devise" : "Currency"}</div>
+            <div className="flex gap-2">
+              {CURRENCIES.map(c => (
+                <button key={c.code} onClick={() => { setCurrency(c.code); setAmount(""); }}
+                  className={`flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-all ${currency===c.code ? "bg-emerald-500 border-emerald-400 text-white" : "bg-white/10 border-white/20 text-emerald-200 hover:bg-white/20"}`}>
+                  {c.code}
+                </button>
+              ))}
             </div>
+          </div>
+
+          {/* Montant */}
+          <div>
+            <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Montant" : "Amount"}</div>
+            <div className="relative flex items-center bg-white rounded-xl overflow-hidden">
+              <input type="number" min={curInfo.min} step={curInfo.step} placeholder={String(curInfo.min)}
+                value={amount} onChange={e => setAmount(e.target.value)}
+                className="flex-1 text-gray-900 font-black text-lg px-4 py-3 outline-none bg-transparent" style={{minWidth:0}} />
+              <span className="px-3 text-gray-500 font-bold text-sm border-l border-gray-200 py-3 bg-gray-50 whitespace-nowrap">
+                {curInfo.code === "FCFA" ? "FCFA" : curInfo.symbol}
+              </span>
+            </div>
+            {displayAmount && currency !== "FCFA" && (
+              <div className="mt-1.5 text-emerald-300 text-xs text-right">
+                ≈ {amountFCFA.toLocaleString("fr")} FCFA
+              </div>
+            )}
+          </div>
+
+          {/* Liste des moyens de paiement (info visuelle) */}
+          <div className="flex flex-wrap justify-center gap-1.5 text-[10px] text-emerald-200">
+            <span className="bg-white/10 border border-white/20 px-2 py-1 rounded-full">💳 Visa/Mastercard</span>
+            <span className="bg-white/10 border border-white/20 px-2 py-1 rounded-full">🌊 Wave</span>
+            <span className="bg-white/10 border border-white/20 px-2 py-1 rounded-full">🟠 Orange Money</span>
+            <span className="bg-white/10 border border-white/20 px-2 py-1 rounded-full">🟡 MTN MoMo</span>
+            <span className="bg-white/10 border border-white/20 px-2 py-1 rounded-full">🔵 Moov</span>
+          </div>
+
+          {error && (
+            <div className="bg-red-500/20 border border-red-300/40 rounded-xl p-3 text-xs text-red-100">{error}</div>
           )}
 
-          {/* ── QR CODE WAVE ── */}
-          {step === "wave_qr" && (
-            <div className="flex flex-col items-center gap-3">
-              <div className="text-sm font-black">📱 {fr ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
-              <img src={qrUrl} alt="QR Wave" width={200} height={200}
-                className="rounded-2xl border-4 border-white/30 bg-white shadow-xl"
-                onError={e => { e.target.style.display="none"; }} />
-              <div className="text-xs text-emerald-200 text-center leading-relaxed">
-                {fr
-                  ? <>Ouvrez <strong className="text-white">Wave CI</strong> → <strong className="text-white">Scanner</strong> → scannez → payez <strong className="text-white">{displayAmount}</strong></>
-                  : <>Open <strong className="text-white">Wave CI</strong> → <strong className="text-white">Scan</strong> → scan → pay <strong className="text-white">{displayAmount}</strong></>}
-              </div>
-              <a href={waveData}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm text-center">
-                📱 {fr ? "Ouvrir Wave CI directement" : "Open Wave CI directly"}
-              </a>
-              <button onClick={() => setStep("success")}
-                className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 rounded-xl text-sm">
-                ✅ {fr ? "J'ai effectué le paiement" : "I completed the payment"}
-              </button>
-              <button onClick={reset} className="text-xs text-white/40 hover:text-white/70 py-1">
-                ← {fr ? "Modifier" : "Edit"}
-              </button>
-            </div>
-          )}
+          {/* Bouton payer (un seul flow : PayDunya) */}
+          <button
+            onClick={handlePay}
+            disabled={!isValid || submitting}
+            className={`w-full py-3.5 rounded-xl font-black text-sm transition-all ${isValid && !submitting ? "bg-white text-emerald-900 hover:bg-emerald-100 shadow-lg" : "bg-white/20 text-white/40 cursor-not-allowed"}`}>
+            {submitting
+              ? (fr ? "Redirection vers le paiement…" : "Redirecting to payment…")
+              : !amount || numericAmount===0
+              ? (fr ? "Saisir un montant" : "Enter an amount")
+              : !isValid
+              ? `Min. ${curInfo.min} ${curInfo.code}`
+              : `${fr?"Payer":"Pay"} ${displayAmount} →`}
+          </button>
 
-          {/* ── FORMULAIRE CARTE ── */}
-          {step === "card_form" && (
-            <CardPayForm
-              amountDisplay={displayAmount}
-              lang={lang}
-              darkMode={true}
-              onSuccess={() => setStep("success")}
-              onCancel={reset}
-            />
-          )}
-
-          {/* ── FORMULAIRE PRINCIPAL ── */}
-          {step === "form" && (<>
-            {/* Devise */}
-            <div>
-              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Devise" : "Currency"}</div>
-              <div className="flex gap-2">
-                {CURRENCIES.map(c => (
-                  <button key={c.code} onClick={() => { setCurrency(c.code); setAmount(""); }}
-                    className={`flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-all ${currency===c.code ? "bg-emerald-500 border-emerald-400 text-white" : "bg-white/10 border-white/20 text-emerald-200 hover:bg-white/20"}`}>
-                    {c.code}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Montant */}
-            <div>
-              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Montant" : "Amount"}</div>
-              <div className="relative flex items-center bg-white rounded-xl overflow-hidden">
-                <input type="number" min={curInfo.min} step={curInfo.step} placeholder={String(curInfo.min)}
-                  value={amount} onChange={e => setAmount(e.target.value)}
-                  className="flex-1 text-gray-900 font-black text-lg px-4 py-3 outline-none bg-transparent" style={{minWidth:0}} />
-                <span className="px-3 text-gray-500 font-bold text-sm border-l border-gray-200 py-3 bg-gray-50 whitespace-nowrap">
-                  {curInfo.code === "FCFA" ? "FCFA" : curInfo.symbol}
-                </span>
-              </div>
-              {displayAmount && (
-                <div className="mt-1.5 text-emerald-300 text-xs text-right">
-                  ≈ {displayAmount}{currency!=="FCFA" ? ` (${amountFCFA.toLocaleString("fr")} FCFA)` : ""}
-                </div>
-              )}
-            </div>
-
-            {/* Mode de paiement */}
-            <div>
-              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Moyen de paiement" : "Payment method"}</div>
-              <div className="grid grid-cols-2 gap-2">
-                {[{id:"WAVE",emoji:"🌊",label:"Wave CI"},{id:"CARD",emoji:"💳",label:fr?"Carte bancaire":"Card"}].map(pm => (
-                  <button key={pm.id} onClick={() => setPayMode(pm.id)}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${payMode===pm.id ? "bg-white text-gray-900 border-white" : "bg-white/10 border-white/20 text-white hover:bg-white/20"}`}>
-                    <span>{pm.emoji}</span><span>{pm.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Bouton payer */}
-            <button
-              onClick={() => { if (!isValid) return; setStep(payMode==="WAVE" ? "wave_qr" : "card_form"); }}
-              disabled={!isValid}
-              className={`w-full py-3.5 rounded-xl font-black text-sm transition-all ${isValid ? "bg-white text-emerald-900 hover:bg-emerald-100 shadow-lg" : "bg-white/20 text-white/40 cursor-not-allowed"}`}>
-              {!amount || numericAmount===0
-                ? (fr ? "Saisir un montant" : "Enter an amount")
-                : !isValid
-                ? `Min. ${curInfo.min} ${curInfo.code}`
-                : payMode==="WAVE"
-                ? `🌊 ${fr?"Payer":"Pay"} ${displayAmount} via Wave`
-                : `💳 ${fr?"Payer":"Pay"} ${displayAmount} par carte`}
-            </button>
-
-            <p className="text-emerald-400 text-[10px]">
-              {fr ? "Paiement sécurisé · 100% de votre don va à Ayyad" : "Secure payment · 100% of your donation goes to Ayyad"}
-            </p>
-          </>)}
-
+          <p className="text-emerald-400 text-[10px]">
+            {fr ? "Paiement sécurisé · 100% de votre don va à Ayyad" : "Secure payment · 100% of your donation goes to Ayyad"}
+          </p>
         </div>
       </div>
     </div>
@@ -2107,7 +2077,8 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 const CasePage = ({ c, setPage, lang, user }) => {
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("FCFA");
-  const [provider, setProvider] = useState("WAVE");
+  // Un seul flow de paiement : PayDunya (carte + mobile money + wave + tous les moyens)
+  const [provider, setProvider] = useState("DUNYA");
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
   // Edit mode (owner seulement)
@@ -2377,31 +2348,18 @@ const CasePage = ({ c, setPage, lang, user }) => {
           className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400"
         />
       </div>
-      {/* Sélecteur d'opérateur de paiement */}
-      <div className="mb-4">
-        <div className="text-xs font-semibold text-gray-600 mb-2">{lang==="fr" ? "Moyen de paiement :" : "Payment method:"}</div>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { id:"WAVE", emoji:"🌊", label:"Wave CI (QR)", active:"bg-blue-600 text-white border-blue-600", inactive:"bg-white text-gray-700 border-gray-200 hover:border-blue-400", disabled:false },
-            { id:"DUNYA", emoji:"💳", label:lang==="fr"?"Carte / Mobile Money":"Card / Mobile Money", active:"bg-emerald-600 text-white border-emerald-600", inactive:"bg-white text-gray-700 border-gray-200 hover:border-emerald-400", disabled:false },
-          ].map(opt => (
-            <button
-              key={opt.id}
-              type="button"
-              disabled={opt.disabled}
-              onClick={() => { if (!opt.disabled) setProvider(opt.id); }}
-              title={opt.disabled ? (lang==="fr"?"Bientôt disponible":"Coming soon") : ""}
-              className={`relative flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${provider===opt.id ? opt.active : opt.inactive}`}
-            >
-              <span className="text-base">{opt.emoji}</span>
-              <span>{opt.label}</span>
-              {opt.disabled && (
-                <span className="absolute -top-2 -right-2 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow">
-                  {lang==="fr"?"BIENTÔT":"SOON"}
-                </span>
-              )}
-            </button>
-          ))}
+      {/* Information moyens de paiement (un seul flow PayDunya unifié) */}
+      <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+        <div className="text-xs font-semibold text-gray-600 mb-1.5">
+          {lang==="fr" ? "💳 Paiement sécurisé multi-méthodes" : "💳 Secure multi-method payment"}
+        </div>
+        <div className="flex flex-wrap gap-1 text-[10px] text-emerald-700">
+          <span className="bg-white px-2 py-0.5 rounded-full border border-emerald-200">💳 Visa/Mastercard</span>
+          <span className="bg-white px-2 py-0.5 rounded-full border border-emerald-200">🌊 Wave</span>
+          <span className="bg-white px-2 py-0.5 rounded-full border border-emerald-200">🟠 OM</span>
+          <span className="bg-white px-2 py-0.5 rounded-full border border-emerald-200">🟡 MTN</span>
+          <span className="bg-white px-2 py-0.5 rounded-full border border-emerald-200">🔵 Moov</span>
+          <span className="bg-white px-2 py-0.5 rounded-full border border-emerald-200">⚫ DJAMO</span>
         </div>
       </div>
       {/* Widget paiement mobile — Wave / Carte bancaire */}
@@ -2771,98 +2729,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
               </div>
               {message&&<div className="bg-emerald-50 rounded-xl p-3 text-sm text-emerald-700 italic border border-emerald-100">"{message}"</div>}
 
-              {/* ── QR Code Wave CI (compte marchand statique) ── */}
-              {provider === "WAVE" && (() => {
-                const waveRef = paymentRef || buildPaymentRef(c);
-                const amountTxt = Math.round(Number(amount)).toLocaleString("fr-FR");
-                return (
-                  <div className="flex flex-col items-center gap-3 bg-blue-50 border border-blue-100 rounded-2xl p-5">
-                    <div className="text-sm font-black text-blue-800">📱 {lang==="fr" ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
-                    {/*
-                      Le QR est cliquable : sur mobile, ça ouvre directement l'app Wave
-                      sur la page de paiement du marchand AYYAD SANTE.
-                      Sur desktop, le clic n'a pas d'effet utile (la page web s'ouvre)
-                      mais on garde le scan classique avec l'app mobile.
-                    */}
-                    <a
-                      href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => {
-                        // ⚠️ Pré-insert : on enregistre le don côté Ayyad AVANT que le donateur
-                        // ne quitte la page pour Wave. Sinon, sur mobile, le flow se termine
-                        // dans l'app Wave et le donateur ne revient jamais cliquer "Confirmer"
-                        // → l'argent arrive sur le marchand mais aucune trace côté Ayyad.
-                        // On ne bloque PAS la navigation (pas de e.preventDefault) — fire-and-forget.
-                        if (donSubmitting) return;
-                        // On évite de stocker l'email entier comme nom public (RGPD).
-                        // Si pas de prénom dans le metadata, on prend la partie avant @ de l'email.
-                        const _donName = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
-                        const refToUse = paymentRef || buildPaymentRef(c);
-                        // Fire-and-forget — on ne bloque pas la nav vers Wave
-                        createDonation({
-                          case_id: c.id || null,
-                          donor_id: user?.id || null,
-                          donor_name: _donName,
-                          donor_email: anonymous ? null : (user?.email || null),
-                          amount: Number(amount),
-                          amount_fcfa: amountInFcfa,
-                          currency,
-                          payment_method: "WAVE",
-                          status: "pending",
-                          message: message || null,
-                          reference: refToUse,
-                        }).then(({ error }) => {
-                          if (error) console.warn("[pré-insert QR tap] échec:", error);
-                        });
-                        // Email léger en parallèle (ne bloque pas la nav)
-                        try {
-                          emailDonConfirm({
-                            donorEmail: anonymous ? null : (user?.email || null),
-                            donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"),
-                            amount: fmt(Number(amount)),
-                            beneficiary: c.beneficiary,
-                            caseTitle: c.title,
-                            trackingId: c.tracking_id || c.trackingId,
-                          });
-                        } catch(e) { /* silent */ }
-                      }}
-                      className="relative block group"
-                      title={lang==="fr"?"Toucher pour payer (mobile)":"Tap to pay (mobile)"}
-                    >
-                      <img
-                        src="/wave_qr.png"
-                        alt="QR Code Wave Ayyad"
-                        width={200}
-                        height={200}
-                        className="rounded-xl border-2 border-blue-200 bg-white shadow-sm p-2 group-hover:border-blue-400 group-active:scale-95 transition-all"
-                      />
-                    </a>
-                    {/* Hint mobile — visible sur tous les écrans, mais surtout utile aux mobiles */}
-                    <div className="text-[11px] font-semibold text-blue-600 text-center bg-blue-100/60 px-3 py-1.5 rounded-full">
-                      👆 {lang==="fr" ? "Touchez le QR si vous êtes sur téléphone" : "Tap the QR if you're on mobile"}
-                    </div>
-                    {/* Montant à envoyer */}
-                    <div className="w-full bg-white rounded-xl p-3 border border-blue-200">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500">{lang==="fr"?"Montant à envoyer :":"Amount to send:"}</span>
-                        <span className="font-mono font-black text-blue-700 text-base">{amountTxt} FCFA</span>
-                      </div>
-                    </div>
-                    {/* Instructions de paiement — concises, sans champ "référence" inutile */}
-                    <div className="text-xs text-blue-700 text-center leading-relaxed">
-                      {lang==="fr"
-                        ? <>Ouvrez <strong>Wave CI</strong> → <strong>Scanner</strong> → saisissez <strong>{amountTxt} FCFA</strong> → validez</>
-                        : <>Open <strong>Wave CI</strong> → <strong>Scan</strong> → enter <strong>{amountTxt} FCFA</strong> → confirm</>}
-                    </div>
-                    <div className="text-[11px] text-gray-500 text-center bg-white/60 px-3 py-2 rounded leading-relaxed">
-                      {lang==="fr"
-                        ? <>💡 Pas besoin d'ajouter de référence dans Wave — votre don est <strong>déjà rattaché à cette collecte</strong> automatiquement. Cliquez sur <strong>Confirmer</strong> ci-dessous après avoir effectué le paiement.</>
-                        : <>💡 No need to add a reference in Wave — your donation is <strong>already linked to this campaign</strong> automatically. Click <strong>Confirm</strong> below after completing payment.</>}
-                    </div>
-                  </div>
-                );
-              })()}
+              {/* ── QR Wave statique : SUPPRIMÉ (tous les paiements passent désormais par PayDunya) ── */}
 
               {/* ── Paiement PayDunya (Carte / Mobile Money / Wave / OM / MTN / Moov / DJAMO) ── */}
               {provider === "DUNYA" && (

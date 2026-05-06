@@ -76,7 +76,12 @@ export default async function handler(req, res) {
     const body = req.body || {};
 
     // ── Validation ──
-    if (!isUuid(body.case_id)) return res.status(400).json({ error: "case_id invalid" });
+    // case_id optionnel : si absent, c'est un don direct à la plateforme Ayyad
+    // (section "Soutenir Ayyad directement"). Sinon, c'est un don à un dossier.
+    const isPlatformDonation = !body.case_id;
+    if (!isPlatformDonation && !isUuid(body.case_id)) {
+      return res.status(400).json({ error: "case_id invalid" });
+    }
     const amt = Number(body.amount);
     if (!Number.isFinite(amt) || amt < MIN_AMOUNT || amt > MAX_AMOUNT) {
       return res.status(400).json({ error: "amount invalid" });
@@ -96,7 +101,8 @@ export default async function handler(req, res) {
     const beneficiary= sanitize(body.beneficiary, 80) || null;
 
     // ── 1) Pré-insert de la donation côté Supabase (status pending) ──
-    const reference = "AYYAD-" + (trackingId || body.case_id.slice(0, 8)) + "-" + Date.now().toString(36).toUpperCase();
+    const refPrefix = isPlatformDonation ? "AYYAD-PLATFORM" : ("AYYAD-" + (trackingId || body.case_id.slice(0, 8)));
+    const reference = refPrefix + "-" + Date.now().toString(36).toUpperCase();
     const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/donations`, {
       method: "POST",
       headers: {
@@ -106,13 +112,13 @@ export default async function handler(req, res) {
         "Prefer": "return=representation",
       },
       body: JSON.stringify({
-        case_id: body.case_id,
+        case_id: body.case_id || null, // null = don à la plateforme Ayyad
         donor_id: body.donor_id || null,
         donor_name: donorName,
         donor_email: donorEmail,
         amount: amt,
         amount_fcfa: amt,
-        currency: "FCFA",
+        currency: body.currency || "FCFA",
         payment_method: "PAYDUNYA",
         status: "pending",
         message,
