@@ -1357,8 +1357,7 @@ const SupportAyyadSection = ({ lang }) => {
   const fr = lang === "fr";
   const [currency, setCurrency] = useState("FCFA");
   const [amount,   setAmount]   = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error,    setError]    = useState("");
+  const [step,     setStep]     = useState("form"); // form | wave_qr
 
   const CURRENCIES = [
     { code:"FCFA", symbol:"FCFA", min:500, step:500 },
@@ -1377,35 +1376,11 @@ const SupportAyyadSection = ({ lang }) => {
         : `${curInfo.symbol}${Number(amount).toLocaleString("fr")}`)
     : "";
 
-  const handlePay = async () => {
-    if (!isValid || submitting) return;
-    setError("");
-    setSubmitting(true);
-    try {
-      const r = await fetch("/api/dunya/create-invoice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          // Pas de case_id : c'est un don direct à la plateforme Ayyad
-          amount: amountFCFA,
-          currency: "FCFA",
-          case_title: fr ? "Soutien à la plateforme Ayyad" : "Support to the Ayyad platform",
-          beneficiary: "Ayyad CI",
-        }),
-      });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok || !data.payment_url) {
-        const detail = data.debug ? ` — ${data.debug}` : "";
-        setError((data.error || (fr ? "Erreur lors de l'initialisation du paiement." : "Payment initialization error.")) + detail);
-        setSubmitting(false);
-        return;
-      }
-      window.location.href = data.payment_url;
-    } catch (err) {
-      setError(err?.message || String(err));
-      setSubmitting(false);
-    }
+  const handlePay = () => {
+    if (!isValid) return;
+    setStep("wave_qr");
   };
+  const reset = () => { setStep("form"); setAmount(""); };
 
   return (
     <div className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 text-white">
@@ -1421,67 +1396,118 @@ const SupportAyyadSection = ({ lang }) => {
         </p>
 
         <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 max-w-sm mx-auto space-y-4">
-          {/* Devise */}
-          <div>
-            <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Devise" : "Currency"}</div>
-            <div className="flex gap-2">
-              {CURRENCIES.map(c => (
-                <button key={c.code} onClick={() => { setCurrency(c.code); setAmount(""); }}
-                  className={`flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-all ${currency===c.code ? "bg-emerald-500 border-emerald-400 text-white" : "bg-white/10 border-white/20 text-emerald-200 hover:bg-white/20"}`}>
-                  {c.code}
-                </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Montant */}
-          <div>
-            <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Montant" : "Amount"}</div>
-            <div className="relative flex items-center bg-white rounded-xl overflow-hidden">
-              <input type="number" min={curInfo.min} step={curInfo.step} placeholder={String(curInfo.min)}
-                value={amount} onChange={e => setAmount(e.target.value)}
-                className="flex-1 text-gray-900 font-black text-lg px-4 py-3 outline-none bg-transparent" style={{minWidth:0}} />
-              <span className="px-3 text-gray-500 font-bold text-sm border-l border-gray-200 py-3 bg-gray-50 whitespace-nowrap">
-                {curInfo.code === "FCFA" ? "FCFA" : curInfo.symbol}
-              </span>
-            </div>
-            {displayAmount && currency !== "FCFA" && (
-              <div className="mt-1.5 text-emerald-300 text-xs text-right">
-                ≈ {amountFCFA.toLocaleString("fr")} FCFA
+          {/* ── ÉTAPE 1: formulaire montant ── */}
+          {step === "form" && (<>
+            <div>
+              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Devise" : "Currency"}</div>
+              <div className="flex gap-2">
+                {CURRENCIES.map(c => (
+                  <button key={c.code} onClick={() => { setCurrency(c.code); setAmount(""); }}
+                    className={`flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-all ${currency===c.code ? "bg-emerald-500 border-emerald-400 text-white" : "bg-white/10 border-white/20 text-emerald-200 hover:bg-white/20"}`}>
+                    {c.code}
+                  </button>
+                ))}
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Liste des moyens de paiement (info visuelle) */}
-          <div className="flex flex-wrap justify-center gap-1.5 text-[10px] text-emerald-200">
-            <span className="bg-white/10 border border-white/20 px-2 py-1 rounded-full">💳 Visa/Mastercard</span>
-            <span className="bg-white/10 border border-white/20 px-2 py-1 rounded-full">🌊 Wave</span>
-            <span className="bg-white/10 border border-white/20 px-2 py-1 rounded-full">🟠 Orange Money</span>
-            <span className="bg-white/10 border border-white/20 px-2 py-1 rounded-full">🟡 MTN MoMo</span>
-            <span className="bg-white/10 border border-white/20 px-2 py-1 rounded-full">🔵 Moov</span>
-          </div>
+            <div>
+              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Montant" : "Amount"}</div>
+              <div className="relative flex items-center bg-white rounded-xl overflow-hidden">
+                <input type="number" min={curInfo.min} step={curInfo.step} placeholder={String(curInfo.min)}
+                  value={amount} onChange={e => setAmount(e.target.value)}
+                  className="flex-1 text-gray-900 font-black text-lg px-4 py-3 outline-none bg-transparent" style={{minWidth:0}} />
+                <span className="px-3 text-gray-500 font-bold text-sm border-l border-gray-200 py-3 bg-gray-50 whitespace-nowrap">
+                  {curInfo.code === "FCFA" ? "FCFA" : curInfo.symbol}
+                </span>
+              </div>
+              {displayAmount && currency !== "FCFA" && (
+                <div className="mt-1.5 text-emerald-300 text-xs text-right">
+                  ≈ {amountFCFA.toLocaleString("fr")} FCFA
+                </div>
+              )}
+            </div>
 
-          {error && (
-            <div className="bg-red-500/20 border border-red-300/40 rounded-xl p-3 text-xs text-red-100">{error}</div>
+            <button
+              onClick={handlePay}
+              disabled={!isValid}
+              className={`w-full py-3.5 rounded-xl font-black text-sm transition-all ${isValid ? "bg-white text-emerald-900 hover:bg-emerald-100 shadow-lg" : "bg-white/20 text-white/40 cursor-not-allowed"}`}>
+              {!amount || numericAmount===0
+                ? (fr ? "Saisir un montant" : "Enter an amount")
+                : !isValid
+                ? `Min. ${curInfo.min} ${curInfo.code}`
+                : `🌊 ${fr?"Payer":"Pay"} ${displayAmount} →`}
+            </button>
+
+            <p className="text-emerald-400 text-[10px]">
+              {fr ? "Paiement sécurisé · 100% de votre don va à Ayyad" : "Secure payment · 100% of your donation goes to Ayyad"}
+            </p>
+          </>)}
+
+          {/* ── ÉTAPE 2: QR Wave + instructions Sendwave pour l'étranger ── */}
+          {step === "wave_qr" && (
+            <div className="flex flex-col items-center gap-3">
+              <div className="text-sm font-black">📱 {fr ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
+              <a
+                href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <img src="/wave_qr.png" alt="QR Wave Ayyad" width={200} height={200}
+                  className="rounded-2xl border-4 border-white/30 bg-white shadow-xl p-2"
+                  onError={e => { e.target.style.display="none"; }} />
+              </a>
+              <div className="text-[11px] font-semibold text-white/80 bg-white/10 px-3 py-1.5 rounded-full">
+                👆 {fr ? "Touchez le QR sur mobile" : "Tap the QR on mobile"}
+              </div>
+              <div className="w-full bg-white rounded-xl p-3 text-gray-900">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">{fr?"Montant à envoyer :":"Amount to send:"}</span>
+                  <span className="font-mono font-black text-blue-700 text-base">
+                    {currency === "FCFA"
+                      ? `${amountFCFA.toLocaleString("fr-FR")} FCFA`
+                      : `${displayAmount} (≈ ${amountFCFA.toLocaleString("fr-FR")} FCFA)`}
+                  </span>
+                </div>
+              </div>
+              <div className="text-xs text-emerald-100 text-center leading-relaxed">
+                {fr
+                  ? <>Ouvrez <strong className="text-white">Wave CI</strong> → <strong className="text-white">Scanner</strong> → saisissez <strong className="text-white">{amountFCFA.toLocaleString("fr-FR")} FCFA</strong> → validez</>
+                  : <>Open <strong className="text-white">Wave CI</strong> → <strong className="text-white">Scan</strong> → enter <strong className="text-white">{amountFCFA.toLocaleString("fr-FR")} FCFA</strong> → confirm</>}
+              </div>
+
+              {/* Sendwave : pour la diaspora */}
+              <details className="w-full bg-white/10 rounded-xl border border-white/20 text-left">
+                <summary className="cursor-pointer px-3 py-2 text-xs font-bold text-white select-none">
+                  🌍 {fr ? "Vous êtes à l'étranger ? Utilisez Sendwave" : "From abroad? Use Sendwave"}
+                </summary>
+                <div className="px-3 pb-3 text-[11px] text-emerald-100 leading-relaxed space-y-1.5">
+                  <p>
+                    {fr
+                      ? <>L'app <strong className="text-white">Sendwave</strong> est disponible en France, Canada, USA, UK, Belgique, Italie, Espagne, Allemagne… (gratuite, sans frais cachés)</>
+                      : <>The <strong className="text-white">Sendwave</strong> app is available in France, Canada, USA, UK, Belgium, Italy, Spain, Germany… (free, no hidden fees)</>}
+                  </p>
+                  <ol className="list-decimal pl-4 space-y-0.5">
+                    <li>{fr ? "Téléchargez Sendwave (App Store / Play Store)" : "Download Sendwave (App Store / Play Store)"}</li>
+                    <li>{fr ? <>Envoyez au numéro Wave : <strong className="font-mono text-white">+225 07 48 05 61 28</strong></> : <>Send to the Wave number: <strong className="font-mono text-white">+225 07 48 05 61 28</strong></>}</li>
+                    <li>{fr ? `Saisissez ${displayAmount}` : `Enter ${displayAmount}`}</li>
+                    <li>{fr ? "Validez — l'argent arrive instantanément en FCFA" : "Confirm — money arrives instantly in FCFA"}</li>
+                  </ol>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <a href="https://apps.apple.com/app/sendwave-send-money/id1238118264" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-white text-emerald-900 px-2 py-1 rounded-md text-[10px] font-bold">🍎 iOS</a>
+                    <a href="https://play.google.com/store/apps/details?id=com.wave" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-white text-emerald-900 px-2 py-1 rounded-md text-[10px] font-bold">🤖 Android</a>
+                    <a href="https://www.sendwave.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 border border-white/40 text-white px-2 py-1 rounded-md text-[10px] font-bold">🌐 sendwave.com</a>
+                  </div>
+                </div>
+              </details>
+
+              <button onClick={reset} className="text-xs text-white/40 hover:text-white/70 py-1">
+                ← {fr ? "Modifier le montant" : "Edit amount"}
+              </button>
+            </div>
           )}
 
-          {/* Bouton payer (un seul flow : PayDunya) */}
-          <button
-            onClick={handlePay}
-            disabled={!isValid || submitting}
-            className={`w-full py-3.5 rounded-xl font-black text-sm transition-all ${isValid && !submitting ? "bg-white text-emerald-900 hover:bg-emerald-100 shadow-lg" : "bg-white/20 text-white/40 cursor-not-allowed"}`}>
-            {submitting
-              ? (fr ? "Redirection vers le paiement…" : "Redirecting to payment…")
-              : !amount || numericAmount===0
-              ? (fr ? "Saisir un montant" : "Enter an amount")
-              : !isValid
-              ? `Min. ${curInfo.min} ${curInfo.code}`
-              : `${fr?"Payer":"Pay"} ${displayAmount} →`}
-          </button>
-
-          <p className="text-emerald-400 text-[10px]">
-            {fr ? "Paiement sécurisé · 100% de votre don va à Ayyad" : "Secure payment · 100% of your donation goes to Ayyad"}
-          </p>
         </div>
       </div>
     </div>
@@ -2078,8 +2104,8 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 const CasePage = ({ c, setPage, lang, user }) => {
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("FCFA");
-  // Un seul flow de paiement : PayDunya (carte + mobile money + wave + tous les moyens)
-  const [provider, setProvider] = useState("DUNYA");
+  // PayDunya en attente d'activation — pour l'instant on retombe sur Wave (QR statique du marchand)
+  const [provider, setProvider] = useState("WAVE");
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
   // Edit mode (owner seulement)
@@ -2349,18 +2375,31 @@ const CasePage = ({ c, setPage, lang, user }) => {
           className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400"
         />
       </div>
-      {/* Information moyens de paiement (un seul flow PayDunya unifié) */}
-      <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-xl p-3">
-        <div className="text-xs font-semibold text-gray-600 mb-1.5">
-          {lang==="fr" ? "💳 Paiement sécurisé multi-méthodes" : "💳 Secure multi-method payment"}
-        </div>
-        <div className="flex flex-wrap gap-1 text-[10px] text-emerald-700">
-          <span className="bg-white px-2 py-0.5 rounded-full border border-emerald-200">💳 Visa/Mastercard</span>
-          <span className="bg-white px-2 py-0.5 rounded-full border border-emerald-200">🌊 Wave</span>
-          <span className="bg-white px-2 py-0.5 rounded-full border border-emerald-200">🟠 OM</span>
-          <span className="bg-white px-2 py-0.5 rounded-full border border-emerald-200">🟡 MTN</span>
-          <span className="bg-white px-2 py-0.5 rounded-full border border-emerald-200">🔵 Moov</span>
-          <span className="bg-white px-2 py-0.5 rounded-full border border-emerald-200">⚫ DJAMO</span>
+      {/* Sélecteur d'opérateur de paiement */}
+      <div className="mb-4">
+        <div className="text-xs font-semibold text-gray-600 mb-2">{lang==="fr" ? "Moyen de paiement :" : "Payment method:"}</div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { id:"WAVE", emoji:"🌊", label:"Wave CI", active:"bg-blue-600 text-white border-blue-600", inactive:"bg-white text-gray-700 border-gray-200 hover:border-blue-400", disabled:false },
+            { id:"CARD", emoji:"💳", label:lang==="fr"?"Carte / Mobile Money":"Card / Mobile Money", active:"bg-gray-800 text-white border-gray-800", inactive:"bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed", disabled:true },
+          ].map(opt => (
+            <button
+              key={opt.id}
+              type="button"
+              disabled={opt.disabled}
+              onClick={() => { if (!opt.disabled) setProvider(opt.id); }}
+              title={opt.disabled ? (lang==="fr"?"En cours d'activation":"Coming soon") : ""}
+              className={`relative flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${provider===opt.id ? opt.active : opt.inactive}`}
+            >
+              <span className="text-base">{opt.emoji}</span>
+              <span>{opt.label}</span>
+              {opt.disabled && (
+                <span className="absolute -top-2 -right-2 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow">
+                  {lang==="fr"?"BIENTÔT":"SOON"}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
       {/* Widget paiement mobile — Wave / Carte bancaire */}
@@ -2730,33 +2769,124 @@ const CasePage = ({ c, setPage, lang, user }) => {
               </div>
               {message&&<div className="bg-emerald-50 rounded-xl p-3 text-sm text-emerald-700 italic border border-emerald-100">"{message}"</div>}
 
-              {/* ── QR Wave statique : SUPPRIMÉ (tous les paiements passent désormais par PayDunya) ── */}
+              {/* ── QR Code Wave CI (compte marchand statique) ── */}
+              {provider === "WAVE" && (() => {
+                const amountTxt = Math.round(Number(amount)).toLocaleString("fr-FR");
+                return (
+                  <div className="flex flex-col items-center gap-3 bg-blue-50 border border-blue-100 rounded-2xl p-5">
+                    <div className="text-sm font-black text-blue-800">📱 {lang==="fr" ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
+                    {/* QR cliquable : sur mobile, ça ouvre directement l'app Wave sur la page du marchand. */}
+                    <a
+                      href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => {
+                        // Pré-insert fire-and-forget : on enregistre le don pending AVANT de quitter pour Wave
+                        if (donSubmitting) return;
+                        const _donName = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
+                        const refToUse = paymentRef || buildPaymentRef(c);
+                        createDonation({
+                          case_id: c.id || null,
+                          donor_id: user?.id || null,
+                          donor_name: _donName,
+                          donor_email: anonymous ? null : (user?.email || null),
+                          amount: Number(amount),
+                          amount_fcfa: amountInFcfa,
+                          currency,
+                          payment_method: "WAVE",
+                          status: "pending",
+                          message: message || null,
+                          reference: refToUse,
+                        }).then(({ error }) => {
+                          if (error) console.warn("[pré-insert QR tap] échec:", error);
+                        });
+                      }}
+                      className="relative block group"
+                      title={lang==="fr"?"Toucher pour payer (mobile)":"Tap to pay (mobile)"}
+                    >
+                      <img
+                        src="/wave_qr.png"
+                        alt="QR Code Wave Ayyad"
+                        width={200}
+                        height={200}
+                        className="rounded-xl border-2 border-blue-200 bg-white shadow-sm p-2 group-hover:border-blue-400 group-active:scale-95 transition-all"
+                      />
+                    </a>
+                    <div className="text-[11px] font-semibold text-blue-600 text-center bg-blue-100/60 px-3 py-1.5 rounded-full">
+                      👆 {lang==="fr" ? "Touchez le QR si vous êtes sur téléphone" : "Tap the QR if you're on mobile"}
+                    </div>
+                    <div className="w-full bg-white rounded-xl p-3 border border-blue-200">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">{lang==="fr"?"Montant à envoyer :":"Amount to send:"}</span>
+                        <span className="font-mono font-black text-blue-700 text-base">{amountTxt} FCFA</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-blue-700 text-center leading-relaxed">
+                      {lang==="fr"
+                        ? <>Ouvrez <strong>Wave CI</strong> → <strong>Scanner</strong> → saisissez <strong>{amountTxt} FCFA</strong> → validez</>
+                        : <>Open <strong>Wave CI</strong> → <strong>Scan</strong> → enter <strong>{amountTxt} FCFA</strong> → confirm</>}
+                    </div>
+                    <div className="text-[11px] text-gray-500 text-center bg-white/60 px-3 py-2 rounded leading-relaxed">
+                      {lang==="fr"
+                        ? <>💡 Votre don est <strong>déjà rattaché à cette collecte</strong> automatiquement. Cliquez sur <strong>Confirmer</strong> ci-dessous après avoir effectué le paiement.</>
+                        : <>💡 Your donation is <strong>already linked to this campaign</strong> automatically. Click <strong>Confirm</strong> below after completing payment.</>}
+                    </div>
 
-              {/* ── Paiement PayDunya (Carte / Mobile Money / Wave / OM / MTN / Moov / DJAMO) ── */}
-              {provider === "DUNYA" && (
-                <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-5 text-center space-y-3">
-                  <div className="text-4xl">💳</div>
-                  <div className="font-black text-emerald-800">
-                    {lang==="fr" ? "Paiement sécurisé multi-méthodes" : "Secure multi-method payment"}
+                    {/* Encart "Depuis l'étranger" — instructions Sendwave pour la diaspora */}
+                    <details className="w-full bg-white/80 rounded-xl border border-blue-100 text-left">
+                      <summary className="cursor-pointer px-3 py-2 text-xs font-bold text-blue-700 select-none">
+                        🌍 {lang==="fr" ? "Vous êtes à l'étranger ?" : "Donating from abroad?"}
+                      </summary>
+                      <div className="px-3 pb-3 text-[11px] text-gray-600 leading-relaxed space-y-1.5">
+                        <p>
+                          {lang==="fr"
+                            ? <>Utilisez l'application <strong>Sendwave</strong> (gratuite, sans frais cachés) disponible en France, Canada, USA, UK, Belgique, Italie, Espagne, Allemagne…</>
+                            : <>Use the <strong>Sendwave</strong> app (free, no hidden fees) available in France, Canada, USA, UK, Belgium, Italy, Spain, Germany…</>}
+                        </p>
+                        <ol className="list-decimal pl-4 space-y-0.5">
+                          <li>{lang==="fr" ? "Téléchargez Sendwave (App Store / Play Store)" : "Download Sendwave (App Store / Play Store)"}</li>
+                          <li>{lang==="fr" ? <>Envoyez à ce numéro Wave Côte d'Ivoire : <strong className="font-mono">+225 07 48 05 61 28</strong></> : <>Send to this Wave Côte d'Ivoire number: <strong className="font-mono">+225 07 48 05 61 28</strong></>}</li>
+                          <li>{lang==="fr" ? "Saisissez le montant en EUR/USD/CAD/GBP" : "Enter the amount in EUR/USD/CAD/GBP"}</li>
+                          <li>{lang==="fr" ? "Validez — l'argent arrive instantanément sur Ayyad en FCFA" : "Confirm — money arrives instantly to Ayyad in FCFA"}</li>
+                        </ol>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <a href="https://apps.apple.com/app/sendwave-send-money/id1238118264" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-md text-[10px] font-bold">
+                            🍎 iOS
+                          </a>
+                          <a href="https://play.google.com/store/apps/details?id=com.wave" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-md text-[10px] font-bold">
+                            🤖 Android
+                          </a>
+                          <a href="https://www.sendwave.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 border border-blue-200 text-blue-600 px-2 py-1 rounded-md text-[10px] font-bold hover:bg-blue-50">
+                            🌐 sendwave.com
+                          </a>
+                        </div>
+                        <p className="text-[10px] text-gray-400 italic mt-1">
+                          {lang==="fr" ? "Sendwave appartient à Wave — l'argent arrive sur le même compte que les dons Wave locaux." : "Sendwave is owned by Wave — funds arrive in the same account as local Wave donations."}
+                        </p>
+                      </div>
+                    </details>
                   </div>
-                  <p className="text-xs text-emerald-700 leading-relaxed">
-                    {lang==="fr"
-                      ? "Vous allez être redirigé vers une page sécurisée où vous pourrez payer avec :"
-                      : "You'll be redirected to a secure page where you can pay with:"}
-                  </p>
-                  <div className="flex flex-wrap justify-center gap-1.5 text-[10px] text-emerald-700">
-                    <span className="bg-white px-2 py-1 rounded-full border border-emerald-200">💳 Visa/Mastercard</span>
-                    <span className="bg-white px-2 py-1 rounded-full border border-emerald-200">🌊 Wave</span>
-                    <span className="bg-white px-2 py-1 rounded-full border border-emerald-200">🟠 Orange Money</span>
-                    <span className="bg-white px-2 py-1 rounded-full border border-emerald-200">🟡 MTN MoMo</span>
-                    <span className="bg-white px-2 py-1 rounded-full border border-emerald-200">🔵 Moov</span>
-                    <span className="bg-white px-2 py-1 rounded-full border border-emerald-200">⚫ DJAMO</span>
+                );
+              })()}
+
+              {/* ── Carte bancaire / Mobile Money — BIENTÔT (PayDunya en attente d'activation) ── */}
+              {provider === "CARD" && (
+                <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 text-center space-y-3">
+                  <div className="text-4xl">🏗️</div>
+                  <div className="font-black text-amber-800">
+                    {lang==="fr" ? "Carte bancaire & Mobile Money — Bientôt" : "Card & Mobile Money — Coming soon"}
                   </div>
-                  <p className="text-[11px] text-emerald-600 leading-relaxed">
+                  <p className="text-sm text-amber-700 leading-relaxed">
                     {lang==="fr"
-                      ? "Votre don sera automatiquement validé après paiement — pas besoin de revenir sur Ayyad."
-                      : "Your donation will be automatically validated after payment — no need to return to Ayyad."}
+                      ? "L'intégration multi-méthodes (Visa/MC, Orange Money, MTN, Moov, DJAMO) est en cours d'activation. En attendant, utilisez Wave CI."
+                      : "Multi-method integration (Visa/MC, Orange Money, MTN, Moov, DJAMO) is being activated. Meanwhile, please use Wave CI."}
                   </p>
+                  <button
+                    onClick={() => setProvider("WAVE")}
+                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm"
+                  >
+                    🌊 {lang==="fr" ? "Utiliser Wave CI" : "Use Wave CI"}
+                  </button>
                 </div>
               )}
 
