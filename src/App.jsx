@@ -498,7 +498,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
 
   return (
     <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm" onClick={() => setDropdownOpen(null)}>
-      <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16 gap-4">
+      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16 gap-4">
         {/* Logo */}
         <button onClick={() => setPage("home")} className="flex items-center gap-3 flex-shrink-0">
           <AyyadLogo />
@@ -517,6 +517,20 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
+          {/* Bouton "Soutenir Ayyad" — visible sur toutes les pages, scrolle vers la section dédiée sur la home */}
+          <button
+            onClick={() => {
+              if (page === "home") {
+                document.getElementById("soutenir-ayyad")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              } else {
+                setPage("home");
+                setTimeout(() => document.getElementById("soutenir-ayyad")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+              }
+            }}
+            className="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-2 rounded-xl shadow-md hover:shadow-lg transition-all"
+          >
+            💚 {lang==="fr"?"Soutenir Ayyad":"Support Ayyad"}
+          </button>
           <LangToggle lang={lang} setLang={setLang} />
           {user ? (
             <div className="flex items-center gap-2">
@@ -644,7 +658,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
 
   return (
     <div className="bg-white border-b border-gray-100">
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 bg-red-500 rounded-full animate-ping" />
@@ -1357,6 +1371,7 @@ const SupportAyyadSection = ({ lang }) => {
   const fr = lang === "fr";
   const [currency, setCurrency] = useState("FCFA");
   const [amount,   setAmount]   = useState("");
+  const [donorMessage, setDonorMessage] = useState(""); // message libre du donateur à Ayyad
   const [step,     setStep]     = useState("form"); // form | wave_qr
 
   const CURRENCIES = [
@@ -1426,6 +1441,25 @@ const SupportAyyadSection = ({ lang }) => {
                   ≈ {amountFCFA.toLocaleString("fr")} FCFA
                 </div>
               )}
+            </div>
+
+            {/* Message libre du donateur — optionnel mais encourageant */}
+            <div>
+              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">
+                {fr ? "Votre message à Ayyad (optionnel)" : "Your message to Ayyad (optional)"}
+              </div>
+              <textarea
+                value={donorMessage}
+                onChange={e => setDonorMessage(e.target.value.slice(0, 300))}
+                rows={3}
+                placeholder={fr
+                  ? "Un mot d'encouragement, un témoignage, une suggestion…"
+                  : "A word of encouragement, a testimonial, a suggestion…"}
+                className="w-full text-gray-900 text-sm px-4 py-2.5 rounded-xl outline-none bg-white resize-none border border-white/20 focus:border-emerald-400"
+              />
+              <div className="mt-1 text-[10px] text-emerald-300/70 text-right">
+                {donorMessage.length}/300
+              </div>
             </div>
 
             <button
@@ -1511,6 +1545,152 @@ const SupportAyyadSection = ({ lang }) => {
         </div>
       </div>
     </div>
+  );
+};
+
+// ── Reveal — wrapper qui anime l'élément en fade-in+slide quand il entre dans la vue ────
+// Usage: <Reveal><MaSection /></Reveal>
+// S'appuie sur les classes CSS .ayyad-reveal / .is-visible définies dans index.html
+const Reveal = ({ children, delay = 0, as: As = "div", className = "" }) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // Si IntersectionObserver pas dispo (vieux browser), on rend visible direct
+    if (typeof IntersectionObserver === "undefined") { el.classList.add("is-visible"); return; }
+    const obs = new IntersectionObserver(
+      (entries) => entries.forEach(e => {
+        if (e.isIntersecting) {
+          setTimeout(() => e.target.classList.add("is-visible"), delay);
+          obs.unobserve(e.target);
+        }
+      }),
+      { threshold: 0.12, rootMargin: "0px 0px -60px 0px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [delay]);
+  return <As ref={ref} className={`ayyad-reveal ${className}`}>{children}</As>;
+};
+
+// ── HeroSlider — slider plein écran d'images de fond avec auto-play ──────────
+// 3 slides qui défilent toutes les 6 secondes, photos Unsplash libres de droits
+// adaptées au thème santé/solidarité africaine. Dots de navigation cliquables.
+const HeroSlider = ({ lang }) => {
+  const fr = lang === "fr";
+  const slides = [
+    {
+      image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1920&q=80",
+      title: fr ? "Soigner sans renoncer." : "Heal without giving up.",
+      sub: fr ? "Chaque don soutient un patient ivoirien dans son combat médical." : "Every donation supports a patient's medical fight.",
+    },
+    {
+      image: "https://images.unsplash.com/photo-1612531048118-826c4e98c2da?w=1920&q=80",
+      title: fr ? "Une communauté solidaire." : "A solidarity community.",
+      sub: fr ? "Ensemble, nous transformons l'espoir en soins concrets." : "Together, we turn hope into real care.",
+    },
+    {
+      image: "https://images.unsplash.com/photo-1666214280557-f1b5022eb634?w=1920&q=80",
+      title: fr ? "100 % transparent." : "100% transparent.",
+      sub: fr ? "Vos dons sont versés directement à l'hôpital partenaire." : "Your donations go directly to the partner hospital.",
+    },
+  ];
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % slides.length), 6000);
+    return () => clearInterval(t);
+  }, [slides.length]);
+
+  return (
+    <div className="relative w-full overflow-hidden" style={{ height: "min(80vh, 720px)", minHeight: 480 }}>
+      {slides.map((s, i) => (
+        <div
+          key={i}
+          className="absolute inset-0 transition-opacity duration-1000 ease-in-out"
+          style={{
+            opacity: i === idx ? 1 : 0,
+            backgroundImage: `linear-gradient(to bottom, rgba(13,92,46,0.55), rgba(15,118,110,0.7)), url(${s.image})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+      ))}
+      <div className="relative h-full max-w-7xl mx-auto px-4 flex flex-col items-center justify-center text-center text-white">
+        <h2 className="text-4xl sm:text-6xl lg:text-7xl font-black leading-tight mb-4 drop-shadow-2xl" style={{ textShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
+          {slides[idx].title}
+        </h2>
+        <p className="text-base sm:text-xl max-w-2xl mx-auto leading-relaxed drop-shadow-lg opacity-95">
+          {slides[idx].sub}
+        </p>
+        <div className="mt-10 flex gap-2">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setIdx(i)}
+              aria-label={`Slide ${i+1}`}
+              className={`h-1.5 rounded-full transition-all ${i === idx ? "w-10 bg-white" : "w-6 bg-white/40 hover:bg-white/60"}`}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── PartnersBanner — bandeau des hôpitaux et cliniques partenaires ────────────
+// Affiche les 10 établissements ciblés/en cours de validation pour le partenariat.
+// On utilise une formulation honnête ("en cours de validation") pour ne pas affirmer
+// un partenariat finalisé. Style : cards blanches sobres avec nom de l'établissement.
+const PartnersBanner = ({ lang }) => {
+  const fr = lang === "fr";
+  const partners = [
+    { name: "PISAM", full: "Polyclinique Internationale Sainte Anne-Marie", city: "Abidjan" },
+    { name: "Polyclinique de l'Indénié", full: "Polyclinique Internationale de l'Indénié", city: "Abidjan" },
+    { name: "Avicennes Polyclinic", full: "Avicennes Polyclinic", city: "Abidjan" },
+    { name: "Le Grand Centre", full: "Clinique Médicale Le Grand Centre", city: "Abidjan" },
+    { name: "Polyclinique Farah", full: "Polyclinique Farah", city: "Abidjan" },
+    { name: "CHU de Cocody", full: "Centre Hospitalier Universitaire de Cocody", city: "Cocody, Abidjan" },
+    { name: "CHU de Treichville", full: "Centre Hospitalier Universitaire de Treichville", city: "Treichville, Abidjan" },
+    { name: "Polymed", full: "Nouvelle Clinique Polymed", city: "Abidjan" },
+    { name: "La Providence", full: "Clinique La Providence", city: "Abidjan" },
+  ];
+  return (
+    <section className="bg-gradient-to-b from-white to-emerald-50/30 py-16 sm:py-20">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-full px-4 py-1.5 mb-4 text-xs font-bold text-emerald-700">
+            <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+            {fr ? "PARTENARIATS HOSPITALIERS EN COURS DE VALIDATION" : "HOSPITAL PARTNERSHIPS IN PROGRESS"}
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-3">
+            {fr ? "Nos établissements de santé partenaires" : "Our partner healthcare facilities"}
+          </h2>
+          <p className="text-gray-500 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
+            {fr
+              ? "Ayyad collabore avec des hôpitaux et cliniques de référence en Côte d'Ivoire pour garantir que chaque don soit versé directement à l'établissement qui prend en charge le patient."
+              : "Ayyad collaborates with leading hospitals and clinics in Côte d'Ivoire to ensure every donation goes directly to the healthcare facility caring for the patient."}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+          {partners.map((p, i) => (
+            <div
+              key={p.name}
+              className="bg-white border border-gray-100 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all flex flex-col items-center text-center"
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl flex items-center justify-center text-2xl mb-3">🏥</div>
+              <div className="font-bold text-sm text-gray-900 leading-tight">{p.name}</div>
+              <div className="text-[10px] text-gray-400 mt-1">{p.city}</div>
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-[11px] text-gray-400 mt-6 italic">
+          {fr
+            ? "Les partenariats listés sont en cours de finalisation administrative. Les fonds sont actuellement versés sur demande des familles ou directement aux hôpitaux concernés au cas par cas."
+            : "Listed partnerships are being formalized. Funds are currently transferred upon family request or directly to the relevant hospitals on a case-by-case basis."}
+        </p>
+      </div>
+    </section>
   );
 };
 
@@ -2004,12 +2184,14 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
     .filter(c => !search.trim() || gs(c.title).toLowerCase().includes(search.toLowerCase()) || (c.hospital||"").toLowerCase().includes(search.toLowerCase()) || (c.city||"").toLowerCase().includes(search.toLowerCase()));
   return (
     <div onClick={() => setHeroMenu(false)}>
+      {/* Hero slider plein écran avec image de fond rotative */}
+      <HeroSlider lang={lang} />
       <div className="bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-600 text-white">
-        <div className="max-w-6xl mx-auto px-4 py-20 text-center">
+        <div className="max-w-7xl mx-auto px-4 py-16 sm:py-20 text-center">
           <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6 text-sm font-medium">
             <span className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse" />{t.hero.badge}
           </div>
-          <h1 className="text-4xl md:text-5xl font-black mb-5 leading-tight">{t.hero.title1}<br /><span className="text-emerald-200">{t.hero.title2}</span></h1>
+          <h1 className="text-4xl md:text-6xl font-black mb-5 leading-tight">{t.hero.title1}<br /><span className="text-emerald-200">{t.hero.title2}</span></h1>
           <p className="text-emerald-100 text-lg max-w-2xl mx-auto mb-8 leading-relaxed">{t.hero.sub}</p>
           <div className="flex flex-wrap justify-center gap-3">
             <button onClick={() => setPage("collectes")} className="bg-white text-emerald-700 font-bold px-5 py-3 rounded-xl hover:bg-emerald-50 shadow-lg text-sm">{t.hero.cta1} →</button>
@@ -2041,7 +2223,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           </div>
         </div>
         <div className="bg-white/10 border-t border-white/20">
-          <div className="max-w-6xl mx-auto px-4 py-5 grid grid-cols-3 text-center gap-4">
+          <div className="max-w-7xl mx-auto px-4 py-5 grid grid-cols-3 text-center gap-4">
             {[[heroStats.patients,t.stats.patients],[heroStats.collected,t.stats.collected],[heroStats.hospitals,t.stats.hospitals]].map(([v,l]) => (
               <div key={l}><div className="text-2xl font-black">{v}</div><div className="text-emerald-200 text-xs mt-0.5">{l}</div></div>
             ))}
@@ -2052,10 +2234,16 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       {/* ── Ticker derniers dons ── */}
       <DonationTicker lang={lang} />
 
-      {/* Urgent Cases Banner — mock + auto-detection */}
-      <UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} />
+      {/* Bandeau hôpitaux et cliniques partenaires (en cours de validation) */}
+      <Reveal><PartnersBanner lang={lang} /></Reveal>
 
-      <div id="collectes" className="max-w-6xl mx-auto px-4 py-12">
+      {/* Soutenir Ayyad directement — section remontée à la demande de l'utilisateur */}
+      <Reveal><div id="soutenir-ayyad"><SupportAyyadSection lang={lang} /></div></Reveal>
+
+      {/* Urgent Cases Banner — mock + auto-detection */}
+      <Reveal><UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} /></Reveal>
+
+      <div id="collectes" className="max-w-7xl mx-auto px-4 py-12">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h2 className="text-2xl font-black text-gray-900">{t.collections.title}</h2>
@@ -2078,7 +2266,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       </div>
 
       <div className="bg-gray-50 border-t border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 py-16 text-center">
+        <div className="max-w-7xl mx-auto px-4 py-16 text-center">
           <h2 className="text-2xl font-black text-gray-900 mb-2">{t.how.title}</h2>
           <p className="text-gray-500 mb-10">{t.how.sub}</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
@@ -2094,8 +2282,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
         </div>
       </div>
 
-      {/* Support Ayyad Section */}
-      <SupportAyyadSection lang={lang} />
+      {/* Note: SupportAyyadSection a été remontée plus haut (sous PartnersBanner) à la demande utilisateur */}
     </div>
   );
 };
@@ -8343,7 +8530,7 @@ const Footer = ({ setPage, lang }) => {
   const t = T[lang].footer;
   return (
     <footer className="bg-gray-950 text-white mt-16">
-      <div className="max-w-6xl mx-auto px-4 py-12">
+      <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1"><div className="flex items-center gap-2 mb-4"><svg width="36" height="36" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="35" cy="35" r="33" fill="#1a6b3a"/><circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" strokeWidth="2.5"/><rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/><rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/><path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/></svg><span className="font-black text-xl" style={{fontFamily:"Georgia, serif", letterSpacing:"1px"}}>AYYAD</span></div><p className="text-gray-400 text-xs leading-relaxed">{t.tagline}</p></div>
           {[[t.platform, t.platformLinks, ["collectesactives","how","submit"]], [t.trust, t.trustLinks, ["how","hopitaux","impact"]], [t.legal, t.legalLinks, ["legal","faq","bceao"]]].map(([title, links, pages]) =>

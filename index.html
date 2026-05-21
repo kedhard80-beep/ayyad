@@ -20,6 +20,15 @@
     <meta name="twitter:description" content="Parce que soutenir une vie, c'est en sauver une. Donnez directement à l'hôpital, sans frais cachés." />
     <meta name="twitter:image" content="https://ayyadci.com/og-image.svg" />
     <meta name="theme-color" content="#0d5c2e" />
+    <style>
+      /* Animation fade-in au scroll — appliquée via IntersectionObserver côté JS */
+      .ayyad-reveal { opacity: 0; transform: translateY(24px); transition: opacity 700ms ease-out, transform 700ms ease-out; }
+      .ayyad-reveal.is-visible { opacity: 1; transform: translateY(0); }
+      /* Respect des préférences utilisateur (réduction des animations) */
+      @media (prefers-reduced-motion: reduce) {
+        .ayyad-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
