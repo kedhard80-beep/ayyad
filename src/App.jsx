@@ -2234,13 +2234,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       {/* ── Ticker derniers dons ── */}
       <DonationTicker lang={lang} />
 
-      {/* Bandeau hôpitaux et cliniques partenaires (en cours de validation) */}
-      <Reveal><PartnersBanner lang={lang} /></Reveal>
-
-      {/* Soutenir Ayyad directement — section remontée à la demande de l'utilisateur */}
-      <Reveal><div id="soutenir-ayyad"><SupportAyyadSection lang={lang} /></div></Reveal>
-
-      {/* Urgent Cases Banner — mock + auto-detection */}
+      {/* Urgent Cases Banner — affiché juste avant les collectes pour rester en haut */}
       <Reveal><UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} /></Reveal>
 
       <div id="collectes" className="max-w-7xl mx-auto px-4 py-12">
@@ -2282,7 +2276,11 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
         </div>
       </div>
 
-      {/* Note: SupportAyyadSection a été remontée plus haut (sous PartnersBanner) à la demande utilisateur */}
+      {/* Bandeau hôpitaux partenaires — placé après les collectes pour ne pas pousser les dossiers vers le bas */}
+      <Reveal><PartnersBanner lang={lang} /></Reveal>
+
+      {/* Soutenir Ayyad directement — placée en bas, accessible aussi via le bouton sticky de la nav (#soutenir-ayyad) */}
+      <Reveal><div id="soutenir-ayyad"><SupportAyyadSection lang={lang} /></div></Reveal>
     </div>
   );
 };
