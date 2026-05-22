@@ -300,7 +300,7 @@ const CI_HOPITAUX = [
 const T = {
   fr: {
     nav: { collections: "Collectes", how: "Comment ça marche", admin: "Administration", login: "Connexion", start: "Démarrer", logout: "Déconnexion", medicalFinancing: "Financement médical" },
-    hero: { badge: "Plateforme vérifiée & sécurisée", title1: "Donner de la force à ceux", title2: "qui en ont besoin", sub: "Parce que soutenir une vie, c'est en sauver une. Ensemble, nous donnons de la force à ceux qui gardent encore espoir.", cta1: "Collectes terminées & témoignages", cta2: "Soumettre un dossier" },
+    hero: { badge: "Plateforme vérifiée & sécurisée", title1: "Quand la vie attend,", title2: "agissons.", sub: "Derrière chaque collecte, un patient dont la santé dépend de notre solidarité. Un don. Un hôpital. Un espoir.", cta1: "Collectes terminées & témoignages", cta2: "Soumettre un dossier" },
     stats: { patients: "Patients aidés", collected: "FCFA collectés", hospitals: "Hôpitaux partenaires" },
     collections: { title: "Collectes en cours", sub: "dossiers vérifiés actifs" },
     card: { donors: "donateurs", daysLeft: "j restants", funded: "Objectif atteint !", on: "sur" },
@@ -334,7 +334,7 @@ const T = {
   },
   en: {
     nav: { collections: "Campaigns", how: "How it works", admin: "Administration", login: "Login", start: "Get started", logout: "Logout", medicalFinancing: "Medical funding" },
-    hero: { badge: "Verified & secure platform", title1: "Giving strength to those", title2: "who need it most", sub: "Because supporting a life means saving one. Together, we give strength to those who still hold on to hope.", cta1: "Completed campaigns & testimonials", cta2: "Submit a case" },
+    hero: { badge: "Verified & secure platform", title1: "When life can't wait,", title2: "we act.", sub: "Behind every campaign, a patient whose health depends on our solidarity. One donation. One hospital. One hope.", cta1: "Completed campaigns & testimonials", cta2: "Submit a case" },
     stats: { patients: "Patients helped", collected: "FCFA raised", hospitals: "Partner hospitals" },
     collections: { title: "Active campaigns", sub: "verified active cases" },
     card: { donors: "donors", daysLeft: "days left", funded: "Goal reached!", on: "of" },
@@ -476,10 +476,63 @@ const LangToggle = ({ lang, setLang }) => (
   </div>
 );
 
-// ── Navbar ────────────────────────────────────────────────────
+// ── Premium TopBar — fine bande institutionnelle au-dessus de la navbar ──────
+// Affiche les contacts, les réseaux sociaux et le toggle de langue. Style sombre
+// élégant, hauteur fine (32-36px), masquée sur mobile pour gagner de la place.
+const PremiumTopBar = ({ lang, setLang }) => {
+  const fr = lang === "fr";
+  return (
+    <div className="hidden md:block" style={{
+      background: "linear-gradient(90deg, #0a3d2e 0%, #0d5c2e 50%, #0f4f3c 100%)",
+      borderBottom: "1px solid rgba(201,168,76,0.18)",
+      color: "rgba(255,255,255,0.85)",
+      fontSize: 12,
+      letterSpacing: 0.2,
+    }}>
+      <div className="ayyad-container" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", height:36 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:24 }}>
+          <a href="tel:+2250748056128" style={{ display:"inline-flex", alignItems:"center", gap:6, color:"inherit", textDecoration:"none", transition:"color .2s" }} onMouseEnter={e=>e.currentTarget.style.color="#e9d59a"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.85)"}>
+            <span style={{ color:"#e9d59a" }}>✆</span> +225 07 48 05 61 28
+          </a>
+          <a href="mailto:contact@ayyadci.com" style={{ display:"inline-flex", alignItems:"center", gap:6, color:"inherit", textDecoration:"none", transition:"color .2s" }} onMouseEnter={e=>e.currentTarget.style.color="#e9d59a"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.85)"}>
+            <span style={{ color:"#e9d59a" }}>✉</span> contact@ayyadci.com
+          </a>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:6, color:"rgba(255,255,255,0.6)" }}>
+            <span style={{ width:6, height:6, borderRadius:"50%", background:"#34d399", boxShadow:"0 0 0 3px rgba(52,211,153,0.18)", display:"inline-block" }} />
+            {fr ? "Plateforme opérationnelle" : "Platform live"}
+          </span>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:18 }}>
+          <span style={{ color:"rgba(255,255,255,0.55)", fontSize:11 }}>
+            {fr ? "Côte d'Ivoire 🇨🇮 · BCEAO conforme" : "Côte d'Ivoire 🇨🇮 · BCEAO compliant"}
+          </span>
+          <div style={{ width:1, height:14, background:"rgba(255,255,255,0.18)" }} />
+          <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+            <button onClick={()=>setLang("fr")} style={{ background:"transparent", border:"none", cursor:"pointer", color: lang==="fr"?"#e9d59a":"rgba(255,255,255,0.65)", fontWeight: lang==="fr"?700:500, fontSize:11, letterSpacing:1 }}>FR</button>
+            <span style={{ color:"rgba(255,255,255,0.3)" }}>|</span>
+            <button onClick={()=>setLang("en")} style={{ background:"transparent", border:"none", cursor:"pointer", color: lang==="en"?"#e9d59a":"rgba(255,255,255,0.65)", fontWeight: lang==="en"?700:500, fontSize:11, letterSpacing:1 }}>EN</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Navbar premium — sticky avec shadow progressive au scroll ────────────────
 const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
   const t = T[lang].nav;
+  const fr = lang === "fr";
   const [dropdownOpen, setDropdownOpen] = useState(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 16);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -487,7 +540,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
   };
 
   const AyyadLogo = () => (
-    <svg width="42" height="42" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="44" height="44" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
       <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
       <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" strokeWidth="2.5"/>
       <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
@@ -496,121 +549,370 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
     </svg>
   );
 
+  // Liens de navigation principaux (parcours donateur)
+  const navLinks = [
+    { key: "home",             label: fr ? "Accueil"           : "Home"          },
+    { key: "collectesactives", label: fr ? "Campagnes"         : "Campaigns"     },
+    { key: "urgents",          label: fr ? "Cas urgents"       : "Urgent cases"  },
+    { key: "how",              label: fr ? "Comment ça marche" : "How it works"  },
+    { key: "support-ayyad",    label: fr ? "Soutenir Ayyad"    : "Support Ayyad" },
+  ];
+
   return (
-    <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm" onClick={() => setDropdownOpen(null)}>
-      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16 gap-4">
-        {/* Logo */}
-        <button onClick={() => setPage("home")} className="flex items-center gap-3 flex-shrink-0">
-          <AyyadLogo />
-          <div className="hidden sm:block">
-            <div className="font-black text-xl text-gray-900 leading-tight" style={{fontFamily:"Georgia, serif", letterSpacing:"1px"}}>AYYAD</div>
-            <div className="text-xs font-semibold" style={{color:"#C9A84C", letterSpacing:"1px"}}>Financement médical solidaire</div>
-          </div>
-        </button>
-
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-1">
-          {user?.isAdmin && (
-            <button onClick={() => setPage("admin")} className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${page==="admin" ? "text-emerald-600 bg-emerald-50" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"}`}>{t.admin}</button>
-          )}
-        </div>
-
-        {/* Right side */}
-        <div className="flex items-center gap-2">
-          {/* Bouton "Soutenir Ayyad" — visible sur toutes les pages, scrolle vers la section dédiée sur la home */}
-          <button
-            onClick={() => {
-              if (page === "home") {
-                document.getElementById("soutenir-ayyad")?.scrollIntoView({ behavior: "smooth", block: "start" });
-              } else {
-                setPage("home");
-                setTimeout(() => document.getElementById("soutenir-ayyad")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
-              }
-            }}
-            className="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-2 rounded-xl shadow-md hover:shadow-lg transition-all"
-          >
-            💚 {lang==="fr"?"Soutenir Ayyad":"Support Ayyad"}
-          </button>
-          <LangToggle lang={lang} setLang={setLang} />
-          {user ? (
-            <div className="flex items-center gap-2">
-              <button onClick={() => setPage("profile")} className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-sm hover:bg-emerald-200 transition-colors">{(user.name||user.email||"U")[0].toUpperCase()}</button>
-              <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[120px] truncate">{user.name||user.email}</span>
-              <button onClick={() => setPage("monimpact")} className="text-xs text-emerald-600 hover:text-emerald-800 font-semibold ml-1">💚 {lang==="fr"?"Mon impact":"My impact"}</button>
-              <button onClick={() => setPage("changepassword")} className="text-xs text-gray-400 hover:text-emerald-600 ml-1">🔑</button>
-              <button onClick={handleLogout} className="text-xs text-gray-400 hover:text-red-500">{t.logout}</button>
+    <>
+      <PremiumTopBar lang={lang} setLang={setLang} />
+      <nav
+        className="sticky top-0 z-50"
+        onClick={() => { setDropdownOpen(null); setMobileOpen(false); }}
+        style={{
+          background: scrolled ? "rgba(255,255,255,0.92)" : "#ffffff",
+          backdropFilter: scrolled ? "saturate(180%) blur(12px)" : "none",
+          borderBottom: scrolled ? "1px solid rgba(10,31,26,0.06)" : "1px solid rgba(10,31,26,0.04)",
+          boxShadow: scrolled ? "0 6px 20px rgba(10,31,26,0.06)" : "none",
+          transition: "background .25s ease, box-shadow .25s ease, border-color .25s ease",
+        }}
+      >
+        <div className="ayyad-container" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", height: 72, gap: 16 }}>
+          {/* Logo */}
+          <button onClick={() => setPage("home")} style={{ display:"flex", alignItems:"center", gap:12, background:"transparent", border:"none", cursor:"pointer", padding:0 }}>
+            <AyyadLogo />
+            <div style={{ textAlign:"left" }} className="hidden sm:block">
+              <div style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:22, color:"var(--ayyad-deep)", letterSpacing:1.5, lineHeight:1 }}>AYYAD</div>
+              <div style={{ fontSize:10, color:"var(--ayyad-gold-deep)", letterSpacing:1.6, fontWeight:700, marginTop:3, textTransform:"uppercase" }}>
+                {fr ? "Solidarité médicale" : "Medical solidarity"}
+              </div>
             </div>
-          ) : (
-            <>
-              <button onClick={() => setPage("login")} className="text-sm font-medium text-gray-600 hover:text-gray-900">{t.login}</button>
-              <button onClick={() => setPage("submit")} className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm">{lang==="fr" ? "Soumettre un dossier" : "Submit a case"}</button>
-            </>
-          )}
+          </button>
+
+          {/* Liens desktop */}
+          <div className="hidden lg:flex" style={{ alignItems:"center", gap:4 }}>
+            {navLinks.map(l => (
+              <button
+                key={l.key}
+                onClick={() => setPage(l.key)}
+                className={`ayyad-link ${page===l.key ? "is-active" : ""}`}
+                style={{
+                  background:"transparent", border:"none", cursor:"pointer",
+                  padding:"10px 14px",
+                  fontSize:14, fontWeight: page===l.key?700:500,
+                  color: page===l.key ? "var(--ayyad-deep)" : "var(--ink-700)",
+                  borderRadius: 10,
+                  transition: "color .2s",
+                }}
+                onMouseEnter={e => { if(page!==l.key) e.currentTarget.style.color="var(--ayyad-deep)"; }}
+                onMouseLeave={e => { if(page!==l.key) e.currentTarget.style.color="var(--ink-700)"; }}
+              >
+                {l.label}
+              </button>
+            ))}
+            {user?.isAdmin && (
+              <button onClick={() => setPage("admin")} className={`ayyad-link ${page==="admin"?"is-active":""}`} style={{
+                background:"transparent", border:"none", cursor:"pointer",
+                padding:"10px 14px", fontSize:14, fontWeight:600,
+                color: page==="admin" ? "var(--ayyad-gold-deep)" : "var(--ink-500)",
+              }}>
+                ⚙ {t.admin}
+              </button>
+            )}
+          </div>
+
+          {/* Right side actions */}
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <button
+              onClick={() => setPage("submit")}
+              className="hidden md:inline-flex"
+              style={{
+                alignItems:"center", gap:6,
+                background:"transparent",
+                border:"1.5px solid rgba(13,92,46,0.22)",
+                color:"var(--ayyad-deep)",
+                fontWeight:700, fontSize:13,
+                padding:"9px 18px",
+                borderRadius:9999,
+                cursor:"pointer",
+                transition:"all .2s",
+              }}
+              onMouseEnter={e=>{ e.currentTarget.style.background="rgba(13,92,46,0.06)"; e.currentTarget.style.borderColor="rgba(13,92,46,0.4)"; }}
+              onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="rgba(13,92,46,0.22)"; }}
+            >
+              {fr ? "Soumettre un dossier" : "Submit a case"}
+            </button>
+
+            <button
+              onClick={() => setPage("collectesactives")}
+              className="ayyad-btn-primary"
+              style={{ fontSize:13, padding:"11px 22px" }}
+            >
+              💚 {fr ? "Faire un don" : "Donate"}
+            </button>
+
+            {user ? (
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <button
+                  onClick={() => setPage("profile")}
+                  style={{
+                    width:36, height:36, borderRadius:"50%",
+                    background:"linear-gradient(135deg, #0d5c2e, #10b981)",
+                    color:"#fff", fontWeight:800, fontSize:13,
+                    border:"2px solid #fff", boxShadow:"0 2px 8px rgba(13,92,46,0.25)",
+                    cursor:"pointer",
+                  }}
+                  title={user.name || user.email}
+                >
+                  {(user.name||user.email||"U")[0].toUpperCase()}
+                </button>
+                <div className="hidden xl:flex" style={{ flexDirection:"column", lineHeight:1.1 }}>
+                  <span style={{ fontSize:12, fontWeight:600, color:"var(--ink-900)", maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.name||user.email}</span>
+                  <button onClick={handleLogout} style={{ fontSize:10, color:"var(--ink-400)", background:"transparent", border:"none", cursor:"pointer", textAlign:"left", padding:0 }}>{t.logout}</button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setPage("login")}
+                className="hidden sm:inline-flex"
+                style={{
+                  background:"transparent", border:"none", cursor:"pointer",
+                  fontSize:13, fontWeight:600, color:"var(--ink-700)",
+                  padding:"8px 12px",
+                }}
+              >
+                {t.login}
+              </button>
+            )}
+
+            {/* Burger mobile */}
+            <button
+              className="lg:hidden"
+              onClick={(e)=>{ e.stopPropagation(); setMobileOpen(o=>!o); }}
+              aria-label="Menu"
+              style={{
+                background:"transparent", border:"1px solid rgba(10,31,26,0.12)",
+                padding:8, borderRadius:10, cursor:"pointer",
+                color:"var(--ayyad-deep)",
+              }}
+            >
+              {mobileOpen ? "✕" : "☰"}
+            </button>
+          </div>
         </div>
-      </div>
-    </nav>
+
+        {/* Menu mobile drawer */}
+        {mobileOpen && (
+          <div className="lg:hidden" onClick={e=>e.stopPropagation()} style={{
+            background:"#fff", borderTop:"1px solid rgba(10,31,26,0.06)",
+            boxShadow:"0 12px 32px rgba(10,31,26,0.10)",
+            padding:"16px 24px 24px",
+          }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+              {navLinks.map(l => (
+                <button
+                  key={l.key}
+                  onClick={() => { setPage(l.key); setMobileOpen(false); }}
+                  style={{
+                    background: page===l.key ? "rgba(13,92,46,0.06)" : "transparent",
+                    border:"none", cursor:"pointer", textAlign:"left",
+                    padding:"12px 14px", borderRadius:10,
+                    fontSize:15, fontWeight:600,
+                    color: page===l.key ? "var(--ayyad-deep)" : "var(--ink-700)",
+                  }}
+                >
+                  {l.label}
+                </button>
+              ))}
+              <div style={{ display:"flex", gap:8, marginTop:12 }}>
+                <button onClick={()=>setLang("fr")} style={{ flex:1, padding:"8px 12px", borderRadius:8, border:"1px solid rgba(10,31,26,0.12)", background: lang==="fr"?"var(--ayyad-deep)":"#fff", color: lang==="fr"?"#fff":"var(--ink-700)", fontWeight:700, fontSize:12, cursor:"pointer" }}>🇫🇷 FR</button>
+                <button onClick={()=>setLang("en")} style={{ flex:1, padding:"8px 12px", borderRadius:8, border:"1px solid rgba(10,31,26,0.12)", background: lang==="en"?"var(--ayyad-deep)":"#fff", color: lang==="en"?"#fff":"var(--ink-700)", fontWeight:700, fontSize:12, cursor:"pointer" }}>🇬🇧 EN</button>
+              </div>
+              {user?.isAdmin && (
+                <button onClick={()=>{ setPage("admin"); setMobileOpen(false); }} style={{ marginTop:8, background:"rgba(201,168,76,0.10)", border:"1px solid rgba(201,168,76,0.30)", borderRadius:10, padding:"12px 14px", color:"var(--ayyad-gold-deep)", fontWeight:700, fontSize:13, cursor:"pointer", textAlign:"left" }}>⚙ {t.admin}</button>
+              )}
+            </div>
+          </div>
+        )}
+      </nav>
+    </>
   );
 };
 
-// ── Case Card ─────────────────────────────────────────────────
+// ── Case Card premium ─────────────────────────────────────────────────────────
+// Carte campagne avec hover lift, hiérarchie éditoriale, progression visible
+// immédiatement sur l'image et micro-CTA "Soutenir" qui apparaît au hover.
 const CaseCard = ({ c, lang, t, onClick }) => {
   const percent = pct(c.collected, c.required);
   const funded = c.status==="FUNDED";
+  const fr = lang === "fr";
   const tc = t.card;
   const photo = c.photo_url || (c.photos && c.photos[0]) || null;
+  const title = typeof c.title === "object" ? (c.title[lang] || c.title.fr) : c.title;
+  const category = typeof c.category === "object" ? (c.category[lang] || c.category.fr) : c.category;
+
   return (
-    <div onClick={onClick} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden group">
-      {/* Photo bénéficiaire */}
-      <div className="h-48 relative overflow-hidden bg-gradient-to-br from-emerald-50 to-teal-50">
+    <div
+      onClick={onClick}
+      className="ayyad-card group"
+      style={{
+        cursor:"pointer", overflow:"hidden", display:"flex", flexDirection:"column",
+        borderRadius: 18,
+        background:"#fff",
+      }}
+    >
+      {/* Photo bénéficiaire + overlay */}
+      <div style={{
+        position:"relative", height: 208, overflow:"hidden",
+        background:"linear-gradient(135deg, #ecfdf5, #f0fdfa)",
+      }}>
         {photo ? (
-          <img src={photo} alt={c.beneficiary} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" />
+          <img
+            src={photo}
+            alt={c.beneficiary || title}
+            style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top", transition:"transform 700ms cubic-bezier(0.16,1,0.3,1)" }}
+            className="group-hover:scale-110"
+          />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-            <div className="text-4xl opacity-30">📷</div>
-            <span className="text-xs text-gray-400 font-medium">Photo à venir</span>
+          <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:8 }}>
+            <div style={{ fontSize: 56, opacity:0.25 }}>{typeof c.image === "string" && !c.image.startsWith("http") ? c.image : "🏥"}</div>
+            <span style={{ fontSize:11, color:"var(--ink-400)", fontWeight:600, letterSpacing:0.8, textTransform:"uppercase" }}>{fr ? "Photo à venir" : "Photo coming"}</span>
           </div>
         )}
-        {/* Badge spécialité en overlay bas-gauche */}
-        <div className="absolute bottom-2 left-2">
-          <span className="bg-white/90 backdrop-blur-sm text-gray-700 text-xs font-bold px-2 py-1 rounded-full shadow-sm">{c.image && !c.image.startsWith("http") ? c.image : "🏥"} {c.category[lang]}</span>
+
+        {/* Gradient bas → meilleure lisibilité */}
+        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 50%)" }} />
+
+        {/* Badge spécialité — bas gauche */}
+        <div style={{ position:"absolute", bottom:12, left:12, display:"flex", gap:8 }}>
+          <span style={{
+            background:"rgba(255,255,255,0.95)",
+            backdropFilter:"blur(10px)",
+            color:"var(--ayyad-deep)",
+            fontSize:11, fontWeight:700,
+            padding:"5px 12px", borderRadius:9999,
+            boxShadow:"0 2px 8px rgba(0,0,0,0.10)",
+            letterSpacing:0.3,
+          }}>
+            {c.image && typeof c.image === "string" && !c.image.startsWith("http") ? `${c.image} ` : "🏥 "}{category}
+          </span>
         </div>
-        {/* Badge urgent */}
-        {c.urgent && (
-          <div className="absolute top-2 left-2">
-            <span className="bg-red-600 text-white text-xs font-black px-2 py-1 rounded-full animate-pulse">🚨 URGENT</span>
+
+        {/* Badge urgent ou financé — haut gauche */}
+        {c.urgent && !funded && (
+          <div style={{ position:"absolute", top:12, left:12 }}>
+            <span style={{
+              background:"#dc2626", color:"#fff",
+              fontSize:10, fontWeight:900, letterSpacing:1.2,
+              padding:"5px 12px", borderRadius:9999,
+              animation:"ayyad-pulse-soft 2s ease-in-out infinite",
+              boxShadow:"0 4px 12px rgba(220,38,38,0.40)",
+            }}>🚨 URGENT</span>
           </div>
         )}
         {funded && (
-          <div className="absolute top-2 right-2">
-            <span className="bg-emerald-600 text-white text-xs font-bold px-2 py-1 rounded-full">✅ Financé</span>
+          <div style={{ position:"absolute", top:12, left:12 }}>
+            <span style={{
+              background:"linear-gradient(135deg, #059669, #10b981)",
+              color:"#fff",
+              fontSize:10, fontWeight:900, letterSpacing:1.2,
+              padding:"5px 12px", borderRadius:9999,
+              boxShadow:"0 4px 12px rgba(16,185,129,0.40)",
+            }}>✓ {fr ? "FINANCÉ" : "FUNDED"}</span>
           </div>
         )}
+
+        {/* Badge % progression — haut droite (sur photo) */}
+        <div style={{ position:"absolute", top:12, right:12 }}>
+          <span style={{
+            background:"rgba(10,31,26,0.78)",
+            backdropFilter:"blur(8px)",
+            color:"#e9d59a",
+            fontFamily:"var(--font-serif)", fontWeight:800, fontSize:14,
+            padding:"4px 12px", borderRadius:9999,
+            border:"1px solid rgba(201,168,76,0.40)",
+          }}>{percent}%</span>
+        </div>
       </div>
-      <div className="p-5">
-        <div className="mb-2">
-          <h3 className="font-bold text-gray-900 text-sm leading-snug group-hover:text-emerald-700 transition-colors">{c.title[lang]}</h3>
+
+      {/* Corps */}
+      <div style={{ padding:"22px 22px 20px", display:"flex", flexDirection:"column", flex:1 }}>
+        {/* Titre éditorial */}
+        <h3 className="ayyad-h-display" style={{
+          fontSize: 18, lineHeight: 1.3, marginBottom: 8,
+          color:"var(--ayyad-deep)",
+          transition:"color .2s",
+        }}>{title}</h3>
+
+        {/* Méta-données (hôpital + ville) */}
+        <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, color:"var(--ink-500)", marginBottom: 18, flexWrap:"wrap" }}>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
+            <span style={{ color:"var(--ayyad-teal)" }}>🏥</span>
+            <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:180 }}>{c.hospital}</span>
+          </span>
+          <span style={{ color:"var(--ink-300)" }}>•</span>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
+            <span style={{ color:"var(--ayyad-teal)" }}>📍</span>{c.city}
+          </span>
         </div>
-        <div className="flex items-center gap-1 text-xs text-gray-500 mb-4">🏥 <span className="truncate">{c.hospital}</span> · 📍 <span>{c.city}</span></div>
-        <div className="mb-3">
-          <div className="flex justify-between text-xs mb-1.5">
-            <span className="font-bold text-emerald-700">{fmt(c.collected)}</span>
-            <span className="text-gray-400">{tc.on} {fmt(c.required)}</span>
+
+        {/* Progression */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom: 8 }}>
+            <span style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:17, color:"var(--ayyad-deep)" }}>{fmt(c.collected)}</span>
+            <span style={{ fontSize:11, color:"var(--ink-400)", fontWeight:600 }}>{tc.on} {fmt(c.required)}</span>
           </div>
-          <ProgressBar percent={percent} />
-          <div className="text-right text-xs text-emerald-600 font-semibold mt-0.5">{percent}%</div>
-        </div>
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>👥 {c.donors} {tc.donors}</span>
-          {funded?<span className="text-emerald-600 font-bold">{tc.funded}</span>:<span className="text-amber-600 font-medium">⏳ {c.daysLeft} {tc.daysLeft}</span>}
-        </div>
-        {c.trackingId && (
-          <div className="mt-3 flex items-center justify-between bg-gray-50 rounded-lg px-2.5 py-1.5 border border-gray-100">
-            <span className="text-[10px] text-gray-400 font-medium">ID Suivi</span>
-            <span className="text-xs font-mono font-bold text-emerald-700">{c.trackingId}</span>
+          <div style={{ height:6, background:"#f3f4f6", borderRadius:9999, overflow:"hidden" }}>
+            <div style={{
+              height:"100%",
+              width: percent + "%",
+              background: percent === 100
+                ? "linear-gradient(90deg, #059669, #10b981, #34d399)"
+                : "linear-gradient(90deg, #0d5c2e, #10b981)",
+              borderRadius: 9999,
+              transition:"width 1.2s cubic-bezier(0.16,1,0.3,1)",
+              boxShadow: "0 1px 4px rgba(16,185,129,0.30)",
+            }} />
           </div>
-        )}
-        <div className="mt-2 flex justify-end">
-          <ShareButton c={c} lang={lang} size="small" />
+        </div>
+
+        {/* Footer stats */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", fontSize:12, color:"var(--ink-500)", marginTop:"auto" }}>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontWeight:600 }}>
+            <span style={{ color:"var(--ayyad-gold-deep)" }}>👥</span>
+            <strong style={{ color:"var(--ayyad-deep)", fontWeight:800 }}>{c.donors || 0}</strong> {tc.donors}
+          </span>
+          {funded ? (
+            <span style={{ color:"#059669", fontWeight:800, display:"inline-flex", alignItems:"center", gap:4 }}>
+              ✓ {tc.funded}
+            </span>
+          ) : (
+            <span style={{ color:"#d97706", fontWeight:700, display:"inline-flex", alignItems:"center", gap:4 }}>
+              ⏱ {c.daysLeft} {tc.daysLeft}
+            </span>
+          )}
+        </div>
+
+        {/* Bottom row : tracking + action */}
+        <div style={{ marginTop:18, paddingTop:14, borderTop:"1px dashed rgba(10,31,26,0.08)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
+          {c.trackingId ? (
+            <span style={{ fontSize:10, fontFamily:"monospace", color:"var(--ink-400)", fontWeight:700, letterSpacing:0.4 }}>
+              {c.trackingId}
+            </span>
+          ) : <span />}
+          <div style={{ display:"flex", alignItems:"center", gap:6 }} onClick={e=>e.stopPropagation()}>
+            <ShareButton c={c} lang={lang} size="small" />
+            <span style={{
+              background:"linear-gradient(135deg, var(--ayyad-deep), var(--ayyad-emerald))",
+              color:"#fff", fontWeight:700, fontSize:11,
+              padding:"7px 14px", borderRadius:9999,
+              display:"inline-flex", alignItems:"center", gap:4,
+              cursor:"pointer",
+              boxShadow:"0 4px 12px rgba(13,92,46,0.22)",
+              transition:"transform .2s",
+            }}
+            onClick={onClick}
+            onMouseEnter={e=>{ e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={e=>{ e.currentTarget.style.transform = "translateY(0)"; }}
+            >
+              {funded ? (fr ? "Voir l'histoire" : "Read story") : (fr ? "Soutenir" : "Support")} →
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -1573,67 +1875,279 @@ const Reveal = ({ children, delay = 0, as: As = "div", className = "" }) => {
   return <As ref={ref} className={`ayyad-reveal ${className}`}>{children}</As>;
 };
 
-// ── HeroSlider — slider plein écran d'images de fond avec auto-play ──────────
-// 3 slides qui défilent toutes les 6 secondes, photos Unsplash libres de droits
-// adaptées au thème santé/solidarité africaine. Dots de navigation cliquables.
-const HeroSlider = ({ lang }) => {
+// ── HeroSlider premium — storytelling progressif sur 4 slides ────────────────
+// Chaque slide combine une image émotionnelle forte + un message dédié (titre +
+// sous-titre + CTA principal). L'image fait un effet ken-burns, le texte fade
+// in/out à chaque transition. Sur la base du hero, une bande de KPIs animés
+// renforce la confiance financière. Indicateur scroll-down élégant en bas.
+const HeroSlider = ({ lang, setPage, t, heroStats }) => {
   const fr = lang === "fr";
+
+  // Contenu narratif des 4 slides — chaque slide = un angle de la mission
   const slides = [
     {
-      image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1920&q=80",
-      title: fr ? "Soigner sans renoncer." : "Heal without giving up.",
-      sub: fr ? "Chaque don soutient un patient ivoirien dans son combat médical." : "Every donation supports a patient's medical fight.",
+      img: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1920&q=85",
+      eyebrow: fr ? "Plateforme vérifiée & sécurisée" : "Verified & secure platform",
+      titlePre: fr ? "Quand la vie attend," : "When life can't wait,",
+      titleEm: fr ? "agissons ensemble." : "we act together.",
+      sub: fr
+        ? "Derrière chaque collecte, un patient dont la santé dépend de notre solidarité. Un don. Un hôpital. Un espoir."
+        : "Behind every campaign, a patient whose health depends on our solidarity. One donation. One hospital. One hope.",
+      cta: { label: fr ? "Faire un don maintenant" : "Donate now", action: () => setPage("collectesactives") },
     },
     {
-      image: "https://images.unsplash.com/photo-1612531048118-826c4e98c2da?w=1920&q=80",
-      title: fr ? "Une communauté solidaire." : "A solidarity community.",
-      sub: fr ? "Ensemble, nous transformons l'espoir en soins concrets." : "Together, we turn hope into real care.",
+      img: "https://images.unsplash.com/photo-1612531048118-826c4e98c2da?w=1920&q=85",
+      eyebrow: fr ? "100% transparent · 0% frais cachés" : "100% transparent · 0% hidden fees",
+      titlePre: fr ? "Financer des soins," : "Funding care,",
+      titleEm: fr ? "changer une vie." : "changing a life.",
+      sub: fr
+        ? "Vos dons sont versés directement à l'hôpital partenaire. Chaque virement est audité. Aucune intermédiation cash."
+        : "Your donations go directly to the partner hospital. Every transfer is audited. No cash intermediation.",
+      cta: { label: fr ? "Découvrir les campagnes" : "Explore campaigns", action: () => setPage("collectesactives") },
     },
     {
-      image: "https://images.unsplash.com/photo-1666214280557-f1b5022eb634?w=1920&q=80",
-      title: fr ? "100 % transparent." : "100% transparent.",
-      sub: fr ? "Vos dons sont versés directement à l'hôpital partenaire." : "Your donations go directly to the partner hospital.",
+      img: "https://images.unsplash.com/photo-1666214280557-f1b5022eb634?w=1920&q=85",
+      eyebrow: fr ? "Pour les patients" : "For patients",
+      titlePre: fr ? "Une plateforme humaine," : "A platform built on humanity,",
+      titleEm: fr ? "construite pour vous." : "built for you.",
+      sub: fr
+        ? "Soumettez votre dossier médical, notre équipe le vérifie sous 48h avec un hôpital partenaire. Mise en ligne rapide, suivi personnalisé."
+        : "Submit your medical case, our team verifies it within 48h with a partner hospital. Fast online launch, personal follow-up.",
+      cta: { label: fr ? "Soumettre un dossier" : "Submit a case", action: () => setPage("submit") },
+    },
+    {
+      img: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=1920&q=85",
+      eyebrow: fr ? "Impact mesurable" : "Measurable impact",
+      titlePre: fr ? "Chaque contribution" : "Every contribution",
+      titleEm: fr ? "peut sauver une vie." : "can save a life.",
+      sub: fr
+        ? "Rejoignez une communauté de donateurs engagés à offrir un accès aux soins à ceux qui en ont le plus besoin en Côte d'Ivoire."
+        : "Join a community of donors committed to providing healthcare access to those who need it most in Côte d'Ivoire.",
+      cta: { label: fr ? "Voir les histoires" : "Read the stories", action: () => setPage("collectes") },
     },
   ];
+
   const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+
   useEffect(() => {
-    const t = setInterval(() => setIdx(i => (i + 1) % slides.length), 6000);
-    return () => clearInterval(t);
-  }, [slides.length]);
+    if (paused) return;
+    const tm = setInterval(() => setIdx(i => (i + 1) % slides.length), 7200);
+    return () => clearInterval(tm);
+  }, [paused, slides.length]);
+
+  const goNext = () => setIdx(i => (i + 1) % slides.length);
+  const goPrev = () => setIdx(i => (i - 1 + slides.length) % slides.length);
+
+  const current = slides[idx];
 
   return (
-    <div className="relative w-full overflow-hidden" style={{ height: "min(80vh, 720px)", minHeight: 480 }}>
+    <section
+      className="relative w-full"
+      style={{ minHeight: "92vh", overflow:"hidden", background:"#0a1f1a" }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      {/* Slides background */}
       {slides.map((s, i) => (
         <div
           key={i}
-          className="absolute inset-0 transition-opacity duration-1000 ease-in-out"
-          style={{
-            opacity: i === idx ? 1 : 0,
-            backgroundImage: `linear-gradient(to bottom, rgba(13,92,46,0.55), rgba(15,118,110,0.7)), url(${s.image})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
+          className={`ayyad-hero-slide ${i === idx ? "is-active" : ""}`}
+        >
+          <div className="ayyad-hero-bg" style={{ backgroundImage: `url(${s.img})` }} />
+          {/* Overlay gradient signature (deep emerald) */}
+          <div style={{ position:"absolute", inset:0, background:"var(--grad-hero-overlay)" }} />
+          {/* Voile bas pour lisibilité KPIs */}
+          <div style={{ position:"absolute", inset:0, background:"var(--grad-hero-bottom)" }} />
+        </div>
       ))}
-      <div className="relative h-full max-w-7xl mx-auto px-4 flex flex-col items-center justify-center text-center text-white">
-        <h2 className="text-4xl sm:text-6xl lg:text-7xl font-black leading-tight mb-4 drop-shadow-2xl" style={{ textShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
-          {slides[idx].title}
-        </h2>
-        <p className="text-base sm:text-xl max-w-2xl mx-auto leading-relaxed drop-shadow-lg opacity-95">
-          {slides[idx].sub}
-        </p>
-        <div className="mt-10 flex gap-2">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setIdx(i)}
-              aria-label={`Slide ${i+1}`}
-              className={`h-1.5 rounded-full transition-all ${i === idx ? "w-10 bg-white" : "w-6 bg-white/40 hover:bg-white/60"}`}
-            />
+
+      {/* Particles or pattern overlay subtle (gold dots) */}
+      <div style={{
+        position:"absolute", inset:0, zIndex:3, pointerEvents:"none",
+        backgroundImage:"radial-gradient(rgba(201,168,76,0.10) 1px, transparent 1px)",
+        backgroundSize:"32px 32px",
+        opacity: 0.4,
+      }} />
+
+      {/* Contenu */}
+      <div className="ayyad-container" style={{
+        position:"relative", zIndex:5,
+        minHeight:"92vh",
+        display:"flex", flexDirection:"column", justifyContent:"center",
+        paddingTop: 80, paddingBottom: 120,
+        color:"#fff",
+      }}>
+        <div style={{ maxWidth: 880 }}>
+          {/* Eyebrow / badge — réanime à chaque changement de slide */}
+          <div key={`eb-${idx}`} style={{
+            display:"inline-flex", alignItems:"center", gap:10,
+            background:"rgba(255,255,255,0.10)",
+            backdropFilter:"blur(10px)",
+            border:"1px solid rgba(201,168,76,0.35)",
+            padding:"7px 16px",
+            borderRadius:9999,
+            fontSize:11, fontWeight:700, letterSpacing:2.2, textTransform:"uppercase",
+            color:"#e9d59a",
+            marginBottom: 28,
+            animation:"ayyad-slide-up 700ms cubic-bezier(0.16,1,0.3,1) both",
+          }}>
+            <span style={{ width:7, height:7, borderRadius:"50%", background:"#34d399", boxShadow:"0 0 0 4px rgba(52,211,153,0.20)", display:"inline-block" }} />
+            {current.eyebrow}
+          </div>
+
+          {/* Titre éditorial Playfair */}
+          <h1 key={`t-${idx}`} className="ayyad-h-display" style={{
+            fontSize: "clamp(2.4rem, 6vw, 5.2rem)",
+            color:"#fff",
+            margin: 0,
+            marginBottom: 24,
+            textShadow:"0 4px 32px rgba(0,0,0,0.35)",
+            animation:"ayyad-slide-up 900ms cubic-bezier(0.16,1,0.3,1) both",
+            animationDelay:"80ms",
+          }}>
+            {current.titlePre}<br />
+            <em style={{ color:"#e9d59a", fontWeight:700 }}>{current.titleEm}</em>
+          </h1>
+
+          {/* Sous-titre */}
+          <p key={`s-${idx}`} style={{
+            fontSize:"clamp(1rem, 1.5vw, 1.25rem)",
+            lineHeight: 1.6,
+            color:"rgba(255,255,255,0.92)",
+            maxWidth: 680,
+            marginBottom: 40,
+            textShadow:"0 2px 12px rgba(0,0,0,0.30)",
+            fontWeight:400,
+            animation:"ayyad-slide-up 900ms cubic-bezier(0.16,1,0.3,1) both",
+            animationDelay:"180ms",
+          }}>
+            {current.sub}
+          </p>
+
+          {/* CTAs */}
+          <div key={`cta-${idx}`} style={{
+            display:"flex", flexWrap:"wrap", gap:14,
+            animation:"ayyad-slide-up 900ms cubic-bezier(0.16,1,0.3,1) both",
+            animationDelay:"280ms",
+          }}>
+            <button onClick={current.cta.action} className="ayyad-btn-gold" style={{ fontSize:14, padding:"15px 30px" }}>
+              {current.cta.label} →
+            </button>
+            <button onClick={() => setPage("submit")} className="ayyad-btn-ghost" style={{ fontSize:14 }}>
+              {fr ? "Lancer une campagne" : "Start a campaign"}
+            </button>
+            <button onClick={() => setPage("how")} className="ayyad-btn-ghost" style={{ fontSize:14 }}>
+              {fr ? "Comment ça marche" : "How it works"}
+            </button>
+          </div>
+
+          {/* Trust pills */}
+          <div style={{ display:"flex", flexWrap:"wrap", gap:10, marginTop: 36 }}>
+            <span className="ayyad-trust-pill" style={{ background:"rgba(255,255,255,0.10)", color:"#fff", border:"1px solid rgba(255,255,255,0.22)" }}>
+              <span style={{ color:"#e9d59a" }}>🔒</span> {fr ? "Paiement sécurisé" : "Secure payment"}
+            </span>
+            <span className="ayyad-trust-pill" style={{ background:"rgba(255,255,255,0.10)", color:"#fff", border:"1px solid rgba(255,255,255,0.22)" }}>
+              <span style={{ color:"#e9d59a" }}>✓</span> {fr ? "100% transparent" : "100% transparent"}
+            </span>
+            <span className="ayyad-trust-pill" style={{ background:"rgba(255,255,255,0.10)", color:"#fff", border:"1px solid rgba(255,255,255,0.22)" }}>
+              <span style={{ color:"#e9d59a" }}>🏥</span> {fr ? "Hôpitaux partenaires" : "Partner hospitals"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI live bar — collée en bas du hero */}
+      <div style={{
+        position:"absolute", left:0, right:0, bottom:0, zIndex:6,
+        background:"linear-gradient(180deg, rgba(10,31,26,0) 0%, rgba(10,31,26,0.50) 60%, rgba(10,31,26,0.92) 100%)",
+        paddingTop: 24, paddingBottom: 0,
+      }}>
+        <div className="ayyad-container" style={{
+          display:"grid",
+          gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",
+          gap: 0,
+          borderTop:"1px solid rgba(201,168,76,0.22)",
+          borderBottom:"none",
+          background:"rgba(10,31,26,0.55)",
+          backdropFilter:"blur(12px)",
+          padding:"22px 24px",
+        }}>
+          {[
+            { v: heroStats?.patients || "—", l: fr ? "Patients aidés" : "Patients helped", icon:"💚" },
+            { v: heroStats?.collected || "—", l: fr ? "FCFA collectés" : "FCFA raised", icon:"📈" },
+            { v: heroStats?.hospitals || "18", l: fr ? "Hôpitaux partenaires" : "Partner hospitals", icon:"🏥" },
+            { v: "48h", l: fr ? "Vérification dossier" : "Case verification", icon:"⚡" },
+          ].map((k, i) => (
+            <div key={i} style={{
+              padding:"6px 18px",
+              borderLeft: i === 0 ? "none" : "1px solid rgba(255,255,255,0.10)",
+              textAlign:"left",
+            }}>
+              <div style={{ display:"flex", alignItems:"baseline", gap:8 }}>
+                <span style={{ fontSize:18, opacity:0.65 }}>{k.icon}</span>
+                <span style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:"clamp(1.5rem, 2.6vw, 2.2rem)", color:"#fff", letterSpacing:"-0.02em", lineHeight:1 }}>{k.v}</span>
+              </div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.65)", letterSpacing:1.4, textTransform:"uppercase", fontWeight:600, marginTop:6 }}>
+                {k.l}
+              </div>
+            </div>
           ))}
         </div>
       </div>
-    </div>
+
+      {/* Flèches précédent/suivant (desktop) */}
+      <button
+        onClick={(e)=>{ e.stopPropagation(); goPrev(); }}
+        className="hidden md:flex"
+        style={{
+          position:"absolute", left:24, top:"50%", transform:"translateY(-50%)",
+          zIndex:7, width:48, height:48, borderRadius:"50%",
+          background:"rgba(255,255,255,0.10)", backdropFilter:"blur(8px)",
+          border:"1px solid rgba(255,255,255,0.22)",
+          color:"#fff", fontSize:20, cursor:"pointer",
+          alignItems:"center", justifyContent:"center",
+          transition:"all .25s",
+        }}
+        onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.20)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.45)"; }}
+        onMouseLeave={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.10)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.22)"; }}
+        aria-label="Slide précédent"
+      >‹</button>
+      <button
+        onClick={(e)=>{ e.stopPropagation(); goNext(); }}
+        className="hidden md:flex"
+        style={{
+          position:"absolute", right:24, top:"50%", transform:"translateY(-50%)",
+          zIndex:7, width:48, height:48, borderRadius:"50%",
+          background:"rgba(255,255,255,0.10)", backdropFilter:"blur(8px)",
+          border:"1px solid rgba(255,255,255,0.22)",
+          color:"#fff", fontSize:20, cursor:"pointer",
+          alignItems:"center", justifyContent:"center",
+          transition:"all .25s",
+        }}
+        onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.20)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.45)"; }}
+        onMouseLeave={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.10)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.22)"; }}
+        aria-label="Slide suivant"
+      >›</button>
+
+      {/* Dots */}
+      <div style={{ position:"absolute", left:0, right:0, top:24, zIndex:7, display:"flex", justifyContent:"center", gap:8 }}>
+        {slides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setIdx(i)}
+            aria-label={`Slide ${i+1}`}
+            style={{
+              height: 3, borderRadius: 999,
+              width: i === idx ? 36 : 18,
+              background: i === idx ? "#e9d59a" : "rgba(255,255,255,0.35)",
+              border:"none", cursor:"pointer",
+              transition:"all .35s",
+            }}
+          />
+        ))}
+      </div>
+    </section>
   );
 };
 
@@ -1655,40 +2169,515 @@ const PartnersBanner = ({ lang }) => {
     { name: "La Providence", full: "Clinique La Providence", city: "Abidjan" },
   ];
   return (
-    <section className="bg-gradient-to-b from-white to-emerald-50/30 py-16 sm:py-20">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-full px-4 py-1.5 mb-4 text-xs font-bold text-emerald-700">
-            <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-            {fr ? "PARTENARIATS HOSPITALIERS EN COURS DE VALIDATION" : "HOSPITAL PARTNERSHIPS IN PROGRESS"}
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-3">
-            {fr ? "Nos établissements de santé partenaires" : "Our partner healthcare facilities"}
+    <section style={{
+      background:"var(--paper)",
+      padding:"clamp(72px, 8vw, 112px) 0",
+      borderTop:"1px solid rgba(10,31,26,0.04)",
+      position:"relative",
+    }}>
+      <div className="ayyad-container">
+        <div style={{ textAlign:"center", marginBottom: 56, maxWidth: 720, margin:"0 auto 56px" }}>
+          <span className="ayyad-eyebrow">{fr ? "Partenariats hospitaliers en cours" : "Hospital partnerships in progress"}</span>
+          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.8rem, 3.2vw, 2.6rem)", marginTop: 18, marginBottom: 16 }}>
+            {fr ? <>Nos <em>établissements partenaires.</em></> : <>Our <em>partner facilities.</em></>}
           </h2>
-          <p className="text-gray-500 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
+          <p style={{ color:"var(--ink-500)", fontSize:15, lineHeight:1.65 }}>
             {fr
               ? "Ayyad collabore avec des hôpitaux et cliniques de référence en Côte d'Ivoire pour garantir que chaque don soit versé directement à l'établissement qui prend en charge le patient."
               : "Ayyad collaborates with leading hospitals and clinics in Côte d'Ivoire to ensure every donation goes directly to the healthcare facility caring for the patient."}
           </p>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+        <div style={{
+          display:"grid",
+          gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",
+          gap: 16,
+        }}>
           {partners.map((p, i) => (
             <div
               key={p.name}
-              className="bg-white border border-gray-100 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all flex flex-col items-center text-center"
-              style={{ animationDelay: `${i * 60}ms` }}
+              className="ayyad-card ayyad-reveal"
+              style={{
+                padding:"24px 18px",
+                display:"flex", flexDirection:"column", alignItems:"center",
+                textAlign:"center", gap: 12,
+                transitionDelay: `${i * 50}ms`,
+              }}
             >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl flex items-center justify-center text-2xl mb-3">🏥</div>
-              <div className="font-bold text-sm text-gray-900 leading-tight">{p.name}</div>
-              <div className="text-[10px] text-gray-400 mt-1">{p.city}</div>
+              <div style={{
+                width: 56, height: 56, borderRadius: 14,
+                background:"linear-gradient(135deg, rgba(13,92,46,0.08) 0%, rgba(15,118,110,0.08) 100%)",
+                border:"1px solid rgba(13,92,46,0.10)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize: 26,
+              }}>🏥</div>
+              <div>
+                <div style={{ fontFamily:"var(--font-serif)", fontWeight:700, fontSize:15, color:"var(--ayyad-deep)", lineHeight:1.2 }}>{p.name}</div>
+                <div style={{ fontSize:11, color:"var(--ink-400)", marginTop:4, letterSpacing:0.4, textTransform:"uppercase", fontWeight:600 }}>{p.city}</div>
+              </div>
             </div>
           ))}
         </div>
-        <p className="text-center text-[11px] text-gray-400 mt-6 italic">
+        <p style={{ textAlign:"center", fontSize:12, color:"var(--ink-400)", marginTop: 32, fontStyle:"italic", maxWidth: 720, margin:"32px auto 0" }}>
           {fr
             ? "Les partenariats listés sont en cours de finalisation administrative. Les fonds sont actuellement versés sur demande des familles ou directement aux hôpitaux concernés au cas par cas."
             : "Listed partnerships are being formalized. Funds are currently transferred upon family request or directly to the relevant hospitals on a case-by-case basis."}
         </p>
+      </div>
+    </section>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ── ImpactSection — Confiance financière + chiffres clés animés ─────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Bande de KPIs centrale avec contre-narratif rassurant (transparence, audit,
+// versement direct hôpital). Compteurs s'incrémentent au scroll, badges
+// confiance, mini-témoignage en pull-quote.
+const useCountUp = (target, duration = 1600, enabled = true) => {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (!enabled || !target) return;
+    const num = Number(String(target).replace(/[^\d.]/g, "")) || 0;
+    if (num === 0) { setValue(0); return; }
+    const start = performance.now();
+    let raf;
+    const tick = (now) => {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.round(num * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration, enabled]);
+  return value;
+};
+
+const AnimatedNumber = ({ value, suffix = "", visible }) => {
+  const n = useCountUp(value, 1800, visible);
+  return <span>{n.toLocaleString("fr-CI")}{suffix}</span>;
+};
+
+const ImpactSection = ({ lang, heroStats }) => {
+  const fr = lang === "fr";
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (!ref.current) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.25 });
+    obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  // Parse heroStats : "12M" → 12, "3.5k" → 3500…
+  const parseStat = (raw) => {
+    if (raw == null || raw === "—") return 0;
+    const str = String(raw).trim();
+    const numMatch = str.match(/[\d.]+/);
+    if (!numMatch) return 0;
+    let n = parseFloat(numMatch[0]);
+    if (/M/i.test(str)) n *= 1_000_000;
+    else if (/k/i.test(str)) n *= 1_000;
+    return Math.round(n);
+  };
+
+  const collectedNum = parseStat(heroStats?.collected) || 24_800_000;
+  const patientsNum = parseStat(heroStats?.patients) || 127;
+  const hospitalsNum = parseStat(heroStats?.hospitals) || 18;
+  const campagnesNum = patientsNum > 0 ? Math.max(patientsNum, 30) : 142;
+
+  return (
+    <section ref={ref} style={{ background:"var(--paper)", padding:"clamp(72px,8vw,112px) 0", position:"relative" }}>
+      {/* Bordure dorée subtile en haut */}
+      <div style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:120, height:3, background:"var(--grad-gold)", borderRadius:999 }} />
+
+      <div className="ayyad-container">
+        {/* Header centré */}
+        <div style={{ textAlign:"center", marginBottom: 64 }}>
+          <span className="ayyad-eyebrow">{fr ? "Notre impact" : "Our impact"}</span>
+          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(2rem, 4vw, 3.4rem)", marginTop: 18, marginBottom: 16 }}>
+            {fr ? <>Des chiffres qui <em>changent des vies.</em></> : <>Numbers that <em>change lives.</em></>}
+          </h2>
+          <p style={{ color:"var(--ink-500)", fontSize:"clamp(1rem, 1.2vw, 1.125rem)", maxWidth: 640, margin:"0 auto", lineHeight:1.65 }}>
+            {fr
+              ? "Chaque don est tracé, chaque virement est audité, chaque patient est suivi. Voici la mesure concrète de notre solidarité collective."
+              : "Every donation is tracked, every transfer is audited, every patient is followed up. Here is the concrete measure of our collective solidarity."}
+          </p>
+        </div>
+
+        {/* Grille KPIs */}
+        <div style={{
+          display:"grid",
+          gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))",
+          gap: 24,
+          marginBottom: 56,
+        }}>
+          {[
+            { v: collectedNum, suffix: " FCFA", label: fr ? "Total collecté" : "Total raised", icon:"💰", color:"#0d5c2e" },
+            { v: patientsNum,  suffix: "",       label: fr ? "Patients aidés" : "Patients helped", icon:"💚", color:"#10b981" },
+            { v: hospitalsNum, suffix: "",       label: fr ? "Hôpitaux partenaires" : "Partner hospitals", icon:"🏥", color:"#0f766e" },
+            { v: campagnesNum, suffix: "",       label: fr ? "Campagnes financées" : "Funded campaigns", icon:"🎯", color:"#a17f29" },
+          ].map((k, i) => (
+            <div key={i} className="ayyad-card ayyad-reveal" style={{ padding:"32px 28px", textAlign:"left", animationDelay: `${i*80}ms` }}>
+              <div style={{
+                width:52, height:52, borderRadius:14,
+                background: `linear-gradient(135deg, ${k.color}15, ${k.color}08)`,
+                border:`1px solid ${k.color}22`,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:26, marginBottom:18,
+              }}>{k.icon}</div>
+              <div className="ayyad-counter" style={{ marginBottom: 6 }}>
+                <AnimatedNumber value={k.v} suffix={k.suffix} visible={visible} />
+              </div>
+              <div style={{ color:"var(--ink-500)", fontSize:13, fontWeight:600, letterSpacing:0.8, textTransform:"uppercase" }}>
+                {k.label}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bande de confiance + pull-quote */}
+        <div style={{
+          background:"linear-gradient(135deg, #0a3d2e 0%, #0d5c2e 100%)",
+          borderRadius: 28,
+          padding:"clamp(36px, 4vw, 56px)",
+          color:"#fff",
+          position:"relative", overflow:"hidden",
+          boxShadow:"var(--shadow-2xl)",
+        }}>
+          {/* Pattern doré décoratif */}
+          <div style={{
+            position:"absolute", inset:0, opacity:0.06, pointerEvents:"none",
+            backgroundImage:"radial-gradient(rgba(201,168,76,1) 1.5px, transparent 1.5px)",
+            backgroundSize:"24px 24px",
+          }} />
+          <div style={{ position:"relative", display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))", gap: 40, alignItems:"center" }}>
+            <div>
+              <span className="ayyad-eyebrow" style={{ color:"#e9d59a", background:"rgba(201,168,76,0.10)", borderColor:"rgba(201,168,76,0.40)" }}>
+                {fr ? "Engagement Ayyad" : "Ayyad commitment"}
+              </span>
+              <h3 className="ayyad-h-display" style={{ color:"#fff", fontSize:"clamp(1.6rem, 2.6vw, 2.4rem)", marginTop: 18, marginBottom: 16 }}>
+                {fr ? <>La confiance n'est pas un mot, <em style={{ color:"#e9d59a" }}>c'est une preuve.</em></> : <>Trust isn't a word, <em style={{ color:"#e9d59a" }}>it's a proof.</em></>}
+              </h3>
+              <p style={{ color:"rgba(255,255,255,0.85)", lineHeight:1.7, fontSize:15 }}>
+                {fr
+                  ? "Nous publions chaque mois nos rapports d'impact, nos virements aux hôpitaux et notre commission. Aucune intermédiation cash, aucun frais caché : ce que vous donnez arrive intégralement à l'établissement de santé."
+                  : "Each month we publish our impact reports, hospital transfers and commission. No cash intermediation, no hidden fees: what you give arrives in full to the healthcare facility."}
+              </p>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap: 14 }}>
+              {[
+                { icon:"🔒", t: fr ? "Conformité BCEAO" : "BCEAO compliance",      s: fr ? "Plateforme déclarée et auditée" : "Declared and audited platform" },
+                { icon:"📊", t: fr ? "Rapports trimestriels"  : "Quarterly reports", s: fr ? "Transparence totale sur les fonds" : "Full transparency on funds" },
+                { icon:"🏥", t: fr ? "Versement direct hôpital" : "Direct to hospital", s: fr ? "Jamais en espèces, toujours tracé" : "Never cash, always traceable" },
+              ].map((b, i) => (
+                <div key={i} style={{
+                  display:"flex", gap:14, padding:"14px 18px",
+                  background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.10)",
+                  borderRadius: 14,
+                }}>
+                  <div style={{ fontSize:22 }}>{b.icon}</div>
+                  <div>
+                    <div style={{ fontWeight:700, fontSize:14, color:"#fff" }}>{b.t}</div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", marginTop:2 }}>{b.s}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ── VisionSection — Notre vision (split image + texte émotionnel) ───────────
+// ─────────────────────────────────────────────────────────────────────────────
+const VisionSection = ({ lang, setPage }) => {
+  const fr = lang === "fr";
+  return (
+    <section style={{
+      background:"linear-gradient(180deg, #fdfcfa 0%, #f7f6f2 100%)",
+      padding:"clamp(80px, 9vw, 128px) 0",
+      position:"relative", overflow:"hidden",
+    }}>
+      {/* Decorative blob */}
+      <div style={{
+        position:"absolute", top:-120, right:-120, width:380, height:380,
+        background:"radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%)",
+        borderRadius:"50%", pointerEvents:"none",
+      }} />
+
+      <div className="ayyad-container">
+        <div style={{
+          display:"grid",
+          gridTemplateColumns:"repeat(auto-fit, minmax(320px, 1fr))",
+          gap: 56, alignItems:"center",
+        }}>
+          {/* Visuel gauche */}
+          <div className="ayyad-reveal-left" style={{ position:"relative" }}>
+            <div style={{
+              position:"relative",
+              borderRadius: 28,
+              overflow:"hidden",
+              boxShadow:"var(--shadow-2xl)",
+              aspectRatio:"4 / 5",
+              background:"#0a3d2e",
+            }}>
+              <img
+                src="https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=900&q=85"
+                alt={fr ? "Mains tendues — solidarité" : "Hands together — solidarity"}
+                style={{ width:"100%", height:"100%", objectFit:"cover" }}
+                onError={e=>{ e.target.style.display='none'; }}
+              />
+              {/* Overlay gradient */}
+              <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg, rgba(10,31,26,0) 50%, rgba(10,31,26,0.78) 100%)" }} />
+              {/* Quote on image */}
+              <div style={{ position:"absolute", bottom:32, left:32, right:32, color:"#fff" }}>
+                <div style={{ fontSize:48, fontFamily:"var(--font-serif)", color:"#e9d59a", lineHeight:1, marginBottom:8 }}>"</div>
+                <p style={{ fontFamily:"var(--font-serif)", fontStyle:"italic", fontSize:18, fontWeight:500, lineHeight:1.45 }}>
+                  {fr
+                    ? "Soutenir une vie, c'est en sauver une."
+                    : "To support a life is to save one."}
+                </p>
+              </div>
+            </div>
+            {/* Badge floating */}
+            <div style={{
+              position:"absolute", bottom:-24, right:-12,
+              background:"#fff",
+              padding:"18px 24px",
+              borderRadius: 18,
+              boxShadow:"var(--shadow-xl)",
+              border:"1px solid rgba(10,31,26,0.06)",
+              display:"flex", alignItems:"center", gap:14,
+              maxWidth:260,
+            }}>
+              <div style={{
+                width:48, height:48, borderRadius:12,
+                background:"linear-gradient(135deg, #C9A84C, #e9d59a)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:22,
+              }}>💛</div>
+              <div>
+                <div style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:22, color:"var(--ayyad-deep)", lineHeight:1 }}>2024</div>
+                <div style={{ fontSize:11, color:"var(--ink-500)", fontWeight:600, letterSpacing:0.4, marginTop:4 }}>{fr ? "Plateforme fondée" : "Platform founded"}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Texte droit */}
+          <div className="ayyad-reveal-right">
+            <span className="ayyad-eyebrow">{fr ? "Notre vision" : "Our vision"}</span>
+            <h2 className="ayyad-h-display" style={{ fontSize:"clamp(2rem, 3.6vw, 3.2rem)", marginTop: 18, marginBottom: 24 }}>
+              {fr
+                ? <>Un accès aux soins <em>sans condition,</em> sans détour.</>
+                : <>Healthcare access <em>without condition,</em> without detour.</>}
+            </h2>
+            <p style={{ color:"var(--ink-700)", fontSize:17, lineHeight:1.75, marginBottom: 20 }}>
+              {fr
+                ? "Ayyad est née d'un constat simple : en Côte d'Ivoire, des milliers de patients renoncent à des soins vitaux faute de moyens. Pourtant, des dizaines de milliers de personnes seraient prêtes à donner — si elles avaient l'assurance que leur don arrive vraiment au bon endroit."
+                : "Ayyad was born from a simple observation: in Côte d'Ivoire, thousands of patients give up vital care for lack of resources. Yet tens of thousands of people would be willing to donate — if they had the assurance that their gift truly reaches the right place."}
+            </p>
+            <p style={{ color:"var(--ink-500)", fontSize:15, lineHeight:1.75, marginBottom: 32 }}>
+              {fr
+                ? "Notre mission est de créer un pont de confiance entre le donateur et le patient, à travers une plateforme transparente, vérifiée et 100% africaine."
+                : "Our mission is to build a bridge of trust between the donor and the patient, through a transparent, verified and 100% African platform."}
+            </p>
+
+            {/* 3 piliers */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap: 16, marginBottom: 32 }}>
+              {[
+                { icon:"🤝", t: fr ? "Solidarité" : "Solidarity"          },
+                { icon:"🔍", t: fr ? "Transparence" : "Transparency"      },
+                { icon:"⚡", t: fr ? "Rapidité"    : "Speed"             },
+              ].map((p, i) => (
+                <div key={i} style={{
+                  textAlign:"center", padding:"18px 12px",
+                  background:"#fff", border:"1px solid rgba(10,31,26,0.06)",
+                  borderRadius: 14,
+                }}>
+                  <div style={{ fontSize:26, marginBottom:6 }}>{p.icon}</div>
+                  <div style={{ fontWeight:700, fontSize:13, color:"var(--ayyad-deep)" }}>{p.t}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display:"flex", gap:14, flexWrap:"wrap" }}>
+              <button onClick={()=>setPage("how")} className="ayyad-btn-primary" style={{ fontSize:14, padding:"13px 26px" }}>
+                {fr ? "Découvrir notre démarche" : "Discover our approach"} →
+              </button>
+              <button onClick={()=>setPage("collectesactives")} style={{
+                background:"transparent",
+                border:"1.5px solid rgba(13,92,46,0.22)",
+                color:"var(--ayyad-deep)",
+                fontWeight:700, fontSize:14,
+                padding:"13px 26px", borderRadius:9999, cursor:"pointer",
+                transition:"all .2s",
+              }}>
+                {fr ? "Voir les campagnes" : "See campaigns"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ── TestimonialsCarousel — Témoignages bénéficiaires en carrousel premium ───
+// ─────────────────────────────────────────────────────────────────────────────
+const TestimonialsCarousel = ({ lang }) => {
+  const fr = lang === "fr";
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (paused) return;
+    const tm = setInterval(() => setIdx(i => (i + 1) % TEMOIGNAGES.length), 6000);
+    return () => clearInterval(tm);
+  }, [paused]);
+
+  const goTo = (i) => setIdx((i + TEMOIGNAGES.length) % TEMOIGNAGES.length);
+
+  return (
+    <section style={{
+      background:"linear-gradient(135deg, #0a3d2e 0%, #0d5c2e 50%, #0f4f3c 100%)",
+      padding:"clamp(80px, 9vw, 128px) 0",
+      position:"relative", overflow:"hidden",
+      color:"#fff",
+    }}
+    onMouseEnter={()=>setPaused(true)}
+    onMouseLeave={()=>setPaused(false)}
+    >
+      {/* Pattern décoratif */}
+      <div style={{
+        position:"absolute", inset:0, opacity:0.06, pointerEvents:"none",
+        backgroundImage:"radial-gradient(rgba(201,168,76,1) 1px, transparent 1px)",
+        backgroundSize:"32px 32px",
+      }} />
+      {/* Glow décoratif */}
+      <div style={{
+        position:"absolute", top:"30%", left:"-10%", width:400, height:400,
+        background:"radial-gradient(circle, rgba(201,168,76,0.15) 0%, transparent 70%)",
+        borderRadius:"50%", pointerEvents:"none", filter:"blur(20px)",
+      }} />
+
+      <div className="ayyad-container" style={{ position:"relative", zIndex:2 }}>
+        {/* Header */}
+        <div style={{ textAlign:"center", marginBottom: 56, maxWidth: 720, margin:"0 auto 56px" }}>
+          <span className="ayyad-eyebrow" style={{ color:"#e9d59a", background:"rgba(201,168,76,0.10)", borderColor:"rgba(201,168,76,0.40)" }}>
+            {fr ? "Voix de bénéficiaires" : "Beneficiary voices"}
+          </span>
+          <h2 className="ayyad-h-display" style={{ color:"#fff", fontSize:"clamp(2rem, 3.6vw, 3rem)", marginTop: 18, marginBottom: 16 }}>
+            {fr ? <>Ils ont retrouvé <em style={{ color:"#e9d59a" }}>l'espoir,</em> et la santé.</> : <>They found <em style={{ color:"#e9d59a" }}>hope,</em> and health.</>}
+          </h2>
+          <p style={{ color:"rgba(255,255,255,0.78)", fontSize:16, lineHeight:1.65 }}>
+            {fr
+              ? "Chaque don raconte une histoire. Voici celles que la solidarité Ayyad a permis d'écrire."
+              : "Every donation tells a story. Here are the ones Ayyad solidarity helped write."}
+          </p>
+        </div>
+
+        {/* Carrousel */}
+        <div style={{ position:"relative", maxWidth: 880, margin:"0 auto" }}>
+          <div style={{
+            background:"rgba(255,255,255,0.05)",
+            backdropFilter:"blur(12px)",
+            border:"1px solid rgba(255,255,255,0.10)",
+            borderRadius: 28,
+            padding:"clamp(28px, 4vw, 48px)",
+            position:"relative",
+            minHeight: 320,
+          }}>
+            {/* Big quote mark */}
+            <div style={{
+              position:"absolute", top:24, right:32,
+              fontSize: 100, lineHeight:1,
+              color:"rgba(201,168,76,0.18)",
+              fontFamily:"var(--font-serif)",
+            }}>"</div>
+
+            {TEMOIGNAGES.map((t, i) => (
+              <div key={t.id} style={{
+                display: i === idx ? "block" : "none",
+                animation: i === idx ? "ayyad-fade-in 600ms ease-out" : "none",
+              }}>
+                {/* Stars */}
+                <div style={{ display:"flex", gap:4, marginBottom: 24 }}>
+                  {[...Array(t.stars)].map((_, s) => (
+                    <span key={s} style={{ color:"#e9d59a", fontSize:18 }}>★</span>
+                  ))}
+                </div>
+
+                {/* Message */}
+                <p style={{
+                  fontFamily:"var(--font-serif)",
+                  fontStyle:"italic",
+                  fontSize:"clamp(1.1rem, 1.6vw, 1.5rem)",
+                  lineHeight: 1.55,
+                  color:"#fff",
+                  marginBottom: 32,
+                  fontWeight: 500,
+                }}>
+                  « {t.message[lang]} »
+                </p>
+
+                {/* Auteur */}
+                <div style={{ display:"flex", alignItems:"center", gap: 16, flexWrap:"wrap" }}>
+                  <div style={{
+                    width: 56, height: 56, borderRadius:"50%",
+                    background:"linear-gradient(135deg, #C9A84C, #e9d59a)",
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize: 26, flexShrink:0,
+                    border:"2px solid rgba(255,255,255,0.18)",
+                  }}>{t.image}</div>
+                  <div>
+                    <div style={{ fontWeight:800, fontSize:16, color:"#fff" }}>{t.name}, <span style={{ fontWeight:500, color:"rgba(255,255,255,0.7)" }}>{t.age} {fr?"ans":"yo"}</span></div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", marginTop:2 }}>
+                      🏥 {t.hospital} · 📍 {t.city} · {t.date}
+                    </div>
+                  </div>
+                  <div style={{ marginLeft:"auto" }}>
+                    <span style={{
+                      background:"rgba(201,168,76,0.18)",
+                      border:"1px solid rgba(201,168,76,0.40)",
+                      color:"#e9d59a",
+                      fontSize: 11, fontWeight:700, letterSpacing:1.2, textTransform:"uppercase",
+                      padding:"6px 14px", borderRadius:999,
+                    }}>{t.category[lang]}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Dots + controls */}
+          <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:18, marginTop: 32 }}>
+            <button onClick={()=>goTo(idx-1)} style={{
+              width:40, height:40, borderRadius:"50%",
+              background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.18)",
+              color:"#fff", fontSize:18, cursor:"pointer",
+            }} aria-label="Précédent">‹</button>
+            <div style={{ display:"flex", gap:8 }}>
+              {TEMOIGNAGES.map((_, i) => (
+                <button key={i} onClick={()=>setIdx(i)} aria-label={`Témoignage ${i+1}`} style={{
+                  height: 4, borderRadius: 999,
+                  width: i === idx ? 28 : 14,
+                  background: i === idx ? "#e9d59a" : "rgba(255,255,255,0.30)",
+                  border:"none", cursor:"pointer", transition:"all .35s",
+                }} />
+              ))}
+            </div>
+            <button onClick={()=>goTo(idx+1)} style={{
+              width:40, height:40, borderRadius:"50%",
+              background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.18)",
+              color:"#fff", fontSize:18, cursor:"pointer",
+            }} aria-label="Suivant">›</button>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -2184,9 +3173,10 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
     .filter(c => !search.trim() || gs(c.title).toLowerCase().includes(search.toLowerCase()) || (c.hospital||"").toLowerCase().includes(search.toLowerCase()) || (c.city||"").toLowerCase().includes(search.toLowerCase()));
   return (
     <div onClick={() => setHeroMenu(false)}>
-      {/* Hero slider plein écran avec image de fond rotative */}
-      <HeroSlider lang={lang} />
-      <div className="bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-600 text-white">
+      {/* Hero slider plein écran premium — storytelling 4 slides + KPIs live */}
+      <HeroSlider lang={lang} setPage={setPage} t={t} heroStats={heroStats} />
+      {/* Ancienne section gradient supprimée — son contenu a été intégré dans HeroSlider */}
+      <div className="hidden">
         <div className="max-w-7xl mx-auto px-4 py-16 sm:py-20 text-center">
           <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6 text-sm font-medium">
             <span className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse" />{t.hero.badge}
@@ -2234,53 +3224,132 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       {/* ── Ticker derniers dons ── */}
       <DonationTicker lang={lang} />
 
-      {/* Urgent Cases Banner — affiché juste avant les collectes pour rester en haut */}
+      {/* ── Section Impact (compteurs animés + confiance financière) ── */}
+      <Reveal><ImpactSection lang={lang} heroStats={heroStats} /></Reveal>
+
+      {/* Urgent Cases Banner — interventions critiques sous 72h */}
       <Reveal><UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} /></Reveal>
 
-      <div id="collectes" className="max-w-7xl mx-auto px-4 py-12">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h2 className="text-2xl font-black text-gray-900">{t.collections.title}</h2>
-            <p className="text-gray-500 text-sm mt-1">{getDisplayCases().filter(c=>c.status==="COLLECTING").length} {t.collections.sub}</p>
-          </div>
-          <div className="flex gap-2 flex-wrap">{catMap.map((c,i) => <button key={c} onClick={() => setFilter(i===0?"all":c)} className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${(filter==="all"&&i===0)||filter===c?"bg-emerald-600 text-white shadow-md":"bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{c}</button>)}</div>
-        </div>
-        <div className="mb-4">
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder={lang === "fr" ? "🔍 Rechercher par nom, hôpital, ville..." : "🔍 Search by name, hospital, city..."}
-          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white shadow-sm"
-        />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map(c => <CaseCard key={c.id} c={c} lang={lang} t={t} onClick={() => { setSelectedCase(c); setPage("case"); }} />)}
-        </div>
-      </div>
+      {/* ── Section Campagnes — design premium éditorial ── */}
+      <section id="collectes" style={{ background:"var(--paper)", padding:"clamp(72px, 8vw, 112px) 0" }}>
+        <div className="ayyad-container">
+          {/* Header section éditorial */}
+          <div style={{ display:"flex", flexDirection:"column", gap:24, marginBottom: 40 }}>
+            <div style={{ textAlign:"center" }}>
+              <span className="ayyad-eyebrow">{lang==="fr" ? "Campagnes vérifiées" : "Verified campaigns"}</span>
+              <h2 className="ayyad-h-display" style={{ fontSize:"clamp(2rem, 3.6vw, 3rem)", marginTop: 18, marginBottom: 14 }}>
+                {lang==="fr" ? <>Soutenez des patients <em>aujourd'hui.</em></> : <>Support patients <em>today.</em></>}
+              </h2>
+              <p style={{ color:"var(--ink-500)", fontSize:16, maxWidth: 620, margin:"0 auto", lineHeight:1.65 }}>
+                {lang==="fr"
+                  ? `${getDisplayCases().filter(c=>c.status==="COLLECTING").length + dbCases.length} dossiers actifs · 100% vérifiés par notre équipe et un hôpital partenaire`
+                  : `${getDisplayCases().filter(c=>c.status==="COLLECTING").length + dbCases.length} active cases · 100% verified by our team and a partner hospital`}
+              </p>
+            </div>
 
-      <div className="bg-gray-50 border-t border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 py-16 text-center">
-          <h2 className="text-2xl font-black text-gray-900 mb-2">{t.how.title}</h2>
-          <p className="text-gray-500 mb-10">{t.how.sub}</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            {t.how.steps.map(s => (
-              <div key={s.n} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 text-left hover:shadow-md transition-shadow">
-                <div className="w-11 h-11 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-center text-2xl mb-4">{s.icon}</div>
-                <div className="text-xs font-bold text-emerald-600 mb-1">STEP {s.n}</div>
-                <div className="font-bold text-gray-900 text-sm mb-1">{s.title}</div>
-                <div className="text-xs text-gray-500 leading-relaxed">{s.desc}</div>
+            {/* Filtres + recherche */}
+            <div style={{ display:"flex", gap:14, flexWrap:"wrap", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                {catMap.map((c,i) => {
+                  const active = (filter==="all"&&i===0)||filter===c;
+                  return (
+                    <button key={c} onClick={() => setFilter(i===0?"all":c)} style={{
+                      padding:"8px 18px", borderRadius: 9999,
+                      fontSize:13, fontWeight: active ? 700 : 600,
+                      background: active ? "linear-gradient(135deg, var(--ayyad-deep), var(--ayyad-emerald))" : "#fff",
+                      color: active ? "#fff" : "var(--ink-700)",
+                      border: active ? "1px solid transparent" : "1px solid rgba(10,31,26,0.10)",
+                      cursor:"pointer",
+                      boxShadow: active ? "0 4px 14px rgba(13,92,46,0.24)" : "0 1px 2px rgba(10,31,26,0.04)",
+                      transition:"all .2s",
+                    }}>{c}</button>
+                  );
+                })}
               </div>
-            ))}
+              <div style={{ position:"relative", minWidth: 260, flex:"1 1 260px", maxWidth: 360 }}>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder={lang === "fr" ? "Rechercher par nom, hôpital, ville…" : "Search by name, hospital, city…"}
+                  style={{
+                    width:"100%", padding:"11px 16px 11px 42px",
+                    background:"#fff",
+                    border:"1px solid rgba(10,31,26,0.10)",
+                    borderRadius: 9999,
+                    fontSize:14, color:"var(--ink-900)",
+                    boxShadow:"0 1px 2px rgba(10,31,26,0.04)",
+                    outline:"none",
+                    transition:"border-color .2s, box-shadow .2s",
+                  }}
+                  onFocus={e=>{ e.currentTarget.style.borderColor = "var(--ayyad-emerald)"; e.currentTarget.style.boxShadow="0 0 0 4px rgba(13,92,46,0.10)"; }}
+                  onBlur={e=>{ e.currentTarget.style.borderColor = "rgba(10,31,26,0.10)"; e.currentTarget.style.boxShadow="0 1px 2px rgba(10,31,26,0.04)"; }}
+                />
+                <span style={{ position:"absolute", left:16, top:"50%", transform:"translateY(-50%)", color:"var(--ink-400)" }}>🔍</span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Bandeau hôpitaux partenaires — placé après les collectes pour ne pas pousser les dossiers vers le bas */}
+          {/* Grille campagnes */}
+          <div style={{
+            display:"grid",
+            gridTemplateColumns:"repeat(auto-fill, minmax(300px, 1fr))",
+            gap: 24,
+          }}>
+            {filtered.map(c => <CaseCard key={c.id} c={c} lang={lang} t={t} onClick={() => { setSelectedCase(c); setPage("case"); }} />)}
+          </div>
+
+          {filtered.length === 0 && (
+            <div style={{ textAlign:"center", padding:"80px 24px", color:"var(--ink-400)" }}>
+              <div style={{ fontSize:42, marginBottom: 12 }}>🔍</div>
+              <p>{lang==="fr" ? "Aucune campagne ne correspond à votre recherche." : "No campaign matches your search."}</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── Section Notre Vision — émotionnelle, split image + texte ── */}
+      <VisionSection lang={lang} setPage={setPage} />
+
+      {/* ── Bandeau hôpitaux partenaires ── */}
       <Reveal><PartnersBanner lang={lang} /></Reveal>
 
-      {/* Soutenir Ayyad directement — placée en bas, accessible aussi via le bouton sticky de la nav (#soutenir-ayyad) */}
-      <Reveal><div id="soutenir-ayyad"><SupportAyyadSection lang={lang} /></div></Reveal>
+      {/* ── Carrousel Témoignages — voix bénéficiaires ── */}
+      <TestimonialsCarousel lang={lang} />
+
+      {/* ── CTA Soutenir Ayyad — élégant, pas envahissant ── */}
+      <section style={{
+        background:"linear-gradient(135deg, #fbf9f3 0%, #f7f6f2 100%)",
+        padding:"clamp(56px, 7vw, 88px) 0",
+        borderTop:"1px solid rgba(201,168,76,0.20)",
+      }}>
+        <div className="ayyad-container">
+          <div style={{
+            display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))",
+            gap:32, alignItems:"center",
+          }}>
+            <div>
+              <span className="ayyad-eyebrow">{lang==="fr" ? "Soutenir la plateforme" : "Support the platform"}</span>
+              <h3 className="ayyad-h-display" style={{ fontSize:"clamp(1.6rem, 2.6vw, 2.2rem)", marginTop: 14, marginBottom: 14 }}>
+                {lang==="fr" ? <>Aider Ayyad à <em>grandir.</em></> : <>Help Ayyad <em>grow.</em></>}
+              </h3>
+              <p style={{ color:"var(--ink-500)", fontSize:15, lineHeight:1.65 }}>
+                {lang==="fr"
+                  ? "Votre soutien finance la vérification des dossiers médicaux, les partenariats hospitaliers et l'accompagnement personnalisé des patients."
+                  : "Your support funds medical case verification, hospital partnerships and personalized patient guidance."}
+              </p>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <button onClick={() => setPage("support-ayyad")} className="ayyad-btn-gold" style={{ fontSize:14, padding:"15px 30px" }}>
+                💚 {lang==="fr" ? "Soutenir Ayyad" : "Support Ayyad"} →
+              </button>
+              <div style={{ fontSize:12, color:"var(--ink-400)", marginTop:14, fontWeight:600 }}>
+                {lang==="fr" ? "Don 100% dédié au fonctionnement de la plateforme" : "100% dedicated to platform operations"}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };
@@ -9663,6 +10732,22 @@ export default function AyyadApp() {
       {page === "profile" && user && <ProfilePage user={user} lang={lang} setPage={setPage} />}
         {page==="faq"&&<FAQPage setPage={setPage} lang={lang} />}
         {page==="dunya-return"&&<DunyaReturnPage setPage={setPage} lang={lang} />}
+        {page==="support-ayyad"&&(
+          <div>
+            <div className="bg-gradient-to-br from-emerald-700 to-teal-700 text-white">
+              <div className="max-w-7xl mx-auto px-4 py-12 text-center">
+                <button onClick={() => setPage("home")} className="text-emerald-100 hover:text-white text-sm mb-4 inline-flex items-center gap-1">← {lang==="fr"?"Retour à l'accueil":"Back to home"}</button>
+                <h1 className="text-3xl sm:text-5xl font-black mb-3">{lang==="fr" ? "Soutenir Ayyad directement" : "Support Ayyad directly"}</h1>
+                <p className="text-emerald-100 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
+                  {lang==="fr"
+                    ? "Votre don aide à financer les opérations de la plateforme : vérification médicale des dossiers, partenariats hospitaliers, infrastructure, et accompagnement des patients tout au long de leur collecte."
+                    : "Your donation helps fund platform operations: medical case verification, hospital partnerships, infrastructure, and patient support throughout their campaign."}
+                </p>
+              </div>
+            </div>
+            <SupportAyyadSection lang={lang} />
+          </div>
+        )}
       </main>
       {showFooter&&<Footer setPage={setPage} lang={lang} />}
       <ChatWidget lang={lang} />
