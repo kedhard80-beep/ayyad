@@ -639,12 +639,13 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
               {fr ? "Soumettre un dossier" : "Submit a case"}
             </button>
 
+            {/* CTA primary — taille adaptative : compacte mobile (icone + texte court), pleine desktop */}
             <button
               onClick={() => setPage("collectesactives")}
               className="ayyad-btn-primary"
-              style={{ fontSize:13, padding:"11px 22px" }}
+              style={{ fontSize:13, padding:"9px 14px", whiteSpace:"nowrap" }}
             >
-              💚 {fr ? "Faire un don" : "Donate"}
+              💚 <span className="hidden sm:inline">{fr ? "Faire un don" : "Donate"}</span><span className="sm:hidden">{fr ? "Don" : "Give"}</span>
             </button>
 
             {user ? (
@@ -2065,7 +2066,7 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
       }}>
         <div className="ayyad-container" style={{
           display:"grid",
-          gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",
+          gridTemplateColumns:"repeat(auto-fit, minmax(min(140px, 100%), 1fr))",
           gap: 0,
           borderTop:"1px solid rgba(201,168,76,0.22)",
           borderBottom:"none",
@@ -2344,12 +2345,12 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
           </p>
         </div>
 
-        {/* Grille KPIs */}
+        {/* Grille KPIs — 2 colonnes mobile / 4 desktop, padding mobile réduit */}
         <div style={{
           display:"grid",
-          gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 16,
-          marginBottom: 28,
+          gridTemplateColumns:"repeat(auto-fit, minmax(min(180px, 100%), 1fr))",
+          gap: 12,
+          marginBottom: 24,
         }}>
           {[
             { v: collectedNum, suffix: " FCFA", label: fr ? "Total collecté" : "Total raised", icon:"💰", color:"#0d5c2e" },
@@ -2357,18 +2358,18 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
             { v: hospitalsNum, suffix: "",       label: fr ? "Hôpitaux partenaires" : "Partner hospitals", icon:"🏥", color:"#0f766e" },
             { v: campagnesNum, suffix: "",       label: fr ? "Campagnes financées" : "Funded campaigns", icon:"🎯", color:"#a17f29" },
           ].map((k, i) => (
-            <div key={i} className="ayyad-card ayyad-reveal" style={{ padding:"32px 28px", textAlign:"left", animationDelay: `${i*80}ms` }}>
+            <div key={i} className="ayyad-card ayyad-reveal" style={{ padding:"clamp(16px, 3vw, 32px) clamp(14px, 2.5vw, 28px)", textAlign:"left", animationDelay: `${i*80}ms`, minWidth: 0 }}>
               <div style={{
-                width:52, height:52, borderRadius:14,
+                width:44, height:44, borderRadius:12,
                 background: `linear-gradient(135deg, ${k.color}15, ${k.color}08)`,
                 border:`1px solid ${k.color}22`,
                 display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:26, marginBottom:18,
+                fontSize:22, marginBottom:12,
               }}>{k.icon}</div>
-              <div className="ayyad-counter" style={{ marginBottom: 6 }}>
+              <div className="ayyad-counter" style={{ marginBottom: 4, fontSize:"clamp(1.4rem, 4vw, 2.6rem)", wordBreak:"break-word", overflowWrap:"break-word" }}>
                 <AnimatedNumber value={k.v} suffix={k.suffix} visible={visible} />
               </div>
-              <div style={{ color:"var(--ink-500)", fontSize:13, fontWeight:600, letterSpacing:0.8, textTransform:"uppercase" }}>
+              <div style={{ color:"var(--ink-500)", fontSize:11, fontWeight:700, letterSpacing:0.6, textTransform:"uppercase" }}>
                 {k.label}
               </div>
             </div>
@@ -2379,7 +2380,7 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
         <div style={{
           background:"linear-gradient(135deg, #0a3d2e 0%, #0d5c2e 100%)",
           borderRadius: 28,
-          padding:"clamp(36px, 4vw, 56px)",
+          padding:"clamp(24px, 4vw, 56px)",
           color:"#fff",
           position:"relative", overflow:"hidden",
           boxShadow:"var(--shadow-2xl)",
@@ -2390,7 +2391,9 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
             backgroundImage:"radial-gradient(rgba(201,168,76,1) 1.5px, transparent 1.5px)",
             backgroundSize:"24px 24px",
           }} />
-          <div style={{ position:"relative", display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))", gap: 40, alignItems:"center" }}>
+          {/* IMPORTANT: minmax(0, 1fr) au lieu de minmax(280px) — sinon la colonne
+              force une largeur minimum 280px qui overflow le viewport mobile */}
+          <div style={{ position:"relative", display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap:"clamp(20px, 3vw, 40px)", alignItems:"center" }}>
             <div>
               <span className="ayyad-eyebrow" style={{ color:"#e9d59a", background:"rgba(201,168,76,0.10)", borderColor:"rgba(201,168,76,0.40)" }}>
                 {fr ? "Engagement Ayyad" : "Ayyad commitment"}
@@ -2465,8 +2468,8 @@ const VisionSection = ({ lang, setPage }) => {
       <div className="ayyad-container">
         <div style={{
           display:"grid",
-          gridTemplateColumns:"repeat(auto-fit, minmax(320px, 1fr))",
-          gap: 56, alignItems:"center",
+          gridTemplateColumns:"repeat(auto-fit, minmax(min(320px, 100%), 1fr))",
+          gap:"clamp(28px, 5vw, 56px)", alignItems:"center",
         }}>
           {/* Visuel gauche — photo représentant la communauté africaine/ivoirienne */}
           <div className="ayyad-reveal-left" style={{ position:"relative" }}>
@@ -2520,8 +2523,8 @@ const VisionSection = ({ lang, setPage }) => {
                 : "Our mission is to build a bridge of trust between the donor and the patient, through a transparent, verified and 100% African platform."}
             </p>
 
-            {/* 3 piliers */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap: 16, marginBottom: 32 }}>
+            {/* 3 piliers — grille 3 colonnes même sur mobile (chaque pilier minimum 90px) */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap: 10, marginBottom: 28 }}>
               {[
                 { icon:"🤝", t: fr ? "Solidarité" : "Solidarity"          },
                 { icon:"🔍", t: fr ? "Transparence" : "Transparency"      },
@@ -3352,8 +3355,8 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
             <div style={{ maxWidth: 1600, margin:"0 auto" }}>
               <div style={{
                 display:"grid",
-                gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))",
-                gap: 20,
+                gridTemplateColumns:"repeat(auto-fill, minmax(min(280px, 100%), 1fr))",
+                gap: 16,
               }}>
                 {visible.map(c => <CaseCard key={c.id} c={c} lang={lang} t={t} onClick={() => { setSelectedCase(c); setPage("case"); }} />)}
               </div>
@@ -3390,8 +3393,8 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       }}>
         <div className="ayyad-container">
           <div style={{
-            display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))",
-            gap:32, alignItems:"center",
+            display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
+            gap:"clamp(20px, 3vw, 32px)", alignItems:"center",
           }}>
             <div>
               <span className="ayyad-eyebrow">{lang==="fr" ? "Soutenir la plateforme" : "Support the platform"}</span>

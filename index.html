@@ -100,8 +100,10 @@
 
       /* ── Base ─────────────────────────────────────────────────────────── */
       *, *::before, *::after { box-sizing: border-box; }
-      html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
-      body { font-family: var(--font-sans); color: var(--ink-900); background: var(--paper); margin: 0; }
+      html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; overflow-x: hidden; }
+      body { font-family: var(--font-sans); color: var(--ink-900); background: var(--paper); margin: 0; overflow-x: hidden; max-width: 100vw; }
+      /* Prévention overflow horizontal — chaque image et media reste dans son container */
+      img, video, iframe { max-width: 100%; height: auto; }
 
       /* Sélection texte premium */
       ::selection { background: rgba(201, 168, 76, 0.30); color: var(--ayyad-deep); }
