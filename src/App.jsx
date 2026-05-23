@@ -2479,22 +2479,13 @@ const VisionSection = ({ lang, setPage }) => {
               background:"#0a3d2e",
             }}>
               <img
-                src="https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=900&q=85"
-                alt={fr ? "Mains tendues — solidarité" : "Hands together — solidarity"}
+                src="/vision-ayyad.jpg"
+                alt={fr ? "Un geste pour une vie — Ayyad" : "A gesture for a life — Ayyad"}
                 style={{ width:"100%", height:"100%", objectFit:"cover" }}
                 onError={e=>{ e.target.style.display='none'; }}
               />
-              {/* Overlay gradient */}
-              <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg, rgba(10,31,26,0) 50%, rgba(10,31,26,0.78) 100%)" }} />
-              {/* Quote on image */}
-              <div style={{ position:"absolute", bottom:32, left:32, right:32, color:"#fff" }}>
-                <div style={{ fontSize:48, fontFamily:"var(--font-serif)", color:"#e9d59a", lineHeight:1, marginBottom:8 }}>"</div>
-                <p style={{ fontFamily:"var(--font-serif)", fontStyle:"italic", fontSize:18, fontWeight:500, lineHeight:1.45 }}>
-                  {fr
-                    ? "Soutenir une vie, c'est en sauver une."
-                    : "To support a life is to save one."}
-                </p>
-              </div>
+              {/* Overlay gradient bas, plus léger car l'image porte déjà du texte brandé */}
+              <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg, rgba(10,31,26,0) 65%, rgba(10,31,26,0.55) 100%)" }} />
             </div>
             {/* Badge floating — remplace la date par un engagement qui ne vieillit pas */}
             <div style={{
