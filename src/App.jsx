@@ -2447,8 +2447,9 @@ const VisionSection = ({ lang, setPage }) => {
   return (
     <section style={{
       background:"linear-gradient(180deg, #fdfcfa 0%, #f7f6f2 100%)",
-      padding:"clamp(28px, 3.5vw, 44px) 0",
+      padding:"clamp(32px, 4vw, 56px) 0 clamp(28px, 3.5vw, 44px)",
       position:"relative", overflow:"hidden",
+      borderTop:"1px solid rgba(10,31,26,0.04)",
     }}>
       {/* Decorative blob */}
       <div style={{
@@ -3282,7 +3283,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       {/* La section utilise un conteneur plus large (1600px) pour permettre 4-5
           cartes par ligne sur grand écran. Le header reste dans le conteneur
           standard pour rester centré et lisible. */}
-      <section id="collectes" style={{ background:"var(--paper)", padding:"clamp(40px, 5vw, 64px) clamp(20px, 3vw, 40px) clamp(16px, 2vw, 24px)" }}>
+      <section id="collectes" style={{ background:"var(--paper)", padding:"clamp(40px, 5vw, 64px) clamp(20px, 3vw, 40px) 8px" }}>
         <div style={{ maxWidth: 1240, margin:"0 auto" }}>
           {/* Header section éditorial */}
           <div style={{ display:"flex", flexDirection:"column", gap:16, marginBottom: 24 }}>
@@ -3349,18 +3350,39 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           )}
         </div>
 
-        {/* Grille campagnes — conteneur élargi à 1600px pour 4-5 cartes/ligne */}
-        {filtered.length > 0 && (
-          <div style={{ maxWidth: 1600, margin:"0 auto" }}>
-            <div style={{
-              display:"grid",
-              gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))",
-              gap: 20,
-            }}>
-              {filtered.map(c => <CaseCard key={c.id} c={c} lang={lang} t={t} onClick={() => { setSelectedCase(c); setPage("case"); }} />)}
+        {/* Grille campagnes — conteneur élargi à 1600px pour 4-5 cartes/ligne
+            Limitée à 10 dossiers (2 lignes de 5) sur la home, avec un bouton
+            "Voir toutes les campagnes" qui route vers la page dédiée. */}
+        {filtered.length > 0 && (() => {
+          const HOME_LIMIT = 10;
+          const visible = filtered.slice(0, HOME_LIMIT);
+          const remaining = filtered.length - visible.length;
+          return (
+            <div style={{ maxWidth: 1600, margin:"0 auto" }}>
+              <div style={{
+                display:"grid",
+                gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))",
+                gap: 20,
+              }}>
+                {visible.map(c => <CaseCard key={c.id} c={c} lang={lang} t={t} onClick={() => { setSelectedCase(c); setPage("case"); }} />)}
+              </div>
+              {/* Bouton "Voir toutes les campagnes" — uniquement si plus de 10 dossiers */}
+              {remaining > 0 && (
+                <div style={{ textAlign:"center", marginTop: 28 }}>
+                  <button
+                    onClick={() => setPage("collectesactives")}
+                    className="ayyad-btn-primary"
+                    style={{ fontSize:14, padding:"14px 32px" }}
+                  >
+                    {lang==="fr"
+                      ? `Voir toutes les campagnes (${filtered.length}) →`
+                      : `View all campaigns (${filtered.length}) →`}
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
       </section>
 
       {/* ── Section Notre Vision — émotionnelle, split image + texte ── */}
