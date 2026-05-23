@@ -1929,13 +1929,14 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
   ];
 
   const [idx, setIdx] = useState(0);
-  const [paused, setPaused] = useState(false);
 
+  // Autoplay continu — défile chaque 7s sans s'arrêter au hover
+  // (le hover-pause cassait l'expérience : sur desktop la souris est presque
+  // toujours dans le hero quand on lit, donc l'autoplay ne se déclenchait jamais)
   useEffect(() => {
-    if (paused) return;
-    const tm = setInterval(() => setIdx(i => (i + 1) % slides.length), 7200);
+    const tm = setInterval(() => setIdx(i => (i + 1) % slides.length), 7000);
     return () => clearInterval(tm);
-  }, [paused, slides.length]);
+  }, [slides.length]);
 
   const goNext = () => setIdx(i => (i + 1) % slides.length);
   const goPrev = () => setIdx(i => (i - 1 + slides.length) % slides.length);
@@ -1946,8 +1947,6 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
     <section
       className="relative w-full"
       style={{ minHeight: "92vh", overflow:"hidden", background:"#0a1f1a" }}
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
     >
       {/* Slides background */}
       {slides.map((s, i) => (
@@ -2169,59 +2168,94 @@ const PartnersBanner = ({ lang }) => {
     { name: "Polymed", full: "Nouvelle Clinique Polymed", city: "Abidjan" },
     { name: "La Providence", full: "Clinique La Providence", city: "Abidjan" },
   ];
+  // Liste doublée pour le marquee infini (translateX(-50%))
+  const marqueeItems = [...partners, ...partners];
+
   return (
     <section style={{
       background:"var(--paper)",
-      padding:"clamp(72px, 8vw, 112px) 0",
+      padding:"clamp(48px, 6vw, 80px) 0",
       borderTop:"1px solid rgba(10,31,26,0.04)",
       position:"relative",
+      overflow:"hidden",
     }}>
       <div className="ayyad-container">
-        <div style={{ textAlign:"center", marginBottom: 56, maxWidth: 720, margin:"0 auto 56px" }}>
-          <span className="ayyad-eyebrow">{fr ? "Partenariats hospitaliers en cours" : "Hospital partnerships in progress"}</span>
-          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.8rem, 3.2vw, 2.6rem)", marginTop: 18, marginBottom: 16 }}>
+        <div style={{ textAlign:"center", maxWidth: 720, margin:"0 auto 32px" }}>
+          <span className="ayyad-eyebrow" style={{ color:"var(--ayyad-amber)", background:"rgba(245,158,11,0.10)", borderColor:"rgba(245,158,11,0.30)" }}>
+            {fr ? "⚠ Partenariats en cours de validation" : "⚠ Partnerships being validated"}
+          </span>
+          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.6rem, 3vw, 2.4rem)", marginTop: 14, marginBottom: 12 }}>
             {fr ? <>Nos <em>établissements partenaires.</em></> : <>Our <em>partner facilities.</em></>}
           </h2>
-          <p style={{ color:"var(--ink-500)", fontSize:15, lineHeight:1.65 }}>
+          <p style={{ color:"var(--ink-500)", fontSize:14, lineHeight:1.6 }}>
             {fr
-              ? "Ayyad collabore avec des hôpitaux et cliniques de référence en Côte d'Ivoire pour garantir que chaque don soit versé directement à l'établissement qui prend en charge le patient."
-              : "Ayyad collaborates with leading hospitals and clinics in Côte d'Ivoire to ensure every donation goes directly to the healthcare facility caring for the patient."}
+              ? "Ayyad travaille à la finalisation de partenariats officiels avec ces hôpitaux et cliniques de référence en Côte d'Ivoire. En attendant, les fonds sont versés directement à l'établissement qui prend en charge le patient."
+              : "Ayyad is finalising official partnerships with these leading hospitals and clinics in Côte d'Ivoire. In the meantime, funds are transferred directly to the facility caring for the patient."}
           </p>
         </div>
-        <div style={{
-          display:"grid",
-          gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",
-          gap: 16,
-        }}>
-          {partners.map((p, i) => (
-            <div
-              key={p.name}
-              className="ayyad-card ayyad-reveal"
-              style={{
-                padding:"24px 18px",
-                display:"flex", flexDirection:"column", alignItems:"center",
-                textAlign:"center", gap: 12,
-                transitionDelay: `${i * 50}ms`,
-              }}
-            >
-              <div style={{
-                width: 56, height: 56, borderRadius: 14,
-                background:"linear-gradient(135deg, rgba(13,92,46,0.08) 0%, rgba(15,118,110,0.08) 100%)",
-                border:"1px solid rgba(13,92,46,0.10)",
-                display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize: 26,
-              }}>🏥</div>
-              <div>
-                <div style={{ fontFamily:"var(--font-serif)", fontWeight:700, fontSize:15, color:"var(--ayyad-deep)", lineHeight:1.2 }}>{p.name}</div>
-                <div style={{ fontSize:11, color:"var(--ink-400)", marginTop:4, letterSpacing:0.4, textTransform:"uppercase", fontWeight:600 }}>{p.city}</div>
+      </div>
+
+      {/* Marquee défilant — masque les bords avec un gradient pour effet pro */}
+      <div style={{ position:"relative" }}>
+        <div className="ayyad-marquee" style={{ overflow:"hidden", padding:"12px 0" }}>
+          <style>{`
+            @keyframes ayyad-partners-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+            .ayyad-partners-track { display: flex; gap: 20px; animation: ayyad-partners-scroll 45s linear infinite; width: max-content; }
+            .ayyad-marquee:hover .ayyad-partners-track { animation-play-state: paused; }
+          `}</style>
+          <div className="ayyad-partners-track">
+            {marqueeItems.map((p, i) => (
+              <div
+                key={`${p.name}-${i}`}
+                style={{
+                  display:"flex", alignItems:"center", gap: 14,
+                  background:"#fff",
+                  border:"1px solid rgba(10,31,26,0.08)",
+                  borderRadius: 16,
+                  padding:"14px 22px",
+                  minWidth: 280,
+                  flexShrink: 0,
+                  boxShadow:"0 2px 8px rgba(10,31,26,0.04)",
+                  transition:"transform .25s, box-shadow .25s, border-color .25s",
+                }}
+                onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.boxShadow="0 10px 24px rgba(10,31,26,0.10)"; e.currentTarget.style.borderColor="rgba(13,92,46,0.22)"; }}
+                onMouseLeave={e=>{ e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow="0 2px 8px rgba(10,31,26,0.04)"; e.currentTarget.style.borderColor="rgba(10,31,26,0.08)"; }}
+              >
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12,
+                  background:"linear-gradient(135deg, rgba(13,92,46,0.10) 0%, rgba(201,168,76,0.10) 100%)",
+                  border:"1px solid rgba(13,92,46,0.10)",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize: 22, flexShrink: 0,
+                }}>🏥</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontFamily:"var(--font-serif)", fontWeight:700, fontSize:15, color:"var(--ayyad-deep)", lineHeight:1.2, whiteSpace:"nowrap" }}>{p.name}</div>
+                  <div style={{ fontSize:11, color:"var(--ink-400)", marginTop:3, letterSpacing:0.3, fontWeight:600, whiteSpace:"nowrap" }}>📍 {p.city}</div>
+                </div>
+                <span style={{
+                  marginLeft:"auto",
+                  fontSize:10, fontWeight:700, letterSpacing:0.5,
+                  padding:"4px 10px", borderRadius:9999,
+                  background:"rgba(245,158,11,0.10)", color:"var(--ayyad-amber)",
+                  border:"1px solid rgba(245,158,11,0.25)",
+                  whiteSpace:"nowrap",
+                  textTransform:"uppercase",
+                }}>{fr ? "En cours" : "Pending"}</span>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-        <p style={{ textAlign:"center", fontSize:12, color:"var(--ink-400)", marginTop: 32, fontStyle:"italic", maxWidth: 720, margin:"32px auto 0" }}>
+
+        {/* Gradient fade sur les bords */}
+        <div style={{ position:"absolute", top:0, bottom:0, left:0, width:120, background:"linear-gradient(90deg, var(--paper) 0%, transparent 100%)", pointerEvents:"none", zIndex:2 }} />
+        <div style={{ position:"absolute", top:0, bottom:0, right:0, width:120, background:"linear-gradient(-90deg, var(--paper) 0%, transparent 100%)", pointerEvents:"none", zIndex:2 }} />
+      </div>
+
+      <div className="ayyad-container">
+        <p style={{ textAlign:"center", fontSize:12, color:"var(--ink-400)", marginTop: 24, fontStyle:"italic", maxWidth: 720, margin:"24px auto 0" }}>
           {fr
-            ? "Les partenariats listés sont en cours de finalisation administrative. Les fonds sont actuellement versés sur demande des familles ou directement aux hôpitaux concernés au cas par cas."
-            : "Listed partnerships are being formalized. Funds are currently transferred upon family request or directly to the relevant hospitals on a case-by-case basis."}
+            ? "Les partenariats officiels sont en cours de finalisation administrative. Aucune affirmation de partenariat finalisé n'est faite."
+            : "Official partnerships are being formalised. No claim of finalised partnership is made."}
         </p>
       </div>
     </section>
@@ -2288,13 +2322,13 @@ const ImpactSection = ({ lang, heroStats }) => {
   const campagnesNum = patientsNum > 0 ? Math.max(patientsNum, 30) : 142;
 
   return (
-    <section ref={ref} style={{ background:"var(--paper)", padding:"clamp(72px,8vw,112px) 0", position:"relative" }}>
+    <section ref={ref} style={{ background:"var(--paper)", padding:"clamp(48px,6vw,80px) 0", position:"relative" }}>
       {/* Bordure dorée subtile en haut */}
       <div style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:120, height:3, background:"var(--grad-gold)", borderRadius:999 }} />
 
       <div className="ayyad-container">
         {/* Header centré */}
-        <div style={{ textAlign:"center", marginBottom: 64 }}>
+        <div style={{ textAlign:"center", marginBottom: 40 }}>
           <span className="ayyad-eyebrow">{fr ? "Notre impact" : "Our impact"}</span>
           <h2 className="ayyad-h-display" style={{ fontSize:"clamp(2rem, 4vw, 3.4rem)", marginTop: 18, marginBottom: 16 }}>
             {fr ? <>Des chiffres qui <em>changent des vies.</em></> : <>Numbers that <em>change lives.</em></>}
@@ -2310,8 +2344,8 @@ const ImpactSection = ({ lang, heroStats }) => {
         <div style={{
           display:"grid",
           gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 24,
-          marginBottom: 56,
+          gap: 20,
+          marginBottom: 40,
         }}>
           {[
             { v: collectedNum, suffix: " FCFA", label: fr ? "Total collecté" : "Total raised", icon:"💰", color:"#0d5c2e" },
@@ -2400,7 +2434,7 @@ const VisionSection = ({ lang, setPage }) => {
   return (
     <section style={{
       background:"linear-gradient(180deg, #fdfcfa 0%, #f7f6f2 100%)",
-      padding:"clamp(80px, 9vw, 128px) 0",
+      padding:"clamp(56px, 6vw, 88px) 0",
       position:"relative", overflow:"hidden",
     }}>
       {/* Decorative blob */}
@@ -2546,7 +2580,7 @@ const TestimonialsCarousel = ({ lang }) => {
   return (
     <section style={{
       background:"linear-gradient(135deg, #0a3d2e 0%, #0d5c2e 50%, #0f4f3c 100%)",
-      padding:"clamp(80px, 9vw, 128px) 0",
+      padding:"clamp(56px, 6vw, 88px) 0",
       position:"relative", overflow:"hidden",
       color:"#fff",
     }}
@@ -3232,10 +3266,10 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       <Reveal><UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} /></Reveal>
 
       {/* ── Section Campagnes — design premium éditorial ── */}
-      <section id="collectes" style={{ background:"var(--paper)", padding:"clamp(72px, 8vw, 112px) 0" }}>
+      <section id="collectes" style={{ background:"var(--paper)", padding:"clamp(48px, 6vw, 80px) 0" }}>
         <div className="ayyad-container">
           {/* Header section éditorial */}
-          <div style={{ display:"flex", flexDirection:"column", gap:24, marginBottom: 40 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:20, marginBottom: 32 }}>
             <div style={{ textAlign:"center" }}>
               <span className="ayyad-eyebrow">{lang==="fr" ? "Campagnes vérifiées" : "Verified campaigns"}</span>
               <h2 className="ayyad-h-display" style={{ fontSize:"clamp(2rem, 3.6vw, 3rem)", marginTop: 18, marginBottom: 14 }}>
@@ -3321,7 +3355,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       {/* ── CTA Soutenir Ayyad — élégant, pas envahissant ── */}
       <section style={{
         background:"linear-gradient(135deg, #fbf9f3 0%, #f7f6f2 100%)",
-        padding:"clamp(56px, 7vw, 88px) 0",
+        padding:"clamp(40px, 5vw, 64px) 0",
         borderTop:"1px solid rgba(201,168,76,0.20)",
       }}>
         <div className="ayyad-container">
