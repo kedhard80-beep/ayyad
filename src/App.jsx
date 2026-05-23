@@ -2479,9 +2479,9 @@ const VisionSection = ({ lang, setPage }) => {
               background:"#0a3d2e",
             }}>
               <img
-                src="https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=900&q=85"
-                alt={fr ? "Patiente recevant des soins" : "Patient receiving care"}
-                style={{ width:"100%", height:"100%", objectFit:"cover" }}
+                src="/vision-ayyad-clean.jpg"
+                alt={fr ? "Une maman et son enfant — soutenir une vie" : "A mother and her child — supporting a life"}
+                style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center" }}
                 onError={e=>{ e.target.style.display='none'; }}
               />
               {/* Overlay gradient bas pour lisibilité de la citation */}
