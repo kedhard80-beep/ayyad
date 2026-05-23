@@ -1885,9 +1885,11 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
   const fr = lang === "fr";
 
   // Contenu narratif des 4 slides — chaque slide = un angle de la mission
+  // Images : personnes africaines/noires dans des contextes médicaux et solidaires
+  // (cohérent avec la mission Ayyad en Côte d'Ivoire)
   const slides = [
     {
-      img: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1920&q=85",
+      img: "https://images.unsplash.com/photo-1612349316228-5942a9b489c2?w=1920&q=85",
       eyebrow: fr ? "Plateforme vérifiée & sécurisée" : "Verified & secure platform",
       titlePre: fr ? "Quand la vie attend," : "When life can't wait,",
       titleEm: fr ? "agissons ensemble." : "we act together.",
@@ -1897,7 +1899,7 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
       cta: { label: fr ? "Faire un don maintenant" : "Donate now", action: () => setPage("collectesactives") },
     },
     {
-      img: "https://images.unsplash.com/photo-1612531048118-826c4e98c2da?w=1920&q=85",
+      img: "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=1920&q=85",
       eyebrow: fr ? "100% transparent · 0% frais cachés" : "100% transparent · 0% hidden fees",
       titlePre: fr ? "Financer des soins," : "Funding care,",
       titleEm: fr ? "changer une vie." : "changing a life.",
@@ -1907,7 +1909,7 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
       cta: { label: fr ? "Découvrir les campagnes" : "Explore campaigns", action: () => setPage("collectesactives") },
     },
     {
-      img: "https://images.unsplash.com/photo-1666214280557-f1b5022eb634?w=1920&q=85",
+      img: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=1920&q=85",
       eyebrow: fr ? "Pour les patients" : "For patients",
       titlePre: fr ? "Une plateforme humaine," : "A platform built on humanity,",
       titleEm: fr ? "construite pour vous." : "built for you.",
@@ -1917,7 +1919,7 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
       cta: { label: fr ? "Soumettre un dossier" : "Submit a case", action: () => setPage("submit") },
     },
     {
-      img: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=1920&q=85",
+      img: "https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?w=1920&q=85",
       eyebrow: fr ? "Impact mesurable" : "Measurable impact",
       titlePre: fr ? "Chaque contribution" : "Every contribution",
       titleEm: fr ? "peut sauver une vie." : "can save a life.",
@@ -2464,7 +2466,7 @@ const VisionSection = ({ lang, setPage }) => {
           gridTemplateColumns:"repeat(auto-fit, minmax(320px, 1fr))",
           gap: 56, alignItems:"center",
         }}>
-          {/* Visuel gauche */}
+          {/* Visuel gauche — photo représentant la communauté africaine/ivoirienne */}
           <div className="ayyad-reveal-left" style={{ position:"relative" }}>
             <div style={{
               position:"relative",
@@ -2475,8 +2477,8 @@ const VisionSection = ({ lang, setPage }) => {
               background:"#0a3d2e",
             }}>
               <img
-                src="https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=900&q=85"
-                alt={fr ? "Mains tendues — solidarité" : "Hands together — solidarity"}
+                src="https://images.unsplash.com/photo-1591012922998-fae3acd1ce11?w=900&q=85"
+                alt={fr ? "Solidarité africaine — Ayyad" : "African solidarity — Ayyad"}
                 style={{ width:"100%", height:"100%", objectFit:"cover" }}
                 onError={e=>{ e.target.style.display='none'; }}
               />
@@ -2492,26 +2494,27 @@ const VisionSection = ({ lang, setPage }) => {
                 </p>
               </div>
             </div>
-            {/* Badge floating */}
+            {/* Badge floating — remplace la date par un engagement qui ne vieillit pas */}
             <div style={{
               position:"absolute", bottom:-24, right:-12,
               background:"#fff",
-              padding:"18px 24px",
+              padding:"16px 22px",
               borderRadius: 18,
               boxShadow:"var(--shadow-xl)",
               border:"1px solid rgba(10,31,26,0.06)",
               display:"flex", alignItems:"center", gap:14,
-              maxWidth:260,
+              maxWidth:280,
             }}>
               <div style={{
                 width:48, height:48, borderRadius:12,
                 background:"linear-gradient(135deg, #C9A84C, #e9d59a)",
                 display:"flex", alignItems:"center", justifyContent:"center",
                 fontSize:22,
-              }}>💛</div>
+                flexShrink:0,
+              }}>🇨🇮</div>
               <div>
-                <div style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:22, color:"var(--ayyad-deep)", lineHeight:1 }}>2024</div>
-                <div style={{ fontSize:11, color:"var(--ink-500)", fontWeight:600, letterSpacing:0.4, marginTop:4 }}>{fr ? "Plateforme fondée" : "Platform founded"}</div>
+                <div style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:16, color:"var(--ayyad-deep)", lineHeight:1.1 }}>{fr ? "Made in Côte d'Ivoire" : "Made in Côte d'Ivoire"}</div>
+                <div style={{ fontSize:11, color:"var(--ink-500)", fontWeight:600, letterSpacing:0.3, marginTop:4 }}>{fr ? "Pour les Ivoiriens, par les Ivoiriens" : "For Ivorians, by Ivorians"}</div>
               </div>
             </div>
           </div>
