@@ -2174,17 +2174,17 @@ const PartnersBanner = ({ lang }) => {
   return (
     <section style={{
       background:"var(--paper)",
-      padding:"clamp(40px, 5vw, 64px) 0",
+      padding:"clamp(28px, 3.5vw, 44px) 0",
       borderTop:"1px solid rgba(10,31,26,0.04)",
       position:"relative",
       overflow:"hidden",
     }}>
       <div className="ayyad-container">
-        <div style={{ textAlign:"center", maxWidth: 720, margin:"0 auto 32px" }}>
+        <div style={{ textAlign:"center", maxWidth: 720, margin:"0 auto 20px" }}>
           <span className="ayyad-eyebrow" style={{ color:"var(--ayyad-amber)", background:"rgba(245,158,11,0.10)", borderColor:"rgba(245,158,11,0.30)" }}>
             {fr ? "⚠ Partenariats en cours de validation" : "⚠ Partnerships being validated"}
           </span>
-          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.6rem, 3vw, 2.4rem)", marginTop: 14, marginBottom: 12 }}>
+          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.6rem, 3vw, 2.4rem)", marginTop: 12, marginBottom: 10 }}>
             {fr ? <>Nos <em>établissements partenaires.</em></> : <>Our <em>partner facilities.</em></>}
           </h2>
           <p style={{ color:"var(--ink-500)", fontSize:14, lineHeight:1.6 }}>
@@ -2447,7 +2447,7 @@ const VisionSection = ({ lang, setPage }) => {
   return (
     <section style={{
       background:"linear-gradient(180deg, #fdfcfa 0%, #f7f6f2 100%)",
-      padding:"clamp(40px, 5vw, 64px) 0",
+      padding:"clamp(28px, 3.5vw, 44px) 0",
       position:"relative", overflow:"hidden",
     }}>
       {/* Decorative blob */}
@@ -3279,7 +3279,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       <Reveal><UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} /></Reveal>
 
       {/* ── Section Campagnes — design premium éditorial ── */}
-      <section id="collectes" style={{ background:"var(--paper)", padding:"clamp(40px, 5vw, 64px) 0 clamp(32px, 4vw, 48px)" }}>
+      <section id="collectes" style={{ background:"var(--paper)", padding:"clamp(40px, 5vw, 64px) 0 clamp(16px, 2vw, 24px)" }}>
         <div className="ayyad-container">
           {/* Header section éditorial */}
           <div style={{ display:"flex", flexDirection:"column", gap:16, marginBottom: 24 }}>
