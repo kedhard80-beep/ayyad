@@ -2173,9 +2173,9 @@ const PartnersBanner = ({ lang }) => {
 
   return (
     <section style={{
-      background:"var(--paper)",
-      padding:"clamp(28px, 3.5vw, 44px) 0",
-      borderTop:"1px solid rgba(10,31,26,0.04)",
+      background:"linear-gradient(180deg, var(--paper) 0%, #f7f6f2 100%)",
+      padding:"clamp(24px, 3vw, 36px) 0 clamp(28px, 3.5vw, 44px)",
+      borderTop:"1px solid rgba(10,31,26,0.06)",
       position:"relative",
       overflow:"hidden",
     }}>
@@ -3273,6 +3273,9 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       {/* ── Ticker derniers dons ── */}
       <DonationTicker lang={lang} />
 
+      {/* ── Section Notre Vision — émotionnelle, place juste apres le hero ── */}
+      <VisionSection lang={lang} setPage={setPage} />
+
       {/* ── Section Impact (compteurs animés + confiance financière) ── */}
       <Reveal><ImpactSection lang={lang} heroStats={heroStats} setPage={setPage} /></Reveal>
 
@@ -3385,10 +3388,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
         })()}
       </section>
 
-      {/* ── Section Notre Vision — émotionnelle, split image + texte ── */}
-      <VisionSection lang={lang} setPage={setPage} />
-
-      {/* ── Bandeau hôpitaux partenaires ── */}
+      {/* ── Bandeau hôpitaux partenaires — directement après les campagnes ── */}
       <Reveal><PartnersBanner lang={lang} /></Reveal>
 
       {/* ── Carrousel Témoignages — voix bénéficiaires ── */}
