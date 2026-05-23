@@ -2322,7 +2322,7 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
   const campagnesNum = patientsNum > 0 ? Math.max(patientsNum, 30) : 142;
 
   return (
-    <section ref={ref} style={{ background:"var(--paper)", padding:"clamp(48px,6vw,80px) 0", position:"relative" }}>
+    <section ref={ref} style={{ background:"var(--paper)", padding:"clamp(24px,3vw,40px) 0 clamp(36px,4.5vw,56px)", position:"relative", borderTop:"1px solid rgba(10,31,26,0.04)" }}>
       {/* Bordure dorée subtile en haut */}
       <div style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:120, height:3, background:"var(--grad-gold)", borderRadius:999 }} />
 
@@ -2447,7 +2447,7 @@ const VisionSection = ({ lang, setPage }) => {
   return (
     <section style={{
       background:"linear-gradient(180deg, #fdfcfa 0%, #f7f6f2 100%)",
-      padding:"clamp(32px, 4vw, 56px) 0 clamp(28px, 3.5vw, 44px)",
+      padding:"clamp(32px, 4vw, 56px) 0 clamp(16px, 2vw, 24px)",
       position:"relative", overflow:"hidden",
       borderTop:"1px solid rgba(10,31,26,0.04)",
     }}>
