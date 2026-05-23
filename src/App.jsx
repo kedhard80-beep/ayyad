@@ -1787,6 +1787,43 @@ const SupportAyyadSection = ({ lang }) => {
                 : `🌊 ${fr?"Payer":"Pay"} ${displayAmount} →`}
             </button>
 
+            {/* Encart Sendwave/diaspora — visible immédiatement dès la saisie du montant.
+                Permet aux donateurs de la diaspora de savoir tout de suite qu'ils ont une
+                option dédiée, sans avoir à cliquer "Payer" pour le découvrir. */}
+            <details className="w-full bg-white/8 rounded-xl border border-white/20 text-left group">
+              <summary className="cursor-pointer list-none flex items-center justify-between gap-2 px-3 py-2.5 select-none hover:bg-white/5 rounded-xl transition-colors">
+                <span className="flex items-center gap-2 text-xs font-bold text-white">
+                  🌍 {fr ? "Vous êtes à l'étranger ?" : "Donating from abroad?"}
+                </span>
+                <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-200">
+                  <span>Sendwave</span>
+                  <span className="group-open:rotate-180 transition-transform">▼</span>
+                </span>
+              </summary>
+              <div className="px-3 pb-3 pt-1 text-[11px] text-emerald-100 leading-relaxed space-y-2">
+                <p>
+                  {fr
+                    ? <>Utilisez l'app <strong className="text-white">Sendwave</strong> (gratuite, sans frais cachés) depuis France, Canada, USA, UK, Belgique, Italie, Espagne, Allemagne…</>
+                    : <>Use the <strong className="text-white">Sendwave</strong> app (free, no hidden fees) from France, Canada, USA, UK, Belgium, Italy, Spain, Germany…</>}
+                </p>
+                <ol className="list-decimal pl-4 space-y-0.5">
+                  <li>{fr ? "Téléchargez Sendwave (App Store / Play Store)" : "Download Sendwave (App Store / Play Store)"}</li>
+                  <li>{fr ? <>Envoyez à : <strong className="font-mono text-white">+225 07 48 05 61 28</strong></> : <>Send to: <strong className="font-mono text-white">+225 07 48 05 61 28</strong></>}</li>
+                  <li>{fr ? "Saisissez le montant en EUR/USD/CAD/GBP — il arrive en FCFA sur Ayyad" : "Enter the amount in EUR/USD/CAD/GBP — arrives in FCFA at Ayyad"}</li>
+                </ol>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <a href="https://apps.apple.com/app/sendwave-send-money/id1238118264" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-white text-emerald-900 px-2 py-1 rounded-md text-[10px] font-bold hover:bg-emerald-50">🍎 iOS</a>
+                  <a href="https://play.google.com/store/apps/details?id=com.wave" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-white text-emerald-900 px-2 py-1 rounded-md text-[10px] font-bold hover:bg-emerald-50">🤖 Android</a>
+                  <a href="https://www.sendwave.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 border border-white/40 text-white px-2 py-1 rounded-md text-[10px] font-bold hover:bg-white/10">🌐 sendwave.com</a>
+                </div>
+                <p className="text-[10px] text-emerald-200/80 italic pt-1">
+                  💡 {fr
+                    ? "Sendwave appartient à Wave — l'argent arrive sur le même compte Ayyad."
+                    : "Sendwave is owned by Wave — funds arrive in the same Ayyad account."}
+                </p>
+              </div>
+            </details>
+
             <p className="text-emerald-400 text-[10px]">
               {fr ? "Paiement sécurisé · 100% de votre don va à Ayyad" : "Secure payment · 100% of your donation goes to Ayyad"}
             </p>
