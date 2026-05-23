@@ -4,6 +4,47 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './index.css'
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Observer GLOBAL pour les classes utilitaires .ayyad-reveal* du design system
+// Ces classes définissent opacity:0 par défaut + ajoutent .is-visible quand
+// l'élément entre dans la vue. Sans cet observer, le contenu resterait invisible.
+// (Le composant <Reveal> attache son propre observer, ce code couvre TOUS les
+//  autres éléments qui portent les classes utilitaires.)
+// ─────────────────────────────────────────────────────────────────────────────
+const REVEAL_SELECTORS = ".ayyad-reveal, .ayyad-reveal-left, .ayyad-reveal-right, .ayyad-reveal-scale";
+let revealObserver = null;
+function attachRevealObserver() {
+  if (typeof window === "undefined" || typeof IntersectionObserver === "undefined") return;
+  if (!revealObserver) {
+    revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add("is-visible");
+          revealObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.10, rootMargin: "0px 0px -40px 0px" });
+  }
+  document.querySelectorAll(REVEAL_SELECTORS).forEach((el) => {
+    if (!el.classList.contains("is-visible")) revealObserver.observe(el);
+  });
+}
+// Au chargement initial, et à chaque modification du DOM (React rerender),
+// on rescanne pour attacher l'observer aux nouveaux éléments .ayyad-reveal*.
+if (typeof window !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", attachRevealObserver);
+  } else {
+    attachRevealObserver();
+  }
+  // Surveille les ajouts d'éléments (changements de page React)
+  if (typeof MutationObserver !== "undefined") {
+    const mo = new MutationObserver(() => attachRevealObserver());
+    if (document.body) mo.observe(document.body, { childList: true, subtree: true });
+    else document.addEventListener("DOMContentLoaded", () => mo.observe(document.body, { childList: true, subtree: true }));
+  }
+}
+
 class RootErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false, error: null }; }
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
