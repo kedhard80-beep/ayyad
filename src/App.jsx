@@ -491,12 +491,13 @@ const PremiumTopBar = ({ lang, setLang }) => {
     }}>
       <div className="ayyad-container" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", height:36 }}>
         <div style={{ display:"flex", alignItems:"center", gap:24 }}>
-          <a href="tel:+2250748056128" style={{ display:"inline-flex", alignItems:"center", gap:6, color:"inherit", textDecoration:"none", transition:"color .2s" }} onMouseEnter={e=>e.currentTarget.style.color="#e9d59a"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.85)"}>
-            <span style={{ color:"#e9d59a" }}>✆</span> +225 07 48 05 61 28
-          </a>
           <a href="mailto:contact@ayyadci.com" style={{ display:"inline-flex", alignItems:"center", gap:6, color:"inherit", textDecoration:"none", transition:"color .2s" }} onMouseEnter={e=>e.currentTarget.style.color="#e9d59a"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.85)"}>
             <span style={{ color:"#e9d59a" }}>✉</span> contact@ayyadci.com
           </a>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:6, color:"rgba(255,255,255,0.78)" }}>
+            <span style={{ color:"#e9d59a" }}>💬</span>
+            {fr ? "Une question ? Utilisez le chat en bas à droite" : "Got a question? Use the chat at the bottom right"}
+          </span>
           <span style={{ display:"inline-flex", alignItems:"center", gap:6, color:"rgba(255,255,255,0.6)" }}>
             <span style={{ width:6, height:6, borderRadius:"50%", background:"#34d399", boxShadow:"0 0 0 3px rgba(52,211,153,0.18)", display:"inline-block" }} />
             {fr ? "Plateforme opérationnelle" : "Platform live"}
