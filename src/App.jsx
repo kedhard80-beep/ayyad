@@ -3723,6 +3723,42 @@ const CasePage = ({ c, setPage, lang, user }) => {
             </button>
           ))}
         </div>
+        {/* Encart "Étranger / Sendwave" — visible immédiatement, dépliable pour les détails.
+            Permet aux donateurs de la diaspora de comprendre tout de suite qu'ils ont une
+            option dédiée et de ne pas partir en pensant que c'est uniquement Wave CI local. */}
+        <details className="mt-2 group">
+          <summary className="cursor-pointer list-none flex items-center justify-between gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 rounded-xl px-3 py-2.5 transition-colors">
+            <span className="flex items-center gap-2 text-xs font-bold text-blue-800">
+              🌍 {lang==="fr" ? "Vous êtes à l'étranger ?" : "Donating from abroad?"}
+            </span>
+            <span className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600">
+              <span>Sendwave</span>
+              <span className="group-open:rotate-180 transition-transform">▼</span>
+            </span>
+          </summary>
+          <div className="mt-2 bg-blue-50/60 border border-blue-100 rounded-xl p-3 text-xs text-blue-900 space-y-2">
+            <p className="leading-relaxed">
+              {lang==="fr"
+                ? <>Utilisez l'application <strong>Sendwave</strong> (gratuite, sans frais cachés) depuis France, Canada, USA, UK, Belgique, Italie, Espagne, Allemagne…</>
+                : <>Use the <strong>Sendwave</strong> app (free, no hidden fees) from France, Canada, USA, UK, Belgium, Italy, Spain, Germany…</>}
+            </p>
+            <ol className="list-decimal pl-4 space-y-0.5">
+              <li>{lang==="fr" ? "Téléchargez Sendwave (App Store / Play Store)" : "Download Sendwave (App Store / Play Store)"}</li>
+              <li>{lang==="fr" ? <>Envoyez à : <strong className="font-mono">+225 07 48 05 61 28</strong></> : <>Send to: <strong className="font-mono">+225 07 48 05 61 28</strong></>}</li>
+              <li>{lang==="fr" ? "Saisissez le montant en EUR/USD/CAD/GBP — il arrive en FCFA sur Ayyad" : "Enter the amount in EUR/USD/CAD/GBP — arrives in FCFA at Ayyad"}</li>
+            </ol>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              <a href="https://apps.apple.com/app/sendwave-send-money/id1238118264" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-md text-[10px] font-bold">🍎 iOS</a>
+              <a href="https://play.google.com/store/apps/details?id=com.wave" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-md text-[10px] font-bold">🤖 Android</a>
+              <a href="https://www.sendwave.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 border border-blue-300 text-blue-700 px-2 py-1 rounded-md text-[10px] font-bold hover:bg-blue-100">🌐 sendwave.com</a>
+            </div>
+            <p className="text-[10px] text-blue-600 italic pt-1">
+              💡 {lang==="fr"
+                ? "Sendwave appartient à Wave — l'argent arrive sur le même compte Ayyad que les dons Wave locaux."
+                : "Sendwave is owned by Wave — funds arrive in the same Ayyad account as local Wave donations."}
+            </p>
+          </div>
+        </details>
       </div>
       {/* Widget paiement mobile — Wave / Carte bancaire */}
         {amount && amountInFcfa >= 500 ? (
