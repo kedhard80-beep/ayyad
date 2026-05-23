@@ -2316,10 +2316,14 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
     return Math.round(n);
   };
 
-  const collectedNum = parseStat(heroStats?.collected) || 24_800_000;
-  const patientsNum = parseStat(heroStats?.patients) || 127;
-  const hospitalsNum = parseStat(heroStats?.hospitals) || 18;
-  const campagnesNum = patientsNum > 0 ? Math.max(patientsNum, 30) : 142;
+  // IMPORTANT : pas de valeurs de fallback fake. Si les données réelles
+  // Supabase sont à 0 (plateforme qui démarre), on affiche 0 honnêtement.
+  // Les compteurs s'animeront naturellement de 0 → vraie valeur au fur
+  // et à mesure que des dossiers seront approuvés et financés.
+  const collectedNum = parseStat(heroStats?.collected);
+  const patientsNum = parseStat(heroStats?.patients);
+  const hospitalsNum = parseStat(heroStats?.hospitals) || 18; // 18 = chiffre marketing (partenariats en cours)
+  const campagnesNum = parseStat(heroStats?.funded) || 0;
 
   return (
     <section ref={ref} style={{ background:"var(--paper)", padding:"clamp(24px,3vw,40px) 0 clamp(36px,4.5vw,56px)", position:"relative", borderTop:"1px solid rgba(10,31,26,0.04)" }}>
@@ -3157,7 +3161,7 @@ const DonationTicker = ({ lang }) => {
 const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [heroStats, setHeroStats] = useState({ patients: "—", collected: "—", hospitals: "18" });
+  const [heroStats, setHeroStats] = useState({ patients: "0", collected: "0", hospitals: "18", funded: "0" });
   useEffect(() => {
     const loadStats = async () => {
       try {
@@ -3165,6 +3169,8 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
         if (data) {
           // Patients aidés = dossiers qui ont été approuvés (pas PENDING/REJECTED)
           const active = data.filter(c => !["PENDING","REJECTED"].includes(c.status));
+          // Campagnes financées = sous-ensemble des dossiers au statut FUNDED uniquement
+          const fundedCount = data.filter(c => c.status === "FUNDED").length;
           // Total collecté = somme des dons CONFIRMÉS sur les dossiers actifs
           const totals = await fetchConfirmedTotals(active.map(c => c.id));
           const totalCollected = Object.values(totals).reduce((s, t) => s + (t.collected || 0), 0);
@@ -3177,9 +3183,10 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
             ...prev,
             patients: String(active.length),
             collected: totalCollected > 0 ? fmtCollected : "0",
+            funded: String(fundedCount),
           }));
         }
-      } catch(e) { /* garder les valeurs par défaut */ }
+      } catch(e) { /* garder les valeurs par défaut (0) */ }
     };
     loadStats();
   }, []);
