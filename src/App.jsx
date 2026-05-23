@@ -1885,11 +1885,9 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
   const fr = lang === "fr";
 
   // Contenu narratif des 4 slides — chaque slide = un angle de la mission
-  // Images : personnes africaines/noires dans des contextes médicaux et solidaires
-  // (cohérent avec la mission Ayyad en Côte d'Ivoire)
   const slides = [
     {
-      img: "https://images.unsplash.com/photo-1612349316228-5942a9b489c2?w=1920&q=85",
+      img: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1920&q=85",
       eyebrow: fr ? "Plateforme vérifiée & sécurisée" : "Verified & secure platform",
       titlePre: fr ? "Quand la vie attend," : "When life can't wait,",
       titleEm: fr ? "agissons ensemble." : "we act together.",
@@ -1899,7 +1897,7 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
       cta: { label: fr ? "Faire un don maintenant" : "Donate now", action: () => setPage("collectesactives") },
     },
     {
-      img: "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=1920&q=85",
+      img: "https://images.unsplash.com/photo-1612531048118-826c4e98c2da?w=1920&q=85",
       eyebrow: fr ? "100% transparent · 0% frais cachés" : "100% transparent · 0% hidden fees",
       titlePre: fr ? "Financer des soins," : "Funding care,",
       titleEm: fr ? "changer une vie." : "changing a life.",
@@ -1909,7 +1907,7 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
       cta: { label: fr ? "Découvrir les campagnes" : "Explore campaigns", action: () => setPage("collectesactives") },
     },
     {
-      img: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=1920&q=85",
+      img: "https://images.unsplash.com/photo-1666214280557-f1b5022eb634?w=1920&q=85",
       eyebrow: fr ? "Pour les patients" : "For patients",
       titlePre: fr ? "Une plateforme humaine," : "A platform built on humanity,",
       titleEm: fr ? "construite pour vous." : "built for you.",
@@ -1919,7 +1917,7 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
       cta: { label: fr ? "Soumettre un dossier" : "Submit a case", action: () => setPage("submit") },
     },
     {
-      img: "https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?w=1920&q=85",
+      img: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=1920&q=85",
       eyebrow: fr ? "Impact mesurable" : "Measurable impact",
       titlePre: fr ? "Chaque contribution" : "Every contribution",
       titleEm: fr ? "peut sauver une vie." : "can save a life.",
@@ -2477,8 +2475,8 @@ const VisionSection = ({ lang, setPage }) => {
               background:"#0a3d2e",
             }}>
               <img
-                src="https://images.unsplash.com/photo-1591012922998-fae3acd1ce11?w=900&q=85"
-                alt={fr ? "Solidarité africaine — Ayyad" : "African solidarity — Ayyad"}
+                src="https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=900&q=85"
+                alt={fr ? "Mains tendues — solidarité" : "Hands together — solidarity"}
                 style={{ width:"100%", height:"100%", objectFit:"cover" }}
                 onError={e=>{ e.target.style.display='none'; }}
               />
