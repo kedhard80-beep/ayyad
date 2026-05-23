@@ -890,29 +890,30 @@ const CaseCard = ({ c, lang, t, onClick }) => {
           )}
         </div>
 
-        {/* Bottom row : tracking + action */}
-        <div style={{ marginTop:18, paddingTop:14, borderTop:"1px dashed rgba(10,31,26,0.08)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
+        {/* Bottom row : tracking + action — flex-wrap pour éviter overflow mobile */}
+        <div style={{ marginTop:16, paddingTop:12, borderTop:"1px dashed rgba(10,31,26,0.08)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, flexWrap:"wrap" }}>
           {c.trackingId ? (
-            <span style={{ fontSize:10, fontFamily:"monospace", color:"var(--ink-400)", fontWeight:700, letterSpacing:0.4 }}>
+            <span style={{ fontSize:10, fontFamily:"monospace", color:"var(--ink-400)", fontWeight:700, letterSpacing:0.4, minWidth: 0, overflow:"hidden", textOverflow:"ellipsis" }}>
               {c.trackingId}
             </span>
           ) : <span />}
-          <div style={{ display:"flex", alignItems:"center", gap:6 }} onClick={e=>e.stopPropagation()}>
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginLeft:"auto", flexShrink: 0 }} onClick={e=>e.stopPropagation()}>
             <ShareButton c={c} lang={lang} size="small" />
             <span style={{
               background:"linear-gradient(135deg, var(--ayyad-deep), var(--ayyad-emerald))",
               color:"#fff", fontWeight:700, fontSize:11,
-              padding:"7px 14px", borderRadius:9999,
+              padding:"7px 12px", borderRadius:9999,
               display:"inline-flex", alignItems:"center", gap:4,
               cursor:"pointer",
               boxShadow:"0 4px 12px rgba(13,92,46,0.22)",
               transition:"transform .2s",
+              whiteSpace:"nowrap",
             }}
             onClick={onClick}
             onMouseEnter={e=>{ e.currentTarget.style.transform = "translateY(-1px)"; }}
             onMouseLeave={e=>{ e.currentTarget.style.transform = "translateY(0)"; }}
             >
-              {funded ? (fr ? "Voir l'histoire" : "Read story") : (fr ? "Soutenir" : "Support")} →
+              {funded ? (fr ? "Voir" : "View") : (fr ? "Soutenir" : "Support")} →
             </span>
           </div>
         </div>
@@ -1528,7 +1529,16 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
       </button>
 
       {open && (
-        <div className="fixed z-[9999] bg-white rounded-2xl shadow-xl border border-gray-100 p-3 w-56" style={{bottom:"80px"}} onClick={e => e.stopPropagation()}>
+        <div
+          className="absolute z-[9999] bg-white rounded-2xl shadow-xl border border-gray-100 p-3"
+          style={{
+            top: "calc(100% + 6px)",
+            right: 0,
+            width: "min(240px, calc(100vw - 32px))",
+            maxWidth: "calc(100vw - 24px)",
+          }}
+          onClick={e => e.stopPropagation()}
+        >
           <div className="text-[10px] text-gray-400 font-semibold mb-2 uppercase tracking-wide">{lang === "fr" ? "Partager ce dossier" : "Share this campaign"}</div>
 
           {/* WhatsApp */}
@@ -2064,16 +2074,21 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
         background:"linear-gradient(180deg, rgba(10,31,26,0) 0%, rgba(10,31,26,0.50) 60%, rgba(10,31,26,0.92) 100%)",
         paddingTop: 24, paddingBottom: 0,
       }}>
-        <div className="ayyad-container" style={{
+        <div className="ayyad-container ayyad-hero-kpis-grid" style={{
           display:"grid",
-          gridTemplateColumns:"repeat(auto-fit, minmax(min(140px, 100%), 1fr))",
+          gridTemplateColumns:"repeat(2, minmax(0, 1fr))",
           gap: 0,
           borderTop:"1px solid rgba(201,168,76,0.22)",
           borderBottom:"none",
           background:"rgba(10,31,26,0.55)",
           backdropFilter:"blur(12px)",
-          padding:"22px 24px",
+          padding:"clamp(14px, 2.5vw, 22px) clamp(12px, 3vw, 24px)",
         }}>
+          <style>{`
+            @media (min-width: 768px) {
+              .ayyad-hero-kpis-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+            }
+          `}</style>
           {[
             { v: heroStats?.patients || "—", l: fr ? "Patients aidés" : "Patients helped", icon:"💚" },
             { v: heroStats?.collected || "—", l: fr ? "FCFA collectés" : "FCFA raised", icon:"📈" },
@@ -2081,7 +2096,8 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
             { v: "48h", l: fr ? "Vérification dossier" : "Case verification", icon:"⚡" },
           ].map((k, i) => (
             <div key={i} style={{
-              padding:"6px 18px",
+              padding:"clamp(6px, 1.5vw, 12px) clamp(10px, 2vw, 18px)",
+              minWidth: 0,
               borderLeft: i === 0 ? "none" : "1px solid rgba(255,255,255,0.10)",
               textAlign:"left",
             }}>
@@ -2505,7 +2521,7 @@ const VisionSection = ({ lang, setPage }) => {
           </div>
 
           {/* Texte droit */}
-          <div className="ayyad-reveal-right">
+          <div className="ayyad-reveal-right" style={{ minWidth: 0 }}>
             <span className="ayyad-eyebrow">{fr ? "Notre vision" : "Our vision"}</span>
             <h2 className="ayyad-h-display" style={{ fontSize:"clamp(2rem, 3.6vw, 3.2rem)", marginTop: 18, marginBottom: 24 }}>
               {fr
@@ -2523,20 +2539,26 @@ const VisionSection = ({ lang, setPage }) => {
                 : "Our mission is to build a bridge of trust between the donor and the patient, through a transparent, verified and 100% African platform."}
             </p>
 
-            {/* 3 piliers — grille 3 colonnes même sur mobile (chaque pilier minimum 90px) */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap: 10, marginBottom: 28 }}>
+            {/* 3 piliers — responsive 3 cols sur écrans larges, padding et taille adaptés */}
+            <div style={{
+              display:"grid",
+              gridTemplateColumns:"repeat(3, minmax(0, 1fr))",
+              gap: 8, marginBottom: 28,
+              width:"100%",
+            }}>
               {[
                 { icon:"🤝", t: fr ? "Solidarité" : "Solidarity"          },
                 { icon:"🔍", t: fr ? "Transparence" : "Transparency"      },
                 { icon:"⚡", t: fr ? "Rapidité"    : "Speed"             },
               ].map((p, i) => (
                 <div key={i} style={{
-                  textAlign:"center", padding:"18px 12px",
+                  textAlign:"center", padding:"12px 6px",
                   background:"#fff", border:"1px solid rgba(10,31,26,0.06)",
-                  borderRadius: 14,
+                  borderRadius: 12,
+                  minWidth: 0,
                 }}>
-                  <div style={{ fontSize:26, marginBottom:6 }}>{p.icon}</div>
-                  <div style={{ fontWeight:700, fontSize:13, color:"var(--ayyad-deep)" }}>{p.t}</div>
+                  <div style={{ fontSize:"clamp(18px, 4vw, 26px)", marginBottom:4 }}>{p.icon}</div>
+                  <div style={{ fontWeight:700, fontSize:"clamp(11px, 2.6vw, 13px)", color:"var(--ayyad-deep)", lineHeight:1.2 }}>{p.t}</div>
                 </div>
               ))}
             </div>
