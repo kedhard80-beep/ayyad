@@ -2174,7 +2174,7 @@ const PartnersBanner = ({ lang }) => {
   return (
     <section style={{
       background:"var(--paper)",
-      padding:"clamp(48px, 6vw, 80px) 0",
+      padding:"clamp(40px, 5vw, 64px) 0",
       borderTop:"1px solid rgba(10,31,26,0.04)",
       position:"relative",
       overflow:"hidden",
@@ -2293,7 +2293,7 @@ const AnimatedNumber = ({ value, suffix = "", visible }) => {
   return <span>{n.toLocaleString("fr-CI")}{suffix}</span>;
 };
 
-const ImpactSection = ({ lang, heroStats }) => {
+const ImpactSection = ({ lang, heroStats, setPage }) => {
   const fr = lang === "fr";
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -2328,15 +2328,15 @@ const ImpactSection = ({ lang, heroStats }) => {
 
       <div className="ayyad-container">
         {/* Header centré */}
-        <div style={{ textAlign:"center", marginBottom: 40 }}>
+        <div style={{ textAlign:"center", marginBottom: 28 }}>
           <span className="ayyad-eyebrow">{fr ? "Notre impact" : "Our impact"}</span>
-          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(2rem, 4vw, 3.4rem)", marginTop: 18, marginBottom: 16 }}>
+          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.8rem, 3.4vw, 2.8rem)", marginTop: 14, marginBottom: 10 }}>
             {fr ? <>Des chiffres qui <em>changent des vies.</em></> : <>Numbers that <em>change lives.</em></>}
           </h2>
-          <p style={{ color:"var(--ink-500)", fontSize:"clamp(1rem, 1.2vw, 1.125rem)", maxWidth: 640, margin:"0 auto", lineHeight:1.65 }}>
+          <p style={{ color:"var(--ink-500)", fontSize:15, maxWidth: 600, margin:"0 auto", lineHeight:1.55 }}>
             {fr
-              ? "Chaque don est tracé, chaque virement est audité, chaque patient est suivi. Voici la mesure concrète de notre solidarité collective."
-              : "Every donation is tracked, every transfer is audited, every patient is followed up. Here is the concrete measure of our collective solidarity."}
+              ? "Chaque don est tracé, chaque virement est audité, chaque patient est suivi."
+              : "Every donation is tracked, every transfer is audited, every patient is followed up."}
           </p>
         </div>
 
@@ -2344,8 +2344,8 @@ const ImpactSection = ({ lang, heroStats }) => {
         <div style={{
           display:"grid",
           gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 20,
-          marginBottom: 40,
+          gap: 16,
+          marginBottom: 28,
         }}>
           {[
             { v: collectedNum, suffix: " FCFA", label: fr ? "Total collecté" : "Total raised", icon:"💰", color:"#0d5c2e" },
@@ -2400,23 +2400,36 @@ const ImpactSection = ({ lang, heroStats }) => {
                   : "Each month we publish our impact reports, hospital transfers and commission. No cash intermediation, no hidden fees: what you give arrives in full to the healthcare facility."}
               </p>
             </div>
-            <div style={{ display:"flex", flexDirection:"column", gap: 14 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap: 12 }}>
               {[
-                { icon:"🔒", t: fr ? "Conformité BCEAO" : "BCEAO compliance",      s: fr ? "Plateforme déclarée et auditée" : "Declared and audited platform" },
-                { icon:"📊", t: fr ? "Rapports trimestriels"  : "Quarterly reports", s: fr ? "Transparence totale sur les fonds" : "Full transparency on funds" },
-                { icon:"🏥", t: fr ? "Versement direct hôpital" : "Direct to hospital", s: fr ? "Jamais en espèces, toujours tracé" : "Never cash, always traceable" },
+                { icon:"🔒", t: fr ? "Conformité BCEAO" : "BCEAO compliance",      s: fr ? "Plateforme déclarée et auditée" : "Declared and audited platform",   target: "how" },
+                { icon:"📊", t: fr ? "Rapports trimestriels"  : "Quarterly reports", s: fr ? "Transparence totale sur les fonds" : "Full transparency on funds", target: "how" },
+                { icon:"🏥", t: fr ? "Versement direct hôpital" : "Direct to hospital", s: fr ? "Jamais en espèces, toujours tracé" : "Never cash, always traceable", target: "how" },
               ].map((b, i) => (
-                <div key={i} style={{
-                  display:"flex", gap:14, padding:"14px 18px",
-                  background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.10)",
-                  borderRadius: 14,
-                }}>
+                <button
+                  key={i}
+                  onClick={() => setPage && setPage(b.target)}
+                  style={{
+                    display:"flex", gap:14, padding:"14px 18px",
+                    background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.10)",
+                    borderRadius: 14,
+                    cursor: setPage ? "pointer" : "default",
+                    textAlign:"left", color:"inherit",
+                    transition:"background .2s, border-color .2s, transform .2s",
+                    alignItems:"center",
+                  }}
+                  onMouseEnter={e=>{ if (!setPage) return; e.currentTarget.style.background="rgba(255,255,255,0.12)"; e.currentTarget.style.borderColor="rgba(201,168,76,0.40)"; e.currentTarget.style.transform="translateX(4px)"; }}
+                  onMouseLeave={e=>{ if (!setPage) return; e.currentTarget.style.background="rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.10)"; e.currentTarget.style.transform="translateX(0)"; }}
+                >
                   <div style={{ fontSize:22 }}>{b.icon}</div>
-                  <div>
+                  <div style={{ flex:1 }}>
                     <div style={{ fontWeight:700, fontSize:14, color:"#fff" }}>{b.t}</div>
                     <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", marginTop:2 }}>{b.s}</div>
                   </div>
-                </div>
+                  {setPage && (
+                    <span style={{ color:"#e9d59a", fontSize:18, fontWeight:700, flexShrink:0 }}>→</span>
+                  )}
+                </button>
               ))}
             </div>
           </div>
@@ -2434,7 +2447,7 @@ const VisionSection = ({ lang, setPage }) => {
   return (
     <section style={{
       background:"linear-gradient(180deg, #fdfcfa 0%, #f7f6f2 100%)",
-      padding:"clamp(56px, 6vw, 88px) 0",
+      padding:"clamp(40px, 5vw, 64px) 0",
       position:"relative", overflow:"hidden",
     }}>
       {/* Decorative blob */}
@@ -2580,7 +2593,7 @@ const TestimonialsCarousel = ({ lang }) => {
   return (
     <section style={{
       background:"linear-gradient(135deg, #0a3d2e 0%, #0d5c2e 50%, #0f4f3c 100%)",
-      padding:"clamp(56px, 6vw, 88px) 0",
+      padding:"clamp(40px, 5vw, 64px) 0",
       position:"relative", overflow:"hidden",
       color:"#fff",
     }}
@@ -3260,16 +3273,16 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       <DonationTicker lang={lang} />
 
       {/* ── Section Impact (compteurs animés + confiance financière) ── */}
-      <Reveal><ImpactSection lang={lang} heroStats={heroStats} /></Reveal>
+      <Reveal><ImpactSection lang={lang} heroStats={heroStats} setPage={setPage} /></Reveal>
 
       {/* Urgent Cases Banner — interventions critiques sous 72h */}
       <Reveal><UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} /></Reveal>
 
       {/* ── Section Campagnes — design premium éditorial ── */}
-      <section id="collectes" style={{ background:"var(--paper)", padding:"clamp(48px, 6vw, 80px) 0" }}>
+      <section id="collectes" style={{ background:"var(--paper)", padding:"clamp(40px, 5vw, 64px) 0 clamp(32px, 4vw, 48px)" }}>
         <div className="ayyad-container">
           {/* Header section éditorial */}
-          <div style={{ display:"flex", flexDirection:"column", gap:20, marginBottom: 32 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:16, marginBottom: 24 }}>
             <div style={{ textAlign:"center" }}>
               <span className="ayyad-eyebrow">{lang==="fr" ? "Campagnes vérifiées" : "Verified campaigns"}</span>
               <h2 className="ayyad-h-display" style={{ fontSize:"clamp(2rem, 3.6vw, 3rem)", marginTop: 18, marginBottom: 14 }}>
