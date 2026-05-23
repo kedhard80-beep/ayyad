@@ -2479,37 +2479,26 @@ const VisionSection = ({ lang, setPage }) => {
               background:"#0a3d2e",
             }}>
               <img
-                src="/vision-ayyad.jpg"
-                alt={fr ? "Un geste pour une vie — Ayyad" : "A gesture for a life — Ayyad"}
+                src="https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=900&q=85"
+                alt={fr ? "Patiente recevant des soins" : "Patient receiving care"}
                 style={{ width:"100%", height:"100%", objectFit:"cover" }}
                 onError={e=>{ e.target.style.display='none'; }}
               />
-              {/* Overlay gradient bas, plus léger car l'image porte déjà du texte brandé */}
-              <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg, rgba(10,31,26,0) 65%, rgba(10,31,26,0.55) 100%)" }} />
-            </div>
-            {/* Badge floating — remplace la date par un engagement qui ne vieillit pas */}
-            <div style={{
-              position:"absolute", bottom:-24, right:-12,
-              background:"#fff",
-              padding:"16px 22px",
-              borderRadius: 18,
-              boxShadow:"var(--shadow-xl)",
-              border:"1px solid rgba(10,31,26,0.06)",
-              display:"flex", alignItems:"center", gap:14,
-              maxWidth:280,
-            }}>
-              <div style={{
-                width:48, height:48, borderRadius:12,
-                background:"linear-gradient(135deg, #C9A84C, #e9d59a)",
-                display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:22,
-                flexShrink:0,
-              }}>🇨🇮</div>
-              <div>
-                <div style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:16, color:"var(--ayyad-deep)", lineHeight:1.1 }}>{fr ? "Made in Côte d'Ivoire" : "Made in Côte d'Ivoire"}</div>
-                <div style={{ fontSize:11, color:"var(--ink-500)", fontWeight:600, letterSpacing:0.3, marginTop:4 }}>{fr ? "Pour les Ivoiriens, par les Ivoiriens" : "For Ivorians, by Ivorians"}</div>
+              {/* Overlay gradient bas pour lisibilité de la citation */}
+              <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg, rgba(10,31,26,0) 50%, rgba(10,31,26,0.78) 100%)" }} />
+              {/* Citation rendue sur l'image — image nature donc on peut remettre */}
+              <div style={{ position:"absolute", bottom:32, left:32, right:32, color:"#fff" }}>
+                <div style={{ fontSize:48, fontFamily:"var(--font-serif)", color:"#e9d59a", lineHeight:1, marginBottom:8 }}>"</div>
+                <p style={{ fontFamily:"var(--font-serif)", fontStyle:"italic", fontSize:18, fontWeight:500, lineHeight:1.45 }}>
+                  {fr
+                    ? "Soutenir une vie, c'est en sauver une."
+                    : "To support a life is to save one."}
+                </p>
               </div>
             </div>
+            {/* Pas de badge floating — l'image porte déjà son propre branding Ayyad
+                et un badge "Made in CI" excluerait la diaspora et les donateurs
+                internationaux qui sont essentiels au modèle de solidarité. */}
           </div>
 
           {/* Texte droit */}
