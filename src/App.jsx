@@ -1483,22 +1483,53 @@ const printDonationCertificate = ({ donorName, amount, beneficiary, caseTitle, t
 const ShareButton = ({ c, lang, size = "normal" }) => {
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const containerRef = useRef(null);
-  // Click-outside : on utilise mousedown (qui fire AVANT click), et on check via
-  // la ref si la cible est à l'intérieur du conteneur — sinon le click qui ouvre
-  // le menu déclencherait aussi sa fermeture immédiate (bug invisible).
+  const buttonRef = useRef(null);
+  const menuRef = useRef(null);
+
+  // Calcule la position du menu via getBoundingClientRect du bouton.
+  // On utilise position:fixed pour éviter d'être clippé par overflow:hidden
+  // des cartes parentes ou caché derrière des éléments à z-index élevé.
+  const computePosition = () => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const menuW = 240;
+    const margin = 12;
+    // Privilégie ouverture vers le bas-droite, mais ajuste si dépasse viewport
+    let left = rect.right - menuW;
+    if (left < margin) left = margin;
+    if (left + menuW > window.innerWidth - margin) left = window.innerWidth - menuW - margin;
+    let top = rect.bottom + 6;
+    // Si pas assez de place en bas, ouvre vers le haut
+    const menuH = 320; // estimation
+    if (top + menuH > window.innerHeight - margin) {
+      top = rect.top - menuH - 6;
+      if (top < margin) top = margin;
+    }
+    setMenuPos({ top, left });
+  };
+
+  // Click-outside : mousedown + touchstart (fire AVANT click) + check ref
+  // pour éviter le bug d'ouverture/fermeture instantanée
   useEffect(() => {
     if (!open) return;
     const handleClickOutside = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setOpen(false);
-      }
+      const inContainer = containerRef.current && containerRef.current.contains(e.target);
+      const inMenu = menuRef.current && menuRef.current.contains(e.target);
+      if (!inContainer && !inMenu) setOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("touchstart", handleClickOutside);
+    // Recalcule la position si scroll/resize quand menu ouvert
+    const reposition = () => computePosition();
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
     };
   }, [open]);
 
@@ -1532,7 +1563,12 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
   return (
     <div className="relative" ref={containerRef}>
       <button
-        onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+        ref={buttonRef}
+        onClick={e => {
+          e.stopPropagation();
+          if (!open) computePosition();
+          setOpen(o => !o);
+        }}
         className={`flex items-center gap-1.5 font-semibold rounded-xl border transition-all ${isSmall
           ? "text-xs px-2.5 py-1.5 border-gray-200 text-gray-600 hover:border-emerald-400 hover:text-emerald-700 bg-white"
           : "text-sm px-4 py-2.5 border-gray-200 text-gray-600 hover:border-emerald-400 hover:text-emerald-700 bg-white shadow-sm"}`}>
@@ -1542,12 +1578,15 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
 
       {open && (
         <div
-          className="absolute z-[9999] bg-white rounded-2xl shadow-xl border border-gray-100 p-3"
+          ref={menuRef}
+          className="bg-white rounded-2xl shadow-xl border border-gray-100 p-3"
           style={{
-            top: "calc(100% + 6px)",
-            right: 0,
-            width: "min(240px, calc(100vw - 32px))",
+            position: "fixed",
+            top: menuPos.top,
+            left: menuPos.left,
+            width: 240,
             maxWidth: "calc(100vw - 24px)",
+            zIndex: 99999,
           }}
           onClick={e => e.stopPropagation()}
         >
