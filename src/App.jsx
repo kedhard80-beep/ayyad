@@ -3279,8 +3279,11 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       <Reveal><UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} /></Reveal>
 
       {/* ── Section Campagnes — design premium éditorial ── */}
-      <section id="collectes" style={{ background:"var(--paper)", padding:"clamp(40px, 5vw, 64px) 0 clamp(16px, 2vw, 24px)" }}>
-        <div className="ayyad-container">
+      {/* La section utilise un conteneur plus large (1600px) pour permettre 4-5
+          cartes par ligne sur grand écran. Le header reste dans le conteneur
+          standard pour rester centré et lisible. */}
+      <section id="collectes" style={{ background:"var(--paper)", padding:"clamp(40px, 5vw, 64px) clamp(20px, 3vw, 40px) clamp(16px, 2vw, 24px)" }}>
+        <div style={{ maxWidth: 1240, margin:"0 auto" }}>
           {/* Header section éditorial */}
           <div style={{ display:"flex", flexDirection:"column", gap:16, marginBottom: 24 }}>
             <div style={{ textAlign:"center" }}>
@@ -3338,22 +3341,26 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
             </div>
           </div>
 
-          {/* Grille campagnes */}
-          <div style={{
-            display:"grid",
-            gridTemplateColumns:"repeat(auto-fill, minmax(300px, 1fr))",
-            gap: 24,
-          }}>
-            {filtered.map(c => <CaseCard key={c.id} c={c} lang={lang} t={t} onClick={() => { setSelectedCase(c); setPage("case"); }} />)}
-          </div>
-
           {filtered.length === 0 && (
-            <div style={{ textAlign:"center", padding:"80px 24px", color:"var(--ink-400)" }}>
+            <div style={{ textAlign:"center", padding:"60px 24px", color:"var(--ink-400)" }}>
               <div style={{ fontSize:42, marginBottom: 12 }}>🔍</div>
               <p>{lang==="fr" ? "Aucune campagne ne correspond à votre recherche." : "No campaign matches your search."}</p>
             </div>
           )}
         </div>
+
+        {/* Grille campagnes — conteneur élargi à 1600px pour 4-5 cartes/ligne */}
+        {filtered.length > 0 && (
+          <div style={{ maxWidth: 1600, margin:"0 auto" }}>
+            <div style={{
+              display:"grid",
+              gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))",
+              gap: 20,
+            }}>
+              {filtered.map(c => <CaseCard key={c.id} c={c} lang={lang} t={t} onClick={() => { setSelectedCase(c); setPage("case"); }} />)}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ── Section Notre Vision — émotionnelle, split image + texte ── */}
