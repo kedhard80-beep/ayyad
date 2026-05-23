@@ -1483,11 +1483,23 @@ const printDonationCertificate = ({ donorName, amount, beneficiary, caseTitle, t
 const ShareButton = ({ c, lang, size = "normal" }) => {
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+  // Click-outside : on utilise mousedown (qui fire AVANT click), et on check via
+  // la ref si la cible est à l'intérieur du conteneur — sinon le click qui ouvre
+  // le menu déclencherait aussi sa fermeture immédiate (bug invisible).
   useEffect(() => {
     if (!open) return;
-    const close = () => setOpen(false);
-    document.addEventListener("click", close);
-    return () => document.removeEventListener("click", close);
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, [open]);
 
   const trackingId = c.trackingId || c.tracking_id || ("AYD-" + c.id);
@@ -1518,7 +1530,7 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
   const isSmall = size === "small";
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <button
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
         className={`flex items-center gap-1.5 font-semibold rounded-xl border transition-all ${isSmall
