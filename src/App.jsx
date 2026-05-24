@@ -4741,6 +4741,209 @@ const RegisterPage = ({ setPage, setUser, lang }) => {
   );
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ── PolitiqueAdmissionPage — politique officielle de refus des dossiers ─────
+//    déjà lancés sur d'autres canaux de collecte (Facebook, TikTok, etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+const PolitiqueAdmissionPage = ({ setPage, lang }) => {
+  const fr = lang === "fr";
+  return (
+    <div style={{ background:"var(--paper)", minHeight:"100vh" }}>
+      {/* Header */}
+      <div style={{
+        background:"linear-gradient(135deg, var(--ayyad-deep) 0%, var(--ayyad-emerald) 60%, var(--ayyad-teal) 100%)",
+        color:"#fff",
+        padding:"clamp(40px, 6vw, 72px) 0 clamp(48px, 7vw, 88px)",
+        position:"relative", overflow:"hidden",
+      }}>
+        {/* Pattern doré décoratif */}
+        <div style={{
+          position:"absolute", inset:0, opacity:0.06, pointerEvents:"none",
+          backgroundImage:"radial-gradient(rgba(201,168,76,1) 1.5px, transparent 1.5px)",
+          backgroundSize:"28px 28px",
+        }} />
+        <div className="ayyad-container" style={{ position:"relative", zIndex:2 }}>
+          <button onClick={()=>setPage("home")} style={{ background:"transparent", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.78)", fontSize:13, marginBottom:18 }}>
+            ← {fr ? "Retour à l'accueil" : "Back to home"}
+          </button>
+          <span className="ayyad-eyebrow" style={{ color:"#e9d59a", background:"rgba(201,168,76,0.10)", borderColor:"rgba(201,168,76,0.40)" }}>
+            {fr ? "Politique officielle" : "Official policy"}
+          </span>
+          <h1 className="ayyad-h-display" style={{ color:"#fff", fontSize:"clamp(1.8rem, 4vw, 3rem)", marginTop:18, marginBottom:14 }}>
+            {fr ? <>Notre politique <em style={{ color:"#e9d59a" }}>d'admission des dossiers.</em></> : <>Our <em style={{ color:"#e9d59a" }}>case admission policy.</em></>}
+          </h1>
+          <p style={{ color:"rgba(255,255,255,0.85)", fontSize:16, lineHeight:1.65, maxWidth:720 }}>
+            {fr
+              ? "Pourquoi Ayyad refuse les dossiers déjà lancés sur les réseaux sociaux, et comment soumettre un dossier valide."
+              : "Why Ayyad refuses cases already launched on social media, and how to submit a valid case."}
+          </p>
+        </div>
+      </div>
+
+      {/* Contenu */}
+      <div className="ayyad-container" style={{ padding:"clamp(40px, 5vw, 64px) 0 clamp(56px, 7vw, 96px)", maxWidth:880 }}>
+
+        {/* Règle principale — encart fort */}
+        <div style={{
+          background:"linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%)",
+          border:"2px solid rgba(245,158,11,0.30)",
+          borderRadius:20, padding:"clamp(20px, 3vw, 32px)",
+          marginBottom:32,
+        }}>
+          <div style={{ display:"flex", alignItems:"flex-start", gap:16 }}>
+            <div style={{ fontSize:32, flexShrink:0 }}>⚠️</div>
+            <div>
+              <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.3rem, 2.4vw, 1.7rem)", marginBottom:10 }}>
+                {fr ? "La règle Ayyad" : "The Ayyad rule"}
+              </h2>
+              <p style={{ color:"var(--ink-700)", fontSize:15, lineHeight:1.7 }}>
+                {fr
+                  ? <><strong>Ayyad n'accepte pas les dossiers patients qui ont déjà été lancés publiquement sur d'autres canaux de collecte</strong> (Facebook, TikTok, Instagram, WhatsApp, GoFundMe, M-Pesa, dons en cash entre particuliers, etc.).</>
+                  : <><strong>Ayyad does not accept patient cases that have already been publicly launched on other fundraising channels</strong> (Facebook, TikTok, Instagram, WhatsApp, GoFundMe, M-Pesa, cash donations between individuals, etc.).</>}
+              </p>
+              <p style={{ color:"var(--ink-500)", fontSize:14, lineHeight:1.65, marginTop:12, fontStyle:"italic" }}>
+                {fr
+                  ? "Cette règle n'est pas une rigidité administrative. Elle est le fondement même de la confiance que nous construisons avec nos donateurs, et la garantie que nous offrons à chaque patient pris en charge."
+                  : "This rule is not administrative rigidity. It is the very foundation of the trust we build with our donors, and the guarantee we offer to every patient we take on."}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 4 raisons */}
+        <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.4rem, 2.6vw, 1.9rem)", marginBottom:8 }}>
+          {fr ? "Pourquoi cette règle existe" : "Why this rule exists"}
+        </h2>
+        <div style={{ width:48, height:3, background:"var(--grad-gold)", borderRadius:999, marginBottom:32 }} />
+
+        <div style={{ display:"flex", flexDirection:"column", gap:20, marginBottom:48 }}>
+          {[
+            {
+              num: "1",
+              icon: "🔍",
+              title: fr ? "Transparence financière vis-à-vis des donateurs" : "Financial transparency for donors",
+              body: fr
+                ? "Lorsqu'un donateur contribue sur Ayyad, il doit pouvoir vérifier précisément combien a déjà été collecté et combien il reste à réunir pour atteindre l'objectif médical. Si des fonds parviennent en parallèle par d'autres canaux non traçables, notre jauge ne reflète plus la réalité et nous induirions involontairement nos donateurs en erreur. Cela trahirait le principe même de notre plateforme."
+                : "When a donor contributes via Ayyad, they must be able to verify exactly how much has been collected and how much remains to reach the medical goal. If funds arrive in parallel through other untraceable channels, our progress gauge no longer reflects reality and we would unintentionally mislead our donors. This would betray the very principle of our platform.",
+            },
+            {
+              num: "2",
+              icon: "🏥",
+              title: fr ? "Garantie d'un versement direct à l'hôpital" : "Guarantee of direct hospital payment",
+              body: fr
+                ? "Ayyad s'engage publiquement à verser 100% des dons collectés directement à l'établissement de santé qui prend en charge le patient — jamais en espèces, jamais sur un compte personnel. Cette promesse ne peut être tenue que si Ayyad est le seul canal de collecte actif sur le dossier. Dans le cas contraire, il devient impossible de tracer l'intégralité des fonds et de garantir qu'ils sont effectivement utilisés pour les soins."
+                : "Ayyad publicly commits to transferring 100% of collected donations directly to the healthcare facility caring for the patient — never in cash, never to a personal account. This promise can only be kept if Ayyad is the only active fundraising channel for the case. Otherwise, it becomes impossible to track all the funds and guarantee they are actually used for care.",
+            },
+            {
+              num: "3",
+              icon: "🛡️",
+              title: fr ? "Protection du patient et de sa famille" : "Patient and family protection",
+              body: fr
+                ? "Une collecte mixte sur plusieurs canaux expose la famille à des questions complexes en cas de surcollecte, à des soupçons injustifiés, et parfois à des tensions familiales ou communautaires. En cantonnant chaque dossier à un seul canal officiel et vérifié, nous protégeons la dignité du patient et la sérénité de ses proches."
+                : "A mixed fundraising effort across multiple channels exposes the family to complex questions in case of over-collection, to unjustified suspicion, and sometimes to family or community tensions. By confining each case to a single official and verified channel, we protect the patient's dignity and the peace of mind of their loved ones.",
+            },
+            {
+              num: "4",
+              icon: "🌱",
+              title: fr ? "Intégrité de la plateforme et des autres bénéficiaires" : "Platform integrity and other beneficiaries",
+              body: fr
+                ? "Chaque dossier publié sur Ayyad est vérifié sous 48 heures avec l'hôpital partenaire. Accepter des dossiers déjà mélangés à d'autres collectes affaiblirait la valeur de cette vérification pour l'ensemble des patients vraiment dépendants d'Ayyad pour leurs soins."
+                : "Every case published on Ayyad is verified within 48 hours with the partner hospital. Accepting cases already mixed with other fundraising would weaken the value of this verification for all patients truly dependent on Ayyad for their care.",
+            },
+          ].map(reason => (
+            <div key={reason.num} className="ayyad-card" style={{ padding:"clamp(20px, 3vw, 28px)", display:"flex", gap:18 }}>
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", flexShrink:0 }}>
+                <div style={{
+                  width:44, height:44, borderRadius:12,
+                  background:"linear-gradient(135deg, var(--ayyad-deep), var(--ayyad-emerald))",
+                  color:"#fff", fontFamily:"var(--font-serif)", fontWeight:800, fontSize:18,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  marginBottom:8,
+                }}>{reason.num}</div>
+                <div style={{ fontSize:24 }}>{reason.icon}</div>
+              </div>
+              <div style={{ minWidth:0 }}>
+                <h3 className="ayyad-h-display" style={{ fontSize:"clamp(1rem, 2vw, 1.2rem)", marginBottom:8 }}>
+                  {reason.title}
+                </h3>
+                <p style={{ color:"var(--ink-700)", fontSize:14.5, lineHeight:1.7 }}>
+                  {reason.body}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Quels dossiers Ayyad accepte */}
+        <div style={{
+          background:"linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)",
+          border:"1px solid rgba(16,185,129,0.30)",
+          borderRadius:20, padding:"clamp(24px, 4vw, 36px)",
+          marginBottom:32,
+        }}>
+          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.3rem, 2.4vw, 1.7rem)", marginBottom:18, color:"var(--ayyad-deep)" }}>
+            ✅ {fr ? "Quels dossiers Ayyad accepte" : "Which cases Ayyad accepts"}
+          </h2>
+          <ul style={{ paddingLeft:0, listStyle:"none", display:"flex", flexDirection:"column", gap:14 }}>
+            {[
+              fr ? "Les dossiers patients dont la demande de financement médical n'a pas encore été lancée publiquement" : "Patient cases whose medical funding request has not yet been publicly launched",
+              fr ? "Les dossiers dont les autres canaux de collecte ont été officiellement fermés, avec un justificatif des montants déjà collectés et un objectif Ayyad ajusté au solde restant à couvrir" : "Cases whose other fundraising channels have been officially closed, with proof of amounts already collected and an Ayyad goal adjusted to the remaining balance to cover",
+              fr ? "Les dossiers soumis directement à Ayyad dès le départ, sans communication préalable sur les réseaux sociaux" : "Cases submitted directly to Ayyad from the start, without prior communication on social media",
+            ].map((item, i) => (
+              <li key={i} style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                <span style={{ color:"var(--ayyad-emerald)", fontWeight:900, fontSize:18, flexShrink:0, lineHeight:1.4 }}>✓</span>
+                <span style={{ color:"var(--ink-800)", fontSize:14.5, lineHeight:1.65 }}>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Comment soumettre */}
+        <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.4rem, 2.6vw, 1.9rem)", marginBottom:8 }}>
+          {fr ? "Comment soumettre un dossier" : "How to submit a case"}
+        </h2>
+        <div style={{ width:48, height:3, background:"var(--grad-gold)", borderRadius:999, marginBottom:24 }} />
+        <p style={{ color:"var(--ink-700)", fontSize:15.5, lineHeight:1.75, marginBottom:24 }}>
+          {fr
+            ? "Toute demande passe par notre formulaire officiel. Notre équipe vérifie le dossier sous 48 heures en collaboration avec un hôpital partenaire, puis met la collecte en ligne avec un objectif financier basé sur le devis médical réel."
+            : "All requests go through our official form. Our team verifies the case within 48 hours in collaboration with a partner hospital, then puts the campaign online with a financial goal based on the actual medical quote."}
+        </p>
+        <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginBottom:48 }}>
+          <button onClick={() => setPage("submit")} className="ayyad-btn-primary" style={{ fontSize:14, padding:"13px 26px" }}>
+            📋 {fr ? "Soumettre un dossier" : "Submit a case"} →
+          </button>
+          <button onClick={() => setPage("how")} style={{
+            background:"transparent",
+            border:"1.5px solid rgba(13,92,46,0.22)",
+            color:"var(--ayyad-deep)",
+            fontWeight:700, fontSize:14,
+            padding:"13px 26px", borderRadius:9999, cursor:"pointer",
+          }}>
+            {fr ? "Comment ça marche" : "How it works"}
+          </button>
+        </div>
+
+        {/* Conclusion / engagement */}
+        <div style={{
+          background:"linear-gradient(135deg, #0a3d2e 0%, #0d5c2e 100%)",
+          color:"#fff",
+          borderRadius:20, padding:"clamp(24px, 4vw, 36px)",
+          textAlign:"center",
+        }}>
+          <p style={{ fontFamily:"var(--font-serif)", fontStyle:"italic", fontSize:"clamp(1.05rem, 2vw, 1.25rem)", lineHeight:1.6, marginBottom:16 }}>
+            {fr
+              ? "Notre engagement reste constant : financer des soins, pas alimenter des collectes parallèles. Cette discipline est ce qui fait d'Ayyad une plateforme dans laquelle les donateurs peuvent investir leur générosité en confiance, et les patients trouver un accompagnement médical sécurisé et digne."
+              : "Our commitment remains constant: to fund care, not to feed parallel fundraising. This discipline is what makes Ayyad a platform in which donors can invest their generosity with confidence, and patients find secure and dignified medical support."}
+          </p>
+          <p style={{ fontSize:13, color:"rgba(255,255,255,0.75)" }}>
+            {fr ? "Pour toute question :" : "For any question:"} <a href="mailto:contact@ayyadci.com" style={{ color:"#e9d59a", textDecoration:"none", fontWeight:700 }}>contact@ayyadci.com</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Submit Page ───────────────────────────────────────────────
 const SubmitPage = ({ setPage, user, lang }) => {
   const [step, setStep] = useState(1);
@@ -4884,6 +5087,35 @@ const SubmitPage = ({ setPage, user, lang }) => {
     <div className="max-w-2xl mx-auto px-4 py-8">
       <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">{t.back}</button>
       <div className="flex items-center gap-1 mb-8">{t.steps.map((s,i)=><div key={i} className="flex items-center gap-1 flex-1 last:flex-none"><div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${step>i+1?"bg-emerald-500 text-white":step===i+1?"bg-emerald-600 text-white":"bg-gray-200 text-gray-500"}`}>{step>i+1?"✓":i+1}</div><span className={`text-xs font-medium flex-1 truncate ${step===i+1?"text-emerald-700":"text-gray-400"}`}>{s}</span>{i<2&&<div className={`h-0.5 flex-1 ${step>i+1?"bg-emerald-500":"bg-gray-200"}`}/>}</div>)}</div>
+      {/* ── Bandeau Politique d'admission — visible en TOUS LES ÉTAPES ── */}
+      {/* Avertit clairement avant que la personne commence à remplir : si le dossier
+          est déjà sur les réseaux sociaux, il ne sera pas accepté. Évite les heures
+          de saisie pour rien et les frustrations côté patient + côté admin. */}
+      <div style={{
+        background:"linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%)",
+        border:"2px solid rgba(245,158,11,0.30)",
+        borderRadius:14, padding:"14px 18px", marginBottom:20,
+        display:"flex", gap:14, alignItems:"flex-start",
+      }}>
+        <div style={{ fontSize:22, flexShrink:0 }}>⚠️</div>
+        <div style={{ minWidth:0, flex:1 }}>
+          <div style={{ fontWeight:800, fontSize:14, color:"#92400e", marginBottom:4 }}>
+            {lang==="fr" ? "Avant de soumettre : règle importante" : "Before submitting: important rule"}
+          </div>
+          <div style={{ fontSize:13, color:"#78350f", lineHeight:1.55 }}>
+            {lang==="fr"
+              ? <>Ayyad <strong>n'accepte pas les dossiers déjà lancés sur Facebook, TikTok, WhatsApp ou tout autre canal de collecte</strong>. Cette règle garantit la transparence pour nos donateurs et la sécurité pour le patient. </>
+              : <>Ayyad <strong>does not accept cases already launched on Facebook, TikTok, WhatsApp or any other fundraising channel</strong>. This rule guarantees transparency for our donors and safety for the patient. </>}
+            <button
+              onClick={() => setPage("politique-admission")}
+              style={{ color:"#0d5c2e", fontWeight:800, textDecoration:"underline", background:"transparent", border:"none", cursor:"pointer", padding:0, fontSize:13 }}
+            >
+              {lang==="fr" ? "Lire la politique complète →" : "Read the full policy →"}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         {step===1&&<div className="space-y-5">
           <h2 className="font-black text-xl text-gray-900">{t.infoTitle}</h2>
@@ -10945,6 +11177,7 @@ export default function AyyadApp() {
         {page==="changepassword"&&<ChangePasswordPage setPage={setPage} lang={lang} />}
       {page === "profile" && user && <ProfilePage user={user} lang={lang} setPage={setPage} />}
         {page==="faq"&&<FAQPage setPage={setPage} lang={lang} />}
+        {page==="politique-admission"&&<PolitiqueAdmissionPage setPage={setPage} lang={lang} />}
         {page==="dunya-return"&&<DunyaReturnPage setPage={setPage} lang={lang} />}
         {page==="support-ayyad"&&(
           <div>
