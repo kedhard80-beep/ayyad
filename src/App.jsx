@@ -617,21 +617,29 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
             )}
           </div>
 
-          {/* Right side actions */}
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          {/* Right side actions
+              IMPORTANT — flex-shrink:0 sur chaque élément pour éviter le clipping
+              du bouton "Faire un don" qui a overflow:hidden (animation de brillance).
+              Sans flex-shrink:0, quand la navbar manque de place, les boutons se
+              compressent et le texte est tronqué (ex: "Faire un d..."). */}
+          <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
+            {/* "Soumettre un dossier" — visible à partir de lg (1024px+) au lieu de md (768px+)
+                pour libérer de la place sur les écrans moyens. Reste accessible via le menu burger sur mobile/tablette */}
             <button
               onClick={() => setPage("submit")}
-              className="hidden md:inline-flex"
+              className="hidden lg:inline-flex"
               style={{
                 alignItems:"center", gap:6,
                 background:"transparent",
                 border:"1.5px solid rgba(13,92,46,0.22)",
                 color:"var(--ayyad-deep)",
                 fontWeight:700, fontSize:13,
-                padding:"9px 18px",
+                padding:"9px 16px",
                 borderRadius:9999,
                 cursor:"pointer",
                 transition:"all .2s",
+                whiteSpace:"nowrap",
+                flexShrink:0,
               }}
               onMouseEnter={e=>{ e.currentTarget.style.background="rgba(13,92,46,0.06)"; e.currentTarget.style.borderColor="rgba(13,92,46,0.4)"; }}
               onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="rgba(13,92,46,0.22)"; }}
@@ -639,17 +647,17 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
               {fr ? "Soumettre un dossier" : "Submit a case"}
             </button>
 
-            {/* CTA primary — taille adaptative : compacte mobile (icone + texte court), pleine desktop */}
+            {/* CTA primary — flex-shrink:0 obligatoire car .ayyad-btn-primary a overflow:hidden */}
             <button
               onClick={() => setPage("collectesactives")}
               className="ayyad-btn-primary"
-              style={{ fontSize:13, padding:"9px 14px", whiteSpace:"nowrap" }}
+              style={{ fontSize:13, padding:"9px 16px", whiteSpace:"nowrap", flexShrink:0 }}
             >
               💚 <span className="hidden sm:inline">{fr ? "Faire un don" : "Donate"}</span><span className="sm:hidden">{fr ? "Don" : "Give"}</span>
             </button>
 
             {user ? (
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
                 <button
                   onClick={() => setPage("profile")}
                   style={{
@@ -658,12 +666,13 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
                     color:"#fff", fontWeight:800, fontSize:13,
                     border:"2px solid #fff", boxShadow:"0 2px 8px rgba(13,92,46,0.25)",
                     cursor:"pointer",
+                    flexShrink:0,
                   }}
                   title={user.name || user.email}
                 >
                   {(user.name||user.email||"U")[0].toUpperCase()}
                 </button>
-                <div className="hidden xl:flex" style={{ flexDirection:"column", lineHeight:1.1 }}>
+                <div className="hidden xl:flex" style={{ flexDirection:"column", lineHeight:1.1, minWidth:0 }}>
                   <span style={{ fontSize:12, fontWeight:600, color:"var(--ink-900)", maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.name||user.email}</span>
                   <button onClick={handleLogout} style={{ fontSize:10, color:"var(--ink-400)", background:"transparent", border:"none", cursor:"pointer", textAlign:"left", padding:0 }}>{t.logout}</button>
                 </div>
@@ -676,13 +685,14 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
                   background:"transparent", border:"none", cursor:"pointer",
                   fontSize:13, fontWeight:600, color:"var(--ink-700)",
                   padding:"8px 12px",
+                  flexShrink:0,
                 }}
               >
                 {t.login}
               </button>
             )}
 
-            {/* Burger mobile */}
+            {/* Burger mobile/tablette — visible jusqu'à lg (1024px-) pour donner accès à Soumettre */}
             <button
               className="lg:hidden"
               onClick={(e)=>{ e.stopPropagation(); setMobileOpen(o=>!o); }}
@@ -691,6 +701,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
                 background:"transparent", border:"1px solid rgba(10,31,26,0.12)",
                 padding:8, borderRadius:10, cursor:"pointer",
                 color:"var(--ayyad-deep)",
+                flexShrink:0,
               }}
             >
               {mobileOpen ? "✕" : "☰"}
@@ -721,6 +732,20 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
                   {l.label}
                 </button>
               ))}
+              {/* Soumettre un dossier — accessible aussi via le menu burger pour
+                  les écrans md/lg qui n'affichent plus le bouton en haut */}
+              <button
+                onClick={() => { setPage("submit"); setMobileOpen(false); }}
+                style={{
+                  marginTop:8, background:"transparent",
+                  border:"1.5px solid rgba(13,92,46,0.22)",
+                  borderRadius:10, padding:"12px 14px",
+                  color:"var(--ayyad-deep)", fontWeight:700, fontSize:14,
+                  cursor:"pointer", textAlign:"left",
+                }}
+              >
+                📋 {fr ? "Soumettre un dossier" : "Submit a case"}
+              </button>
               <div style={{ display:"flex", gap:8, marginTop:12 }}>
                 <button onClick={()=>setLang("fr")} style={{ flex:1, padding:"8px 12px", borderRadius:8, border:"1px solid rgba(10,31,26,0.12)", background: lang==="fr"?"var(--ayyad-deep)":"#fff", color: lang==="fr"?"#fff":"var(--ink-700)", fontWeight:700, fontSize:12, cursor:"pointer" }}>🇫🇷 FR</button>
                 <button onClick={()=>setLang("en")} style={{ flex:1, padding:"8px 12px", borderRadius:8, border:"1px solid rgba(10,31,26,0.12)", background: lang==="en"?"var(--ayyad-deep)":"#fff", color: lang==="en"?"#fff":"var(--ink-700)", fontWeight:700, fontSize:12, cursor:"pointer" }}>🇬🇧 EN</button>
