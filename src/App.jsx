@@ -74,28 +74,32 @@ function publicDonorName(rawName, lang) {
 // Fallback automatique sur supabase direct si l'endpoint n'est pas dispo.
 // Retourne { error?: string } — pas d'erreur = succès.
 async function createDonation(payload) {
+  // Récupérer le token JWT de la session courante
+  const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+  const token = session?.access_token || null;
+
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  let r;
   try {
-    const r = await fetch("/api/donate", {
+    r = await fetch("/api/donate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(payload),
     });
-    if (r.ok) return { error: null };
-    // Si l'API renvoie 404 (endpoint pas déployé) ou 500 (config manquante),
-    // on tombe sur le fallback Supabase direct
-    const result = await r.json().catch(() => ({}));
-    if (r.status === 404 || r.status === 500) {
-      console.warn("[/api/donate] indispo, fallback supabase direct:", result);
-    } else {
-      return { error: result?.details?.message || result?.error || `HTTP ${r.status}` };
-    }
   } catch (err) {
-    console.warn("[/api/donate] échec réseau, fallback supabase direct:", err);
+    console.error("[/api/donate] Erreur réseau:", err);
+    return { error: "Le serveur de paiement est inaccessible. Vérifiez votre connexion et réessayez." };
   }
-  // Fallback : insertion directe via le client Supabase (anon)
-  const { error } = await supabase.from("donations").insert(payload).select().single();
-  if (error) return { error: (error.message || "Erreur Supabase") + (error.code ? " (code "+error.code+")" : "") };
-  return { error: null };
+
+  const result = await r.json().catch(() => ({}));
+  if (r.ok) return { error: null };
+
+  const msg = result?.error || result?.details?.message || `Erreur serveur (${r.status})`;
+  console.error("[/api/donate] Erreur:", r.status, msg);
+  return { error: msg };
+};
 }
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
@@ -6534,13 +6538,33 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
     if (action === "promote") update = { is_admin: true };
     if (action === "demote") update = { is_admin: false };
     const { error } = await supabase.from("profiles").update(update).eq("id", account.id);
-    // Synchroniser avec admin_users pour que l'accès admin soit effectif
-    if (!error && action === "promote") {
+    // Synchroniser avec admin_users via l'endpoint sécurisé /api/promote-admin
+    if (!error && (action === "promote" || action === "demote")) {
+      const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+      const token = session?.access_token || null;
       const fullName = account.full_name || account.name || (account.email||"").split("@")[0];
-      await supabase.from("admin_users").upsert({ email: account.email, role: "admin", is_active: true, full_name: fullName }, { onConflict: "email" });
-    }
-    if (!error && action === "demote") {
-      await supabase.from("admin_users").update({ is_active: false }).eq("email", account.email);
+      try {
+        const pr = await fetch("/api/promote-admin", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            action,
+            target_user_id: account.id,
+            target_email: account.email,
+            target_full_name: fullName,
+          }),
+        });
+        if (!pr.ok) {
+          const pe = await pr.json().catch(() => ({}));
+          console.error("[promote-admin] Erreur:", pe.error);
+        }
+      } catch (e) {
+        console.error("[promote-admin] Erreur réseau:", e);
+      }
+    }).eq("email", account.email);
     }
     if (!error) {
       setAccounts(prev => prev.map(a => a.id === account.id ? { ...a, ...update } : a));

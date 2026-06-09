@@ -1,140 +1,76 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Vercel Serverless Function — Création d'un don (bypass RLS)
-// ─────────────────────────────────────────────────────────────────────────────
-// Le frontend appelle POST /api/donate avec le payload du don.
-// On utilise la SERVICE ROLE (côté serveur uniquement) pour insérer dans la
-// table donations sans passer par les policies RLS.
-// ─────────────────────────────────────────────────────────────────────────────
+// /api/donate.js — Validation serveur stricte
+import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-// CORS strict
-const ALLOWED_ORIGINS = new Set([
-  "https://ayyadci.com",
-  "https://www.ayyadci.com",
-  "https://ayyad.vercel.app",
-]);
-
-// Rate-limiting en mémoire (best-effort, par instance Vercel)
-const RATE_LIMIT_WINDOW_MS = 60_000;  // 1 min
-const RATE_LIMIT_MAX = 5;             // 5 dons/min/IP — borne raisonnable
-const ipBuckets = new Map();
-function rateLimitOk(ip) {
-  const now = Date.now();
-  const bucket = ipBuckets.get(ip) || [];
-  const recent = bucket.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-  if (recent.length >= RATE_LIMIT_MAX) return false;
-  recent.push(now);
-  ipBuckets.set(ip, recent);
-  return true;
-}
-
-// ── Validations ───────────────────────────────────────────────────────────────
-const isUuid = (s) => typeof s === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
-const isEmail = (s) => typeof s === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s) && s.length <= 254;
-
-// Plafond raisonnable : 50 millions FCFA. Au-delà, c'est probablement un abus
-// (la majorité des collectes plafonnent à ~5M FCFA).
-const MAX_AMOUNT_FCFA = 50_000_000;
-const MIN_AMOUNT_FCFA = 100;
-
-// ── Sanitization simple : on ne laisse que printable + retours à la ligne ────
-const sanitize = (v, maxLen) => {
-  if (v === null || v === undefined) return null;
-  let s = String(v).slice(0, maxLen);
-  // Strip control chars sauf \n et \r
-  s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
-  return s.trim() || null;
+const AMOUNT_MIN_FCFA = 100;
+const AMOUNT_MAX_FCFA = 10_000_000;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CORS = {
+  "Access-Control-Allow-Origin": process.env.ALLOWED_ORIGIN || "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
+function respond(res, status, body) { return res.status(status).json(body); }
+
 export default async function handler(req, res) {
-  // CORS strict
-  const origin = req.headers.origin || "";
-  const allowedOrigin = ALLOWED_ORIGINS.has(origin) ? origin : "https://ayyadci.com";
-  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
-  res.setHeader("Vary", "Origin");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "POST") return respond(res, 405, { error: "Method not allowed" });
 
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey     = process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !serviceKey) return respond(res, 500, { error: "Configuration serveur incomplète." });
 
-  // Rate-limiting par IP
-  const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket?.remoteAddress || "unknown";
-  if (!rateLimitOk(ip)) {
-    return res.status(429).json({ error: "Too many requests" });
+  // Vérification JWT optionnelle
+  let verifiedUserId = null;
+  const authHeader = req.headers.authorization || "";
+  if (authHeader.startsWith("Bearer ") && anonKey) {
+    const token = authHeader.slice(7);
+    const { data: { user } } = await createClient(supabaseUrl, anonKey).auth.getUser(token).catch(() => ({ data: {} }));
+    if (user) verifiedUserId = user.id;
+    else if (token.length > 10) return respond(res, 401, { error: "Token invalide." });
   }
 
-  if (!SUPABASE_URL || !SERVICE_KEY) {
-    console.error("Manque SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY");
-    return res.status(500).json({ error: "Server config missing" });
-  }
+  let body;
+  try { body = typeof req.body === "string" ? JSON.parse(req.body) : req.body; }
+  catch { return respond(res, 400, { error: "Body JSON invalide." }); }
 
-  try {
-    const body = req.body || {};
+  const { case_id, donor_id, donor_name, donor_email, amount, amount_fcfa,
+          currency = "FCFA", payment_method = "WAVE", status = "pending", message, reference } = body || {};
 
-    // ── Validation stricte ────────────────────────────────────────────────
-    if (!isUuid(body.case_id)) {
-      return res.status(400).json({ error: "case_id invalid" });
-    }
-    const amt = Number(body.amount);
-    if (!Number.isFinite(amt) || amt < MIN_AMOUNT_FCFA || amt > MAX_AMOUNT_FCFA) {
-      return res.status(400).json({ error: "amount invalid" });
-    }
-    if (body.donor_email && !isEmail(body.donor_email)) {
-      return res.status(400).json({ error: "donor_email invalid" });
-    }
-    if (body.donor_id && !isUuid(body.donor_id)) {
-      return res.status(400).json({ error: "donor_id invalid" });
-    }
+  if (!case_id) return respond(res, 400, { error: "case_id requis." });
+  if (!UUID_REGEX.test(case_id)) return respond(res, 400, { error: "case_id invalide." });
 
-    // Whitelist pour les enums
-    const allowedMethods = new Set(["WAVE", "CARD", "CASH", "BANK", "OTHER"]);
-    const allowedStatus  = new Set(["pending", "confirmed", "cancelled"]);
-    const payment_method = allowedMethods.has(body.payment_method) ? body.payment_method : "WAVE";
-    const status = allowedStatus.has(body.status) ? body.status : "pending";
+  const numAmount = Number(amount);
+  if (!amount || isNaN(numAmount) || numAmount <= 0) return respond(res, 400, { error: "Montant invalide." });
 
-    // ── Payload propre ────────────────────────────────────────────────────
-    const payload = {
-      case_id: body.case_id,
-      donor_id: body.donor_id || null,
-      donor_name:  sanitize(body.donor_name, 80),
-      donor_email: body.donor_email && isEmail(body.donor_email) ? body.donor_email.toLowerCase() : null,
-      amount: amt,
-      amount_fcfa: Number(body.amount_fcfa) || amt,
-      currency: ["FCFA","EUR","USD"].includes(body.currency) ? body.currency : "FCFA",
-      payment_method,
-      status,
-      message: sanitize(body.message, 500),
-      reference: sanitize(body.reference, 100),
-    };
+  const fcfaAmount = Number(amount_fcfa) || numAmount;
+  if (fcfaAmount < AMOUNT_MIN_FCFA) return respond(res, 400, { error: `Minimum ${AMOUNT_MIN_FCFA} FCFA.` });
+  if (fcfaAmount > AMOUNT_MAX_FCFA) return respond(res, 400, { error: `Maximum ${AMOUNT_MAX_FCFA.toLocaleString()} FCFA.` });
+  if (!["WAVE","CARD","CASH","BANK"].includes(payment_method)) return respond(res, 400, { error: "Méthode invalide." });
+  if (status !== "pending") return respond(res, 400, { error: "Statut initial doit être 'pending'." });
+  if (donor_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(donor_email)) return respond(res, 400, { error: "Email invalide." });
 
-    // Appel REST direct à PostgREST avec la service_role (bypass RLS)
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/donations`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SERVICE_KEY,
-        "Authorization": `Bearer ${SERVICE_KEY}`,
-        "Prefer": "return=representation",
-      },
-      body: JSON.stringify(payload),
-    });
+  const supabase = createClient(supabaseUrl, serviceKey);
 
-    const result = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      // Log côté serveur, on ne renvoie PAS le détail au client
-      console.error("Donation insert error:", r.status, result);
-      return res.status(502).json({ error: "Database error" });
-    }
+  // Vérifier que le dossier existe et est actif
+  const { data: caseData } = await supabase.from("cases").select("id,status").eq("id", case_id).maybeSingle();
+  if (!caseData) return respond(res, 404, { error: "Dossier introuvable." });
+  if (caseData.status !== "COLLECTING") return respond(res, 409, { error: `Dossier non actif (${caseData.status}).` });
 
-    return res.status(200).json({
-      success: true,
-      donation: { id: Array.isArray(result) ? result[0]?.id : result?.id },
-    });
-  } catch (err) {
-    console.error("Donation handler error:", err);
-    return res.status(500).json({ error: "Internal server error" });
-  }
+  const { data: donation, error: insertError } = await supabase.from("donations").insert({
+    case_id,
+    donor_id: donor_id || verifiedUserId || null,
+    donor_name:     donor_name    ? String(donor_name).slice(0, 100)  : null,
+    donor_email:    donor_email   ? String(donor_email).slice(0, 200) : null,
+    amount: numAmount, amount_fcfa: fcfaAmount,
+    currency: String(currency).slice(0, 10),
+    payment_method, status: "pending",
+    message:   message   ? String(message).slice(0, 500)   : null,
+    reference: reference ? String(reference).slice(0, 100) : null,
+  }).select().single();
+
+  if (insertError) { console.error("[donate]", insertError); return respond(res, 500, { error: "Erreur enregistrement." }); }
+  return respond(res, 200, { success: true, donation_id: donation.id });
 }
