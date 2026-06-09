@@ -6563,7 +6563,6 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
       } catch (e) {
         console.error("[promote-admin] Erreur réseau:", e);
       }
-    }).eq("email", account.email);
     }
     if (!error) {
       setAccounts(prev => prev.map(a => a.id === account.id ? { ...a, ...update } : a));
