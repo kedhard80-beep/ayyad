@@ -100,7 +100,6 @@ async function createDonation(payload) {
   console.error("[/api/donate] Erreur:", r.status, msg);
   return { error: msg };
 };
-}
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
 // Configuration des 2 buckets :
