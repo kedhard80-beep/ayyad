@@ -3926,7 +3926,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       <Confetti active={showConfetti} />
 
-      {/* ââ HERO ââ */}
+      {/* ── HERO ── */}
       <div className="relative w-full overflow-hidden" style={{minHeight:"340px",maxHeight:"480px",height:"42vw"}}>
         {/* Image de fond */}
         {c.image && c.image.startsWith("http")
@@ -3941,7 +3941,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             onClick={() => setPage("home")}
             className="flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white text-sm font-semibold px-4 py-2 rounded-full border border-white/30 hover:bg-white/30 transition-all"
           >
-            â {lang==="fr" ? "Retour" : "Back"}
+            ← {lang==="fr" ? "Retour" : "Back"}
           </button>
         </div>
         {/* Contenu hero en bas */}
@@ -3949,37 +3949,37 @@ const CasePage = ({ c, setPage, lang, user }) => {
           {/* Badges */}
           <div className="flex flex-wrap gap-2 mb-3">
             <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">{c.category[lang]}</span>
-            <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm border border-white/30">â {t.badges.verified}</span>
-            {funded && <span className="bg-emerald-400/90 text-white text-xs font-bold px-3 py-1 rounded-full">â {t.badges.funded}</span>}
-            {c.urgent && <span className="bg-red-500/90 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">ð¨ {t.badges.urgent}</span>}
+            <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm border border-white/30">✓ {t.badges.verified}</span>
+            {funded && <span className="bg-emerald-400/90 text-white text-xs font-bold px-3 py-1 rounded-full">✓ {t.badges.funded}</span>}
+            {c.urgent && <span className="bg-red-500/90 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">🚨 {t.badges.urgent}</span>}
           </div>
           <h1 className="text-2xl md:text-4xl font-black text-white leading-tight mb-3" style={{textShadow:"0 2px 12px rgba(0,0,0,0.5)"}}>{c.title[lang]}</h1>
           <div className="flex flex-wrap gap-x-5 gap-y-1 text-white/80 text-sm">
-            <span>ð¥ {c.hospital}</span>
-            <span>ð {c.city}</span>
-            <span>ð¤ {c.age} {lang==="fr"?"ans":"years"}</span>
+            <span>🏥 {c.hospital}</span>
+            <span>📍 {c.city}</span>
+            <span>👤 {c.age} {lang==="fr"?"ans":"years"}</span>
             {c.trackingId && <span className="font-mono text-emerald-300">#{c.trackingId}</span>}
           </div>
         </div>
       </div>
 
-      {/* ââ CONTENU PRINCIPAL ââ */}
+      {/* ── CONTENU PRINCIPAL ── */}
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 
-          {/* ââ COLONNE GAUCHE (2/3) ââ */}
+          {/* ── COLONNE GAUCHE (2/3) ── */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* Progression â card premium */}
+            {/* Progression — card premium */}
             <div className="relative bg-white rounded-3xl overflow-hidden shadow-lg border border-gray-100">
-              {/* Bande colorÃ©e */}
+              {/* Bande colorée */}
               <div className="h-1.5 w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-600" />
               <div className="p-6 md:p-8">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-base font-black text-gray-800 uppercase tracking-wider">{t.progress.progressTitle}</h2>
                   <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-200">
                     <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"/>
-                    {lang==="fr"?"Mis Ã  jour en direct":"Updated live"}
+                    {lang==="fr"?"Mis à jour en direct":"Updated live"}
                   </div>
                 </div>
                 {/* Chiffres principaux */}
@@ -4003,25 +4003,25 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 {/* Messages dynamiques */}
                 {percent>=50&&percent<100&&(
                   <div className="mt-3 flex items-center justify-center gap-2 text-sm text-amber-700 font-semibold bg-amber-50 rounded-xl px-4 py-2 border border-amber-100">
-                    ð¥ {lang==="fr"?`Plus que ${fmt(c.required - liveCollected)} !`:`Only ${fmt(c.required - liveCollected)} left!`}
+                    🔥 {lang==="fr"?`Plus que ${fmt(c.required - liveCollected)} !`:`Only ${fmt(c.required - liveCollected)} left!`}
                   </div>
                 )}
                 {percent>=100&&(
                   <div className="mt-3 text-center text-sm text-emerald-700 font-black bg-emerald-50 rounded-xl px-4 py-2 border border-emerald-200">
-                    ð {lang==="fr"?"Objectif atteint ! Merci infiniment.":"Goal reached! Thank you so much."}
+                    🎉 {lang==="fr"?"Objectif atteint ! Merci infiniment.":"Goal reached! Thank you so much."}
                   </div>
                 )}
                 {/* Stats */}
                 <div className="flex gap-6 mt-4 pt-4 border-t border-gray-100">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-sm">ð¥</div>
+                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-sm">👥</div>
                     <div>
                       <div className="font-black text-gray-900 text-sm">{liveDonors}</div>
                       <div className="text-xs text-gray-400">{t.progress.donors}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-sm">â³</div>
+                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-sm">⏳</div>
                     <div>
                       {funded
                         ? <div className="font-black text-emerald-600 text-sm">{t.progress.intervention}</div>
@@ -4032,7 +4032,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   {c.trackingId && (
                     <div className="ml-auto flex items-center gap-2">
                       <button onClick={() => navigator.clipboard.writeText(c.trackingId)} className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-emerald-600 border border-gray-200 rounded-lg px-2.5 py-1.5 transition-colors">
-                        ð <span className="font-mono font-bold">{c.trackingId}</span>
+                        📋 <span className="font-mono font-bold">{c.trackingId}</span>
                       </button>
                       <ShareButton c={c} lang={lang} />
                     </div>
@@ -4060,7 +4060,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   {recentDonations.map((d,i) => (
                     <div key={d.id||i} className="flex items-center gap-4 px-6 py-4">
                       <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center text-lg flex-shrink-0">
-                        {!d.donor_name ? "ðµï¸" : "ð"}
+                        {!d.donor_name ? "🕵️" : "💚"}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-gray-900 text-sm">{publicDonorName(d.donor_name, lang)}</div>
@@ -4076,52 +4076,52 @@ const CasePage = ({ c, setPage, lang, user }) => {
           )}
             {/* Garantie */}
             <div className="flex gap-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-3xl p-5">
-              <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">ð</div>
+              <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">🔒</div>
               <div>
                 <div className="font-black text-emerald-800">{t.guarantee.title}</div>
                 <div className="text-emerald-700 text-sm mt-0.5 leading-relaxed">{t.guarantee.desc}</div>
               </div>
             </div>
 
-            {/* MÃ©dias â Photos + VidÃ©o */}
+            {/* Médias — Photos + Vidéo */}
             <MediaSection c={c} lang={lang} t={t} />
 
-            {/* ââ Journal du patient ââ */}
+            {/* ── Journal du patient ── */}
             {(caseUpdates.length > 0 || (user && (user.isAdmin || (c.user_id && user.id===c.user_id)))) && (
               <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="px-6 py-5 border-b border-gray-100">
-                  <h3 className="font-black text-gray-900">ð {lang==="fr"?"Journal du dossier":"Case journal"}</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">{lang==="fr"?"Mises Ã  jour du patient et de l'Ã©quipe Ayyad":"Updates from the patient and Ayyad team"}</p>
+                  <h3 className="font-black text-gray-900">📋 {lang==="fr"?"Journal du dossier":"Case journal"}</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">{lang==="fr"?"Mises à jour du patient et de l'équipe Ayyad":"Updates from the patient and Ayyad team"}</p>
                 </div>
-                {/* Formulaire â admin ou propriÃ©taire */}
+                {/* Formulaire — admin ou propriétaire */}
                 {user && (user.isAdmin || (c.user_id && user.id===c.user_id)) && (
                   <div className="px-6 py-4 border-b border-gray-50 bg-gray-50">
                     <textarea
                       value={newUpdate}
                       onChange={e=>setNewUpdate(e.target.value)}
-                      placeholder={lang==="fr"?"Partager une mise Ã  jour avec les donateurs...":"Share an update with donors..."}
+                      placeholder={lang==="fr"?"Partager une mise à jour avec les donateurs...":"Share an update with donors..."}
                       rows={3}
                       className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
                     />
                     <button onClick={postUpdate} disabled={postingUpdate||!newUpdate.trim()}
                       className="mt-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all">
-                      {postingUpdate?(lang==="fr"?"Envoi...":"Sending..."):(lang==="fr"?"Publier la mise Ã  jour":"Publish update")}
+                      {postingUpdate?(lang==="fr"?"Envoi...":"Sending..."):(lang==="fr"?"Publier la mise à jour":"Publish update")}
                     </button>
                   </div>
                 )}
-                {/* Liste des mises Ã  jour */}
+                {/* Liste des mises à jour */}
                 {caseUpdates.length > 0 ? (
                   <div className="divide-y divide-gray-50">
                     {caseUpdates.map(upd=>(
                       <div key={upd.id} className="px-6 py-4 flex gap-3">
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${upd.author_role==="admin"?"bg-purple-100":"bg-emerald-100"}`}>
-                          {upd.author_role==="admin"?"ð¨ââï¸":"ð"}
+                          {upd.author_role==="admin"?"👨‍⚕️":"🙋"}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-semibold text-gray-900">{upd.author_name||"Ayyad"}</span>
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${upd.author_role==="admin"?"bg-purple-100 text-purple-700":"bg-emerald-100 text-emerald-700"}`}>
-                              {upd.author_role==="admin"?(lang==="fr"?"Ãquipe Ayyad":"Ayyad Team"):(lang==="fr"?"Patient":"Patient")}
+                              {upd.author_role==="admin"?(lang==="fr"?"Équipe Ayyad":"Ayyad Team"):(lang==="fr"?"Patient":"Patient")}
                             </span>
                             <span className="text-xs text-gray-400">{new Date(upd.created_at).toLocaleDateString(lang==="fr"?"fr-CI":"en-US")}</span>
                           </div>
@@ -4132,34 +4132,34 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   </div>
                 ) : (
                   <div className="p-6 text-center text-sm text-gray-400">
-                    {lang==="fr"?"Aucune mise Ã  jour pour le moment.":"No updates yet."}
+                    {lang==="fr"?"Aucune mise à jour pour le moment.":"No updates yet."}
                   </div>
                 )}
               </div>
             )}
 
-            {/* ââ Panneau d'Ã©dition â uniquement pour le propriÃ©taire ââ */}
+            {/* ── Panneau d'édition — uniquement pour le propriétaire ── */}
             {user && c.user_id && user.id === c.user_id && (
               <div className="bg-white rounded-3xl border-2 border-emerald-200 shadow-sm overflow-hidden">
               <button
                 onClick={() => setEditOpen(!editOpen)}
                 className="w-full flex items-center justify-between p-5 text-left hover:bg-emerald-50 transition-colors">
                 <div className="flex items-center gap-3">
-                  <span className="text-xl">âï¸</span>
+                  <span className="text-xl">✏️</span>
                   <div>
-                    <div className="font-bold text-gray-900 text-sm">{lang==="fr" ? "Mettre Ã  jour mon dossier" : "Update my case"}</div>
-                    <div className="text-xs text-gray-500">{lang==="fr" ? "Ajouter des photos, une vidÃ©o ou des documents" : "Add photos, a video or documents"}</div>
+                    <div className="font-bold text-gray-900 text-sm">{lang==="fr" ? "Mettre à jour mon dossier" : "Update my case"}</div>
+                    <div className="text-xs text-gray-500">{lang==="fr" ? "Ajouter des photos, une vidéo ou des documents" : "Add photos, a video or documents"}</div>
                   </div>
                 </div>
-                <span className={`text-gray-400 transition-transform ${editOpen ? "rotate-180" : ""}`}>â¼</span>
+                <span className={`text-gray-400 transition-transform ${editOpen ? "rotate-180" : ""}`}>▼</span>
               </button>
 
               {editOpen && (
                 <div className="px-5 pb-6 space-y-5 border-t border-emerald-100">
-                  {/* Lien vidÃ©o YouTube / TikTok */}
+                  {/* Lien vidéo YouTube / TikTok */}
                   <div className="pt-4">
                     <label className="text-xs font-bold text-gray-700 block mb-1.5">
-                      ð¬ {lang==="fr" ? "Lien vidÃ©o (YouTube ou TikTok)" : "Video link (YouTube or TikTok)"}
+                      🎬 {lang==="fr" ? "Lien vidéo (YouTube ou TikTok)" : "Video link (YouTube or TikTok)"}
                     </label>
                     <input
                       type="url"
@@ -4169,14 +4169,14 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-300"
                     />
                     <p className="text-[10px] text-gray-400 mt-1">
-                      {lang==="fr" ? "YouTube, YouTube Shorts et TikTok sont acceptÃ©s." : "YouTube, YouTube Shorts and TikTok are accepted."}
+                      {lang==="fr" ? "YouTube, YouTube Shorts et TikTok sont acceptés." : "YouTube, YouTube Shorts and TikTok are accepted."}
                     </p>
                   </div>
 
                   {/* Ajout de photo */}
                   <div>
                     <label className="text-xs font-bold text-gray-700 block mb-1.5">
-                      ð· {lang==="fr" ? "Ajouter une photo" : "Add a photo"}
+                      📷 {lang==="fr" ? "Ajouter une photo" : "Add a photo"}
                     </label>
                     <label className={`flex items-center gap-3 border-2 border-dashed rounded-xl p-4 cursor-pointer transition-colors ${editPhotoUploading ? "border-emerald-300 bg-emerald-50" : "border-gray-200 hover:border-emerald-300 hover:bg-emerald-50"}`}>
                       <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
@@ -4191,27 +4191,27 @@ const CasePage = ({ c, setPage, lang, user }) => {
                           const { data: urlD } = supabase.storage.from("documents").getPublicUrl(path);
                           const newPhotos = [...(c.photos || []), urlD.publicUrl];
                           await supabase.from("cases").update({ photos: newPhotos }).eq("id", c.id);
-                          setEditMsg(lang==="fr" ? "â Photo ajoutÃ©e !" : "â Photo added!");
+                          setEditMsg(lang==="fr" ? "✅ Photo ajoutée !" : "✅ Photo added!");
                         } catch(err) {
                           setEditMsg(lang==="fr" ? "Erreur : " + err.message : "Error: " + err.message);
                         } finally { setEditPhotoUploading(false); }
                       }} />
-                      <span className="text-2xl">{editPhotoUploading ? "â³" : "ð·"}</span>
-                      <span className="text-sm text-gray-500">{editPhotoUploading ? (lang==="fr" ? "Envoi en coursâ¦" : "Uploadingâ¦") : (lang==="fr" ? "Choisir une photo" : "Choose a photo")}</span>
+                      <span className="text-2xl">{editPhotoUploading ? "⏳" : "📷"}</span>
+                      <span className="text-sm text-gray-500">{editPhotoUploading ? (lang==="fr" ? "Envoi en cours…" : "Uploading…") : (lang==="fr" ? "Choisir une photo" : "Choose a photo")}</span>
                     </label>
                   </div>
 
                   {/* Ajout de documents */}
                   <div>
                     <label className="text-xs font-bold text-gray-700 block mb-1.5">
-                      ð {lang==="fr" ? "Ajouter un document" : "Add a document"}
+                      📄 {lang==="fr" ? "Ajouter un document" : "Add a document"}
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        { key: "medical", label: lang==="fr" ? "Rapport mÃ©dical" : "Medical report", icon: "ð¥" },
-                        { key: "quote",   label: lang==="fr" ? "Devis hospitalier" : "Hospital quote",  icon: "ð" },
-                        { key: "id",      label: lang==="fr" ? "PiÃ¨ce d'identitÃ©"  : "Identity doc",   icon: "ðªª" },
-                        { key: "other",   label: lang==="fr" ? "Autre document"    : "Other document",  icon: "ð" },
+                        { key: "medical", label: lang==="fr" ? "Rapport médical" : "Medical report", icon: "🏥" },
+                        { key: "quote",   label: lang==="fr" ? "Devis hospitalier" : "Hospital quote",  icon: "💊" },
+                        { key: "id",      label: lang==="fr" ? "Pièce d'identité"  : "Identity doc",   icon: "🪪" },
+                        { key: "other",   label: lang==="fr" ? "Autre document"    : "Other document",  icon: "📎" },
                       ].map(doc => (
                         <label key={doc.key} className="flex flex-col items-center gap-1 border-2 border-dashed border-gray-200 hover:border-emerald-300 rounded-xl p-3 cursor-pointer hover:bg-emerald-50 transition-colors text-center">
                           <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={async (e) => {
@@ -4225,7 +4225,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                               const { data: urlD } = supabase.storage.from("documents").getPublicUrl(path);
                               const newDocs = { ...(c.document_urls || {}), [doc.key]: urlD.publicUrl };
                               await supabase.from("cases").update({ document_urls: newDocs }).eq("id", c.id);
-                              setEditMsg(lang==="fr" ? `â ${doc.label} ajoutÃ© !` : `â ${doc.label} added!`);
+                              setEditMsg(lang==="fr" ? `✅ ${doc.label} ajouté !` : `✅ ${doc.label} added!`);
                             } catch(err) { setEditMsg("Erreur : " + err.message); }
                           }} />
                           <span className="text-xl">{doc.icon}</span>
@@ -4237,12 +4237,12 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
                   {/* Message de retour */}
                   {editMsg && (
-                    <div className={`rounded-xl px-4 py-2.5 text-sm font-medium ${editMsg.startsWith("â") ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+                    <div className={`rounded-xl px-4 py-2.5 text-sm font-medium ${editMsg.startsWith("✅") ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
                       {editMsg}
                     </div>
                   )}
 
-                  {/* Bouton sauvegarder (pour vidÃ©o) */}
+                  {/* Bouton sauvegarder (pour vidéo) */}
                   <button
                     onClick={async () => {
                       setEditSaving(true);
@@ -4250,7 +4250,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       try {
                         const updates = {};
                         if (editVideoUrl.trim()) {
-                          // Conversion URL â embed
+                          // Conversion URL → embed
                           let embed = editVideoUrl.trim();
                           const ytWatch = embed.match(/youtube\.com\/watch\?v=([^&]+)/);
                           const ytShort = embed.match(/youtu\.be\/([^?&]+)/);
@@ -4264,7 +4264,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         }
                         if (Object.keys(updates).length > 0) {
                           await supabase.from("cases").update(updates).eq("id", c.id);
-                          setEditMsg(lang==="fr" ? "â Dossier mis Ã  jour !" : "â Case updated!");
+                          setEditMsg(lang==="fr" ? "✅ Dossier mis à jour !" : "✅ Case updated!");
                         }
                       } catch(err) {
                         setEditMsg(lang==="fr" ? "Erreur : " + err.message : "Error: " + err.message);
@@ -4272,7 +4272,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     }}
                     disabled={editSaving}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition-colors">
-                    {editSaving ? (lang==="fr" ? "Sauvegardeâ¦" : "Savingâ¦") : (lang==="fr" ? "ð¾ Sauvegarder" : "ð¾ Save")}
+                    {editSaving ? (lang==="fr" ? "Sauvegarde…" : "Saving…") : (lang==="fr" ? "💾 Sauvegarder" : "💾 Save")}
                   </button>
                 </div>
               )}
@@ -4280,29 +4280,29 @@ const CasePage = ({ c, setPage, lang, user }) => {
           )}
         </div>
 
-        {/* ââ COLONNE DROITE â Widget de don ââ */}
+        {/* ── COLONNE DROITE — Widget de don ── */}
         <div className="lg:col-span-1">
           <div className="sticky top-6">
             {/* Card principale du widget */}
             <div className="bg-white rounded-3xl border border-gray-100 shadow-2xl overflow-hidden">
-              {/* Header colorÃ© */}
+              {/* Header coloré */}
               <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-5">
                 <div className="text-white font-black text-lg">{lang==="fr"?"Soutenir ce patient":"Support this patient"}</div>
-                <div className="text-emerald-100 text-xs mt-0.5">{lang==="fr"?"100% sÃ©curisÃ© Â· ZÃ©ro frais":"100% secure Â· Zero fees"}</div>
+                <div className="text-emerald-100 text-xs mt-0.5">{lang==="fr"?"100% sécurisé · Zéro frais":"100% secure · Zero fees"}</div>
               </div>
               {/* Corps du widget */}
               <div className="p-6">
 
-            {/* ÃTAPE 1 â Choisir le mode de don */}
+            {/* ÉTAPE 1 — Choisir le mode de don */}
             {donMode==="choose" && !funded && (
               <>
                 {goalReached && (
                   <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-4 text-center">
-                    <div className="text-4xl mb-1">ð</div>
+                    <div className="text-4xl mb-1">🎉</div>
                     <div className="text-xs font-black text-emerald-700">Objectif atteint !</div>
                     <div className="text-[11px] text-emerald-600 mt-0.5">
-                      La collecte reste ouverte jusqu'Ã  demain.<br/>
-                      Tout don supplÃ©mentaire soutient directement le bÃ©nÃ©ficiaire.
+                      La collecte reste ouverte jusqu'à demain.<br/>
+                      Tout don supplémentaire soutient directement le bénéficiaire.
                     </div>
                   </div>
                 )}
@@ -4310,37 +4310,37 @@ const CasePage = ({ c, setPage, lang, user }) => {
               </>
             )}
 
-            {/* Collecte terminÃ©e (FUNDED) */}
+            {/* Collecte terminée (FUNDED) */}
             {funded && (
               <div className="text-center py-4">
-                <div className="text-4xl mb-3">â</div>
+                <div className="text-4xl mb-3">✅</div>
                 <h3 className="font-black text-gray-900 text-lg">{td.btnFunded}</h3>
-                <p className="text-sm text-gray-500 mt-2">{lang==="fr" ? "Merci Ã  tous les donateurs !" : "Thank you to all donors!"}</p>
+                <p className="text-sm text-gray-500 mt-2">{lang==="fr" ? "Merci à tous les donateurs !" : "Thank you to all donors!"}</p>
               </div>
             )}
 
-            {/* ÃTAPE 2 â Formulaire de don (anonyme ou connectÃ©) */}
+            {/* ÉTAPE 2 — Formulaire de don (anonyme ou connecté) */}
             {(donMode==="anonymous" || donMode==="logged") && !funded && donateFormJSX(currency, amount, setAmount, presets, amountInFcfa)}
 
-            {/* ÃTAPE 3 â Confirmation */}
+            {/* ÉTAPE 3 — Confirmation */}
             {donMode==="confirm" && <div className="space-y-5">
-              <div className="text-center"><div className="text-4xl mb-2">ð</div><h3 className="font-black text-lg text-gray-900">{td.confirm}</h3><p className="text-sm text-gray-500">{td.verifyDon}</p></div>
+              <div className="text-center"><div className="text-4xl mb-2">💚</div><h3 className="font-black text-lg text-gray-900">{td.confirm}</h3><p className="text-sm text-gray-500">{td.verifyDon}</p></div>
               <div className="bg-gray-50 rounded-2xl p-4 space-y-3 text-sm">
-                {[[td.debited,fmt(Number(amount))],[td.beneficiary,c.beneficiary],[td.via,provider==="WAVE"?"ð Wave":"ð³ "+(lang==="fr"?"Carte":"Card")],[td.anonymity, anonymous ? "ð¤"+(lang==="fr"?"Anonyme":"Anonymous") : "ð¤ "+(lang==="fr"?"Avec compte":"With account")]].map(([k,v],i) => (
+                {[[td.debited,fmt(Number(amount))],[td.beneficiary,c.beneficiary],[td.via,provider==="WAVE"?"🌊 Wave":"💳 "+(lang==="fr"?"Carte":"Card")],[td.anonymity, anonymous ? "👤"+(lang==="fr"?"Anonyme":"Anonymous") : "👤 "+(lang==="fr"?"Avec compte":"With account")]].map(([k,v],i) => (
                   <div key={i} className="flex justify-between items-center"><span className="text-gray-500">{k}</span><span className={`font-semibold ${k===td.anonymity?"text-emerald-600":""}`}>{v}</span></div>
                 ))}
               </div>
               {message&&<div className="bg-emerald-50 rounded-xl p-3 text-sm text-emerald-700 italic border border-emerald-100">"{message}"</div>}
 
-              {/* ââ QR Code Wave CI (compte marchand statique) ââ */}
+              {/* ── QR Code Wave CI (compte marchand statique) ── */}
               {provider === "WAVE" && (() => {
                 const waveRef = paymentRef || buildPaymentRef(c);
                 const amountTxt = Math.round(Number(amount)).toLocaleString("fr-FR");
                 return (
                   <div className="flex flex-col items-center gap-3 bg-blue-50 border border-blue-100 rounded-2xl p-5">
-                    <div className="text-sm font-black text-blue-800">ð± {lang==="fr" ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
+                    <div className="text-sm font-black text-blue-800">📱 {lang==="fr" ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
                     {/*
-                      Le QR est cliquable : sur mobile, Ã§a ouvre directement l'app Wave
+                      Le QR est cliquable : sur mobile, ça ouvre directement l'app Wave
                       sur la page de paiement du marchand AYYAD SANTE.
                       Sur desktop, le clic n'a pas d'effet utile (la page web s'ouvre)
                       mais on garde le scan classique avec l'app mobile.
@@ -4350,17 +4350,17 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => {
-                        // â ï¸ PrÃ©-insert : on enregistre le don cÃ´tÃ© Ayyad AVANT que le donateur
+                        // ⚠️ Pré-insert : on enregistre le don côté Ayyad AVANT que le donateur
                         // ne quitte la page pour Wave. Sinon, sur mobile, le flow se termine
                         // dans l'app Wave et le donateur ne revient jamais cliquer "Confirmer"
-                        // â l'argent arrive sur le marchand mais aucune trace cÃ´tÃ© Ayyad.
-                        // On ne bloque PAS la navigation (pas de e.preventDefault) â fire-and-forget.
+                        // → l'argent arrive sur le marchand mais aucune trace côté Ayyad.
+                        // On ne bloque PAS la navigation (pas de e.preventDefault) — fire-and-forget.
                         if (donSubmitting) return;
-                        // On Ã©vite de stocker l'email entier comme nom public (RGPD).
-                        // Si pas de prÃ©nom dans le metadata, on prend la partie avant @ de l'email.
+                        // On évite de stocker l'email entier comme nom public (RGPD).
+                        // Si pas de prénom dans le metadata, on prend la partie avant @ de l'email.
                         const _donName = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
                         const refToUse = paymentRef || buildPaymentRef(c);
-                        // Fire-and-forget â on ne bloque pas la nav vers Wave
+                        // Fire-and-forget — on ne bloque pas la nav vers Wave
                         createDonation({
                           case_id: c.id || null,
                           donor_id: user?.id || null,
@@ -4374,9 +4374,9 @@ const CasePage = ({ c, setPage, lang, user }) => {
                           message: message || null,
                           reference: refToUse,
                         }).then(({ error }) => {
-                          if (error) console.warn("[prÃ©-insert QR tap] Ã©chec:", error);
+                          if (error) console.warn("[pré-insert QR tap] échec:", error);
                         });
-                        // Email lÃ©ger en parallÃ¨le (ne bloque pas la nav)
+                        // Email léger en parallèle (ne bloque pas la nav)
                         try {
                           emailDonConfirm({
                             donorEmail: anonymous ? null : (user?.email || null),
@@ -4399,61 +4399,61 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         className="rounded-xl border-2 border-blue-200 bg-white shadow-sm p-2 group-hover:border-blue-400 group-active:scale-95 transition-all"
                       />
                     </a>
-                    {/* Hint mobile â visible sur tous les Ã©crans, mais surtout utile aux mobiles */}
+                    {/* Hint mobile — visible sur tous les écrans, mais surtout utile aux mobiles */}
                     <div className="text-[11px] font-semibold text-blue-600 text-center bg-blue-100/60 px-3 py-1.5 rounded-full">
-                      ð {lang==="fr" ? "Touchez le QR si vous Ãªtes sur tÃ©lÃ©phone" : "Tap the QR if you're on mobile"}
+                      👆 {lang==="fr" ? "Touchez le QR si vous êtes sur téléphone" : "Tap the QR if you're on mobile"}
                     </div>
-                    {/* Montant Ã  envoyer */}
+                    {/* Montant à envoyer */}
                     <div className="w-full bg-white rounded-xl p-3 border border-blue-200">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500">{lang==="fr"?"Montant Ã  envoyer :":"Amount to send:"}</span>
+                        <span className="text-xs text-gray-500">{lang==="fr"?"Montant à envoyer :":"Amount to send:"}</span>
                         <span className="font-mono font-black text-blue-700 text-base">{amountTxt} FCFA</span>
                       </div>
                     </div>
-                    {/* Instructions de paiement â concises, sans champ "rÃ©fÃ©rence" inutile */}
+                    {/* Instructions de paiement — concises, sans champ "référence" inutile */}
                     <div className="text-xs text-blue-700 text-center leading-relaxed">
                       {lang==="fr"
-                        ? <>Ouvrez <strong>Wave CI</strong> â <strong>Scanner</strong> â saisissez <strong>{amountTxt} FCFA</strong> â validez</>
-                        : <>Open <strong>Wave CI</strong> â <strong>Scan</strong> â enter <strong>{amountTxt} FCFA</strong> â confirm</>}
+                        ? <>Ouvrez <strong>Wave CI</strong> → <strong>Scanner</strong> → saisissez <strong>{amountTxt} FCFA</strong> → validez</>
+                        : <>Open <strong>Wave CI</strong> → <strong>Scan</strong> → enter <strong>{amountTxt} FCFA</strong> → confirm</>}
                     </div>
                     <div className="text-[11px] text-gray-500 text-center bg-white/60 px-3 py-2 rounded leading-relaxed">
                       {lang==="fr"
-                        ? <>ð¡ Pas besoin d'ajouter de rÃ©fÃ©rence dans Wave â votre don est <strong>dÃ©jÃ  rattachÃ© Ã  cette collecte</strong> automatiquement. Cliquez sur <strong>Confirmer</strong> ci-dessous aprÃ¨s avoir effectuÃ© le paiement.</>
-                        : <>ð¡ No need to add a reference in Wave â your donation is <strong>already linked to this campaign</strong> automatically. Click <strong>Confirm</strong> below after completing payment.</>}
+                        ? <>💡 Pas besoin d'ajouter de référence dans Wave — votre don est <strong>déjà rattaché à cette collecte</strong> automatiquement. Cliquez sur <strong>Confirmer</strong> ci-dessous après avoir effectué le paiement.</>
+                        : <>💡 No need to add a reference in Wave — your donation is <strong>already linked to this campaign</strong> automatically. Click <strong>Confirm</strong> below after completing payment.</>}
                     </div>
                   </div>
                 );
               })()}
 
-              {/* ââ Carte bancaire â BientÃ´t disponible ââ */}
+              {/* ── Carte bancaire — Bientôt disponible ── */}
               {provider === "CARD" && (
                 <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 text-center space-y-3">
-                  <div className="text-4xl">ðï¸</div>
+                  <div className="text-4xl">🏗️</div>
                   <div className="font-black text-amber-800">
-                    {lang==="fr" ? "Paiement par carte bancaire â BientÃ´t disponible" : "Card payment â Coming soon"}
+                    {lang==="fr" ? "Paiement par carte bancaire — Bientôt disponible" : "Card payment — Coming soon"}
                   </div>
                   <p className="text-sm text-amber-700 leading-relaxed">
                     {lang==="fr"
-                      ? "Nous travaillons Ã  l'intÃ©gration des cartes Visa et Mastercard. En attendant, vous pouvez utiliser Wave CI (sans frais)."
+                      ? "Nous travaillons à l'intégration des cartes Visa et Mastercard. En attendant, vous pouvez utiliser Wave CI (sans frais)."
                       : "We're working on Visa and Mastercard integration. In the meantime, you can use Wave CI (no fees)."}
                   </p>
                   <button
                     onClick={() => setProvider("WAVE")}
                     className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm"
                   >
-                    ð {lang==="fr" ? "Utiliser Wave CI Ã  la place" : "Use Wave CI instead"}
+                    🌊 {lang==="fr" ? "Utiliser Wave CI à la place" : "Use Wave CI instead"}
                   </button>
                 </div>
               )}
 
-              {/* Boutons Modifier / Confirmer (Wave uniquement â carte a son propre bouton) */}
+              {/* Boutons Modifier / Confirmer (Wave uniquement — carte a son propre bouton) */}
               {provider !== "CARD" && (
                 <>
                   {donError && (
                     <div className="bg-red-50 border-2 border-red-200 rounded-xl p-3 text-xs text-red-700">
-                      <div className="font-bold mb-1">â ï¸ {lang==="fr"?"Erreur lors de l'enregistrement du don":"Error recording donation"}</div>
+                      <div className="font-bold mb-1">⚠️ {lang==="fr"?"Erreur lors de l'enregistrement du don":"Error recording donation"}</div>
                       <div className="break-words">{donError}</div>
-                      <div className="mt-1 text-[11px] text-red-500">{lang==="fr"?"Aucun email n'a Ã©tÃ© envoyÃ©. RÃ©essayez ou contactez le support.":"No email was sent. Please retry or contact support."}</div>
+                      <div className="mt-1 text-[11px] text-red-500">{lang==="fr"?"Aucun email n'a été envoyé. Réessayez ou contactez le support.":"No email was sent. Please retry or contact support."}</div>
                     </div>
                   )}
                   <div className="grid grid-cols-2 gap-2">
@@ -4468,11 +4468,11 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         if (donSubmitting) return;
                         setDonError("");
                         setDonSubmitting(true);
-                        // On Ã©vite de stocker l'email entier comme nom public (RGPD)
+                        // On évite de stocker l'email entier comme nom public (RGPD)
                         const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
                         const refToUse = paymentRef || buildPaymentRef(c);
                         try {
-                          // CrÃ©ation du don via /api/donate (bypass RLS) avec fallback Supabase
+                          // Création du don via /api/donate (bypass RLS) avec fallback Supabase
                           const { error: insErr } = await createDonation({
                             case_id: c.id || null,
                             donor_id: user?.id || null,
@@ -4487,12 +4487,12 @@ const CasePage = ({ c, setPage, lang, user }) => {
                             reference: refToUse,
                           });
                           if (insErr) {
-                            console.error("[donation insert] Ã©chec:", insErr);
+                            console.error("[donation insert] échec:", insErr);
                             setDonError(insErr);
                             setDonSubmitting(false);
                             return; // pas d'email, pas de success
                           }
-                          // SuccÃ¨s â on stocke le contexte pour le certificat, on bascule sur l'Ã©cran de remerciement, on envoie l'email
+                          // Succès → on stocke le contexte pour le certificat, on bascule sur l'écran de remerciement, on envoie l'email
                           setLastDonation({ donorName: anonymous?"Donateur anonyme":(_donName2||"Donateur"), amount: amountInFcfa });
                           setDonMode("success");
                           try {
@@ -4505,7 +4505,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                               trackingId: c.tracking_id || c.trackingId,
                             });
                           } catch(emailErr) {
-                            console.warn("[donation email] Ã©chec (non bloquant):", emailErr);
+                            console.warn("[donation email] échec (non bloquant):", emailErr);
                           }
                         } catch(err) {
                           console.error("[donation flow] exception:", err);
@@ -4516,16 +4516,16 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       }}
                       className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md disabled:opacity-60"
                     >
-                      {donSubmitting ? (lang==="fr"?"Enregistrementâ¦":"Savingâ¦") : td.confirmBtn}
+                      {donSubmitting ? (lang==="fr"?"Enregistrement…":"Saving…") : td.confirmBtn}
                     </button>
                   </div>
                 </>
               )}
             </div>}
 
-            {/* ÃTAPE 4 â SuccÃ¨s */}
+            {/* ÉTAPE 4 — Succès */}
             {donMode==="success" && <div className="text-center space-y-4 py-2">
-              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-3xl">ð</div>
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-3xl">🎉</div>
               <h3 className="font-black text-xl text-gray-900">{td.thanks}</h3>
               <p className="text-sm text-gray-600">{td.thanksSub}</p>
               <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-4 text-sm text-emerald-800 border border-emerald-100">
@@ -4543,7 +4543,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     lang,
                   })}
                   className="w-full bg-amber-50 border border-amber-200 text-amber-700 font-bold py-2.5 rounded-xl text-sm hover:bg-amber-100 flex items-center justify-center gap-2">
-                  ð {lang==="fr"?"TÃ©lÃ©charger mon certificat de don":"Download my donation certificate"}
+                  📜 {lang==="fr"?"Télécharger mon certificat de don":"Download my donation certificate"}
                 </button>
               )}
               <div className="flex gap-2">
