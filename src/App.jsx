@@ -6,7 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_KEY
-
+);
 // ── Helper : calcule le total collecté + nb de donateurs par case_id ─────────
 // Lit les dons CONFIRMÉS pour les ids passés en paramètre et retourne
 // un objet { caseId: { collected, donors } }. Garantit que la jauge progresse
