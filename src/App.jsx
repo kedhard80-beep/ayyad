@@ -6,7 +6,6 @@ import { createClient } from "@supabase/supabase-js";
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_KEY
-);
 
 // ── Helper : calcule le total collecté + nb de donateurs par case_id ─────────
 // Lit les dons CONFIRMÉS pour les ids passés en paramètre et retourne
@@ -241,7 +240,7 @@ const emailCaseFunded = ({ donorEmail, ...data }) =>
   sendEmail({ type: "caseFunded", to: donorEmail || ADMIN_EMAIL, data });
 const CI_VILLES = [
   "Abengourou","Abidjan","Aboisso","Adzopé","Agboville","Anyama","Bondoukou",
-  "Bouna","Boundiali","Daloa","Dimbokro","Divo","Ferkessédougou","Gagnoa",
+  "Bouaké","Bouna","Boundiali","Daloa","Dimbokro","Divo","Ferkessédougou","Gagnoa",
   "Grand-Bassam","Guiglo","Issia","Jacqueville","Katiola","Korhogo","Lakota",
   "Man","Mankono","Odienné","Oumé","San-Pédro","Sassandra","Séguéla","Sinfra",
   "Soubré","Tabou","Tanda","Tiassalé","Tingrela","Touba","Toumodi","Vavoua",
