@@ -1,4 +1,4 @@
-import { inject } from "@vercel/analytics";
+ import { inject } from "@vercel/analytics";
 import React, { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
@@ -3923,183 +3923,260 @@ const CasePage = ({ c, setPage, lang, user }) => {
   );
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       <Confetti active={showConfetti} />
-      <button onClick={() => setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">{t.back}</button>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-5">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="h-52 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 flex items-center justify-center text-9xl overflow-hidden">{c.image && (c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-full object-cover" /> : c.image)}</div>
-            <div className="p-6">
-              <div className="flex flex-wrap gap-2 mb-3"><Badge color="blue">{c.category[lang]}</Badge><Badge color="green">{t.badges.verified}</Badge>{funded&&<Badge color="green">{t.badges.funded}</Badge>}{c.urgent&&<Badge color="red">{t.badges.urgent}</Badge>}</div>
-              <h1 className="text-2xl font-black text-gray-900 mb-3">{c.title[lang]}</h1>
-              <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-4"><span>🏥 {c.hospital}</span><span>📍 {c.city}</span><span>👤 {c.age} {lang==="fr"?"ans":"years"}</span></div>
-              {c.trackingId && (
-                <div className="flex items-center gap-3 mb-3 flex-wrap">
-                  <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
-                    <span className="text-xs text-gray-400">{lang==="fr"?"ID de suivi :":"Tracking ID:"}</span>
-                    <span className="text-xs font-mono font-bold text-emerald-700">{c.trackingId}</span>
-                    <button onClick={() => navigator.clipboard.writeText(c.trackingId)} className="text-xs text-gray-400 hover:text-emerald-600">📋</button>
-                  </div>
-                  <ShareButton c={c} lang={lang} />
-                </div>
-              )}
-              <p className="text-gray-600 leading-relaxed">{c.desc[lang]}</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-900">{t.progress.progressTitle}</h3>
-              <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-semibold">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>
-                {lang==="fr"?"En direct":"Live"}
-              </div>
-            </div>
-            <div className="flex justify-between items-end mb-3">
-              <div><div className="text-3xl font-black text-emerald-700 transition-all">{fmt(liveCollected)}</div><div className="text-sm text-gray-500">{t.progress.collected} {fmt(c.required)}</div></div>
-              <div className="text-right"><div className={`text-3xl font-black transition-all ${percent>=100?"text-emerald-600":"text-gray-900"}`}>{percent}%</div><div className="text-sm text-gray-500">{t.progress.of}</div></div>
-            </div>
-            <ProgressBar percent={percent} />
-            {percent>=50&&percent<100&&(
-              <div className="mt-2 text-center text-xs text-amber-600 font-semibold animate-pulse">
-                🔥 {lang==="fr"?`Plus que ${fmt(c.required - liveCollected)} pour atteindre l'objectif !`:`Only ${fmt(c.required - liveCollected)} left to reach the goal!`}
-              </div>
-            )}
-            {percent>=100&&(
-              <div className="mt-2 text-center text-sm text-emerald-600 font-black">
-                🎉 {lang==="fr"?"Objectif atteint ! Merci à tous les donateurs.":"Goal reached! Thank you to all donors."}
-              </div>
-            )}
-            <div className="flex justify-between mt-3 text-sm text-gray-500">
-              <span>👥 {liveDonors} {t.progress.donors}</span>
-              {funded?<span className="text-emerald-600 font-semibold">{t.progress.intervention}</span>:<span className="text-amber-600 font-medium">⏳ {c.daysLeft} {t.progress.daysLeft}</span>}
-            </div>
-          </div>
 
-          {/* ── Fil des derniers dons en temps réel ── */}
-          {recentDonations.length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <h3 className="font-bold text-gray-900 text-sm">{lang==="fr"?"Derniers donateurs":"Recent donors"}</h3>
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>
-              </div>
-              <div className="space-y-2">
-                {recentDonations.map((d,i) => (
-                  <div key={d.id||i} className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-sm flex-shrink-0">
-                      {!d.donor_name ? "🕵️" : "💚"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-semibold text-gray-900">{publicDonorName(d.donor_name, lang)}</span>
-                      <span className="text-xs text-gray-400 ml-2">{new Date(d.created_at).toLocaleDateString(lang==="fr"?"fr-CI":"en-US")}</span>
-                    </div>
-                    <div className="text-sm font-black text-emerald-700 flex-shrink-0">
-                      {((d.amount_fcfa||d.amount||0)).toLocaleString("fr-CI")} FCFA
+      {/* ââ HERO ââ */}
+      <div className="relative w-full overflow-hidden" style={{minHeight:"340px",maxHeight:"480px",height:"42vw"}}>
+        {/* Image de fond */}
+        {c.image && c.image.startsWith("http")
+          ? <img src={c.image} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          : <div className="absolute inset-0 bg-gradient-to-br from-emerald-700 via-teal-600 to-emerald-900 flex items-center justify-center text-[clamp(80px,15vw,160px)]">{c.image}</div>
+        }
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+        {/* Bouton retour */}
+        <div className="absolute top-5 left-5 z-20">
+          <button
+            onClick={() => setPage("home")}
+            className="flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white text-sm font-semibold px-4 py-2 rounded-full border border-white/30 hover:bg-white/30 transition-all"
+          >
+            â {lang==="fr" ? "Retour" : "Back"}
+          </button>
+        </div>
+        {/* Contenu hero en bas */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 px-5 pb-7 max-w-6xl mx-auto" style={{left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"72rem"}}>
+          {/* Badges */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">{c.category[lang]}</span>
+            <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm border border-white/30">â {t.badges.verified}</span>
+            {funded && <span className="bg-emerald-400/90 text-white text-xs font-bold px-3 py-1 rounded-full">â {t.badges.funded}</span>}
+            {c.urgent && <span className="bg-red-500/90 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">ð¨ {t.badges.urgent}</span>}
+          </div>
+          <h1 className="text-2xl md:text-4xl font-black text-white leading-tight mb-3" style={{textShadow:"0 2px 12px rgba(0,0,0,0.5)"}}>{c.title[lang]}</h1>
+          <div className="flex flex-wrap gap-x-5 gap-y-1 text-white/80 text-sm">
+            <span>ð¥ {c.hospital}</span>
+            <span>ð {c.city}</span>
+            <span>ð¤ {c.age} {lang==="fr"?"ans":"years"}</span>
+            {c.trackingId && <span className="font-mono text-emerald-300">#{c.trackingId}</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* ââ CONTENU PRINCIPAL ââ */}
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+          {/* ââ COLONNE GAUCHE (2/3) ââ */}
+          <div className="lg:col-span-2 space-y-6">
+
+            {/* Progression â card premium */}
+            <div className="relative bg-white rounded-3xl overflow-hidden shadow-lg border border-gray-100">
+              {/* Bande colorÃ©e */}
+              <div className="h-1.5 w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-600" />
+              <div className="p-6 md:p-8">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-base font-black text-gray-800 uppercase tracking-wider">{t.progress.progressTitle}</h2>
+                  <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-200">
+                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"/>
+                    {lang==="fr"?"Mis Ã  jour en direct":"Updated live"}
+                  </div>
+                </div>
+                {/* Chiffres principaux */}
+                <div className="flex justify-between items-end mb-4">
+                  <div>
+                    <div className="text-4xl md:text-5xl font-black text-emerald-600 leading-none">{fmt(liveCollected)}</div>
+                    <div className="text-sm text-gray-400 mt-1 font-medium">{t.progress.collected} <span className="text-gray-600 font-bold">{fmt(c.required)}</span></div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`text-5xl md:text-6xl font-black leading-none ${percent>=100?"text-emerald-500":"text-gray-800"}`}>{percent}<span className="text-2xl">%</span></div>
+                    <div className="text-xs text-gray-400 mt-1">{t.progress.of}</div>
+                  </div>
+                </div>
+                {/* Barre de progression */}
+                <div className="relative h-4 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${percent>=100?"bg-gradient-to-r from-emerald-400 to-emerald-600":"bg-gradient-to-r from-emerald-500 to-teal-500"}`}
+                    style={{width:`${Math.min(percent,100)}%`,boxShadow:"0 0 10px rgba(16,185,129,0.5)"}}
+                  />
+                </div>
+                {/* Messages dynamiques */}
+                {percent>=50&&percent<100&&(
+                  <div className="mt-3 flex items-center justify-center gap-2 text-sm text-amber-700 font-semibold bg-amber-50 rounded-xl px-4 py-2 border border-amber-100">
+                    ð¥ {lang==="fr"?`Plus que ${fmt(c.required - liveCollected)} !`:`Only ${fmt(c.required - liveCollected)} left!`}
+                  </div>
+                )}
+                {percent>=100&&(
+                  <div className="mt-3 text-center text-sm text-emerald-700 font-black bg-emerald-50 rounded-xl px-4 py-2 border border-emerald-200">
+                    ð {lang==="fr"?"Objectif atteint ! Merci infiniment.":"Goal reached! Thank you so much."}
+                  </div>
+                )}
+                {/* Stats */}
+                <div className="flex gap-6 mt-4 pt-4 border-t border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-sm">ð¥</div>
+                    <div>
+                      <div className="font-black text-gray-900 text-sm">{liveDonors}</div>
+                      <div className="text-xs text-gray-400">{t.progress.donors}</div>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-sm">â³</div>
+                    <div>
+                      {funded
+                        ? <div className="font-black text-emerald-600 text-sm">{t.progress.intervention}</div>
+                        : <><div className="font-black text-gray-900 text-sm">{c.daysLeft}</div><div className="text-xs text-gray-400">{t.progress.daysLeft}</div></>
+                      }
+                    </div>
+                  </div>
+                  {c.trackingId && (
+                    <div className="ml-auto flex items-center gap-2">
+                      <button onClick={() => navigator.clipboard.writeText(c.trackingId)} className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-emerald-600 border border-gray-200 rounded-lg px-2.5 py-1.5 transition-colors">
+                        ð <span className="font-mono font-bold">{c.trackingId}</span>
+                      </button>
+                      <ShareButton c={c} lang={lang} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8">
+              <h2 className="text-lg font-black text-gray-900 mb-4">{lang==="fr"?"L'histoire de ce patient":"This patient's story"}</h2>
+              <p className="text-gray-600 leading-relaxed text-base">{c.desc[lang]}</p>
+            </div>
+
+            {/* Derniers donateurs */}
+            {recentDonations.length > 0 && (
+              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                  <h2 className="font-black text-gray-900">{lang==="fr"?"Derniers donateurs":"Recent donors"}</h2>
+                  <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>Live
+                  </span>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {recentDonations.map((d,i) => (
+                    <div key={d.id||i} className="flex items-center gap-4 px-6 py-4">
+                      <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center text-lg flex-shrink-0">
+                        {!d.donor_name ? "ðµï¸" : "ð"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-gray-900 text-sm">{publicDonorName(d.donor_name, lang)}</div>
+                        <div className="text-xs text-gray-400">{new Date(d.created_at).toLocaleDateString(lang==="fr"?"fr-CI":"en-US")}</div>
+                      </div>
+                      <div className="text-base font-black text-emerald-600 flex-shrink-0">
+                        {((d.amount_fcfa||d.amount||0)).toLocaleString("fr-CI")} <span className="text-xs font-semibold text-gray-400">FCFA</span>
+                      </div>
+                    </div>
                 ))}
               </div>
             </div>
           )}
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex gap-3">
-            <span className="text-2xl flex-shrink-0">🔒</span>
-            <div><div className="font-bold text-emerald-800 text-sm">{t.guarantee.title}</div><div className="text-emerald-700 text-xs mt-1">{t.guarantee.desc}</div></div>
-          </div>
-
-          {/* Médias — Photos + Vidéo */}
-          <MediaSection c={c} lang={lang} t={t} />
-
-          {/* ── Journal du patient ── */}
-          {(caseUpdates.length > 0 || (user && (user.isAdmin || (c.user_id && user.id===c.user_id)))) && (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-gray-100">
-                <h3 className="font-bold text-gray-900 text-sm">📋 {lang==="fr"?"Journal du dossier":"Case journal"}</h3>
-                <p className="text-xs text-gray-400 mt-0.5">{lang==="fr"?"Mises à jour du patient et de l'équipe Ayyad":"Updates from the patient and Ayyad team"}</p>
+            {/* Garantie */}
+            <div className="flex gap-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-3xl p-5">
+              <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">ð</div>
+              <div>
+                <div className="font-black text-emerald-800">{t.guarantee.title}</div>
+                <div className="text-emerald-700 text-sm mt-0.5 leading-relaxed">{t.guarantee.desc}</div>
               </div>
-              {/* Formulaire — admin ou propriétaire */}
-              {user && (user.isAdmin || (c.user_id && user.id===c.user_id)) && (
-                <div className="p-4 border-b border-gray-50 bg-gray-50">
-                  <textarea
-                    value={newUpdate}
-                    onChange={e=>setNewUpdate(e.target.value)}
-                    placeholder={lang==="fr"?"Partager une mise à jour avec les donateurs...":"Share an update with donors..."}
-                    rows={3}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
-                  />
-                  <button onClick={postUpdate} disabled={postingUpdate||!newUpdate.trim()}
-                    className="mt-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all">
-                    {postingUpdate?(lang==="fr"?"Envoi...":"Sending..."):(lang==="fr"?"Publier la mise à jour":"Publish update")}
-                  </button>
-                </div>
-              )}
-              {/* Liste des mises à jour */}
-              {caseUpdates.length > 0 ? (
-                <div className="divide-y divide-gray-50">
-                  {caseUpdates.map(upd=>(
-                    <div key={upd.id} className="p-4 flex gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${upd.author_role==="admin"?"bg-purple-100":"bg-emerald-100"}`}>
-                        {upd.author_role==="admin"?"👨‍⚕️":"🙋"}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-gray-900">{upd.author_name||"Ayyad"}</span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${upd.author_role==="admin"?"bg-purple-100 text-purple-700":"bg-emerald-100 text-emerald-700"}`}>
-                            {upd.author_role==="admin"?(lang==="fr"?"Équipe Ayyad":"Ayyad Team"):(lang==="fr"?"Patient":"Patient")}
-                          </span>
-                          <span className="text-xs text-gray-400">{new Date(upd.created_at).toLocaleDateString(lang==="fr"?"fr-CI":"en-US")}</span>
-                        </div>
-                        <p className="text-sm text-gray-700 mt-1 leading-relaxed">{upd.content}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-6 text-center text-sm text-gray-400">
-                  {lang==="fr"?"Aucune mise à jour pour le moment.":"No updates yet."}
-                </div>
-              )}
             </div>
-          )}
 
-          {/* ── Panneau d'édition — uniquement pour le propriétaire ── */}
-          {user && c.user_id && user.id === c.user_id && (
-            <div className="bg-white rounded-2xl border-2 border-emerald-200 shadow-sm overflow-hidden">
+            {/* MÃ©dias â Photos + VidÃ©o */}
+            <MediaSection c={c} lang={lang} t={t} />
+
+            {/* ââ Journal du patient ââ */}
+            {(caseUpdates.length > 0 || (user && (user.isAdmin || (c.user_id && user.id===c.user_id)))) && (
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="px-6 py-5 border-b border-gray-100">
+                  <h3 className="font-black text-gray-900">ð {lang==="fr"?"Journal du dossier":"Case journal"}</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">{lang==="fr"?"Mises Ã  jour du patient et de l'Ã©quipe Ayyad":"Updates from the patient and Ayyad team"}</p>
+                </div>
+                {/* Formulaire â admin ou propriÃ©taire */}
+                {user && (user.isAdmin || (c.user_id && user.id===c.user_id)) && (
+                  <div className="px-6 py-4 border-b border-gray-50 bg-gray-50">
+                    <textarea
+                      value={newUpdate}
+                      onChange={e=>setNewUpdate(e.target.value)}
+                      placeholder={lang==="fr"?"Partager une mise Ã  jour avec les donateurs...":"Share an update with donors..."}
+                      rows={3}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
+                    />
+                    <button onClick={postUpdate} disabled={postingUpdate||!newUpdate.trim()}
+                      className="mt-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all">
+                      {postingUpdate?(lang==="fr"?"Envoi...":"Sending..."):(lang==="fr"?"Publier la mise Ã  jour":"Publish update")}
+                    </button>
+                  </div>
+                )}
+                {/* Liste des mises Ã  jour */}
+                {caseUpdates.length > 0 ? (
+                  <div className="divide-y divide-gray-50">
+                    {caseUpdates.map(upd=>(
+                      <div key={upd.id} className="px-6 py-4 flex gap-3">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${upd.author_role==="admin"?"bg-purple-100":"bg-emerald-100"}`}>
+                          {upd.author_role==="admin"?"ð¨ââï¸":"ð"}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-semibold text-gray-900">{upd.author_name||"Ayyad"}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${upd.author_role==="admin"?"bg-purple-100 text-purple-700":"bg-emerald-100 text-emerald-700"}`}>
+                              {upd.author_role==="admin"?(lang==="fr"?"Ãquipe Ayyad":"Ayyad Team"):(lang==="fr"?"Patient":"Patient")}
+                            </span>
+                            <span className="text-xs text-gray-400">{new Date(upd.created_at).toLocaleDateString(lang==="fr"?"fr-CI":"en-US")}</span>
+                          </div>
+                          <p className="text-sm text-gray-700 mt-1 leading-relaxed">{upd.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center text-sm text-gray-400">
+                    {lang==="fr"?"Aucune mise Ã  jour pour le moment.":"No updates yet."}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ââ Panneau d'Ã©dition â uniquement pour le propriÃ©taire ââ */}
+            {user && c.user_id && user.id === c.user_id && (
+              <div className="bg-white rounded-3xl border-2 border-emerald-200 shadow-sm overflow-hidden">
               <button
                 onClick={() => setEditOpen(!editOpen)}
                 className="w-full flex items-center justify-between p-5 text-left hover:bg-emerald-50 transition-colors">
                 <div className="flex items-center gap-3">
-                  <span className="text-xl">✏️</span>
+                  <span className="text-xl">âï¸</span>
                   <div>
-                    <div className="font-bold text-gray-900 text-sm">{lang==="fr" ? "Mettre à jour mon dossier" : "Update my case"}</div>
-                    <div className="text-xs text-gray-500">{lang==="fr" ? "Ajouter des photos, une vidéo ou des documents" : "Add photos, a video or documents"}</div>
+                    <div className="font-bold text-gray-900 text-sm">{lang==="fr" ? "Mettre Ã  jour mon dossier" : "Update my case"}</div>
+                    <div className="text-xs text-gray-500">{lang==="fr" ? "Ajouter des photos, une vidÃ©o ou des documents" : "Add photos, a video or documents"}</div>
                   </div>
                 </div>
-                <span className={`text-gray-400 transition-transform ${editOpen ? "rotate-180" : ""}`}>▼</span>
+                <span className={`text-gray-400 transition-transform ${editOpen ? "rotate-180" : ""}`}>â¼</span>
               </button>
 
               {editOpen && (
                 <div className="px-5 pb-6 space-y-5 border-t border-emerald-100">
-                  {/* Lien vidéo YouTube / TikTok */}
+                  {/* Lien vidÃ©o YouTube / TikTok */}
                   <div className="pt-4">
                     <label className="text-xs font-bold text-gray-700 block mb-1.5">
-                      🎬 {lang==="fr" ? "Lien vidéo (YouTube ou TikTok)" : "Video link (YouTube or TikTok)"}
+                      ð¬ {lang==="fr" ? "Lien vidÃ©o (YouTube ou TikTok)" : "Video link (YouTube or TikTok)"}
                     </label>
                     <input
                       type="url"
-                      placeholder="https://youtube.com/watch?v=... ou https://tiktok.com/@..."
+                      placeholder="https://youtube.com/watch?v=... or https://tiktok.com/@..."
                       value={editVideoUrl}
                       onChange={e => setEditVideoUrl_(e.target.value)}
                       className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-300"
                     />
                     <p className="text-[10px] text-gray-400 mt-1">
-                      {lang==="fr" ? "YouTube, YouTube Shorts et TikTok sont acceptés." : "YouTube, YouTube Shorts and TikTok are accepted."}
+                      {lang==="fr" ? "YouTube, YouTube Shorts et TikTok sont acceptÃ©s." : "YouTube, YouTube Shorts and TikTok are accepted."}
                     </p>
                   </div>
 
                   {/* Ajout de photo */}
                   <div>
                     <label className="text-xs font-bold text-gray-700 block mb-1.5">
-                      📷 {lang==="fr" ? "Ajouter une photo" : "Add a photo"}
+                      ð· {lang==="fr" ? "Ajouter une photo" : "Add a photo"}
                     </label>
                     <label className={`flex items-center gap-3 border-2 border-dashed rounded-xl p-4 cursor-pointer transition-colors ${editPhotoUploading ? "border-emerald-300 bg-emerald-50" : "border-gray-200 hover:border-emerald-300 hover:bg-emerald-50"}`}>
                       <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
@@ -4114,27 +4191,27 @@ const CasePage = ({ c, setPage, lang, user }) => {
                           const { data: urlD } = supabase.storage.from("documents").getPublicUrl(path);
                           const newPhotos = [...(c.photos || []), urlD.publicUrl];
                           await supabase.from("cases").update({ photos: newPhotos }).eq("id", c.id);
-                          setEditMsg(lang==="fr" ? "✅ Photo ajoutée !" : "✅ Photo added!");
+                          setEditMsg(lang==="fr" ? "â Photo ajoutÃ©e !" : "â Photo added!");
                         } catch(err) {
                           setEditMsg(lang==="fr" ? "Erreur : " + err.message : "Error: " + err.message);
                         } finally { setEditPhotoUploading(false); }
                       }} />
-                      <span className="text-2xl">{editPhotoUploading ? "⏳" : "📷"}</span>
-                      <span className="text-sm text-gray-500">{editPhotoUploading ? (lang==="fr" ? "Envoi en cours…" : "Uploading…") : (lang==="fr" ? "Choisir une photo" : "Choose a photo")}</span>
+                      <span className="text-2xl">{editPhotoUploading ? "â³" : "ð·"}</span>
+                      <span className="text-sm text-gray-500">{editPhotoUploading ? (lang==="fr" ? "Envoi en coursâ¦" : "Uploadingâ¦") : (lang==="fr" ? "Choisir une photo" : "Choose a photo")}</span>
                     </label>
                   </div>
 
                   {/* Ajout de documents */}
                   <div>
                     <label className="text-xs font-bold text-gray-700 block mb-1.5">
-                      📄 {lang==="fr" ? "Ajouter un document" : "Add a document"}
+                      ð {lang==="fr" ? "Ajouter un document" : "Add a document"}
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        { key: "medical", label: lang==="fr" ? "Rapport médical" : "Medical report", icon: "🏥" },
-                        { key: "quote",   label: lang==="fr" ? "Devis hospitalier" : "Hospital quote",  icon: "💊" },
-                        { key: "id",      label: lang==="fr" ? "Pièce d'identité"  : "Identity doc",   icon: "🪪" },
-                        { key: "other",   label: lang==="fr" ? "Autre document"    : "Other document",  icon: "📎" },
+                        { key: "medical", label: lang==="fr" ? "Rapport mÃ©dical" : "Medical report", icon: "ð¥" },
+                        { key: "quote",   label: lang==="fr" ? "Devis hospitalier" : "Hospital quote",  icon: "ð" },
+                        { key: "id",      label: lang==="fr" ? "PiÃ¨ce d'identitÃ©"  : "Identity doc",   icon: "ðªª" },
+                        { key: "other",   label: lang==="fr" ? "Autre document"    : "Other document",  icon: "ð" },
                       ].map(doc => (
                         <label key={doc.key} className="flex flex-col items-center gap-1 border-2 border-dashed border-gray-200 hover:border-emerald-300 rounded-xl p-3 cursor-pointer hover:bg-emerald-50 transition-colors text-center">
                           <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={async (e) => {
@@ -4148,7 +4225,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                               const { data: urlD } = supabase.storage.from("documents").getPublicUrl(path);
                               const newDocs = { ...(c.document_urls || {}), [doc.key]: urlD.publicUrl };
                               await supabase.from("cases").update({ document_urls: newDocs }).eq("id", c.id);
-                              setEditMsg(lang==="fr" ? `✅ ${doc.label} ajouté !` : `✅ ${doc.label} added!`);
+                              setEditMsg(lang==="fr" ? `â ${doc.label} ajoutÃ© !` : `â ${doc.label} added!`);
                             } catch(err) { setEditMsg("Erreur : " + err.message); }
                           }} />
                           <span className="text-xl">{doc.icon}</span>
@@ -4160,12 +4237,12 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
                   {/* Message de retour */}
                   {editMsg && (
-                    <div className={`rounded-xl px-4 py-2.5 text-sm font-medium ${editMsg.startsWith("✅") ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+                    <div className={`rounded-xl px-4 py-2.5 text-sm font-medium ${editMsg.startsWith("â") ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
                       {editMsg}
                     </div>
                   )}
 
-                  {/* Bouton sauvegarder (pour vidéo) */}
+                  {/* Bouton sauvegarder (pour vidÃ©o) */}
                   <button
                     onClick={async () => {
                       setEditSaving(true);
@@ -4173,7 +4250,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       try {
                         const updates = {};
                         if (editVideoUrl.trim()) {
-                          // Conversion URL → embed
+                          // Conversion URL â embed
                           let embed = editVideoUrl.trim();
                           const ytWatch = embed.match(/youtube\.com\/watch\?v=([^&]+)/);
                           const ytShort = embed.match(/youtu\.be\/([^?&]+)/);
@@ -4187,7 +4264,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         }
                         if (Object.keys(updates).length > 0) {
                           await supabase.from("cases").update(updates).eq("id", c.id);
-                          setEditMsg(lang==="fr" ? "✅ Dossier mis à jour !" : "✅ Case updated!");
+                          setEditMsg(lang==="fr" ? "â Dossier mis Ã  jour !" : "â Case updated!");
                         }
                       } catch(err) {
                         setEditMsg(lang==="fr" ? "Erreur : " + err.message : "Error: " + err.message);
@@ -4195,26 +4272,37 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     }}
                     disabled={editSaving}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition-colors">
-                    {editSaving ? (lang==="fr" ? "Sauvegarde…" : "Saving…") : (lang==="fr" ? "💾 Sauvegarder" : "💾 Save")}
+                    {editSaving ? (lang==="fr" ? "Sauvegardeâ¦" : "Savingâ¦") : (lang==="fr" ? "ð¾ Sauvegarder" : "ð¾ Save")}
                   </button>
                 </div>
               )}
             </div>
           )}
         </div>
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-xl p-6 sticky top-24">
 
-            {/* ÉTAPE 1 — Choisir le mode de don */}
+        {/* ââ COLONNE DROITE â Widget de don ââ */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-6">
+            {/* Card principale du widget */}
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-2xl overflow-hidden">
+              {/* Header colorÃ© */}
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-5">
+                <div className="text-white font-black text-lg">{lang==="fr"?"Soutenir ce patient":"Support this patient"}</div>
+                <div className="text-emerald-100 text-xs mt-0.5">{lang==="fr"?"100% sÃ©curisÃ© Â· ZÃ©ro frais":"100% secure Â· Zero fees"}</div>
+              </div>
+              {/* Corps du widget */}
+              <div className="p-6">
+
+            {/* ÃTAPE 1 â Choisir le mode de don */}
             {donMode==="choose" && !funded && (
               <>
                 {goalReached && (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 text-center">
-                    <div className="text-2xl mb-1">🎉</div>
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-4 text-center">
+                    <div className="text-4xl mb-1">ð</div>
                     <div className="text-xs font-black text-emerald-700">Objectif atteint !</div>
                     <div className="text-[11px] text-emerald-600 mt-0.5">
-                      La collecte reste ouverte jusqu'à demain.<br/>
-                      Tout don supplémentaire soutient directement le bénéficiaire.
+                      La collecte reste ouverte jusqu'Ã  demain.<br/>
+                      Tout don supplÃ©mentaire soutient directement le bÃ©nÃ©ficiaire.
                     </div>
                   </div>
                 )}
@@ -4222,64 +4310,57 @@ const CasePage = ({ c, setPage, lang, user }) => {
               </>
             )}
 
-            {/* Collecte terminée (FUNDED) */}
+            {/* Collecte terminÃ©e (FUNDED) */}
             {funded && (
               <div className="text-center py-4">
-                <div className="text-4xl mb-3">✅</div>
+                <div className="text-4xl mb-3">â</div>
                 <h3 className="font-black text-gray-900 text-lg">{td.btnFunded}</h3>
-                <p className="text-sm text-gray-500 mt-2">{lang==="fr" ? "Merci à tous les donateurs !" : "Thank you to all donors!"}</p>
+                <p className="text-sm text-gray-500 mt-2">{lang==="fr" ? "Merci Ã  tous les donateurs !" : "Thank you to all donors!"}</p>
               </div>
             )}
 
-            {/* ÉTAPE 2 — Formulaire de don (anonyme ou connecté) */}
+            {/* ÃTAPE 2 â Formulaire de don (anonyme ou connectÃ©) */}
             {(donMode==="anonymous" || donMode==="logged") && !funded && donateFormJSX(currency, amount, setAmount, presets, amountInFcfa)}
 
-            {/* ÉTAPE 3 — Confirmation */}
+            {/* ÃTAPE 3 â Confirmation */}
             {donMode==="confirm" && <div className="space-y-5">
-              {/* Protection contre les dossiers de démonstration : empêche les vrais paiements sur des collectes de vitrine */}
-              {(c._isDemo || c._mock) && (
-                <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 text-center space-y-2">
-                  <div className="text-3xl">🎬</div>
-                  <div className="font-black text-amber-800 text-sm">
-                    {lang==="fr" ? "Collecte de démonstration" : "Demo campaign"}
-                  </div>
-                  <p className="text-xs text-amber-700 leading-relaxed">
-                    {lang==="fr"
-                      ? "Cette fiche est un exemple présenté à des fins de démonstration. Pour faire un vrai don, choisissez une collecte active depuis la liste."
-                      : "This is a demonstration example. To make a real donation, choose an active campaign from the list."}
-                  </p>
-                  <button
-                    onClick={() => setPage("collectes")}
-                    className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs"
-                  >
-                    {lang==="fr" ? "Voir les vraies collectes →" : "See real campaigns →"}
-                  </button>
-                </div>
-              )}
-              <div className="text-center"><div className="text-4xl mb-2">💚</div><h3 className="font-black text-lg text-gray-900">{td.confirm}</h3><p className="text-sm text-gray-500">{td.verifyDon}</p></div>
+              <div className="text-center"><div className="text-4xl mb-2">ð</div><h3 className="font-black text-lg text-gray-900">{td.confirm}</h3><p className="text-sm text-gray-500">{td.verifyDon}</p></div>
               <div className="bg-gray-50 rounded-2xl p-4 space-y-3 text-sm">
-                {[[td.debited,fmt(Number(amount))],[td.beneficiary,c.beneficiary],[td.via,provider==="WAVE"?"🌊 Wave":"💳 "+(lang==="fr"?"Carte":"Card")],[td.anonymity, anonymous ? "👤"+(lang==="fr"?"Anonyme":"Anonymous") : "👤 "+(lang==="fr"?"Avec compte":"With account")]].map(([k,v],i) => (
+                {[[td.debited,fmt(Number(amount))],[td.beneficiary,c.beneficiary],[td.via,provider==="WAVE"?"ð Wave":"ð³ "+(lang==="fr"?"Carte":"Card")],[td.anonymity, anonymous ? "ð¤"+(lang==="fr"?"Anonyme":"Anonymous") : "ð¤ "+(lang==="fr"?"Avec compte":"With account")]].map(([k,v],i) => (
                   <div key={i} className="flex justify-between items-center"><span className="text-gray-500">{k}</span><span className={`font-semibold ${k===td.anonymity?"text-emerald-600":""}`}>{v}</span></div>
                 ))}
               </div>
               {message&&<div className="bg-emerald-50 rounded-xl p-3 text-sm text-emerald-700 italic border border-emerald-100">"{message}"</div>}
 
-              {/* ── QR Code Wave CI (compte marchand statique) ── */}
+              {/* ââ QR Code Wave CI (compte marchand statique) ââ */}
               {provider === "WAVE" && (() => {
+                const waveRef = paymentRef || buildPaymentRef(c);
                 const amountTxt = Math.round(Number(amount)).toLocaleString("fr-FR");
                 return (
                   <div className="flex flex-col items-center gap-3 bg-blue-50 border border-blue-100 rounded-2xl p-5">
-                    <div className="text-sm font-black text-blue-800">📱 {lang==="fr" ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
-                    {/* QR cliquable : sur mobile, ça ouvre directement l'app Wave sur la page du marchand. */}
+                    <div className="text-sm font-black text-blue-800">ð± {lang==="fr" ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
+                    {/*
+                      Le QR est cliquable : sur mobile, Ã§a ouvre directement l'app Wave
+                      sur la page de paiement du marchand AYYAD SANTE.
+                      Sur desktop, le clic n'a pas d'effet utile (la page web s'ouvre)
+                      mais on garde le scan classique avec l'app mobile.
+                    */}
                     <a
                       href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/"
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => {
-                        // Pré-insert fire-and-forget : on enregistre le don pending AVANT de quitter pour Wave
+                        // â ï¸ PrÃ©-insert : on enregistre le don cÃ´tÃ© Ayyad AVANT que le donateur
+                        // ne quitte la page pour Wave. Sinon, sur mobile, le flow se termine
+                        // dans l'app Wave et le donateur ne revient jamais cliquer "Confirmer"
+                        // â l'argent arrive sur le marchand mais aucune trace cÃ´tÃ© Ayyad.
+                        // On ne bloque PAS la navigation (pas de e.preventDefault) â fire-and-forget.
                         if (donSubmitting) return;
+                        // On Ã©vite de stocker l'email entier comme nom public (RGPD).
+                        // Si pas de prÃ©nom dans le metadata, on prend la partie avant @ de l'email.
                         const _donName = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
                         const refToUse = paymentRef || buildPaymentRef(c);
+                        // Fire-and-forget â on ne bloque pas la nav vers Wave
                         createDonation({
                           case_id: c.id || null,
                           donor_id: user?.id || null,
@@ -4293,8 +4374,19 @@ const CasePage = ({ c, setPage, lang, user }) => {
                           message: message || null,
                           reference: refToUse,
                         }).then(({ error }) => {
-                          if (error) console.warn("[pré-insert QR tap] échec:", error);
+                          if (error) console.warn("[prÃ©-insert QR tap] Ã©chec:", error);
                         });
+                        // Email lÃ©ger en parallÃ¨le (ne bloque pas la nav)
+                        try {
+                          emailDonConfirm({
+                            donorEmail: anonymous ? null : (user?.email || null),
+                            donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"),
+                            amount: fmt(Number(amount)),
+                            beneficiary: c.beneficiary,
+                            caseTitle: c.title,
+                            trackingId: c.tracking_id || c.trackingId,
+                          });
+                        } catch(e) { /* silent */ }
                       }}
                       className="relative block group"
                       title={lang==="fr"?"Toucher pour payer (mobile)":"Tap to pay (mobile)"}
@@ -4307,92 +4399,61 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         className="rounded-xl border-2 border-blue-200 bg-white shadow-sm p-2 group-hover:border-blue-400 group-active:scale-95 transition-all"
                       />
                     </a>
+                    {/* Hint mobile â visible sur tous les Ã©crans, mais surtout utile aux mobiles */}
                     <div className="text-[11px] font-semibold text-blue-600 text-center bg-blue-100/60 px-3 py-1.5 rounded-full">
-                      👆 {lang==="fr" ? "Touchez le QR si vous êtes sur téléphone" : "Tap the QR if you're on mobile"}
+                      ð {lang==="fr" ? "Touchez le QR si vous Ãªtes sur tÃ©lÃ©phone" : "Tap the QR if you're on mobile"}
                     </div>
+                    {/* Montant Ã  envoyer */}
                     <div className="w-full bg-white rounded-xl p-3 border border-blue-200">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500">{lang==="fr"?"Montant à envoyer :":"Amount to send:"}</span>
+                        <span className="text-xs text-gray-500">{lang==="fr"?"Montant Ã  envoyer :":"Amount to send:"}</span>
                         <span className="font-mono font-black text-blue-700 text-base">{amountTxt} FCFA</span>
                       </div>
                     </div>
+                    {/* Instructions de paiement â concises, sans champ "rÃ©fÃ©rence" inutile */}
                     <div className="text-xs text-blue-700 text-center leading-relaxed">
                       {lang==="fr"
-                        ? <>Ouvrez <strong>Wave CI</strong> → <strong>Scanner</strong> → saisissez <strong>{amountTxt} FCFA</strong> → validez</>
-                        : <>Open <strong>Wave CI</strong> → <strong>Scan</strong> → enter <strong>{amountTxt} FCFA</strong> → confirm</>}
+                        ? <>Ouvrez <strong>Wave CI</strong> â <strong>Scanner</strong> â saisissez <strong>{amountTxt} FCFA</strong> â validez</>
+                        : <>Open <strong>Wave CI</strong> â <strong>Scan</strong> â enter <strong>{amountTxt} FCFA</strong> â confirm</>}
                     </div>
                     <div className="text-[11px] text-gray-500 text-center bg-white/60 px-3 py-2 rounded leading-relaxed">
                       {lang==="fr"
-                        ? <>💡 Votre don est <strong>déjà rattaché à cette collecte</strong> automatiquement. Cliquez sur <strong>Confirmer</strong> ci-dessous après avoir effectué le paiement.</>
-                        : <>💡 Your donation is <strong>already linked to this campaign</strong> automatically. Click <strong>Confirm</strong> below after completing payment.</>}
+                        ? <>ð¡ Pas besoin d'ajouter de rÃ©fÃ©rence dans Wave â votre don est <strong>dÃ©jÃ  rattachÃ© Ã  cette collecte</strong> automatiquement. Cliquez sur <strong>Confirmer</strong> ci-dessous aprÃ¨s avoir effectuÃ© le paiement.</>
+                        : <>ð¡ No need to add a reference in Wave â your donation is <strong>already linked to this campaign</strong> automatically. Click <strong>Confirm</strong> below after completing payment.</>}
                     </div>
-
-                    {/* Encart "Depuis l'étranger" — instructions Sendwave pour la diaspora */}
-                    <details className="w-full bg-white/80 rounded-xl border border-blue-100 text-left">
-                      <summary className="cursor-pointer px-3 py-2 text-xs font-bold text-blue-700 select-none">
-                        🌍 {lang==="fr" ? "Vous êtes à l'étranger ?" : "Donating from abroad?"}
-                      </summary>
-                      <div className="px-3 pb-3 text-[11px] text-gray-600 leading-relaxed space-y-1.5">
-                        <p>
-                          {lang==="fr"
-                            ? <>Utilisez l'application <strong>Sendwave</strong> (gratuite, sans frais cachés) disponible en France, Canada, USA, UK, Belgique, Italie, Espagne, Allemagne…</>
-                            : <>Use the <strong>Sendwave</strong> app (free, no hidden fees) available in France, Canada, USA, UK, Belgium, Italy, Spain, Germany…</>}
-                        </p>
-                        <ol className="list-decimal pl-4 space-y-0.5">
-                          <li>{lang==="fr" ? "Téléchargez Sendwave (App Store / Play Store)" : "Download Sendwave (App Store / Play Store)"}</li>
-                          <li>{lang==="fr" ? <>Envoyez à ce numéro Wave Côte d'Ivoire : <strong className="font-mono">+225 07 48 05 61 28</strong></> : <>Send to this Wave Côte d'Ivoire number: <strong className="font-mono">+225 07 48 05 61 28</strong></>}</li>
-                          <li>{lang==="fr" ? "Saisissez le montant en EUR/USD/CAD/GBP" : "Enter the amount in EUR/USD/CAD/GBP"}</li>
-                          <li>{lang==="fr" ? "Validez — l'argent arrive instantanément sur Ayyad en FCFA" : "Confirm — money arrives instantly to Ayyad in FCFA"}</li>
-                        </ol>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          <a href="https://apps.apple.com/app/sendwave-send-money/id1238118264" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-md text-[10px] font-bold">
-                            🍎 iOS
-                          </a>
-                          <a href="https://play.google.com/store/apps/details?id=com.wave" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-md text-[10px] font-bold">
-                            🤖 Android
-                          </a>
-                          <a href="https://www.sendwave.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 border border-blue-200 text-blue-600 px-2 py-1 rounded-md text-[10px] font-bold hover:bg-blue-50">
-                            🌐 sendwave.com
-                          </a>
-                        </div>
-                        <p className="text-[10px] text-gray-400 italic mt-1">
-                          {lang==="fr" ? "Sendwave appartient à Wave — l'argent arrive sur le même compte que les dons Wave locaux." : "Sendwave is owned by Wave — funds arrive in the same account as local Wave donations."}
-                        </p>
-                      </div>
-                    </details>
                   </div>
                 );
               })()}
 
-              {/* ── Carte bancaire / Mobile Money — BIENTÔT (PayDunya en attente d'activation) ── */}
+              {/* ââ Carte bancaire â BientÃ´t disponible ââ */}
               {provider === "CARD" && (
                 <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 text-center space-y-3">
-                  <div className="text-4xl">🏗️</div>
+                  <div className="text-4xl">ðï¸</div>
                   <div className="font-black text-amber-800">
-                    {lang==="fr" ? "Carte bancaire & Mobile Money — Bientôt" : "Card & Mobile Money — Coming soon"}
+                    {lang==="fr" ? "Paiement par carte bancaire â BientÃ´t disponible" : "Card payment â Coming soon"}
                   </div>
                   <p className="text-sm text-amber-700 leading-relaxed">
                     {lang==="fr"
-                      ? "L'intégration multi-méthodes (Visa/MC, Orange Money, MTN, Moov, DJAMO) est en cours d'activation. En attendant, utilisez Wave CI."
-                      : "Multi-method integration (Visa/MC, Orange Money, MTN, Moov, DJAMO) is being activated. Meanwhile, please use Wave CI."}
+                      ? "Nous travaillons Ã  l'intÃ©gration des cartes Visa et Mastercard. En attendant, vous pouvez utiliser Wave CI (sans frais)."
+                      : "We're working on Visa and Mastercard integration. In the meantime, you can use Wave CI (no fees)."}
                   </p>
                   <button
                     onClick={() => setProvider("WAVE")}
                     className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm"
                   >
-                    🌊 {lang==="fr" ? "Utiliser Wave CI" : "Use Wave CI"}
+                    ð {lang==="fr" ? "Utiliser Wave CI Ã  la place" : "Use Wave CI instead"}
                   </button>
                 </div>
               )}
 
-              {/* Boutons Modifier / Confirmer */}
+              {/* Boutons Modifier / Confirmer (Wave uniquement â carte a son propre bouton) */}
               {provider !== "CARD" && (
                 <>
                   {donError && (
                     <div className="bg-red-50 border-2 border-red-200 rounded-xl p-3 text-xs text-red-700">
-                      <div className="font-bold mb-1">⚠️ {lang==="fr"?"Erreur lors de l'enregistrement du don":"Error recording donation"}</div>
+                      <div className="font-bold mb-1">â ï¸ {lang==="fr"?"Erreur lors de l'enregistrement du don":"Error recording donation"}</div>
                       <div className="break-words">{donError}</div>
-                      <div className="mt-1 text-[11px] text-red-500">{lang==="fr"?"Aucun email n'a été envoyé. Réessayez ou contactez le support.":"No email was sent. Please retry or contact support."}</div>
+                      <div className="mt-1 text-[11px] text-red-500">{lang==="fr"?"Aucun email n'a Ã©tÃ© envoyÃ©. RÃ©essayez ou contactez le support.":"No email was sent. Please retry or contact support."}</div>
                     </div>
                   )}
                   <div className="grid grid-cols-2 gap-2">
@@ -4402,54 +4463,16 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm disabled:opacity-50"
                     >{td.modify}</button>
                     <button
-                      disabled={donSubmitting || c._isDemo || c._mock}
+                      disabled={donSubmitting}
                       onClick={async () => {
                         if (donSubmitting) return;
-                        if (c._isDemo || c._mock) {
-                          setDonError(lang==="fr" ? "Cette collecte est un exemple. Choisissez une vraie collecte." : "This is a demo. Pick a real campaign.");
-                          return;
-                        }
                         setDonError("");
                         setDonSubmitting(true);
+                        // On Ã©vite de stocker l'email entier comme nom public (RGPD)
                         const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
-
-                        // ── Cas DUNYA: on appelle /api/dunya/create-invoice et on redirige ──
-                        if (provider === "DUNYA") {
-                          try {
-                            const r = await fetch("/api/dunya/create-invoice", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                case_id: c.id,
-                                donor_id: user?.id || null,
-                                donor_name: _donName2,
-                                donor_email: anonymous ? null : (user?.email || null),
-                                amount: Number(amount),
-                                message: message || null,
-                                case_title: typeof c.title === "object" ? (c.title?.fr || c.title?.en) : c.title,
-                                tracking_id: c.tracking_id || c.trackingId,
-                                beneficiary: c.beneficiary,
-                              }),
-                            });
-                            const data = await r.json().catch(() => ({}));
-                            if (!r.ok || !data.payment_url) {
-                              const detail = data.debug ? ` — ${data.debug}` : "";
-                              setDonError((data.error || "Erreur lors de l'initialisation du paiement.") + detail);
-                              setDonSubmitting(false);
-                              return;
-                            }
-                            // Redirige vers PayDunya — le webhook fera la confirmation
-                            window.location.href = data.payment_url;
-                          } catch(err) {
-                            setDonError(err?.message || String(err));
-                            setDonSubmitting(false);
-                          }
-                          return;
-                        }
-
-                        // ── Cas WAVE (QR statique): flow actuel — insert pending + email ──
                         const refToUse = paymentRef || buildPaymentRef(c);
                         try {
+                          // CrÃ©ation du don via /api/donate (bypass RLS) avec fallback Supabase
                           const { error: insErr } = await createDonation({
                             case_id: c.id || null,
                             donor_id: user?.id || null,
@@ -4464,11 +4487,12 @@ const CasePage = ({ c, setPage, lang, user }) => {
                             reference: refToUse,
                           });
                           if (insErr) {
-                            console.error("[donation insert] échec:", insErr);
+                            console.error("[donation insert] Ã©chec:", insErr);
                             setDonError(insErr);
                             setDonSubmitting(false);
-                            return;
+                            return; // pas d'email, pas de success
                           }
+                          // SuccÃ¨s â on stocke le contexte pour le certificat, on bascule sur l'Ã©cran de remerciement, on envoie l'email
                           setLastDonation({ donorName: anonymous?"Donateur anonyme":(_donName2||"Donateur"), amount: amountInFcfa });
                           setDonMode("success");
                           try {
@@ -4481,7 +4505,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                               trackingId: c.tracking_id || c.trackingId,
                             });
                           } catch(emailErr) {
-                            console.warn("[donation email] échec (non bloquant):", emailErr);
+                            console.warn("[donation email] Ã©chec (non bloquant):", emailErr);
                           }
                         } catch(err) {
                           console.error("[donation flow] exception:", err);
@@ -4492,18 +4516,16 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       }}
                       className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md disabled:opacity-60"
                     >
-                      {donSubmitting
-                        ? (provider === "DUNYA" ? (lang==="fr"?"Redirection…":"Redirecting…") : (lang==="fr"?"Enregistrement…":"Saving…"))
-                        : (provider === "DUNYA" ? (lang==="fr"?"Procéder au paiement →":"Proceed to payment →") : td.confirmBtn)}
+                      {donSubmitting ? (lang==="fr"?"Enregistrementâ¦":"Savingâ¦") : td.confirmBtn}
                     </button>
                   </div>
                 </>
               )}
             </div>}
 
-            {/* ÉTAPE 4 — Succès */}
+            {/* ÃTAPE 4 â SuccÃ¨s */}
             {donMode==="success" && <div className="text-center space-y-4 py-2">
-              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-3xl">🎉</div>
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-3xl">ð</div>
               <h3 className="font-black text-xl text-gray-900">{td.thanks}</h3>
               <p className="text-sm text-gray-600">{td.thanksSub}</p>
               <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-4 text-sm text-emerald-800 border border-emerald-100">
@@ -4521,7 +4543,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     lang,
                   })}
                   className="w-full bg-amber-50 border border-amber-200 text-amber-700 font-bold py-2.5 rounded-xl text-sm hover:bg-amber-100 flex items-center justify-center gap-2">
-                  📜 {lang==="fr"?"Télécharger mon certificat de don":"Download my donation certificate"}
+                  ð {lang==="fr"?"TÃ©lÃ©charger mon certificat de don":"Download my donation certificate"}
                 </button>
               )}
               <div className="flex gap-2">
@@ -4529,1427 +4551,16 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 <div className="flex-1"><ShareButton c={c} lang={lang} /></div>
               </div>
             </div>}
+
+              </div>
+            </div>
           </div>
         </div>
+
       </div>
     </div>
+  </div>
   );
-};
-
-// ── Login Page ────────────────────────────────────────────────
-const LoginPage = ({ setPage, setUser, lang, trackVisit }) => {
-  const [email, setEmail] = useState("");
-  const [pwd, setPwd] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const t = T[lang].login;
-
-  const handleLogin = async () => {
-    const emailClean = email.trim().toLowerCase();
-    if (!emailClean || !pwd) return;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
-      setError(lang === "fr" ? "Adresse email invalide." : "Invalid email address.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    let timedOut = false;
-
-    // Minuteur de sécurité : reset automatique après 10s si Supabase ne répond pas
-    const safetyTimer = setTimeout(() => {
-      timedOut = true;
-      setLoading(false);
-      setError(lang === "fr"
-        ? "Connexion impossible. Vérifiez votre réseau ou désactivez les extensions de navigation."
-        : "Connection failed. Check your network or disable browser extensions.");
-    }, 10000);
-    try {
-      const { data, error: err } = await supabase.auth.signInWithPassword({ email: emailClean, password: pwd });
-      if (timedOut) return; // la réponse est arrivée trop tard, ignorer
-      if (err) {
-        setError(t.error);
-        return;
-      }
-      const meta = data.user?.user_metadata || {};
-      const { data: adminData } = await supabase.from("admin_users").select("role, is_active").eq("email", emailClean).maybeSingle();
-      if (timedOut) return;
-      const isAdmin = !!(adminData && adminData.is_active);
-      const adminRole = adminData?.role || null;
-      const userName = meta.full_name || email;
-      setUser({ id: data.user.id, name: userName, email, isAdmin, adminRole });
-      if (trackVisit) trackVisit(data.user.id, email, userName);
-      setPage(isAdmin ? "admin" : "home");
-    } catch(e) {
-      if (!timedOut) setError("Erreur de connexion. Veuillez réessayer.");
-    } finally {
-      clearTimeout(safetyTimer);
-      if (!timedOut) setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center px-4 py-16">
-      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-md p-8">
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <svg width="64" height="64" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
-              <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" stroke-width="2.5"/>
-              <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
-              <rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/>
-              <path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/>
-            </svg>
-          </div>
-          <h1 className="text-2xl font-black text-gray-900">{t.title}</h1>
-          <p className="text-gray-500 text-sm mt-1">{t.sub}</p>
-        </div>
-        {error && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600 text-center mb-4">{error}</div>}
-        <div className="space-y-4 mb-6">
-          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.email}</label><input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="vous@exemple.ci" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
-          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.password}</label><input value={pwd} onChange={e=>setPwd(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} type="password" placeholder="••••••••" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
-        </div>
-        <button onClick={handleLogin} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold py-3.5 rounded-xl shadow-md text-sm">
-          {loading ? "..." : t.btn}
-        </button>
-        <div className="text-center mt-5"><span className="text-sm text-gray-500">{t.noAccount} </span><button onClick={() => setPage("register")} className="text-sm text-emerald-600 font-bold hover:underline">{t.register}</button></div>
-      </div>
-    </div>
-  );
-};
-
-// ── Register Page ─────────────────────────────────────────────
-const RegisterPage = ({ setPage, setUser, lang }) => {
-  const [step, setStep] = useState(1);
-  const [role, setRole] = useState("");
-  const [form, setForm] = useState({name:"",email:"",phone:"",password:""});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const t = T[lang].register;
-
-  const handleSubmit = async () => {
-    const emailClean = form.email.trim().toLowerCase();
-    if (!form.name.trim()) {
-      setError(lang === "fr" ? "Veuillez entrer votre nom." : "Please enter your name.");
-      return;
-    }
-    if (!emailClean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
-      setError(lang === "fr" ? "Adresse email invalide." : "Invalid email address.");
-      return;
-    }
-    // Validation téléphone (optionnel mais format CI si renseigné)
-    if (form.phone.trim()) {
-      const phoneClean = form.phone.trim().replace(/\s/g, "");
-      const ciLocal = /^(01|03|05|07|08|09|27)\d{8}$/.test(phoneClean);
-      const ciIntl  = /^\+225(01|03|05|07|08|09|27)\d{8}$/.test(phoneClean);
-      if (!ciLocal && !ciIntl) {
-        setError(lang === "fr"
-          ? "Numéro invalide. Format attendu : 07 XX XX XX XX ou +225 07 XX XX XX XX"
-          : "Invalid number. Expected format: 07 XX XX XX XX or +225 07 XX XX XX XX");
-        return;
-      }
-    }
-    // Validation mot de passe
-    if (form.password.length < 8) {
-      setError(lang === "fr" ? "Le mot de passe doit contenir au moins 8 caractères." : "Password must be at least 8 characters.");
-      return;
-    }
-    if (!/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password)) {
-      setError(lang === "fr" ? "Le mot de passe doit contenir au moins une lettre et un chiffre." : "Password must contain at least one letter and one number.");
-      return;
-    }
-    if (!acceptedTerms) {
-      setError(lang === "fr" ? "Veuillez accepter les conditions d'utilisation." : "Please accept the terms of use.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    // Ne jamais stocker le role dans les métadonnées — géré uniquement via admin_users
-    const { data, error: err } = await supabase.auth.signUp({
-      email: emailClean,
-      password: form.password,
-      options: { data: { full_name: form.name.trim(), phone: form.phone.trim() } }
-    });
-    if (err) { setError(t.error); setLoading(false); return; }
-    setUser({ id: data.user?.id, name: form.name.trim()||emailClean, email: emailClean, isAdmin: false });
-    setPage("home");
-    setLoading(false);
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center px-4 py-16">
-      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-md p-8">
-        <div className="text-center mb-6">
-          <div className="flex justify-center mb-4">
-            <svg width="56" height="56" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
-              <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" stroke-width="2.5"/>
-              <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
-              <rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/>
-              <path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/>
-            </svg>
-          </div>
-          <h1 className="text-2xl font-black text-gray-900">{t.title}</h1>
-          <div className="flex justify-center gap-2 mt-3">{[1,2].map(s=><div key={s} className={`w-10 h-1.5 rounded-full transition-colors ${step>=s?"bg-emerald-500":"bg-gray-200"}`}/>)}</div>
-        </div>
-        {step===1&&<div className="space-y-4">
-          <p className="text-sm text-gray-600 text-center font-medium">{t.roleQ}</p>
-          <div className="grid grid-cols-2 gap-3">{t.roles.map(r=><button key={r.id} onClick={()=>setRole(r.id)} className={`p-5 rounded-2xl border-2 text-left transition-all ${role===r.id?"border-emerald-500 bg-emerald-50 shadow-md":"border-gray-200 hover:border-emerald-300"}`}><div className="text-3xl mb-2">{r.icon}</div><div className="font-bold text-sm text-gray-900">{r.title}</div><div className="text-xs text-gray-500 mt-0.5">{r.desc}</div></button>)}</div>
-          <button onClick={()=>role&&setStep(2)} disabled={!role} className="w-full bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">{t.continue}</button>
-          <div className="text-center"><span className="text-sm text-gray-500">{t.hasAccount} </span><button onClick={()=>setPage("login")} className="text-sm text-emerald-600 font-bold hover:underline">{t.signin}</button></div>
-        </div>}
-        {step===2&&<div className="space-y-4">
-          {error&&<div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600 text-center">{error}</div>}
-          {t.fields.map(f=>(
-            <div key={f.key}>
-              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{f.label}</label>
-              <input
-                value={form[f.key]}
-                onChange={e => {
-                  let val = e.target.value;
-                  // Téléphone : n'autoriser que chiffres, +, espaces
-                  if (f.key === "phone") val = val.replace(/[^0-9+\s]/g, "").slice(0, 16);
-                  // Mot de passe : indicateur de force visuel via bordure
-                  setForm({...form, [f.key]: val});
-                }}
-                type={f.type}
-                placeholder={f.p}
-                inputMode={f.key === "phone" ? "tel" : undefined}
-                className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${
-                  f.key === "password" && form.password.length > 0
-                    ? form.password.length >= 8 && /[A-Za-z]/.test(form.password) && /[0-9]/.test(form.password)
-                      ? "border-emerald-400"
-                      : "border-amber-400"
-                    : "border-gray-200"
-                }`}
-              />
-              {/* Indicateur force mot de passe */}
-              {f.key === "password" && form.password.length > 0 && (
-                <div className="mt-1.5 space-y-1">
-                  <div className="flex gap-1">
-                    {[8, 10, 12].map((min, i) => (
-                      <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${
-                        form.password.length >= min && /[A-Za-z]/.test(form.password) && /[0-9]/.test(form.password)
-                          ? ["bg-red-400","bg-amber-400","bg-emerald-500"][i]
-                          : "bg-gray-200"
-                      }`} />
-                    ))}
-                  </div>
-                  <p className={`text-[10px] ${
-                    form.password.length >= 8 && /[A-Za-z]/.test(form.password) && /[0-9]/.test(form.password)
-                      ? "text-emerald-600" : "text-amber-600"
-                  }`}>
-                    {lang === "fr"
-                      ? form.password.length < 8 ? "Min. 8 caractères" : !/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password) ? "Ajoutez une lettre et un chiffre" : "✓ Mot de passe valide"
-                      : form.password.length < 8 ? "Min. 8 characters" : !/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password) ? "Add a letter and a number" : "✓ Valid password"
-                    }
-                  </p>
-                </div>
-              )}
-              {/* Hint téléphone */}
-              {f.key === "phone" && (
-                <p className="text-[10px] text-gray-400 mt-1">
-                  {lang === "fr" ? "Format CI : 07 XX XX XX XX ou +225 07 XX XX XX XX" : "CI format: 07 XX XX XX XX or +225 07 XX XX XX XX"}
-                </p>
-              )}
-            </div>
-          ))}
-          <div className="flex items-start gap-2 text-xs text-gray-500">
-            <input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} className="mt-0.5 accent-emerald-600 cursor-pointer" />
-            <span onClick={()=>setAcceptedTerms(v=>!v)} className="cursor-pointer">{t.terms} <a href="https://ayyadci.com/cgu" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.termsLink}</a> {t.and} <a href="https://ayyadci.com/confidentialite" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.privacyLink}</a>.</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={()=>setStep(1)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{t.back}</button>
-            <button onClick={handleSubmit} disabled={loading||!acceptedTerms} className="bg-emerald-600 disabled:bg-emerald-400 text-white font-bold py-3 rounded-xl text-sm shadow-md">{loading?"...":t.btn}</button>
-          </div>
-        </div>}
-      </div>
-    </div>
-  );
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ── PolitiqueAdmissionPage — politique officielle de refus des dossiers ─────
-//    déjà lancés sur d'autres canaux de collecte (Facebook, TikTok, etc.)
-// ─────────────────────────────────────────────────────────────────────────────
-const PolitiqueAdmissionPage = ({ setPage, lang }) => {
-  const fr = lang === "fr";
-  return (
-    <div style={{ background:"var(--paper)", minHeight:"100vh" }}>
-      {/* Header */}
-      <div style={{
-        background:"linear-gradient(135deg, var(--ayyad-deep) 0%, var(--ayyad-emerald) 60%, var(--ayyad-teal) 100%)",
-        color:"#fff",
-        padding:"clamp(40px, 6vw, 72px) 0 clamp(48px, 7vw, 88px)",
-        position:"relative", overflow:"hidden",
-      }}>
-        {/* Pattern doré décoratif */}
-        <div style={{
-          position:"absolute", inset:0, opacity:0.06, pointerEvents:"none",
-          backgroundImage:"radial-gradient(rgba(201,168,76,1) 1.5px, transparent 1.5px)",
-          backgroundSize:"28px 28px",
-        }} />
-        <div className="ayyad-container" style={{ position:"relative", zIndex:2 }}>
-          <button onClick={()=>setPage("home")} style={{ background:"transparent", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.78)", fontSize:13, marginBottom:18 }}>
-            ← {fr ? "Retour à l'accueil" : "Back to home"}
-          </button>
-          <span className="ayyad-eyebrow" style={{ color:"#e9d59a", background:"rgba(201,168,76,0.10)", borderColor:"rgba(201,168,76,0.40)" }}>
-            {fr ? "Politique officielle" : "Official policy"}
-          </span>
-          <h1 className="ayyad-h-display" style={{ color:"#fff", fontSize:"clamp(1.8rem, 4vw, 3rem)", marginTop:18, marginBottom:14 }}>
-            {fr ? <>Notre politique <em style={{ color:"#e9d59a" }}>d'admission des dossiers.</em></> : <>Our <em style={{ color:"#e9d59a" }}>case admission policy.</em></>}
-          </h1>
-          <p style={{ color:"rgba(255,255,255,0.85)", fontSize:16, lineHeight:1.65, maxWidth:720 }}>
-            {fr
-              ? "Pourquoi Ayyad refuse les dossiers déjà lancés sur les réseaux sociaux, et comment soumettre un dossier valide."
-              : "Why Ayyad refuses cases already launched on social media, and how to submit a valid case."}
-          </p>
-        </div>
-      </div>
-
-      {/* Contenu */}
-      <div className="ayyad-container" style={{ padding:"clamp(40px, 5vw, 64px) 0 clamp(56px, 7vw, 96px)", maxWidth:880 }}>
-
-        {/* Règle principale — encart fort */}
-        <div style={{
-          background:"linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%)",
-          border:"2px solid rgba(245,158,11,0.30)",
-          borderRadius:20, padding:"clamp(20px, 3vw, 32px)",
-          marginBottom:32,
-        }}>
-          <div style={{ display:"flex", alignItems:"flex-start", gap:16 }}>
-            <div style={{ fontSize:32, flexShrink:0 }}>⚠️</div>
-            <div>
-              <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.3rem, 2.4vw, 1.7rem)", marginBottom:10 }}>
-                {fr ? "La règle Ayyad" : "The Ayyad rule"}
-              </h2>
-              <p style={{ color:"var(--ink-700)", fontSize:15, lineHeight:1.7 }}>
-                {fr
-                  ? <><strong>Ayyad n'accepte pas les dossiers patients qui ont déjà été lancés publiquement sur d'autres canaux de collecte</strong> (Facebook, TikTok, Instagram, WhatsApp, GoFundMe, M-Pesa, dons en cash entre particuliers, etc.).</>
-                  : <><strong>Ayyad does not accept patient cases that have already been publicly launched on other fundraising channels</strong> (Facebook, TikTok, Instagram, WhatsApp, GoFundMe, M-Pesa, cash donations between individuals, etc.).</>}
-              </p>
-              <p style={{ color:"var(--ink-500)", fontSize:14, lineHeight:1.65, marginTop:12, fontStyle:"italic" }}>
-                {fr
-                  ? "Cette règle n'est pas une rigidité administrative. Elle est le fondement même de la confiance que nous construisons avec nos donateurs, et la garantie que nous offrons à chaque patient pris en charge."
-                  : "This rule is not administrative rigidity. It is the very foundation of the trust we build with our donors, and the guarantee we offer to every patient we take on."}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* 4 raisons */}
-        <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.4rem, 2.6vw, 1.9rem)", marginBottom:8 }}>
-          {fr ? "Pourquoi cette règle existe" : "Why this rule exists"}
-        </h2>
-        <div style={{ width:48, height:3, background:"var(--grad-gold)", borderRadius:999, marginBottom:32 }} />
-
-        <div style={{ display:"flex", flexDirection:"column", gap:20, marginBottom:48 }}>
-          {[
-            {
-              num: "1",
-              icon: "🔍",
-              title: fr ? "Transparence financière vis-à-vis des donateurs" : "Financial transparency for donors",
-              body: fr
-                ? "Lorsqu'un donateur contribue sur Ayyad, il doit pouvoir vérifier précisément combien a déjà été collecté et combien il reste à réunir pour atteindre l'objectif médical. Si des fonds parviennent en parallèle par d'autres canaux non traçables, notre jauge ne reflète plus la réalité et nous induirions involontairement nos donateurs en erreur. Cela trahirait le principe même de notre plateforme."
-                : "When a donor contributes via Ayyad, they must be able to verify exactly how much has been collected and how much remains to reach the medical goal. If funds arrive in parallel through other untraceable channels, our progress gauge no longer reflects reality and we would unintentionally mislead our donors. This would betray the very principle of our platform.",
-            },
-            {
-              num: "2",
-              icon: "🏥",
-              title: fr ? "Garantie d'un versement direct à l'hôpital" : "Guarantee of direct hospital payment",
-              body: fr
-                ? "Ayyad s'engage publiquement à verser 100% des dons collectés directement à l'établissement de santé qui prend en charge le patient — jamais en espèces, jamais sur un compte personnel. Cette promesse ne peut être tenue que si Ayyad est le seul canal de collecte actif sur le dossier. Dans le cas contraire, il devient impossible de tracer l'intégralité des fonds et de garantir qu'ils sont effectivement utilisés pour les soins."
-                : "Ayyad publicly commits to transferring 100% of collected donations directly to the healthcare facility caring for the patient — never in cash, never to a personal account. This promise can only be kept if Ayyad is the only active fundraising channel for the case. Otherwise, it becomes impossible to track all the funds and guarantee they are actually used for care.",
-            },
-            {
-              num: "3",
-              icon: "🛡️",
-              title: fr ? "Protection du patient et de sa famille" : "Patient and family protection",
-              body: fr
-                ? "Une collecte mixte sur plusieurs canaux expose la famille à des questions complexes en cas de surcollecte, à des soupçons injustifiés, et parfois à des tensions familiales ou communautaires. En cantonnant chaque dossier à un seul canal officiel et vérifié, nous protégeons la dignité du patient et la sérénité de ses proches."
-                : "A mixed fundraising effort across multiple channels exposes the family to complex questions in case of over-collection, to unjustified suspicion, and sometimes to family or community tensions. By confining each case to a single official and verified channel, we protect the patient's dignity and the peace of mind of their loved ones.",
-            },
-            {
-              num: "4",
-              icon: "🌱",
-              title: fr ? "Intégrité de la plateforme et des autres bénéficiaires" : "Platform integrity and other beneficiaries",
-              body: fr
-                ? "Chaque dossier publié sur Ayyad est vérifié sous 48 heures avec l'hôpital partenaire. Accepter des dossiers déjà mélangés à d'autres collectes affaiblirait la valeur de cette vérification pour l'ensemble des patients vraiment dépendants d'Ayyad pour leurs soins."
-                : "Every case published on Ayyad is verified within 48 hours with the partner hospital. Accepting cases already mixed with other fundraising would weaken the value of this verification for all patients truly dependent on Ayyad for their care.",
-            },
-          ].map(reason => (
-            <div key={reason.num} className="ayyad-card" style={{ padding:"clamp(20px, 3vw, 28px)", display:"flex", gap:18 }}>
-              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", flexShrink:0 }}>
-                <div style={{
-                  width:44, height:44, borderRadius:12,
-                  background:"linear-gradient(135deg, var(--ayyad-deep), var(--ayyad-emerald))",
-                  color:"#fff", fontFamily:"var(--font-serif)", fontWeight:800, fontSize:18,
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                  marginBottom:8,
-                }}>{reason.num}</div>
-                <div style={{ fontSize:24 }}>{reason.icon}</div>
-              </div>
-              <div style={{ minWidth:0 }}>
-                <h3 className="ayyad-h-display" style={{ fontSize:"clamp(1rem, 2vw, 1.2rem)", marginBottom:8 }}>
-                  {reason.title}
-                </h3>
-                <p style={{ color:"var(--ink-700)", fontSize:14.5, lineHeight:1.7 }}>
-                  {reason.body}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Quels dossiers Ayyad accepte */}
-        <div style={{
-          background:"linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)",
-          border:"1px solid rgba(16,185,129,0.30)",
-          borderRadius:20, padding:"clamp(24px, 4vw, 36px)",
-          marginBottom:32,
-        }}>
-          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.3rem, 2.4vw, 1.7rem)", marginBottom:18, color:"var(--ayyad-deep)" }}>
-            ✅ {fr ? "Quels dossiers Ayyad accepte" : "Which cases Ayyad accepts"}
-          </h2>
-          <ul style={{ paddingLeft:0, listStyle:"none", display:"flex", flexDirection:"column", gap:14 }}>
-            {[
-              fr ? "Les dossiers patients dont la demande de financement médical n'a pas encore été lancée publiquement" : "Patient cases whose medical funding request has not yet been publicly launched",
-              fr ? "Les dossiers dont les autres canaux de collecte ont été officiellement fermés, avec un justificatif des montants déjà collectés et un objectif Ayyad ajusté au solde restant à couvrir" : "Cases whose other fundraising channels have been officially closed, with proof of amounts already collected and an Ayyad goal adjusted to the remaining balance to cover",
-              fr ? "Les dossiers soumis directement à Ayyad dès le départ, sans communication préalable sur les réseaux sociaux" : "Cases submitted directly to Ayyad from the start, without prior communication on social media",
-            ].map((item, i) => (
-              <li key={i} style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
-                <span style={{ color:"var(--ayyad-emerald)", fontWeight:900, fontSize:18, flexShrink:0, lineHeight:1.4 }}>✓</span>
-                <span style={{ color:"var(--ink-800)", fontSize:14.5, lineHeight:1.65 }}>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Comment soumettre */}
-        <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.4rem, 2.6vw, 1.9rem)", marginBottom:8 }}>
-          {fr ? "Comment soumettre un dossier" : "How to submit a case"}
-        </h2>
-        <div style={{ width:48, height:3, background:"var(--grad-gold)", borderRadius:999, marginBottom:24 }} />
-        <p style={{ color:"var(--ink-700)", fontSize:15.5, lineHeight:1.75, marginBottom:24 }}>
-          {fr
-            ? "Toute demande passe par notre formulaire officiel. Notre équipe vérifie le dossier sous 48 heures en collaboration avec un hôpital partenaire, puis met la collecte en ligne avec un objectif financier basé sur le devis médical réel."
-            : "All requests go through our official form. Our team verifies the case within 48 hours in collaboration with a partner hospital, then puts the campaign online with a financial goal based on the actual medical quote."}
-        </p>
-        <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginBottom:48 }}>
-          <button onClick={() => setPage("submit")} className="ayyad-btn-primary" style={{ fontSize:14, padding:"13px 26px" }}>
-            📋 {fr ? "Soumettre un dossier" : "Submit a case"} →
-          </button>
-          <button onClick={() => setPage("how")} style={{
-            background:"transparent",
-            border:"1.5px solid rgba(13,92,46,0.22)",
-            color:"var(--ayyad-deep)",
-            fontWeight:700, fontSize:14,
-            padding:"13px 26px", borderRadius:9999, cursor:"pointer",
-          }}>
-            {fr ? "Comment ça marche" : "How it works"}
-          </button>
-        </div>
-
-        {/* Conclusion / engagement */}
-        <div style={{
-          background:"linear-gradient(135deg, #0a3d2e 0%, #0d5c2e 100%)",
-          color:"#fff",
-          borderRadius:20, padding:"clamp(24px, 4vw, 36px)",
-          textAlign:"center",
-        }}>
-          <p style={{ fontFamily:"var(--font-serif)", fontStyle:"italic", fontSize:"clamp(1.05rem, 2vw, 1.25rem)", lineHeight:1.6, marginBottom:16 }}>
-            {fr
-              ? "Notre engagement reste constant : financer des soins, pas alimenter des collectes parallèles. Cette discipline est ce qui fait d'Ayyad une plateforme dans laquelle les donateurs peuvent investir leur générosité en confiance, et les patients trouver un accompagnement médical sécurisé et digne."
-              : "Our commitment remains constant: to fund care, not to feed parallel fundraising. This discipline is what makes Ayyad a platform in which donors can invest their generosity with confidence, and patients find secure and dignified medical support."}
-          </p>
-          <p style={{ fontSize:13, color:"rgba(255,255,255,0.75)" }}>
-            {fr ? "Pour toute question :" : "For any question:"} <a href="mailto:contact@ayyadci.com" style={{ color:"#e9d59a", textDecoration:"none", fontWeight:700 }}>contact@ayyadci.com</a>
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── Submit Page ───────────────────────────────────────────────
-const SubmitPage = ({ setPage, user, lang }) => {
-  const [step, setStep] = useState(1);
-  const [form, setForm] = useState({
-    title:"", description:"", hospital:"", city:"", amount:"",
-    category:"", categoryOther:"", beneficiary_phone:"", videoUrl:""
-  });
-  const [photoFile, setPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
-  const [photoUploading, setPhotoUploading] = useState(false);
-  const [photoUrl, setPhotoUrl] = useState(null);
-  const [fileStates, setFileStates] = useState({medical:"idle",quote:"idle",id:"idle",consent:"idle"});
-  const [fileUrls, setFileUrls] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-  const t = T[lang].submit;
-  const allUploaded = Object.values(fileStates).every(s => s==="done");
-
-  // ID de session unique : permet d'organiser les fichiers par dossier dans le storage
-  const [sessionId] = useState(() => {
-    const uid = user?.id || "anon";
-    const ts = Date.now();
-    const rand = Math.random().toString(36).slice(2,7);
-    return `${uid}_${ts}_${rand}`;
-  });
-
-  const handlePhotoSelect = (file) => {
-    if (!file) return;
-    setPhotoFile(file);
-    const reader = new FileReader();
-    reader.onload = e => setPhotoPreview(e.target.result);
-    reader.readAsDataURL(file);
-  };
-
-  // Photo de la collecte → bucket PUBLIC (case-photos), affichée à tous les visiteurs
-  const handlePhotoUpload = async () => {
-    if (!photoFile) return null;
-    setPhotoUploading(true);
-    const fileName = `dossiers/${sessionId}/photo_${Date.now()}_${sanitizeFileName(photoFile.name)}`;
-    const { error } = await supabase.storage.from(BUCKET_PUBLIC).upload(fileName, photoFile);
-    if (error) {
-      setPhotoUploading(false);
-      console.warn("[photo upload] échec:", error);
-      return null;
-    }
-    const { data: urlData } = supabase.storage.from(BUCKET_PUBLIC).getPublicUrl(fileName);
-    setPhotoUrl(urlData.publicUrl);
-    setPhotoUploading(false);
-    return urlData.publicUrl;
-  };
-
-  // Documents sensibles (medical, quote, id, consent) → bucket PRIVÉ
-  // On stocke uniquement le PATH dans la BDD, pas l'URL publique.
-  // L'admin / le propriétaire les consulte via /api/sign-url (signed URL TTL 5 min).
-  const handleFileUpload = async (key, file) => {
-    if (!file) return;
-    setFileStates(prev => ({...prev, [key]: "uploading"}));
-    const ext = file.name.split('.').pop().toLowerCase();
-    const mimeMap = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' };
-    const contentType = mimeMap[ext] || file.type || 'application/octet-stream';
-    const fileName = `dossiers/${sessionId}/${key}_${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from(BUCKET_PRIVATE).upload(fileName, file, { contentType });
-    if (error) {
-      setFileStates(prev => ({...prev, [key]: "error"}));
-      console.warn("[file upload] échec:", error);
-      return;
-    }
-    // ⚠️ On stocke le PATH (pas getPublicUrl) — le bucket sera privé
-    setFileUrls(prev => ({...prev, [key]: fileName}));
-    setFileStates(prev => ({...prev, [key]: "done"}));
-  };
-
-  const toEmbedUrl = (url) => {
-    if (!url || !url.trim()) return null;
-    // YouTube
-    const watchMatch = url.match(/youtube\.com\/watch\?v=([^&]+)/);
-    if (watchMatch) return "https://www.youtube.com/embed/" + watchMatch[1];
-    const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
-    const shortsMatch = url.match(/youtube\.com\/shorts\/([^?&]+)/);
-    if (shortsMatch) return 'https://www.youtube.com/embed/' + shortsMatch[1];
-    if (shortMatch) return "https://www.youtube.com/embed/" + shortMatch[1];
-    if (url.includes("youtube.com/embed/")) return url;
-    // TikTok — on stocke l'URL originale, embed via oembed
-    const tiktokMatch = url.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
-    if (tiktokMatch) return "https://www.tiktok.com/embed/v2/" + tiktokMatch[1];
-    return null;
-  };
-
-  const getVideoType = (url) => {
-    if (!url) return null;
-    if (url.includes("youtube") || url.includes("youtu.be")) return "youtube";
-    if (url.includes("tiktok")) return "tiktok";
-    return null;
-  };
-
-  const embedPreview = toEmbedUrl(form.videoUrl);
-  const videoType = getVideoType(form.videoUrl);
-
-  const handleSubmit = async () => {
-    setSubmitting(true);
-    setSubmitError("");
-    // Upload photo if not done yet
-    let finalPhotoUrl = photoUrl;
-    if (photoFile && !photoUrl) {
-      finalPhotoUrl = await handlePhotoUpload();
-    }
-    const trackingId = "AYD-" + new Date().getFullYear() + "-" + Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => b.toString(16).padStart(2,"0")).join("").toUpperCase().slice(0,6);
-    const { error } = await supabase.from("cases").insert({
-      title: form.title,
-      description: form.description,
-      hospital: form.hospital,
-      city: form.city,
-      amount: parseFloat(form.amount),
-      category: form.category === "Autre" ? (form.categoryOther || "Autre") : form.category,
-      full_name: user?.name || "Anonyme",
-      photo_url: finalPhotoUrl || null,
-      beneficiary_phone: form.beneficiary_phone || null,
-      video_url: toEmbedUrl(form.videoUrl) || null,
-      status: "PENDING",
-      tracking_id: trackingId,
-      user_id: user?.id || null,
-      deadline_requested: form.deadlineRequested || null,
-      document_urls: fileUrls || {},
-    });
-    if (error) { setSubmitError(lang==="fr"?"Erreur lors de la soumission. Réessayez.":"Submission error. Please try again."); setSubmitting(false); return; }
-    try { emailNewCase({ caseTitle: form.title, hospital: form.hospital, city: form.city, amount: form.amount, trackingId }); } catch(e) { console.warn("Email non envoyé:", e); }
-    try { emailWelcomePatient({ beneficiaryEmail: user?.email || null, beneficiaryName: user?.name || user?.email?.split("@")[0] || "Patient", caseTitle: form.title, trackingId }); } catch(e) { console.warn("Email bienvenue non envoyé:", e); }
-    setStep(3);
-    setSubmitting(false);
-  };
-
-  if (!user) return (
-    <div className="max-w-md mx-auto px-4 py-20 text-center">
-      <div className="text-5xl mb-4">🔐</div>
-      <h2 className="text-xl font-black text-gray-900 mb-3">{t.loginRequired}</h2>
-      <button onClick={() => setPage("login")} className="bg-emerald-600 text-white font-bold px-8 py-3 rounded-xl shadow-md">{t.loginBtn}</button>
-    </div>
-  );
-
-  return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">{t.back}</button>
-      <div className="flex items-center gap-1 mb-8">{t.steps.map((s,i)=><div key={i} className="flex items-center gap-1 flex-1 last:flex-none"><div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${step>i+1?"bg-emerald-500 text-white":step===i+1?"bg-emerald-600 text-white":"bg-gray-200 text-gray-500"}`}>{step>i+1?"✓":i+1}</div><span className={`text-xs font-medium flex-1 truncate ${step===i+1?"text-emerald-700":"text-gray-400"}`}>{s}</span>{i<2&&<div className={`h-0.5 flex-1 ${step>i+1?"bg-emerald-500":"bg-gray-200"}`}/>}</div>)}</div>
-      {/* ── Bandeau Politique d'admission — visible en TOUS LES ÉTAPES ── */}
-      {/* Avertit clairement avant que la personne commence à remplir : si le dossier
-          est déjà sur les réseaux sociaux, il ne sera pas accepté. Évite les heures
-          de saisie pour rien et les frustrations côté patient + côté admin. */}
-      <div style={{
-        background:"linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%)",
-        border:"2px solid rgba(245,158,11,0.30)",
-        borderRadius:14, padding:"14px 18px", marginBottom:20,
-        display:"flex", gap:14, alignItems:"flex-start",
-      }}>
-        <div style={{ fontSize:22, flexShrink:0 }}>⚠️</div>
-        <div style={{ minWidth:0, flex:1 }}>
-          <div style={{ fontWeight:800, fontSize:14, color:"#92400e", marginBottom:4 }}>
-            {lang==="fr" ? "Avant de soumettre : règle importante" : "Before submitting: important rule"}
-          </div>
-          <div style={{ fontSize:13, color:"#78350f", lineHeight:1.55 }}>
-            {lang==="fr"
-              ? <>Ayyad <strong>n'accepte pas les dossiers déjà lancés sur Facebook, TikTok, WhatsApp ou tout autre canal de collecte</strong>. Cette règle garantit la transparence pour nos donateurs et la sécurité pour le patient. </>
-              : <>Ayyad <strong>does not accept cases already launched on Facebook, TikTok, WhatsApp or any other fundraising channel</strong>. This rule guarantees transparency for our donors and safety for the patient. </>}
-            <button
-              onClick={() => setPage("politique-admission")}
-              style={{ color:"#0d5c2e", fontWeight:800, textDecoration:"underline", background:"transparent", border:"none", cursor:"pointer", padding:0, fontSize:13 }}
-            >
-              {lang==="fr" ? "Lire la politique complète →" : "Read the full policy →"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        {step===1&&<div className="space-y-5">
-          <h2 className="font-black text-xl text-gray-900">{t.infoTitle}</h2>
-
-          {/* === PHOTO BÉNÉFICIAIRE === */}
-          <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-              📷 {lang==="fr" ? "Photo du bénéficiaire" : "Beneficiary photo"}
-              <span className="text-red-400 ml-1">*</span>
-            </label>
-            <p className="text-[11px] text-gray-400 mb-3">
-              {lang==="fr"
-                ? "Une photo récente montrant la situation actuelle du bénéficiaire. Cette photo sera affichée sur la collecte publique."
-                : "A recent photo showing the beneficiary's current situation. This photo will appear on the public campaign."}
-            </p>
-            {photoPreview ? (
-              <div className="relative">
-                <img src={photoPreview} alt="preview" className="w-full h-52 object-cover rounded-2xl border-2 border-emerald-300" />
-                <div className="absolute top-2 right-2 flex gap-2">
-                  <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full font-bold">✓ Photo sélectionnée</span>
-                  <button
-                    onClick={() => { setPhotoFile(null); setPhotoPreview(null); setPhotoUrl(null); }}
-                    className="bg-white border border-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full font-bold hover:bg-red-50 hover:text-red-500">
-                    ✕ Changer
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 transition-all group">
-                <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">📷</div>
-                <span className="text-sm font-semibold text-gray-600 group-hover:text-emerald-700">
-                  {lang==="fr" ? "Cliquez pour ajouter une photo" : "Click to add a photo"}
-                </span>
-                <span className="text-xs text-gray-400 mt-1">JPG, PNG — max 5 MB</span>
-                <input type="file" className="hidden" accept="image/jpeg,image/png,image/webp"
-                  onChange={e => {
-                    const f = e.target.files[0];
-                    if (!f) return;
-                    if (f.size > 5_000_000) { alert(lang==="fr" ? "Photo trop lourde (max 5 MB)" : "Photo too large (max 5 MB)"); return; }
-                    handlePhotoSelect(f);
-                  }} />
-              </label>
-            )}
-          </div>
-
-          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.titleField}</label><input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} autoComplete="off" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
-          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.descField}</label><textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={4} autoComplete="off" autoCorrect="off" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" /></div>
-
-          {/* Lien vidéo YouTube ou TikTok (optionnel) */}
-          <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-              🎥 {lang==="fr" ? "Lien vidéo YouTube ou TikTok" : "YouTube or TikTok video link"}
-              <span className="text-gray-400 font-normal ml-2">({lang==="fr" ? "optionnel" : "optional"})</span>
-            </label>
-            <p className="text-[11px] text-gray-400 mb-2">
-              {lang==="fr"
-                ? "Collez le lien de votre vidéo YouTube ou TikTok. Elle sera visible sur votre page de collecte et augmente les dons."
-                : "Paste your YouTube or TikTok video link. It will appear on your campaign page and increases donations."}
-            </p>
-            <div className="flex gap-2 mb-2">
-              <span className="text-[11px] bg-red-50 text-red-600 border border-red-100 rounded-full px-2 py-0.5 font-medium">▶ YouTube</span>
-              <span className="text-[11px] bg-gray-900 text-white rounded-full px-2 py-0.5 font-medium">♪ TikTok</span>
-            </div>
-            <input
-              type="url"
-              value={form.videoUrl}
-              onChange={e => setForm({...form, videoUrl: e.target.value})}
-              placeholder="https://youtube.com/watch?v=... ou https://tiktok.com/@..."
-              autoComplete="off"
-              className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${embedPreview ? "border-emerald-300 bg-emerald-50" : "border-gray-200"}`}
-            />
-            {form.videoUrl && !embedPreview && (
-              <p className="text-xs text-red-500 mt-1">⚠️ {lang==="fr" ? "Lien non reconnu. Copiez le lien depuis YouTube ou TikTok." : "Link not recognized. Copy the link from YouTube or TikTok."}</p>
-            )}
-            {embedPreview && (
-              <div className="mt-3 rounded-xl overflow-hidden border border-emerald-200">
-                <iframe
-                  src={embedPreview}
-                  className={`w-full ${videoType === "tiktok" ? "h-96" : "h-40"}`}
-                  allowFullScreen
-                  allow="autoplay"
-                  title="preview"
-                />
-                <div className="bg-emerald-50 px-3 py-1.5 text-xs text-emerald-700 font-medium">
-                  ✅ {videoType === "tiktok" ? "TikTok" : "YouTube"} {lang==="fr" ? "— aperçu ci-dessus" : "— preview above"}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.hospitalField}</label>
-              <select value={form.hospital} onChange={e => {
-                const h = CI_HOPITAUX.find(x => x.nom === e.target.value);
-                setForm({...form, hospital: e.target.value, city: h?.ville || form.city});
-              }} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                <option value="">— Choisir un hôpital —</option>
-                <optgroup label="🏛 CHU (Centres Hospitaliers Universitaires)">
-                  {CI_HOPITAUX.filter(h => h.type === "CHU").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
-                </optgroup>
-                <optgroup label="🏥 CHR (Centres Hospitaliers Régionaux)">
-                  {CI_HOPITAUX.filter(h => h.type === "CHR").map(h => <option key={h.nom} value={h.nom}>{h.nom} — {h.ville}</option>)}
-                </optgroup>
-                <optgroup label="🏢 Cliniques privées (Abidjan)">
-                  {CI_HOPITAUX.filter(h => h.type === "Clinique").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
-                </optgroup>
-                <optgroup label="Autre">
-                  {CI_HOPITAUX.filter(h => h.type === "Autre").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
-                </optgroup>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.cityField}</label>
-              <select value={form.city} onChange={e => setForm({...form, city: e.target.value})} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                <option value="">— Choisir une ville —</option>
-                {CI_VILLES.map(v => <option key={v} value={v}>{v}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.amountField}</label>
-              <div className="relative">
-                <input
-                  type="text" inputMode="numeric" pattern="[0-9]*"
-                  value={form.amount}
-                  onChange={e => setForm({...form, amount: e.target.value.replace(/[^0-9]/g,"")})}
-                  placeholder="ex: 500000"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-14"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span>
-              </div>
-              {form.amount && Number(form.amount) > 0 && (
-                <p className="text-[11px] text-gray-400 mt-1">
-                  {lang==="fr" ? "Montant collecté : " : "Amount to collect: "}
-                  <span className="font-bold text-emerald-700">{fmt(Math.round(Number(form.amount)*1.05))}</span>
-                  <span className="text-gray-400"> (devis + 5% Ayyad)</span>
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-                📱 {lang==="fr" ? "Téléphone mobile money" : "Mobile money phone"}
-              </label>
-              <div className="flex gap-1.5">
-                <span className="bg-gray-100 border border-gray-200 rounded-xl px-3 py-3 text-xs text-gray-500 font-mono flex-shrink-0">+225</span>
-                <input
-                  type="tel"
-                  value={form.beneficiary_phone}
-                  onChange={e => setForm({...form, beneficiary_phone: e.target.value.replace(/[^0-9]/g,"")})}
-                  placeholder="07 00 00 00 00"
-                  maxLength={10}
-                  className="flex-1 border border-gray-200 rounded-xl px-3 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                />
-              </div>
-              <p className="text-[11px] text-gray-400 mt-1">{lang==="fr" ? "Pour recevoir un éventuel surplus" : "To receive any surplus"}</p>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-gray-600 mb-3 block">{t.categoryField}</label>
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                {key:"Cardiologie", enKey:"Cardiology", icon:"🫀"},
-                {key:"Oncologie", enKey:"Oncology", icon:"🎗️"},
-                {key:"Neurologie", enKey:"Neurology", icon:"🧠"},
-                {key:"Orthopédie", enKey:"Orthopedics", icon:"🦾"},
-                {key:"Pédiatrie", enKey:"Pediatrics", icon:"👶"},
-                {key:"Gynécologie", enKey:"Gynecology", icon:"🌸"},
-                {key:"Néphrologie", enKey:"Nephrology", icon:"🫘"},
-                {key:"Autre", enKey:"Other", icon:"🏥"},
-              ].map(cat => (
-                <button key={cat.key} type="button"
-                  onClick={() => setForm({...form, category: cat.key, categoryOther: ""})}
-                  className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all ${form.category===cat.key ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm" : "border-gray-200 hover:border-gray-300 text-gray-500 hover:bg-gray-50"}`}>
-                  <span className="text-xl">{cat.icon}</span>
-                  <span className="text-xs text-center leading-tight font-medium">{lang==="fr" ? cat.key : cat.enKey}</span>
-                </button>
-              ))}
-            </div>
-            {form.category === "Autre" && (
-              <div className="mt-3">
-                <input value={form.categoryOther || ""} onChange={e => setForm({...form, categoryOther: e.target.value})}
-                  placeholder={lang==="fr" ? "Précisez la spécialité médicale..." : "Specify the medical specialty..."}
-                  className="w-full border-2 border-emerald-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-emerald-50" />
-              </div>
-            )}
-          </div>
-
-          <button onClick={()=>setStep(2)}
-            disabled={!form.title||!form.description||!form.hospital||!form.amount||!photoPreview}
-            className="w-full bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">
-            {!photoPreview
-              ? (lang==="fr" ? "⚠️ Ajoutez une photo pour continuer" : "⚠️ Add a photo to continue")
-              : t.next}
-          </button>
-        </div>}
-
-        {step===2&&<div className="space-y-4">
-          <h2 className="font-black text-xl text-gray-900">{t.docsTitle}</h2>
-          <p className="text-sm text-gray-500">{t.docsSub}</p>
-
-          {/* Rappel photo */}
-          {photoPreview && (
-            <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-              <img src={photoPreview} alt="preview" className="w-14 h-14 object-cover rounded-xl flex-shrink-0" />
-              <div>
-                <div className="text-xs font-bold text-emerald-700">✅ Photo bénéficiaire</div>
-                <div className="text-[11px] text-gray-500">Sera affichée sur la collecte publique</div>
-              </div>
-            </div>
-          )}
-
-          {t.docs.map(doc=>{
-            const state = fileStates[doc.key];
-            return (
-              <div key={doc.key} className={`rounded-2xl border-2 transition-all ${state==="done"?"border-emerald-300 bg-emerald-50":state==="error"?"border-red-200 bg-red-50":"border-gray-200"}`}>
-                <div className="flex items-center gap-4 p-4">
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 ${state==="done"?"bg-emerald-100":"bg-gray-100"}`}>{doc.icon}</div>
-                  <div className="flex-1 min-w-0"><div className="font-semibold text-sm text-gray-900">{doc.title} <span className="text-red-400">*</span></div><div className="text-xs text-gray-500">{doc.desc}</div></div>
-                  <label className={`px-3 py-1.5 rounded-xl text-xs font-bold flex-shrink-0 cursor-pointer transition-colors ${state==="done"?"bg-emerald-600 text-white":state==="uploading"?"bg-gray-300 text-gray-500 cursor-wait":state==="error"?"bg-red-100 text-red-600":"bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
-                    {state==="done"?t.uploaded:state==="uploading"?t.uploading:state==="error"?t.error:t.upload}
-                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e=>{const f=e.target.files[0];if(!f)return;if(f.size>10_000_000){alert(lang==="fr"?"Document trop lourd (max 10 MB)":"File too large (max 10 MB)");return;}handleFileUpload(doc.key,f);}} disabled={state==="uploading"||state==="done"} />
-                  </label>
-                </div>
-                {/* Lien de téléchargement du formulaire de consentement */}
-                {doc.key==="consent"&&(
-                  <div className="px-4 pb-3 flex items-center gap-2">
-                    <div className="w-11 flex-shrink-0"/>
-                    <div className="flex-1 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
-                      <span className="text-emerald-600 text-sm">📥</span>
-                      <span className="text-xs text-gray-600 flex-1">
-                        {lang==="fr"
-                          ? "Téléchargez, imprimez, signez, puis uploadez le formulaire ci-dessus."
-                          : "Download, print, sign, then upload the form above."}
-                      </span>
-                      <a
-                        href="/AYYAD_Consentement.pdf"
-                        download="AYYAD_Formulaire_Consentement.pdf"
-                        className="flex-shrink-0 inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
-                        onClick={e=>e.stopPropagation()}
-                      >
-                        {lang==="fr" ? "Télécharger le formulaire" : "Download form"} →
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {!allUploaded&&<div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex gap-2 text-xs text-amber-700"><span>⚠️</span><span>{t.warning}</span></div>}
-          {submitError&&<div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-600 text-center">{submitError}</div>}
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={()=>setStep(1)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{t.back}</button>
-            <button onClick={handleSubmit} disabled={!allUploaded||submitting} className="bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 rounded-xl text-sm shadow-md">{submitting?"...":t.submit}</button>
-          </div>
-        </div>}
-
-        {step===3&&<div className="text-center space-y-5 py-4">
-          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-4xl">🎉</div>
-          <div><h2 className="font-black text-2xl text-gray-900 mb-2">{t.successTitle}</h2><p className="text-gray-500 text-sm">{t.successSub}</p></div>
-          <div className="bg-gray-50 rounded-2xl p-5 text-left space-y-3">{t.processSteps.map((s,i)=><div key={i} className="flex items-center gap-3 text-sm"><div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${i===0?"bg-emerald-500 text-white":"bg-gray-200 text-gray-500"}`}>{i===0?"✓":i+1}</div><span className={i===0?"text-emerald-700 font-medium":"text-gray-500"}>{s}</span></div>)}</div>
-          <button onClick={()=>setPage("home")} className="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">{t.backHome}</button>
-        </div>}
-      </div>
-    </div>
-  );
-};
-
-// ── How Page ──────────────────────────────────────────────────
-const HowPage = ({ lang, setPage }) => {
-  const t = T[lang].howPage;
-  return (
-    <div>
-      {/* Hero */}
-      <div className="bg-gradient-to-br from-emerald-800 to-teal-700 text-white py-16 text-center px-4">
-        <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 mb-5 text-sm font-medium">
-          <span>💚</span> {lang==="fr" ? "Plateforme médicale vérifiée" : "Verified medical platform"}
-        </div>
-        <h1 className="text-4xl font-black mb-4">{t.title}</h1>
-        <p className="text-emerald-200 max-w-xl mx-auto">{t.sub}</p>
-      </div>
-
-      {/* Pour les donateurs */}
-      <div className="max-w-5xl mx-auto px-4 py-14">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl">💚</div>
-          <div>
-            <h2 className="text-2xl font-black text-gray-900">{t.forDonors.title}</h2>
-            <p className="text-gray-500 text-sm">{lang==="fr" ? "Comment faire un don sur Ayyad" : "How to donate on Ayyad"}</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
-          {t.forDonors.steps.map((step, i) => (
-            <div key={i} className="relative">
-              <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow h-full">
-                <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm font-black mb-3">{i+1}</div>
-                <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
-              </div>
-              {i < t.forDonors.steps.length-1 && <div className="hidden sm:block absolute top-6 -right-2 text-gray-300 text-lg z-10">→</div>}
-            </div>
-          ))}
-        </div>
-        <div className="mt-6 text-center">
-          <button onClick={() => setPage("collectes")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-xl shadow-md transition-colors">
-            {lang==="fr" ? "Voir les collectes →" : "See campaigns →"}
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-gray-50 border-y border-gray-100">
-        {/* Pour les bénéficiaires */}
-        <div className="max-w-5xl mx-auto px-4 py-14">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-xl">🏥</div>
-            <div>
-              <h2 className="text-2xl font-black text-gray-900">{t.forBenef.title}</h2>
-              <p className="text-gray-500 text-sm">{lang==="fr" ? "Comment soumettre votre dossier médical" : "How to submit your medical case"}</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
-            {t.forBenef.steps.map((step, i) => (
-              <div key={i} className="relative">
-                <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow h-full">
-                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-black mb-3">{i+1}</div>
-                  <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
-                </div>
-                {i < t.forBenef.steps.length-1 && <div className="hidden sm:block absolute top-6 -right-2 text-gray-300 text-lg z-10">→</div>}
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 text-center">
-            <button onClick={() => setPage("submit")} className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-xl shadow-md transition-colors">
-              {lang==="fr" ? "Soumettre un dossier →" : "Submit a case →"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Garanties */}
-      <div className="max-w-5xl mx-auto px-4 py-14">
-        <h2 className="text-2xl font-black text-gray-900 text-center mb-2">{lang==="fr" ? "Les garanties Ayyad" : "Ayyad guarantees"}</h2>
-        <p className="text-gray-500 text-center text-sm mb-10">{lang==="fr" ? "Ce qui nous différencie des autres plateformes" : "What sets us apart from other platforms"}</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {[
-            {icon:"🏥", title:lang==="fr"?"Versement direct à l'hôpital":"Direct payment to hospital", desc:lang==="fr"?"Les fonds ne passent jamais par le patient. Chaque virement est traçable.":"Funds never go through the patient. Every transfer is traceable."},
-            {icon:"🔍", title:lang==="fr"?"Vérification sous 48h":"Verification within 48h", desc:lang==="fr"?"Notre équipe contacte l'hôpital partenaire pour valider chaque dossier.":"Our team contacts the partner hospital to validate each case."},
-            {icon:"🔒", title:lang==="fr"?"Données chiffrées AES-256":"AES-256 encrypted data", desc:lang==="fr"?"Tous vos documents médicaux sont chiffrés et stockés en sécurité.":"All your medical documents are encrypted and stored securely."},
-          ].map((g,i) => (
-            <div key={i} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm text-center hover:shadow-md transition-shadow">
-              <div className="text-4xl mb-4">{g.icon}</div>
-              <h3 className="font-bold text-gray-900 mb-2">{g.title}</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">{g.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Fee section */}
-      <div className="bg-gray-900 py-14 px-4 text-white text-center">
-        <h2 className="text-2xl font-black mb-3">{t.feeTitle}</h2>
-        <p className="text-gray-300 mb-8 max-w-lg mx-auto text-sm">{t.feeSub}</p>
-        <div className="bg-white/10 rounded-2xl p-6 text-sm max-w-sm mx-auto border border-white/20 space-y-4">
-
-          {/* Donateur */}
-          <div>
-            <div className="text-gray-400 mb-1 text-xs uppercase tracking-wider">{t.youGive}</div>
-            <div className="text-3xl font-black">10 000 FCFA</div>
-          </div>
-
-          <div className="border-t border-white/20"/>
-
-          {/* Hôpital reçoit */}
-          <div className="flex justify-between items-center">
-            <span className="text-emerald-400 font-bold text-sm">🏥 {t.collectReceives}</span>
-            <span className="font-black text-xl text-emerald-400">10 000 FCFA</span>
-          </div>
-
-          <div className="border-t border-white/10"/>
-
-          {/* Explication objectif */}
-          <div className="bg-white/5 rounded-xl p-3 text-left space-y-1.5">
-            <div className="text-[11px] text-gray-300 font-semibold uppercase tracking-wide mb-2">
-              {lang==="fr" ? "Comment ça fonctionne ?" : "How does it work?"}
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-400">{lang==="fr" ? "Objectif affiché (devis × 1.05)" : "Displayed goal (quote × 1.05)"}</span>
-              <span className="text-white font-bold">10 500 FCFA</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-400">{lang==="fr" ? "dont devis hôpital" : "of which hospital quote"}</span>
-              <span className="text-emerald-400 font-bold">10 000 FCFA</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-400">{t.ayyadFee}</span>
-              <span className="text-amber-400 font-bold">500 FCFA</span>
-            </div>
-          </div>
-
-          <div className="text-[11px] text-gray-400 leading-relaxed">
-            {lang==="fr"
-              ? "✅ Votre don va intégralement à l'hôpital. Les 5% Ayyad sont intégrés dans l'objectif de collecte dès le départ."
-              : "✅ Your donation goes entirely to the hospital. The 5% Ayyad fee is built into the campaign goal from the start."}
-          </div>
-        </div>
-      </div>
-
-      {/* Section politique de remboursement */}
-      <div className="bg-white py-14 px-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-2xl text-2xl mb-4">🔄</div>
-            <h2 className="text-2xl font-black text-gray-900 mb-2">
-              {lang==="fr" ? "Politique de remboursement" : "Refund policy"}
-            </h2>
-            <p className="text-gray-500 text-sm max-w-lg mx-auto">
-              {lang==="fr"
-                ? "Ayyad s'engage à une transparence totale sur la gestion des fonds dans toutes les situations."
-                : "Ayyad is committed to full transparency on fund management in all situations."}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Cas 1 — Dossier rejeté */}
-            <div className="border border-gray-100 rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">❌</div>
-                <div className="font-bold text-gray-900 text-sm">
-                  {lang==="fr" ? "Dossier rejeté après des dons" : "Case rejected after donations"}
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 leading-relaxed mb-3">
-                {lang==="fr"
-                  ? "Si Ayyad rejette un dossier après réception de dons (documents falsifiés, fraude détectée, etc.), chaque donateur enregistré est contacté par email."
-                  : "If Ayyad rejects a case after receiving donations (falsified documents, fraud detected, etc.), each registered donor is contacted by email."}
-              </p>
-              <div className="bg-gray-50 rounded-xl p-3 space-y-2">
-                <div className="text-[11px] font-bold text-gray-600 uppercase tracking-wide mb-1">
-                  {lang==="fr" ? "Le donateur choisit :" : "The donor chooses:"}
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
-                  <span className="text-xs text-gray-600">
-                    {lang==="fr" ? "Remboursement intégral sur son mobile money" : "Full refund to their mobile money account"}
-                  </span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
-                  <span className="text-xs text-gray-600">
-                    {lang==="fr" ? "Redistribution aux cas urgents actifs" : "Redistribution to active urgent cases"}
-                  </span>
-                </div>
-                <div className="text-[10px] text-gray-400 mt-1 border-t border-gray-200 pt-2">
-                  {lang==="fr"
-                    ? "⏳ Sans réponse sous 14 jours → redistribution automatique aux cas urgents."
-                    : "⏳ No response within 14 days → automatic redistribution to urgent cases."}
-                </div>
-              </div>
-            </div>
-
-            {/* Cas 2 — Objectif non atteint */}
-            <div className="border border-gray-100 rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">⏳</div>
-                <div className="font-bold text-gray-900 text-sm">
-                  {lang==="fr" ? "Objectif non atteint en fin de collecte" : "Goal not reached at end of campaign"}
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 leading-relaxed mb-3">
-                {lang==="fr"
-                  ? "Si l'objectif n'est pas atteint à l'échéance, tous les donateurs ayant un compte sont notifiés et consultés."
-                  : "If the goal is not reached at deadline, all registered donors are notified and consulted."}
-              </p>
-              <div className="bg-gray-50 rounded-xl p-3 space-y-2">
-                <div className="text-[11px] font-bold text-gray-600 uppercase tracking-wide mb-1">
-                  {lang==="fr" ? "Notification envoyée avec choix :" : "Notification sent with choice:"}
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
-                  <span className="text-xs text-gray-600">
-                    {lang==="fr" ? "Remboursement intégral" : "Full refund"}
-                  </span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
-                  <span className="text-xs text-gray-600">
-                    {lang==="fr" ? "Don maintenu → redistribué aux cas urgents" : "Donation kept → redistributed to urgent cases"}
-                  </span>
-                </div>
-                <div className="text-[10px] text-gray-400 mt-1 border-t border-gray-200 pt-2">
-                  {lang==="fr"
-                    ? "⏳ Sans réponse sous 14 jours → redistribution automatique aux cas urgents."
-                    : "⏳ No response within 14 days → automatic redistribution to urgent cases."}
-                </div>
-              </div>
-            </div>
-
-            {/* Cas 3 — Surcollecte */}
-            <div className="border border-gray-100 rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🎉</div>
-                <div className="font-bold text-gray-900 text-sm">
-                  {lang==="fr" ? "Objectif dépassé (surcollecte)" : "Goal exceeded (surplus)"}
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 leading-relaxed mb-3">
-                {lang==="fr"
-                  ? "Si les dons dépassent l'objectif, le surplus est réparti automatiquement selon la règle Ayyad."
-                  : "If donations exceed the goal, the surplus is automatically distributed according to Ayyad's rule."}
-              </p>
-              <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">🏥 {lang==="fr" ? "Hôpital (objectif atteint)" : "Hospital (goal met)"}</span>
-                  <span className="font-bold text-emerald-600">100%</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">👤 {lang==="fr" ? "70% surplus → bénéficiaire" : "70% surplus → beneficiary"}</span>
-                  <span className="font-bold text-blue-600">70%</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">🚨 {lang==="fr" ? "25% surplus → cas urgents" : "25% surplus → urgent cases"}</span>
-                  <span className="font-bold text-purple-600">25%</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">⚙️ {lang==="fr" ? "5% surplus → Ayyad" : "5% surplus → Ayyad"}</span>
-                  <span className="font-bold text-amber-600">5%</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Cas 4 — Engagement transparence */}
-            <div className="border border-emerald-100 bg-emerald-50 rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🔒</div>
-                <div className="font-bold text-gray-900 text-sm">
-                  {lang==="fr" ? "Notre engagement" : "Our commitment"}
-                </div>
-              </div>
-              <div className="space-y-2">
-                {(lang==="fr" ? [
-                  "Chaque virement est documenté avec un reçu disponible publiquement",
-                  "Les donateurs enregistrés reçoivent un email de confirmation après chaque don",
-                  "Un rapport de transparence est publié trimestriellement",
-                  "Ayyad ne touche jamais à l'argent destiné à l'hôpital",
-                ] : [
-                  "Every transfer is documented with a publicly available receipt",
-                  "Registered donors receive a confirmation email after each donation",
-                  "A transparency report is published quarterly",
-                  "Ayyad never touches the money destined for the hospital",
-                ]).map((item, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <span className="text-emerald-500 text-xs mt-0.5 flex-shrink-0">✓</span>
-                    <span className="text-xs text-gray-700">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center mt-8">
-            <button
-              onClick={() => setPage("refund")}
-              className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold underline underline-offset-2">
-              {lang==="fr" ? "Lire la politique de remboursement complète →" : "Read the full refund policy →"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── Admin Page — Real Supabase data ───────────────────────────
-const AdminTeamList = ({ user, fr }) => {
-  const [admins, setAdmins] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [fetchErr, setFetchErr] = React.useState(null);
-  const [showAdd, setShowAdd] = React.useState(false);
-  const [newEmail, setNewEmail] = React.useState("");
-  const [newRole, setNewRole] = React.useState("operator");
-  const [adding, setAdding] = React.useState(false);
-  const [msg, setMsg] = React.useState("");
-
-  const ROLES = [
-    { value: "super_admin", label: "Super Admin",              color: "bg-purple-100 text-purple-700" },
-    { value: "admin",       label: fr ? "Admin" : "Admin",    color: "bg-indigo-100 text-indigo-700" },
-    { value: "finance",     label: "Finance",                  color: "bg-blue-100 text-blue-700"   },
-    { value: "operator",    label: fr ? "Opérateur":"Operator", color: "bg-green-100 text-green-700" },
-  ];
-
-  const getRoleStyle = (role) => ROLES.find(r => r.value === role)?.color || "bg-gray-100 text-gray-600";
-  const getRoleLabel = (role) => ROLES.find(r => r.value === role)?.label || (role || "—");
-
-  const fetchAdmins = React.useCallback(async () => {
-    setLoading(true);
-    setFetchErr(null);
-    try {
-      // Ne pas utiliser .order("created_at") — la colonne peut ne pas exister
-      const { data, error } = await supabase
-        .from("admin_users")
-        .select("id, email, role, is_active");
-      if (error) {
-        setFetchErr(error.message);
-      } else {
-        setAdmins(Array.isArray(data) ? data : []);
-      }
-    } catch (e) {
-      setFetchErr(String(e?.message || e));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => { fetchAdmins(); }, [fetchAdmins]);
-
-  const handleAdd = async () => {
-    if (!newEmail.includes("@")) return setMsg(fr ? "Email invalide" : "Invalid email");
-    setAdding(true);
-    setMsg("");
-    try {
-      const cleanEmail = newEmail.trim().toLowerCase();
-      // Chercher le full_name dans profiles, sinon utiliser le préfixe email
-      const { data: profileData } = await supabase.from("profiles").select("full_name").eq("email", cleanEmail).maybeSingle();
-      const fullName = profileData?.full_name || cleanEmail.split("@")[0];
-      const { error } = await supabase
-        .from("admin_users")
-        .insert({ email: cleanEmail, role: newRole, is_active: true, full_name: fullName });
-      if (error) {
-        setMsg(fr ? "Erreur : " + error.message : "Error: " + error.message);
-      } else {
-        setMsg(fr ? "Membre ajouté ✓" : "Member added ✓");
-        setNewEmail("");
-        setNewRole("operator");
-        setShowAdd(false);
-        fetchAdmins();
-      }
-    } catch(e) {
-      setMsg(String(e?.message || e));
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  const toggleActive = async (admin) => {
-    if (!admin?.id || admin?.email === user?.email) return;
-    try {
-      await supabase.from("admin_users").update({ is_active: !admin.is_active }).eq("id", admin.id);
-      fetchAdmins();
-    } catch(e) { console.warn("toggleActive error:", e); }
-  };
-
-  const changeRole = async (admin, role) => {
-    if (!admin?.id || admin?.email === user?.email) return;
-    try {
-      await supabase.from("admin_users").update({ role }).eq("id", admin.id);
-      fetchAdmins();
-    } catch(e) { console.warn("changeRole error:", e); }
-  };
-
-  if (loading) return (
-    <div className="text-center py-12 text-gray-400">
-      <div className="text-2xl mb-2">⏳</div>
-      <p className="text-sm">{fr ? "Chargement de l'équipe…" : "Loading team…"}</p>
-    </div>
-  );
-
-  if (fetchErr) return (
-    <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-sm text-red-700">
-      <p className="font-bold mb-1">⚠️ {fr ? "Erreur de chargement" : "Loading error"}</p>
-      <p className="text-xs font-mono">{fetchErr}</p>
-      <p className="mt-3 text-xs text-red-500">
-        {fr
-          ? "Vérifiez que la table admin_users a une politique RLS SELECT pour les admins."
-          : "Make sure the admin_users table has a SELECT RLS policy for admins."}
-      </p>
-      <button onClick={fetchAdmins} className="mt-3 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold">
-        {fr ? "Réessayer" : "Retry"}
-      </button>
-    </div>
-  );
-
-  return (
-    <div className="space-y-4">
-      {/* Formulaire ajout — super_admin uniquement */}
-      {user?.adminRole === "super_admin" && (
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-          <button
-            onClick={() => setShowAdd(!showAdd)}
-            className="text-sm font-semibold text-emerald-700 hover:underline"
-          >
-            {showAdd ? (fr ? "▲ Annuler" : "▲ Cancel") : (fr ? "▼ Ajouter un membre" : "▼ Add member")}
-          </button>
-          {showAdd && (
-            <div className="mt-3 flex flex-col sm:flex-row gap-3">
-              <input
-                type="email"
-                placeholder="Email"
-                value={newEmail}
-                onChange={e => setNewEmail(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              />
-              <select
-                value={newRole}
-                onChange={e => setNewRole(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              >
-                {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-              </select>
-              <button
-                onClick={handleAdd}
-                disabled={adding}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50"
-              >
-                {adding ? "…" : (fr ? "Ajouter" : "Add")}
-              </button>
-            </div>
-          )}
-          {msg && <p className="mt-2 text-sm text-emerald-600">{msg}</p>}
-        </div>
-      )}
-
-      {/* Message si aucun admin visible (RLS probable) */}
-      {admins.length === 0 && !fetchErr && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-800">
-          <p className="font-bold mb-1">ℹ️ {fr ? "Aucun membre visible" : "No members visible"}</p>
-          <p className="text-xs">
-            {fr
-              ? "La table admin_users est vide ou la politique RLS ne permet pas de lister tous les membres. Exécutez le SQL ci-dessous dans Supabase pour corriger :"
-              : "The admin_users table is empty or the RLS policy doesn't allow listing all members. Run the SQL below in Supabase to fix:"}
-          </p>
-          <pre className="mt-3 bg-amber-100 rounded-lg p-3 text-xs overflow-x-auto whitespace-pre-wrap">{`CREATE POLICY "admin_users_select_for_admins"
-ON admin_users FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 FROM admin_users a2
-    WHERE a2.email = auth.email() AND a2.is_active = true
-  )
-);`}</pre>
-        </div>
-      )}
-
-      {/* Liste des membres */}
-      {admins.map((admin, idx) => (
-        <div key={admin.id ?? idx} className={`flex items-center justify-between p-4 rounded-xl border ${admin.is_active !== false ? "bg-white border-gray-100" : "bg-gray-50 border-gray-200 opacity-60"}`}>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
-              {(admin.email?.[0] || "?").toUpperCase()}
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-800">{admin.email || "—"}</p>
-              <p className="text-xs text-gray-400">{admin.is_active !== false ? (fr ? "Actif" : "Active") : (fr ? "Désactivé" : "Disabled")}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {user?.adminRole === "super_admin" && admin.email !== user?.email ? (
-              <>
-                <select
-                  value={admin.role || "operator"}
-                  onChange={e => changeRole(admin, e.target.value)}
-                  className={`text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer ${getRoleStyle(admin.role)}`}
-                >
-                  {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                </select>
-                <button
-                  onClick={() => toggleActive(admin)}
-                  className={`text-xs px-3 py-1 rounded-full font-semibold ${admin.is_active !== false ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"}`}
-                >
-                  {admin.is_active !== false ? (fr ? "Désactiver" : "Disable") : (fr ? "Réactiver" : "Enable")}
-                </button>
-              </>
-            ) : (
-              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${getRoleStyle(admin.role)}`}>
-                {getRoleLabel(admin.role)}
-              </span>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// ── Error Boundary — capture les crashs React au lieu de page blanche ──
-class AdminErrorBoundary extends React.Component {
-  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
-  static getDerivedStateFromError(error) { return { hasError: true, error }; }
-  componentDidCatch(error, info) { console.error("AdminErrorBoundary caught:", error, info); }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-sm text-red-700 space-y-3">
-          <div className="font-black text-base">⚠️ Erreur d'affichage</div>
-          <div className="font-mono text-xs bg-red-100 rounded-lg p-3 break-all">
-            {this.state.error?.message || String(this.state.error)}
-          </div>
-          <button
-            onClick={() => this.setState({ hasError: false, error: null })}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold">
-            Réessayer
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
 }
 
 // ── Audit log helper ─────────────────────────────────────────
