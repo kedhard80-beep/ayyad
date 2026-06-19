@@ -2861,55 +2861,129 @@ const TestimonialsCarousel = ({ lang }) => {
 // ── Cas Urgents Page ──────────────────────────────────────────
 const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
   const urgents = getDisplayCases().filter(c => c.urgent || c.daysLeft <= 7);
+  const totalNeeded = urgents.reduce((s, c) => s + Math.max(0, c.required - c.collected), 0);
+  const fr = lang === "fr";
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-gradient-to-br from-red-700 to-red-500 text-white py-16 px-4 text-center">
-        <div className="text-5xl mb-4">🚨</div>
-        <h1 className="text-3xl font-black mb-3">{lang==="fr" ? "Cas urgents" : "Urgent cases"}</h1>
-        <p className="text-red-100 max-w-xl mx-auto">{lang==="fr" ? "Ces patients ont besoin d'aide immédiate. Chaque heure compte." : "These patients need immediate help. Every hour counts."}</p>
-        <div className="bg-red-800/40 rounded-2xl px-6 py-3 inline-block mt-4 text-sm font-semibold">
-          ⏱️ {lang==="fr" ? "Intervention critique sous 72h" : "Critical intervention within 72h"}
+    <div className="min-h-screen" style={{background:"#0f0f0f"}}>
+      {/* Hero dramatique */}
+      <div className="relative overflow-hidden" style={{background:"linear-gradient(135deg,#7f1d1d 0%,#991b1b 40%,#b91c1c 70%,#dc2626 100%)"}}>
+        <div className="absolute inset-0 opacity-10" style={{backgroundImage:"radial-gradient(circle at 20% 50%, #fff 0%, transparent 50%), radial-gradient(circle at 80% 20%, #fca5a5 0%, transparent 40%)"}} />
+        <div className="relative max-w-4xl mx-auto px-4 pt-10 pb-12">
+          <button onClick={() => setPage("home")} className="flex items-center gap-1.5 text-red-200 hover:text-white text-sm mb-8 transition-colors">
+            ← {fr ? "Retour à l'accueil" : "Back to home"}
+          </button>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-2xl animate-pulse">🚨</div>
+            <span className="bg-red-400/30 border border-red-300/30 text-red-100 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+              {fr ? "Intervention immédiate" : "Immediate action needed"}
+            </span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black text-white mb-3 leading-tight">
+            {fr ? "Cas urgents" : "Urgent cases"}
+          </h1>
+          <p className="text-red-200 text-lg max-w-xl mb-8">
+            {fr ? "Ces patients ont besoin d'aide maintenant. Chaque heure sans soins aggrave leur état." : "These patients need help now. Every hour without care worsens their condition."}
+          </p>
+          {/* Stats d'urgence */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { v: urgents.length, l: fr ? "Cas critiques" : "Critical cases", icon: "🚨" },
+              { v: fmt(totalNeeded), l: fr ? "FCFA encore nécessaires" : "FCFA still needed", icon: "💰" },
+              { v: "72h", l: fr ? "Délai d'intervention max" : "Max intervention time", icon: "⏱️" },
+            ].map(({ v, l, icon }) => (
+              <div key={l} className="bg-white/10 border border-white/10 rounded-2xl px-4 py-4 text-center backdrop-blur-sm">
+                <div className="text-xl mb-1">{icon}</div>
+                <div className="text-2xl font-black text-white">{v}</div>
+                <div className="text-red-200 text-xs mt-0.5">{l}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-      <div className="max-w-4xl mx-auto px-4 py-10 space-y-4">
+
+      {/* Liste des cas */}
+      <div className="max-w-4xl mx-auto px-4 py-10 space-y-5">
         {urgents.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <div className="text-4xl mb-3">✅</div>
-            <div>{lang==="fr" ? "Aucun cas urgent pour l'instant." : "No urgent cases right now."}</div>
+          <div className="text-center py-20">
+            <div className="w-20 h-20 bg-green-900/40 rounded-full flex items-center justify-center text-4xl mx-auto mb-5">✅</div>
+            <p className="text-gray-400 text-lg">{fr ? "Aucun cas urgent pour l'instant." : "No urgent cases right now."}</p>
           </div>
-        ) : urgents.map(c => (
-          <div key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); }}
-            className="bg-white rounded-2xl border-2 border-red-200 shadow-sm p-6 cursor-pointer hover:border-red-400 hover:shadow-md transition-all">
-            <div className="flex items-start gap-4">
-              <div className="text-4xl overflow-hidden">{c.image && (c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-full object-cover rounded-t-2xl" /> : c.image)}</div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">🚨 URGENT</span>
-                  {c.daysLeft <= 7 && <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">⏱️ {c.daysLeft}j restants</span>}
+        ) : urgents.map(c => {
+          const pct = Math.min(100, Math.round(c.collected / c.required * 100));
+          const manque = Math.max(0, c.required - c.collected);
+          return (
+            <div key={c.id}
+              onClick={() => { setSelectedCase(c); setPage("case"); }}
+              className="rounded-3xl overflow-hidden cursor-pointer group transition-all duration-300"
+              style={{background:"#1a1a1a", border:"1.5px solid #2a2a2a", boxShadow:"0 4px 32px rgba(0,0,0,0.4)"}}>
+              <div className="flex flex-col md:flex-row">
+                {/* Image / emoji */}
+                <div className="md:w-52 h-48 md:h-auto flex-shrink-0 relative overflow-hidden" style={{background:"linear-gradient(135deg,#1f0a0a,#3b0d0d)"}}>
+                  {c.image && c.image.startsWith("http")
+                    ? <img src={c.image} alt="" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
+                    : <div className="w-full h-full flex items-center justify-center text-7xl">{c.image || "🏥"}</div>
+                  }
+                  {/* Badge urgence en overlay */}
+                  <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-black px-2.5 py-1 rounded-full flex items-center gap-1 animate-pulse">
+                    🚨 URGENT
+                  </div>
+                  {c.daysLeft <= 7 && (
+                    <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-orange-300 text-xs font-bold px-2.5 py-1 rounded-full border border-orange-400/30">
+                      ⏱️ {c.daysLeft}j restants
+                    </div>
+                  )}
                 </div>
-                <h3 className="font-black text-gray-900">{c.title[lang]}</h3>
-                <p className="text-xs text-gray-400 mt-0.5">{c.hospital} · {c.city}</p>
-                <p className="text-sm text-gray-600 mt-2 line-clamp-2">{c.desc[lang]}</p>
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>{c.collected.toLocaleString()} FCFA</span>
-                    <span>{c.required.toLocaleString()} FCFA</span>
+
+                {/* Contenu */}
+                <div className="flex-1 p-6 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-xl font-black text-white mb-1 group-hover:text-red-400 transition-colors">{c.title[lang]}</h3>
+                    <p className="text-gray-500 text-sm mb-3">🏥 {c.hospital} · 📍 {c.city}</p>
+                    <p className="text-gray-400 text-sm leading-relaxed line-clamp-2">{c.desc[lang]}</p>
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-red-500 rounded-full" style={{width: Math.min(100, Math.round(c.collected/c.required*100))+"%"}} />
+
+                  {/* Barre de progression */}
+                  <div className="mt-5">
+                    <div className="flex justify-between text-xs mb-2">
+                      <span className="text-gray-400">{fr ? "Collecté" : "Raised"}</span>
+                      <span className="text-red-400 font-bold">{fr ? `Il manque ${fmt(manque)} FCFA` : `${fmt(manque)} FCFA needed`}</span>
+                    </div>
+                    <div className="h-2.5 rounded-full overflow-hidden" style={{background:"#2a2a2a"}}>
+                      <div className="h-full rounded-full transition-all duration-700"
+                        style={{width: pct+"%", background: pct >= 70 ? "linear-gradient(90deg,#16a34a,#22c55e)" : "linear-gradient(90deg,#dc2626,#ef4444)"}} />
+                    </div>
+                    <div className="flex justify-between mt-2">
+                      <span className="text-white font-bold text-sm">{fmt(c.collected)} FCFA</span>
+                      <span className="text-gray-500 text-xs">{fr ? "objectif" : "goal"} {fmt(c.required)}</span>
+                    </div>
                   </div>
-                  <div className="text-xs text-red-600 font-bold mt-1">{Math.min(100, Math.round(c.collected/c.required*100))}% {lang==="fr"?"collecté":"collected"}</div>
+                </div>
+
+                {/* CTA */}
+                <div className="flex md:flex-col items-center justify-between md:justify-center gap-3 p-5 md:pl-0 md:pr-6 border-t md:border-t-0 md:border-l border-white/5">
+                  <div className="text-center">
+                    <div className="text-2xl font-black text-white">{pct}%</div>
+                    <div className="text-gray-500 text-xs">{fr ? "financé" : "funded"}</div>
+                  </div>
+                  <button
+                    onClick={e => { e.stopPropagation(); setSelectedCase(c); setPage("case"); }}
+                    className="bg-red-600 hover:bg-red-500 text-white font-black px-5 py-3 rounded-2xl text-sm transition-all duration-200 group-hover:scale-105 whitespace-nowrap shadow-lg shadow-red-900/40">
+                    {fr ? "Aider →" : "Help →"}
+                  </button>
                 </div>
               </div>
-              <button className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex-shrink-0">
-                {lang==="fr" ? "Aider →" : "Help →"}
-              </button>
             </div>
+          );
+        })}
+
+        {urgents.length > 0 && (
+          <div className="text-center pt-4">
+            <button onClick={() => setPage("collectesactives")}
+              className="text-gray-500 hover:text-red-400 text-sm transition-colors">
+              {fr ? "Voir toutes les collectes →" : "See all campaigns →"}
+            </button>
           </div>
-        ))}
-        <div className="text-center mt-6">
-          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-red-600">← {lang==="fr"?"Retour à l'accueil":"Back to home"}</button>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -3067,44 +3141,125 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
     if (!groups[cat]) groups[cat] = { label: cat, cases: [] };
     groups[cat].cases.push(c);
   });
+  const fr = lang === "fr";
+  const totalDonors = active.reduce((s, c) => s + c.donors, 0);
+  const totalCollected = active.reduce((s, c) => s + c.collected, 0);
+  const urgentCount = active.filter(c => c.urgent).length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-gradient-to-br from-emerald-700 to-teal-600 text-white py-12 px-4">
-        <div className="max-w-5xl mx-auto">
-          <button onClick={() => setPage("home")} className="flex items-center gap-1 text-emerald-200 hover:text-white text-sm mb-6">← {lang==="fr" ? "Retour" : "Back"}</button>
-          <h1 className="text-3xl font-black mb-2">🏥 {lang==="fr" ? "Collectes actives" : "Active campaigns"}</h1>
-          <p className="text-emerald-100 text-sm">{active.length} {lang==="fr" ? "dossiers vérifiés — choisissez une spécialité" : "verified cases — choose a specialty"}</p>
-          <div className="flex gap-4 mt-6 flex-wrap">
-            {[[active.length+"", lang==="fr"?"Collectes":"Campaigns"],
-              [Object.keys(groups).length+"", lang==="fr"?"Spécialités":"Specialties"],
-              [active.reduce((s,c)=>s+c.donors,0)+"", lang==="fr"?"Donateurs":"Donors"]
-            ].map(([v,l]) => (
-              <div key={l} className="bg-white/10 rounded-xl px-4 py-2 text-center">
-                <div className="text-xl font-black">{v}</div>
-                <div className="text-emerald-200 text-xs">{l}</div>
+    <div className="min-h-screen" style={{background:"#f8fafb"}}>
+      {/* Hero premium */}
+      <div className="relative overflow-hidden" style={{background:"linear-gradient(135deg,#064e3b 0%,#065f46 45%,#047857 80%,#059669 100%)"}}>
+        <div className="absolute inset-0" style={{backgroundImage:"radial-gradient(ellipse at 70% -10%, rgba(167,243,208,0.15) 0%, transparent 60%), radial-gradient(ellipse at 0% 100%, rgba(6,78,59,0.8) 0%, transparent 50%)"}} />
+        {/* Grille décorative */}
+        <div className="absolute inset-0 opacity-5" style={{backgroundImage:"linear-gradient(rgba(255,255,255,.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.3) 1px, transparent 1px)", backgroundSize:"40px 40px"}} />
+        <div className="relative max-w-5xl mx-auto px-4 pt-10 pb-14">
+          <button onClick={() => setPage("home")} className="flex items-center gap-1.5 text-emerald-300 hover:text-white text-sm mb-8 transition-colors">
+            ← {fr ? "Retour à l'accueil" : "Back to home"}
+          </button>
+          <div className="flex items-center gap-3 mb-5">
+            <span className="bg-emerald-400/20 border border-emerald-400/30 text-emerald-200 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+              ✅ {fr ? "Dossiers médicaux vérifiés" : "Verified medical cases"}
+            </span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black text-white mb-3 leading-tight">
+            {fr ? "Collectes actives" : "Active campaigns"}
+          </h1>
+          <p className="text-emerald-200 text-lg max-w-xl mb-10">
+            {fr ? "Chaque dossier est vérifié par notre équipe médicale. Choisissez la spécialité pour laquelle vous souhaitez agir." : "Every case is verified by our medical team. Choose a specialty to make a difference."}
+          </p>
+          {/* Stats premium */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { v: active.length, l: fr ? "Collectes actives" : "Active campaigns", icon: "📋" },
+              { v: Object.keys(groups).length, l: fr ? "Spécialités" : "Specialties", icon: "🏥" },
+              { v: totalDonors, l: fr ? "Donateurs" : "Donors", icon: "🤝" },
+              { v: fmt(totalCollected), l: fr ? "FCFA collectés" : "FCFA raised", icon: "💚" },
+            ].map(({ v, l, icon }) => (
+              <div key={l} className="rounded-2xl px-4 py-4 text-center" style={{background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.1)", backdropFilter:"blur(8px)"}}>
+                <div className="text-xl mb-1">{icon}</div>
+                <div className="text-2xl font-black text-white">{v}</div>
+                <div className="text-emerald-300 text-xs mt-0.5">{l}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Grille des spécialités */}
-      <div className="max-w-5xl mx-auto px-4 py-10">
-        <h2 className="text-lg font-black text-gray-900 mb-6">{lang==="fr" ? "Choisissez une spécialité" : "Choose a specialty"}</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Object.values(groups).map(group => (
-            <button key={group.label}
-              onClick={() => { setSpecialite(group.label); setPage("specialite"); }}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-400 p-6 text-center transition-all group">
-              <div className="text-4xl mb-3">{CAT_ICONS[group.label] || "🏥"}</div>
-              <div className="font-bold text-gray-900 text-sm group-hover:text-emerald-700">{group.label}</div>
-              <div className="text-xs text-gray-400 mt-1">{group.cases.length} {lang==="fr" ? "collecte(s)" : "campaign(s)"}</div>
-              {group.cases.some(c => c.urgent) && (
-                <div className="mt-2 bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full inline-block">🚨 Urgent</div>
-              )}
+      {/* Bandeau urgence si nécessaire */}
+      {urgentCount > 0 && (
+        <div className="bg-red-600 text-white px-4 py-3">
+          <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <span className="animate-pulse">🚨</span>
+              {urgentCount} {fr ? "cas urgent(s) nécessite(nt) une aide immédiate" : `urgent case(s) need immediate help`}
+            </div>
+            <button onClick={() => setPage("urgents")} className="bg-white text-red-600 font-black text-xs px-4 py-1.5 rounded-full hover:bg-red-50 transition-colors flex-shrink-0">
+              {fr ? "Voir →" : "View →"}
             </button>
-          ))}
+          </div>
+        </div>
+      )}
+
+      {/* Grille des spécialités */}
+      <div className="max-w-5xl mx-auto px-4 py-12">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-black text-gray-900">{fr ? "Choisissez une spécialité" : "Choose a specialty"}</h2>
+            <p className="text-gray-500 text-sm mt-1">{fr ? "Sélectionnez la cause qui vous tient à coeur" : "Select the cause that matters to you"}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Object.values(groups).map(group => {
+            const hasUrgent = group.cases.some(c => c.urgent);
+            const pctTotal = group.cases.length > 0
+              ? Math.round(group.cases.reduce((s,c) => s + Math.min(100, c.required > 0 ? c.collected/c.required*100 : 0), 0) / group.cases.length)
+              : 0;
+            return (
+              <button key={group.label}
+                onClick={() => { setSpecialite(group.label); setPage("specialite"); }}
+                className="group relative rounded-3xl overflow-hidden text-left transition-all duration-300 hover:-translate-y-1"
+                style={{background:"#fff", border:"1.5px solid #e5e7eb", boxShadow:"0 2px 16px rgba(0,0,0,0.06)"}}>
+                {/* Fond couleur en haut */}
+                <div className="h-28 flex items-center justify-center relative"
+                  style={{background:"linear-gradient(135deg, #ecfdf5, #d1fae5)"}}>
+                  <span className="text-5xl group-hover:scale-110 transition-transform duration-300">{CAT_ICONS[group.label] || "🏥"}</span>
+                  {hasUrgent && (
+                    <div className="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                      🚨 {fr ? "Urgent" : "Urgent"}
+                    </div>
+                  )}
+                </div>
+                <div className="p-4">
+                  <div className="font-black text-gray-900 text-sm group-hover:text-emerald-700 transition-colors mb-1">{group.label}</div>
+                  <div className="text-xs text-gray-400 mb-3">{group.cases.length} {fr ? "dossier(s)" : "case(s)"}</div>
+                  {/* Barre de progression moyenne */}
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{background:"#e5e7eb"}}>
+                    <div className="h-full rounded-full transition-all duration-500"
+                      style={{width: pctTotal+"%", background:"linear-gradient(90deg,#059669,#34d399)"}} />
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-[11px] text-gray-400">{pctTotal}% {fr ? "moy." : "avg."}</span>
+                    <span className="text-emerald-600 text-xs font-bold group-hover:translate-x-0.5 transition-transform">→</span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* CTA bas de page */}
+        <div className="mt-14 rounded-3xl overflow-hidden" style={{background:"linear-gradient(135deg,#064e3b,#065f46)", boxShadow:"0 8px 40px rgba(6,78,59,0.3)"}}>
+          <div className="px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="text-center md:text-left">
+              <h3 className="text-2xl font-black text-white mb-2">{fr ? "Vous avez besoin d'aide ?" : "Do you need help?"}</h3>
+              <p className="text-emerald-300 text-sm">{fr ? "Soumettez votre dossier médical — notre équipe l'examine sous 48h." : "Submit your medical case — our team reviews it within 48h."}</p>
+            </div>
+            <button onClick={() => setPage("how")}
+              className="bg-white text-emerald-700 font-black px-7 py-3.5 rounded-2xl hover:bg-emerald-50 transition-colors text-sm whitespace-nowrap shadow-md">
+              {fr ? "Comment ça marche →" : "How it works →"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -6064,6 +6219,466 @@ ${sheets.join("\n")}
     </div>
   );
 };
+
+// ── How Page ──────────────────────────────────────────────────
+const HowPage = ({ lang, setPage }) => {
+  const t = T[lang].howPage;
+  const fr = lang === "fr";
+  return (
+    <div className="min-h-screen" style={{background:"#f8fafb"}}>
+      {/* Hero premium */}
+      <div className="relative overflow-hidden" style={{background:"linear-gradient(135deg,#0f4c35 0%,#064e3b 50%,#065f46 100%)"}}>
+        <div className="absolute inset-0" style={{backgroundImage:"radial-gradient(ellipse at 80% 0%, rgba(167,243,208,0.12) 0%, transparent 60%)"}}>
+        </div>
+        <div className="absolute inset-0 opacity-5" style={{backgroundImage:"linear-gradient(rgba(255,255,255,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.4) 1px, transparent 1px)", backgroundSize:"48px 48px"}} />
+        <div className="relative max-w-5xl mx-auto px-4 pt-10 pb-16 text-center">
+          <button onClick={() => setPage("home")} className="flex items-center gap-1.5 text-emerald-300 hover:text-white text-sm mb-8 mx-auto transition-colors">
+            ← {fr ? "Retour à l'accueil" : "Back to home"}
+          </button>
+          <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 text-sm font-semibold" style={{background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.15)"}}>
+            <span>💚</span>
+            <span className="text-emerald-200">{fr ? "Plateforme médicale vérifiée · Côte d'Ivoire" : "Verified medical platform · Côte d'Ivoire"}</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black text-white mb-4 leading-tight">{t.title}</h1>
+          <p className="text-emerald-200 text-lg max-w-xl mx-auto mb-10">{t.sub}</p>
+          {/* Badges de confiance */}
+          <div className="flex flex-wrap justify-center gap-3">
+            {[
+              { icon: "🏥", label: fr ? "Versement direct hôpital" : "Direct hospital payment" },
+              { icon: "🔍", label: fr ? "Vérification 48h" : "48h verification" },
+              { icon: "🔒", label: fr ? "Données chiffrées" : "Encrypted data" },
+              { icon: "📊", label: fr ? "Rapport trimestriel" : "Quarterly report" },
+            ].map(({ icon, label }) => (
+              <div key={label} className="flex items-center gap-2 rounded-full px-4 py-2 text-xs text-emerald-100 font-semibold" style={{background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.12)"}}>
+                <span>{icon}</span>{label}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Section double flux : donateurs & bénéficiaires */}
+      <div className="max-w-5xl mx-auto px-4 py-14">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+          {/* Colonne donateurs */}
+          <div>
+            <div className="flex items-center gap-3 mb-7">
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl" style={{background:"linear-gradient(135deg,#d1fae5,#a7f3d0)"}}>💚</div>
+              <div>
+                <h2 className="text-xl font-black text-gray-900">{t.forDonors.title}</h2>
+                <p className="text-gray-400 text-sm">{fr ? "Comment faire un don" : "How to donate"}</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {t.forDonors.steps.map((step, i) => (
+                <div key={i} className="flex gap-4 items-start">
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black text-white" style={{background:"linear-gradient(135deg,#059669,#34d399)"}}>
+                      {i+1}
+                    </div>
+                    {i < t.forDonors.steps.length - 1 && <div className="w-0.5 h-6 mt-1" style={{background:"linear-gradient(180deg,#34d399,transparent)"}} />}
+                  </div>
+                  <div className="flex-1 pb-2">
+                    <div className="rounded-2xl p-4" style={{background:"#fff", border:"1px solid #e5e7eb", boxShadow:"0 1px 8px rgba(0,0,0,0.05)"}}>
+                      <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-7">
+              <button onClick={() => setPage("collectesactives")}
+                className="w-full font-bold py-3.5 rounded-2xl text-sm transition-all text-white shadow-md"
+                style={{background:"linear-gradient(135deg,#059669,#047857)"}}>
+                {fr ? "Voir les collectes actives →" : "See active campaigns →"}
+              </button>
+            </div>
+          </div>
+
+          {/* Colonne bénéficiaires */}
+          <div>
+            <div className="flex items-center gap-3 mb-7">
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl" style={{background:"linear-gradient(135deg,#dbeafe,#bfdbfe)"}}>🏥</div>
+              <div>
+                <h2 className="text-xl font-black text-gray-900">{t.forBenef.title}</h2>
+                <p className="text-gray-400 text-sm">{fr ? "Comment soumettre votre dossier" : "How to submit your case"}</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {t.forBenef.steps.map((step, i) => (
+                <div key={i} className="flex gap-4 items-start">
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black text-white" style={{background:"linear-gradient(135deg,#2563eb,#60a5fa)"}}>
+                      {i+1}
+                    </div>
+                    {i < t.forBenef.steps.length - 1 && <div className="w-0.5 h-6 mt-1" style={{background:"linear-gradient(180deg,#60a5fa,transparent)"}} />}
+                  </div>
+                  <div className="flex-1 pb-2">
+                    <div className="rounded-2xl p-4" style={{background:"#fff", border:"1px solid #e5e7eb", boxShadow:"0 1px 8px rgba(0,0,0,0.05)"}}>
+                      <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-7">
+              <button onClick={() => setPage("submit")}
+                className="w-full font-bold py-3.5 rounded-2xl text-sm transition-all text-white shadow-md"
+                style={{background:"linear-gradient(135deg,#2563eb,#1d4ed8)"}}>
+                {fr ? "Soumettre un dossier →" : "Submit a case →"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Section garanties premium */}
+      <div style={{background:"linear-gradient(135deg,#0f172a,#1e293b)"}}>
+        <div className="max-w-5xl mx-auto px-4 py-16">
+          <div className="text-center mb-12">
+            <span className="inline-block bg-emerald-500/20 text-emerald-300 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-widest mb-4 border border-emerald-500/20">
+              {fr ? "Ce qui nous différencie" : "What sets us apart"}
+            </span>
+            <h2 className="text-3xl font-black text-white mb-3">{fr ? "Les garanties Ayyad" : "Ayyad guarantees"}</h2>
+            <p className="text-gray-400 max-w-md mx-auto text-sm">{fr ? "Chaque engagement est vérifiable et documenté publiquement." : "Every commitment is verifiable and publicly documented."}</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {[
+              {icon:"🏥", color:"#10b981", bg:"rgba(16,185,129,0.1)", border:"rgba(16,185,129,0.2)", title:fr?"Versement direct à l'hôpital":"Direct payment to hospital", desc:fr?"Les fonds ne passent jamais par le patient. Chaque virement est traçable en temps réel.":"Funds never go through the patient. Every transfer is traceable in real time."},
+              {icon:"🔍", color:"#3b82f6", bg:"rgba(59,130,246,0.1)", border:"rgba(59,130,246,0.2)", title:fr?"Vérification sous 48h":"Verification within 48h", desc:fr?"Notre équipe contacte directement l'hôpital partenaire pour valider chaque dossier médical.":"Our team contacts the partner hospital directly to validate each medical case."},
+              {icon:"🔒", color:"#8b5cf6", bg:"rgba(139,92,246,0.1)", border:"rgba(139,92,246,0.2)", title:fr?"Données chiffrées AES-256":"AES-256 encrypted data", desc:fr?"Vos documents médicaux sont chiffrés et accessibles uniquement à l'équipe de vérification.":"Your medical documents are encrypted and accessible only to the verification team."},
+            ].map((g) => (
+              <div key={g.title} className="rounded-3xl p-6 transition-all hover:-translate-y-0.5" style={{background:g.bg, border:`1.5px solid ${g.border}`}}>
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mb-5" style={{background:`${g.bg}`, border:`1px solid ${g.border}`}}>{g.icon}</div>
+                <h3 className="font-black text-white text-base mb-3">{g.title}</h3>
+                <p className="text-sm leading-relaxed" style={{color:"#94a3b8"}}>{g.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Section frais — visuel premium */}
+      <div className="py-16 px-4" style={{background:"#f1f5f9"}}>
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-black text-gray-900 mb-3">{t.feeTitle}</h2>
+            <p className="text-gray-500 max-w-md mx-auto text-sm">{t.feeSub}</p>
+          </div>
+          <div className="rounded-3xl overflow-hidden" style={{background:"#1e293b", boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+            {/* Header */}
+            <div className="px-8 py-6 text-center" style={{background:"linear-gradient(135deg,#064e3b,#065f46)"}}>
+              <div className="text-gray-300 text-sm mb-1">{t.youGive}</div>
+              <div className="text-5xl font-black text-white mb-1">10 000 FCFA</div>
+              <div className="text-emerald-300 text-sm">{fr ? "va entièrement à l'hôpital" : "goes entirely to the hospital"}</div>
+            </div>
+            {/* Corps */}
+            <div className="px-8 py-6 space-y-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">🏥</span>
+                  <span className="text-gray-300 text-sm">{t.collectReceives}</span>
+                </div>
+                <span className="text-emerald-400 font-black text-xl">10 000 FCFA</span>
+              </div>
+              <div className="border-t" style={{borderColor:"rgba(255,255,255,0.06)"}} />
+              <div className="rounded-2xl p-4 space-y-3" style={{background:"rgba(255,255,255,0.04)"}}>
+                <div className="text-gray-500 text-xs uppercase tracking-widest font-bold mb-2">{fr ? "Décomposition de l'objectif affiché" : "Campaign goal breakdown"}</div>
+                {[
+                  { label: fr ? "Objectif affiché (devis × 1.05)" : "Displayed goal (quote × 1.05)", val: "10 500 FCFA", color: "#e2e8f0" },
+                  { label: fr ? "dont devis hôpital" : "of which hospital quote", val: "10 000 FCFA", color: "#34d399" },
+                  { label: t.ayyadFee, val: "500 FCFA", color: "#fbbf24" },
+                ].map(({ label, val, color }) => (
+                  <div key={label} className="flex justify-between items-center">
+                    <span className="text-gray-400 text-xs">{label}</span>
+                    <span className="font-bold text-sm" style={{color}}>{val}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-start gap-2 rounded-xl p-3" style={{background:"rgba(52,211,153,0.08)"}}>
+                <span className="text-emerald-400 text-sm">✅</span>
+                <p className="text-gray-400 text-xs leading-relaxed">
+                  {fr ? "Votre don va intégralement à l'hôpital. Les 5% Ayyad sont intégrés dans l'objectif de collecte dès le départ — vous ne payez rien de plus." : "Your donation goes entirely to the hospital. The 5% Ayyad fee is built into the campaign goal from the start — you pay nothing extra."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Politique de remboursement */}
+      <div className="py-16 px-4 bg-white">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-3xl text-3xl mb-5" style={{background:"linear-gradient(135deg,#eff6ff,#dbeafe)"}}>🔄</div>
+            <h2 className="text-3xl font-black text-gray-900 mb-3">{fr ? "Politique de remboursement" : "Refund policy"}</h2>
+            <p className="text-gray-500 text-sm max-w-lg mx-auto">{fr ? "Ayyad s'engage à une transparence totale sur la gestion des fonds dans toutes les situations." : "Ayyad is committed to full transparency on fund management in all situations."}</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { icon:"❌", bg:"#fff1f2", border:"#fecdd3", title: fr?"Dossier rejeté après des dons":"Case rejected after donations", desc: fr?"Si Ayyad rejette un dossier après réception de dons (documents falsifiés, fraude détectée), chaque donateur est contacté.":"If Ayyad rejects a case after receiving donations (fraud, falsified documents), each donor is contacted.", choices: fr?["Remboursement intégral sur mobile money","Redistribution aux cas urgents actifs"]:["Full refund to mobile money","Redistribution to active urgent cases"], note: fr?"⏳ Sans réponse 14 jours → redistribution automatique.":"⏳ No response 14 days → automatic redistribution." },
+              { icon:"⏳", bg:"#fffbeb", border:"#fde68a", title: fr?"Objectif non atteint":"Goal not reached", desc: fr?"Si l'objectif n'est pas atteint à l'échéance, tous les donateurs sont notifiés et peuvent choisir.":"If the goal isn't reached at deadline, all donors are notified and can choose.", choices: fr?["Remboursement intégral","Don redistribué aux cas urgents"]:["Full refund","Donation redistributed to urgent cases"], note: fr?"⏳ Sans réponse 14 jours → redistribution automatique.":"⏳ No response 14 days → automatic redistribution." },
+              { icon:"🎉", bg:"#f5f3ff", border:"#ddd6fe", title: fr?"Objectif dépassé (surcollecte)":"Goal exceeded (surplus)", desc: fr?"Le surplus est réparti selon la règle Ayyad.":"The surplus is distributed according to Ayyad's rule.", breakdown: [["🏥 " + (fr?"Hôpital":"Hospital"), "100%", "#10b981"], ["👤 " + (fr?"70% surplus → bénéficiaire":"70% surplus → beneficiary"), "70%", "#3b82f6"], ["🚨 " + (fr?"25% → cas urgents":"25% → urgent cases"), "25%", "#8b5cf6"], ["⚙️ " + (fr?"5% → Ayyad":"5% → Ayyad"), "5%", "#f59e0b"]] },
+              { icon:"🔒", bg:"#f0fdf4", border:"#bbf7d0", isCommit: true, title: fr?"Notre engagement":"Our commitment", items: fr?["Chaque virement documenté avec reçu public","Email de confirmation après chaque don","Rapport de transparence trimestriel","Ayyad ne touche jamais l'argent destiné à l'hôpital"]:["Every transfer documented with public receipt","Confirmation email after each donation","Quarterly transparency report","Ayyad never touches money destined for the hospital"] },
+            ].map((item) => (
+              <div key={item.title} className="rounded-3xl p-6" style={{background: item.bg, border:`1.5px solid ${item.border}`}}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:"rgba(255,255,255,0.7)"}}>{item.icon}</div>
+                  <div className="font-black text-gray-900 text-sm leading-tight">{item.title}</div>
+                </div>
+                {item.desc && <p className="text-xs text-gray-500 leading-relaxed mb-3">{item.desc}</p>}
+                {item.choices && (
+                  <div className="space-y-1.5 mb-3">
+                    {item.choices.map((c, i) => <div key={i} className="flex items-start gap-2 text-xs text-gray-700"><span className="text-emerald-500 mt-0.5">✓</span>{c}</div>)}
+                  </div>
+                )}
+                {item.breakdown && (
+                  <div className="space-y-2">
+                    {item.breakdown.map(([label, val, color]) => (
+                      <div key={label} className="flex justify-between text-xs">
+                        <span className="text-gray-500">{label}</span>
+                        <span className="font-bold" style={{color}}>{val}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {item.isCommit && item.items && (
+                  <div className="space-y-2">
+                    {item.items.map((s, i) => <div key={i} className="flex items-start gap-2 text-xs text-gray-700"><span className="text-emerald-500 mt-0.5 flex-shrink-0">✓</span>{s}</div>)}
+                  </div>
+                )}
+                {item.note && <div className="text-[10px] text-gray-400 mt-3 pt-3" style={{borderTop:"1px solid rgba(0,0,0,0.06)"}}>{item.note}</div>}
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-8">
+            <button onClick={() => setPage("refund")} className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold underline underline-offset-2">
+              {fr ? "Lire la politique de remboursement complète →" : "Read the full refund policy →"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+// ── Admin Page — Real Supabase data ───────────────────────────
+const AdminTeamList = ({ user, fr }) => {
+  const [admins, setAdmins] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [fetchErr, setFetchErr] = React.useState(null);
+  const [showAdd, setShowAdd] = React.useState(false);
+  const [newEmail, setNewEmail] = React.useState("");
+  const [newRole, setNewRole] = React.useState("operator");
+  const [adding, setAdding] = React.useState(false);
+  const [msg, setMsg] = React.useState("");
+
+  const ROLES = [
+    { value: "super_admin", label: "Super Admin",              color: "bg-purple-100 text-purple-700" },
+    { value: "admin",       label: fr ? "Admin" : "Admin",    color: "bg-indigo-100 text-indigo-700" },
+    { value: "finance",     label: "Finance",                  color: "bg-blue-100 text-blue-700"   },
+    { value: "operator",    label: fr ? "Opérateur":"Operator", color: "bg-green-100 text-green-700" },
+  ];
+
+  const getRoleStyle = (role) => ROLES.find(r => r.value === role)?.color || "bg-gray-100 text-gray-600";
+  const getRoleLabel = (role) => ROLES.find(r => r.value === role)?.label || (role || "—");
+
+  const fetchAdmins = React.useCallback(async () => {
+    setLoading(true);
+    setFetchErr(null);
+    try {
+      // Ne pas utiliser .order("created_at") — la colonne peut ne pas exister
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("id, email, role, is_active");
+      if (error) {
+        setFetchErr(error.message);
+      } else {
+        setAdmins(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      setFetchErr(String(e?.message || e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => { fetchAdmins(); }, [fetchAdmins]);
+
+  const handleAdd = async () => {
+    if (!newEmail.includes("@")) return setMsg(fr ? "Email invalide" : "Invalid email");
+    setAdding(true);
+    setMsg("");
+    try {
+      const cleanEmail = newEmail.trim().toLowerCase();
+      // Chercher le full_name dans profiles, sinon utiliser le préfixe email
+      const { data: profileData } = await supabase.from("profiles").select("full_name").eq("email", cleanEmail).maybeSingle();
+      const fullName = profileData?.full_name || cleanEmail.split("@")[0];
+      const { error } = await supabase
+        .from("admin_users")
+        .insert({ email: cleanEmail, role: newRole, is_active: true, full_name: fullName });
+      if (error) {
+        setMsg(fr ? "Erreur : " + error.message : "Error: " + error.message);
+      } else {
+        setMsg(fr ? "Membre ajouté ✓" : "Member added ✓");
+        setNewEmail("");
+        setNewRole("operator");
+        setShowAdd(false);
+        fetchAdmins();
+      }
+    } catch(e) {
+      setMsg(String(e?.message || e));
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const toggleActive = async (admin) => {
+    if (!admin?.id || admin?.email === user?.email) return;
+    try {
+      await supabase.from("admin_users").update({ is_active: !admin.is_active }).eq("id", admin.id);
+      fetchAdmins();
+    } catch(e) { console.warn("toggleActive error:", e); }
+  };
+
+  const changeRole = async (admin, role) => {
+    if (!admin?.id || admin?.email === user?.email) return;
+    try {
+      await supabase.from("admin_users").update({ role }).eq("id", admin.id);
+      fetchAdmins();
+    } catch(e) { console.warn("changeRole error:", e); }
+  };
+
+  if (loading) return (
+    <div className="text-center py-12 text-gray-400">
+      <div className="text-2xl mb-2">⏳</div>
+      <p className="text-sm">{fr ? "Chargement de l'équipe…" : "Loading team…"}</p>
+    </div>
+  );
+
+  if (fetchErr) return (
+    <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-sm text-red-700">
+      <p className="font-bold mb-1">⚠️ {fr ? "Erreur de chargement" : "Loading error"}</p>
+      <p className="text-xs font-mono">{fetchErr}</p>
+      <p className="mt-3 text-xs text-red-500">
+        {fr
+          ? "Vérifiez que la table admin_users a une politique RLS SELECT pour les admins."
+          : "Make sure the admin_users table has a SELECT RLS policy for admins."}
+      </p>
+      <button onClick={fetchAdmins} className="mt-3 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold">
+        {fr ? "Réessayer" : "Retry"}
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Formulaire ajout — super_admin uniquement */}
+      {user?.adminRole === "super_admin" && (
+        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+          <button
+            onClick={() => setShowAdd(!showAdd)}
+            className="text-sm font-semibold text-emerald-700 hover:underline"
+          >
+            {showAdd ? (fr ? "▲ Annuler" : "▲ Cancel") : (fr ? "▼ Ajouter un membre" : "▼ Add member")}
+          </button>
+          {showAdd && (
+            <div className="mt-3 flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                placeholder="Email"
+                value={newEmail}
+                onChange={e => setNewEmail(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              />
+              <select
+                value={newRole}
+                onChange={e => setNewRole(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              >
+                {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
+              <button
+                onClick={handleAdd}
+                disabled={adding}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {adding ? "…" : (fr ? "Ajouter" : "Add")}
+              </button>
+            </div>
+          )}
+          {msg && <p className="mt-2 text-sm text-emerald-600">{msg}</p>}
+        </div>
+      )}
+
+      {/* Message si aucun admin visible (RLS probable) */}
+      {admins.length === 0 && !fetchErr && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-800">
+          <p className="font-bold mb-1">ℹ️ {fr ? "Aucun membre visible" : "No members visible"}</p>
+          <p className="text-xs">
+            {fr
+              ? "La table admin_users est vide ou la politique RLS ne permet pas de lister tous les membres. Exécutez le SQL ci-dessous dans Supabase pour corriger :"
+              : "The admin_users table is empty or the RLS policy doesn't allow listing all members. Run the SQL below in Supabase to fix:"}
+          </p>
+          <pre className="mt-3 bg-amber-100 rounded-lg p-3 text-xs overflow-x-auto whitespace-pre-wrap">{`CREATE POLICY "admin_users_select_for_admins"
+ON admin_users FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM admin_users a2
+    WHERE a2.email = auth.email() AND a2.is_active = true
+  )
+);`}</pre>
+        </div>
+      )}
+
+      {/* Liste des membres */}
+      {admins.map((admin, idx) => (
+        <div key={admin.id ?? idx} className={`flex items-center justify-between p-4 rounded-xl border ${admin.is_active !== false ? "bg-white border-gray-100" : "bg-gray-50 border-gray-200 opacity-60"}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
+              {(admin.email?.[0] || "?").toUpperCase()}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-800">{admin.email || "—"}</p>
+              <p className="text-xs text-gray-400">{admin.is_active !== false ? (fr ? "Actif" : "Active") : (fr ? "Désactivé" : "Disabled")}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {user?.adminRole === "super_admin" && admin.email !== user?.email ? (
+                            <>>
+                            <select
+                              value={admin.role || "operator"}
+                              onChange={e => changeRole(admin, e.target.value)}
+                              className={`text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer ${getRoleStyle(admin.role)}`}
+                            >
+                              {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                            </select>                        <button
+                          onClick={() => toggleActive(admin)}
+                          className={`text-xs px-3 py-1 rounded-full font-semibold ${admin.is_active !== false ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"}`}
+                        >
+                          {admin.is_active !== false ? (fr ? "Désactiver" : "Disable") : (fr ? "Réactiver" : "Enable")}
+                        </button>
+                        </>
+                      ) : (
+                        <span className={`text-xs font-semibold px-3 py-1 rounded-full ${getRoleStyle(admin.role)}`}>
+                          {getRoleLabel(admin.role)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 const AdminPage = ({ user, setPage, lang }) => {
   const [tab, setTab] = useState("overview");
