@@ -7897,6 +7897,310 @@ const HospitauxPage = ({ setPage, lang }) => {
   );
 };
 
+// ── How Page ────────────────────────────────────────────────
+const HowPage = ({ lang, setPage }) => {
+  const t = T[lang].howPage;
+  return (
+    <div>
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-emerald-800 to-teal-700 text-white py-16 text-center px-4">
+        <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 mb-5 text-sm font-medium">
+          <span>💚</span> {lang==="fr" ? "Plateforme médicale vérifiée" : "Verified medical platform"}
+        </div>
+        <h1 className="text-4xl font-black mb-4">{t.title}</h1>
+        <p className="text-emerald-200 max-w-xl mx-auto">{t.sub}</p>
+      </div>
+
+      {/* Pour les donateurs */}
+      <div className="max-w-5xl mx-auto px-4 py-14">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl">💚</div>
+          <div>
+            <h2 className="text-2xl font-black text-gray-900">{t.forDonors.title}</h2>
+            <p className="text-gray-500 text-sm">{lang==="fr" ? "Comment faire un don sur Ayyad" : "How to donate on Ayyad"}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+          {t.forDonors.steps.map((step, i) => (
+            <div key={i} className="relative">
+              <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow h-full">
+                <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm font-black mb-3">{i+1}</div>
+                <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
+              </div>
+              {i < t.forDonors.steps.length-1 && <div className="hidden sm:block absolute top-6 -right-2 text-gray-300 text-lg z-10">→</div>}
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 text-center">
+          <button onClick={() => setPage("collectes")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-xl shadow-md transition-colors">
+            {lang==="fr" ? "Voir les collectes →" : "See campaigns →"}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-gray-50 border-y border-gray-100">
+        {/* Pour les bénéficiaires */}
+        <div className="max-w-5xl mx-auto px-4 py-14">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-xl">🏥</div>
+            <div>
+              <h2 className="text-2xl font-black text-gray-900">{t.forBenef.title}</h2>
+              <p className="text-gray-500 text-sm">{lang==="fr" ? "Comment soumettre votre dossier médical" : "How to submit your medical case"}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            {t.forBenef.steps.map((step, i) => (
+              <div key={i} className="relative">
+                <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow h-full">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-black mb-3">{i+1}</div>
+                  <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
+                </div>
+                {i < t.forBenef.steps.length-1 && <div className="hidden sm:block absolute top-6 -right-2 text-gray-300 text-lg z-10">→</div>}
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 text-center">
+            <button onClick={() => setPage("submit")} className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-xl shadow-md transition-colors">
+              {lang==="fr" ? "Soumettre un dossier →" : "Submit a case →"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Garanties */}
+      <div className="max-w-5xl mx-auto px-4 py-14">
+        <h2 className="text-2xl font-black text-gray-900 text-center mb-2">{lang==="fr" ? "Les garanties Ayyad" : "Ayyad guarantees"}</h2>
+        <p className="text-gray-500 text-center text-sm mb-10">{lang==="fr" ? "Ce qui nous différencie des autres plateformes" : "What sets us apart from other platforms"}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          {[
+            {icon:"🏥", title:lang==="fr"?"Versement direct à l'hôpital":"Direct payment to hospital", desc:lang==="fr"?"Les fonds ne passent jamais par le patient. Chaque virement est traçable.":"Funds never go through the patient. Every transfer is traceable."},
+            {icon:"🔍", title:lang==="fr"?"Vérification sous 48h":"Verification within 48h", desc:lang==="fr"?"Notre équipe contacte l'hôpital partenaire pour valider chaque dossier.":"Our team contacts the partner hospital to validate each case."},
+            {icon:"🔒", title:lang==="fr"?"Données chiffrées AES-256":"AES-256 encrypted data", desc:lang==="fr"?"Tous vos documents médicaux sont chiffrés et stockés en sécurité.":"All your medical documents are encrypted and stored securely."},
+          ].map((g,i) => (
+            <div key={i} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm text-center hover:shadow-md transition-shadow">
+              <div className="text-4xl mb-4">{g.icon}</div>
+              <h3 className="font-bold text-gray-900 mb-2">{g.title}</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">{g.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Fee section */}
+      <div className="bg-gray-900 py-14 px-4 text-white text-center">
+        <h2 className="text-2xl font-black mb-3">{t.feeTitle}</h2>
+        <p className="text-gray-300 mb-8 max-w-lg mx-auto text-sm">{t.feeSub}</p>
+        <div className="bg-white/10 rounded-2xl p-6 text-sm max-w-sm mx-auto border border-white/20 space-y-4">
+
+          {/* Donateur */}
+          <div>
+            <div className="text-gray-400 mb-1 text-xs uppercase tracking-wider">{t.youGive}</div>
+            <div className="text-3xl font-black">10 000 FCFA</div>
+          </div>
+
+          <div className="border-t border-white/20"/>
+
+          {/* Hôpital reçoit */}
+          <div className="flex justify-between items-center">
+            <span className="text-emerald-400 font-bold text-sm">🏥 {t.collectReceives}</span>
+            <span className="font-black text-xl text-emerald-400">10 000 FCFA</span>
+          </div>
+
+          <div className="border-t border-white/10"/>
+
+          {/* Explication objectif */}
+          <div className="bg-white/5 rounded-xl p-3 text-left space-y-1.5">
+            <div className="text-[11px] text-gray-300 font-semibold uppercase tracking-wide mb-2">
+              {lang==="fr" ? "Comment ça fonctionne ?" : "How does it work?"}
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">{lang==="fr" ? "Objectif affiché (devis × 1.05)" : "Displayed goal (quote × 1.05)"}</span>
+              <span className="text-white font-bold">10 500 FCFA</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">{lang==="fr" ? "dont devis hôpital" : "of which hospital quote"}</span>
+              <span className="text-emerald-400 font-bold">10 000 FCFA</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">{t.ayyadFee}</span>
+              <span className="text-amber-400 font-bold">500 FCFA</span>
+            </div>
+          </div>
+
+          <div className="text-[11px] text-gray-400 leading-relaxed">
+            {lang==="fr"
+              ? "✅ Votre don va intégralement à l'hôpital. Les 5% Ayyad sont intégrés dans l'objectif de collecte dès le départ."
+              : "✅ Your donation goes entirely to the hospital. The 5% Ayyad fee is built into the campaign goal from the start."}
+          </div>
+        </div>
+      </div>
+
+      {/* Section politique de remboursement */}
+      <div className="bg-white py-14 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-2xl text-2xl mb-4">🔄</div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2">
+              {lang==="fr" ? "Politique de remboursement" : "Refund policy"}
+            </h2>
+            <p className="text-gray-500 text-sm max-w-lg mx-auto">
+              {lang==="fr"
+                ? "Ayyad s'engage à une transparence totale sur la gestion des fonds dans toutes les situations."
+                : "Ayyad is committed to full transparency on fund management in all situations."}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Cas 1 — Dossier rejeté */}
+            <div className="border border-gray-100 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">❌</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Dossier rejeté après des dons" : "Case rejected after donations"}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                {lang==="fr"
+                  ? "Si Ayyad rejette un dossier après réception de dons (documents falsifiés, fraude détectée, etc.), chaque donateur enregistré est contacté par email."
+                  : "If Ayyad rejects a case after receiving donations (falsified documents, fraud detected, etc.), each registered donor is contacted by email."}
+              </p>
+              <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                <div className="text-[11px] font-bold text-gray-600 uppercase tracking-wide mb-1">
+                  {lang==="fr" ? "Le donateur choisit :" : "The donor chooses:"}
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Remboursement intégral sur son mobile money" : "Full refund to their mobile money account"}
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Redistribution aux cas urgents actifs" : "Redistribution to active urgent cases"}
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-400 mt-1 border-t border-gray-200 pt-2">
+                  {lang==="fr"
+                    ? "⏳ Sans réponse sous 14 jours → redistribution automatique aux cas urgents."
+                    : "⏳ No response within 14 days → automatic redistribution to urgent cases."}
+                </div>
+              </div>
+            </div>
+
+            {/* Cas 2 — Objectif non atteint */}
+            <div className="border border-gray-100 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">⏳</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Objectif non atteint en fin de collecte" : "Goal not reached at end of campaign"}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                {lang==="fr"
+                  ? "Si l'objectif n'est pas atteint à l'échéance, tous les donateurs ayant un compte sont notifiés et consultés."
+                  : "If the goal is not reached at deadline, all registered donors are notified and consulted."}
+              </p>
+              <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                <div className="text-[11px] font-bold text-gray-600 uppercase tracking-wide mb-1">
+                  {lang==="fr" ? "Notification envoyée avec choix :" : "Notification sent with choice:"}
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Remboursement intégral" : "Full refund"}
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Don maintenu → redistribué aux cas urgents" : "Donation kept → redistributed to urgent cases"}
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-400 mt-1 border-t border-gray-200 pt-2">
+                  {lang==="fr"
+                    ? "⏳ Sans réponse sous 14 jours → redistribution automatique aux cas urgents."
+                    : "⏳ No response within 14 days → automatic redistribution to urgent cases."}
+                </div>
+              </div>
+            </div>
+
+            {/* Cas 3 — Surcollecte */}
+            <div className="border border-gray-100 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🎉</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Objectif dépassé (surcollecte)" : "Goal exceeded (surplus)"}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                {lang==="fr"
+                  ? "Si les dons dépassent l'objectif, le surplus est réparti automatiquement selon la règle Ayyad."
+                  : "If donations exceed the goal, the surplus is automatically distributed according to Ayyad's rule."}
+              </p>
+              <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">🏥 {lang==="fr" ? "Hôpital (objectif atteint)" : "Hospital (goal met)"}</span>
+                  <span className="font-bold text-emerald-600">100%</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">👤 {lang==="fr" ? "70% surplus → bénéficiaire" : "70% surplus → beneficiary"}</span>
+                  <span className="font-bold text-blue-600">70%</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">🚨 {lang==="fr" ? "25% surplus → cas urgents" : "25% surplus → urgent cases"}</span>
+                  <span className="font-bold text-purple-600">25%</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">⚙️ {lang==="fr" ? "5% surplus → Ayyad" : "5% surplus → Ayyad"}</span>
+                  <span className="font-bold text-amber-600">5%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Cas 4 — Engagement transparence */}
+            <div className="border border-emerald-100 bg-emerald-50 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🔒</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Notre engagement" : "Our commitment"}
+                </div>
+              </div>
+              <div className="space-y-2">
+                {(lang==="fr" ? [
+                  "Chaque virement est documenté avec un reçu disponible publiquement",
+                  "Les donateurs enregistrés reçoivent un email de confirmation après chaque don",
+                  "Un rapport de transparence est publié trimestriellement",
+                  "Ayyad ne touche jamais à l'argent destiné à l'hôpital",
+                ] : [
+                  "Every transfer is documented with a publicly available receipt",
+                  "Registered donors receive a confirmation email after each donation",
+                  "A transparency report is published quarterly",
+                  "Ayyad never touches the money destined for the hospital",
+                ]).map((item, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-emerald-500 text-xs mt-0.5 flex-shrink-0">✓</span>
+                    <span className="text-xs text-gray-700">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-8">
+            <button
+              onClick={() => setPage("refund")}
+              className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold underline underline-offset-2">
+              {lang==="fr" ? "Lire la politique de remboursement complète →" : "Read the full refund policy →"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 // ── Refund Policy Page ────────────────────────────────────────
 const RefundPage = ({ setPage, lang }) => {
   const fr = lang === "fr";
