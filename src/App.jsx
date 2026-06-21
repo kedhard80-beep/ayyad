@@ -9982,7 +9982,7 @@ export default function AyyadApp() {
   // Initialiser la page depuis l'URL pour survivre aux rafraîchissements
   const [page, setPage] = useState(() => {
     const p = new URLSearchParams(window.location.search).get("p");
-    const valid = ["home","admin","login","collectes","profile","register","case","track","change-password","urgents","specialite"];
+    const valid = ["home","admin","login","collectes","collectesactives","profile","register","case","track","change-password","urgents","specialite","how","refund","legal","impact","bceao","hopitaux","monimpact","submit","tracking","changepassword","faq","politique-admission","dunya-return","support-ayyad"];
     return (p && valid.includes(p)) ? p : "home";
   });
   // ── IMPORTANT: declare all state BEFORE any useEffect that references them ──
