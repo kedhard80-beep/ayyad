@@ -6065,6 +6065,2926 @@ ${sheets.join("\n")}
   );
 };
 
+
+// ── Auth & Submit Pages (LoginPage, RegisterPage, PolitiqueAdmissionPage, SubmitPage) ──
+const LoginPage = ({ setPage, setUser, lang, trackVisit }) => {
+  const [email, setEmail] = useState("");
+  const [pwd, setPwd] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const t = T[lang].login;
+
+  const handleLogin = async () => {
+    const emailClean = email.trim().toLowerCase();
+    if (!emailClean || !pwd) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
+      setError(lang === "fr" ? "Adresse email invalide." : "Invalid email address.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    let timedOut = false;
+
+    // Minuteur de sécurité : reset automatique après 10s si Supabase ne répond pas
+    const safetyTimer = setTimeout(() => {
+      timedOut = true;
+      setLoading(false);
+      setError(lang === "fr"
+        ? "Connexion impossible. Vérifiez votre réseau ou désactivez les extensions de navigation."
+        : "Connection failed. Check your network or disable browser extensions.");
+    }, 10000);
+    try {
+      const { data, error: err } = await supabase.auth.signInWithPassword({ email: emailClean, password: pwd });
+      if (timedOut) return; // la réponse est arrivée trop tard, ignorer
+      if (err) {
+        setError(t.error);
+        return;
+      }
+      const meta = data.user?.user_metadata || {};
+      const { data: adminData } = await supabase.from("admin_users").select("role, is_active").eq("email", emailClean).maybeSingle();
+      if (timedOut) return;
+      const isAdmin = !!(adminData && adminData.is_active);
+      const adminRole = adminData?.role || null;
+      const userName = meta.full_name || email;
+      setUser({ id: data.user.id, name: userName, email, isAdmin, adminRole });
+      if (trackVisit) trackVisit(data.user.id, email, userName);
+      setPage(isAdmin ? "admin" : "home");
+    } catch(e) {
+      if (!timedOut) setError("Erreur de connexion. Veuillez réessayer.");
+    } finally {
+      clearTimeout(safetyTimer);
+      if (!timedOut) setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center px-4 py-16">
+      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-md p-8">
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <svg width="64" height="64" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
+              <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" stroke-width="2.5"/>
+              <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
+              <rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/>
+              <path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/>
+            </svg>
+          </div>
+          <h1 className="text-2xl font-black text-gray-900">{t.title}</h1>
+          <p className="text-gray-500 text-sm mt-1">{t.sub}</p>
+        </div>
+        {error && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600 text-center mb-4">{error}</div>}
+        <div className="space-y-4 mb-6">
+          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.email}</label><input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="vous@exemple.ci" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
+          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.password}</label><input value={pwd} onChange={e=>setPwd(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} type="password" placeholder="••••••••" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
+        </div>
+        <button onClick={handleLogin} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold py-3.5 rounded-xl shadow-md text-sm">
+          {loading ? "..." : t.btn}
+        </button>
+        <div className="text-center mt-5"><span className="text-sm text-gray-500">{t.noAccount} </span><button onClick={() => setPage("register")} className="text-sm text-emerald-600 font-bold hover:underline">{t.register}</button></div>
+      </div>
+    </div>
+  );
+};
+
+// ── Register Page ─────────────────────────────────────────────
+const RegisterPage = ({ setPage, setUser, lang }) => {
+  const [step, setStep] = useState(1);
+  const [role, setRole] = useState("");
+  const [form, setForm] = useState({name:"",email:"",phone:"",password:""});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const t = T[lang].register;
+
+  const handleSubmit = async () => {
+    const emailClean = form.email.trim().toLowerCase();
+    if (!form.name.trim()) {
+      setError(lang === "fr" ? "Veuillez entrer votre nom." : "Please enter your name.");
+      return;
+    }
+    if (!emailClean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
+      setError(lang === "fr" ? "Adresse email invalide." : "Invalid email address.");
+      return;
+    }
+    // Validation téléphone (optionnel mais format CI si renseigné)
+    if (form.phone.trim()) {
+      const phoneClean = form.phone.trim().replace(/\s/g, "");
+      const ciLocal = /^(01|03|05|07|08|09|27)\d{8}$/.test(phoneClean);
+      const ciIntl  = /^\+225(01|03|05|07|08|09|27)\d{8}$/.test(phoneClean);
+      if (!ciLocal && !ciIntl) {
+        setError(lang === "fr"
+          ? "Numéro invalide. Format attendu : 07 XX XX XX XX ou +225 07 XX XX XX XX"
+          : "Invalid number. Expected format: 07 XX XX XX XX or +225 07 XX XX XX XX");
+        return;
+      }
+    }
+    // Validation mot de passe
+    if (form.password.length < 8) {
+      setError(lang === "fr" ? "Le mot de passe doit contenir au moins 8 caractères." : "Password must be at least 8 characters.");
+      return;
+    }
+    if (!/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password)) {
+      setError(lang === "fr" ? "Le mot de passe doit contenir au moins une lettre et un chiffre." : "Password must contain at least one letter and one number.");
+      return;
+    }
+    if (!acceptedTerms) {
+      setError(lang === "fr" ? "Veuillez accepter les conditions d'utilisation." : "Please accept the terms of use.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    // Ne jamais stocker le role dans les métadonnées — géré uniquement via admin_users
+    const { data, error: err } = await supabase.auth.signUp({
+      email: emailClean,
+      password: form.password,
+      options: { data: { full_name: form.name.trim(), phone: form.phone.trim() } }
+    });
+    if (err) { setError(t.error); setLoading(false); return; }
+    setUser({ id: data.user?.id, name: form.name.trim()||emailClean, email: emailClean, isAdmin: false });
+    setPage("home");
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center px-4 py-16">
+      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-md p-8">
+        <div className="text-center mb-6">
+          <div className="flex justify-center mb-4">
+            <svg width="56" height="56" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
+              <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" stroke-width="2.5"/>
+              <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
+              <rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/>
+              <path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/>
+            </svg>
+          </div>
+          <h1 className="text-2xl font-black text-gray-900">{t.title}</h1>
+          <div className="flex justify-center gap-2 mt-3">{[1,2].map(s=><div key={s} className={`w-10 h-1.5 rounded-full transition-colors ${step>=s?"bg-emerald-500":"bg-gray-200"}`}/>)}</div>
+        </div>
+        {step===1&&<div className="space-y-4">
+          <p className="text-sm text-gray-600 text-center font-medium">{t.roleQ}</p>
+          <div className="grid grid-cols-2 gap-3">{t.roles.map(r=><button key={r.id} onClick={()=>setRole(r.id)} className={`p-5 rounded-2xl border-2 text-left transition-all ${role===r.id?"border-emerald-500 bg-emerald-50 shadow-md":"border-gray-200 hover:border-emerald-300"}`}><div className="text-3xl mb-2">{r.icon}</div><div className="font-bold text-sm text-gray-900">{r.title}</div><div className="text-xs text-gray-500 mt-0.5">{r.desc}</div></button>)}</div>
+          <button onClick={()=>role&&setStep(2)} disabled={!role} className="w-full bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">{t.continue}</button>
+          <div className="text-center"><span className="text-sm text-gray-500">{t.hasAccount} </span><button onClick={()=>setPage("login")} className="text-sm text-emerald-600 font-bold hover:underline">{t.signin}</button></div>
+        </div>}
+        {step===2&&<div className="space-y-4">
+          {error&&<div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600 text-center">{error}</div>}
+          {t.fields.map(f=>(
+            <div key={f.key}>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{f.label}</label>
+              <input
+                value={form[f.key]}
+                onChange={e => {
+                  let val = e.target.value;
+                  // Téléphone : n'autoriser que chiffres, +, espaces
+                  if (f.key === "phone") val = val.replace(/[^0-9+\s]/g, "").slice(0, 16);
+                  // Mot de passe : indicateur de force visuel via bordure
+                  setForm({...form, [f.key]: val});
+                }}
+                type={f.type}
+                placeholder={f.p}
+                inputMode={f.key === "phone" ? "tel" : undefined}
+                className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${
+                  f.key === "password" && form.password.length > 0
+                    ? form.password.length >= 8 && /[A-Za-z]/.test(form.password) && /[0-9]/.test(form.password)
+                      ? "border-emerald-400"
+                      : "border-amber-400"
+                    : "border-gray-200"
+                }`}
+              />
+              {/* Indicateur force mot de passe */}
+              {f.key === "password" && form.password.length > 0 && (
+                <div className="mt-1.5 space-y-1">
+                  <div className="flex gap-1">
+                    {[8, 10, 12].map((min, i) => (
+                      <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${
+                        form.password.length >= min && /[A-Za-z]/.test(form.password) && /[0-9]/.test(form.password)
+                          ? ["bg-red-400","bg-amber-400","bg-emerald-500"][i]
+                          : "bg-gray-200"
+                      }`} />
+                    ))}
+                  </div>
+                  <p className={`text-[10px] ${
+                    form.password.length >= 8 && /[A-Za-z]/.test(form.password) && /[0-9]/.test(form.password)
+                      ? "text-emerald-600" : "text-amber-600"
+                  }`}>
+                    {lang === "fr"
+                      ? form.password.length < 8 ? "Min. 8 caractères" : !/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password) ? "Ajoutez une lettre et un chiffre" : "✓ Mot de passe valide"
+                      : form.password.length < 8 ? "Min. 8 characters" : !/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password) ? "Add a letter and a number" : "✓ Valid password"
+                    }
+                  </p>
+                </div>
+              )}
+              {/* Hint téléphone */}
+              {f.key === "phone" && (
+                <p className="text-[10px] text-gray-400 mt-1">
+                  {lang === "fr" ? "Format CI : 07 XX XX XX XX ou +225 07 XX XX XX XX" : "CI format: 07 XX XX XX XX or +225 07 XX XX XX XX"}
+                </p>
+              )}
+            </div>
+          ))}
+          <div className="flex items-start gap-2 text-xs text-gray-500">
+            <input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} className="mt-0.5 accent-emerald-600 cursor-pointer" />
+            <span onClick={()=>setAcceptedTerms(v=>!v)} className="cursor-pointer">{t.terms} <a href="https://ayyadci.com/cgu" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.termsLink}</a> {t.and} <a href="https://ayyadci.com/confidentialite" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.privacyLink}</a>.</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={()=>setStep(1)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{t.back}</button>
+            <button onClick={handleSubmit} disabled={loading||!acceptedTerms} className="bg-emerald-600 disabled:bg-emerald-400 text-white font-bold py-3 rounded-xl text-sm shadow-md">{loading?"...":t.btn}</button>
+          </div>
+        </div>}
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ── PolitiqueAdmissionPage — politique officielle de refus des dossiers ─────
+//    déjà lancés sur d'autres canaux de collecte (Facebook, TikTok, etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+const PolitiqueAdmissionPage = ({ setPage, lang }) => {
+  const fr = lang === "fr";
+  return (
+    <div style={{ background:"var(--paper)", minHeight:"100vh" }}>
+      {/* Header */}
+      <div style={{
+        background:"linear-gradient(135deg, var(--ayyad-deep) 0%, var(--ayyad-emerald) 60%, var(--ayyad-teal) 100%)",
+        color:"#fff",
+        padding:"clamp(40px, 6vw, 72px) 0 clamp(48px, 7vw, 88px)",
+        position:"relative", overflow:"hidden",
+      }}>
+        {/* Pattern doré décoratif */}
+        <div style={{
+          position:"absolute", inset:0, opacity:0.06, pointerEvents:"none",
+          backgroundImage:"radial-gradient(rgba(201,168,76,1) 1.5px, transparent 1.5px)",
+          backgroundSize:"28px 28px",
+        }} />
+        <div className="ayyad-container" style={{ position:"relative", zIndex:2 }}>
+          <button onClick={()=>setPage("home")} style={{ background:"transparent", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.78)", fontSize:13, marginBottom:18 }}>
+            ← {fr ? "Retour à l'accueil" : "Back to home"}
+          </button>
+          <span className="ayyad-eyebrow" style={{ color:"#e9d59a", background:"rgba(201,168,76,0.10)", borderColor:"rgba(201,168,76,0.40)" }}>
+            {fr ? "Politique officielle" : "Official policy"}
+          </span>
+          <h1 className="ayyad-h-display" style={{ color:"#fff", fontSize:"clamp(1.8rem, 4vw, 3rem)", marginTop:18, marginBottom:14 }}>
+            {fr ? <>Notre politique <em style={{ color:"#e9d59a" }}>d'admission des dossiers.</em></> : <>Our <em style={{ color:"#e9d59a" }}>case admission policy.</em></>}
+          </h1>
+          <p style={{ color:"rgba(255,255,255,0.85)", fontSize:16, lineHeight:1.65, maxWidth:720 }}>
+            {fr
+              ? "Pourquoi Ayyad refuse les dossiers déjà lancés sur les réseaux sociaux, et comment soumettre un dossier valide."
+              : "Why Ayyad refuses cases already launched on social media, and how to submit a valid case."}
+          </p>
+        </div>
+      </div>
+
+      {/* Contenu */}
+      <div className="ayyad-container" style={{ padding:"clamp(40px, 5vw, 64px) 0 clamp(56px, 7vw, 96px)", maxWidth:880 }}>
+
+        {/* Règle principale — encart fort */}
+        <div style={{
+          background:"linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%)",
+          border:"2px solid rgba(245,158,11,0.30)",
+          borderRadius:20, padding:"clamp(20px, 3vw, 32px)",
+          marginBottom:32,
+        }}>
+          <div style={{ display:"flex", alignItems:"flex-start", gap:16 }}>
+            <div style={{ fontSize:32, flexShrink:0 }}>⚠️</div>
+            <div>
+              <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.3rem, 2.4vw, 1.7rem)", marginBottom:10 }}>
+                {fr ? "La règle Ayyad" : "The Ayyad rule"}
+              </h2>
+              <p style={{ color:"var(--ink-700)", fontSize:15, lineHeight:1.7 }}>
+                {fr
+                  ? <><strong>Ayyad n'accepte pas les dossiers patients qui ont déjà été lancés publiquement sur d'autres canaux de collecte</strong> (Facebook, TikTok, Instagram, WhatsApp, GoFundMe, M-Pesa, dons en cash entre particuliers, etc.).</>
+                  : <><strong>Ayyad does not accept patient cases that have already been publicly launched on other fundraising channels</strong> (Facebook, TikTok, Instagram, WhatsApp, GoFundMe, M-Pesa, cash donations between individuals, etc.).</>}
+              </p>
+              <p style={{ color:"var(--ink-500)", fontSize:14, lineHeight:1.65, marginTop:12, fontStyle:"italic" }}>
+                {fr
+                  ? "Cette règle n'est pas une rigidité administrative. Elle est le fondement même de la confiance que nous construisons avec nos donateurs, et la garantie que nous offrons à chaque patient pris en charge."
+                  : "This rule is not administrative rigidity. It is the very foundation of the trust we build with our donors, and the guarantee we offer to every patient we take on."}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 4 raisons */}
+        <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.4rem, 2.6vw, 1.9rem)", marginBottom:8 }}>
+          {fr ? "Pourquoi cette règle existe" : "Why this rule exists"}
+        </h2>
+        <div style={{ width:48, height:3, background:"var(--grad-gold)", borderRadius:999, marginBottom:32 }} />
+
+        <div style={{ display:"flex", flexDirection:"column", gap:20, marginBottom:48 }}>
+          {[
+            {
+              num: "1",
+              icon: "🔍",
+              title: fr ? "Transparence financière vis-à-vis des donateurs" : "Financial transparency for donors",
+              body: fr
+                ? "Lorsqu'un donateur contribue sur Ayyad, il doit pouvoir vérifier précisément combien a déjà été collecté et combien il reste à réunir pour atteindre l'objectif médical. Si des fonds parviennent en parallèle par d'autres canaux non traçables, notre jauge ne reflète plus la réalité et nous induirions involontairement nos donateurs en erreur. Cela trahirait le principe même de notre plateforme."
+                : "When a donor contributes via Ayyad, they must be able to verify exactly how much has been collected and how much remains to reach the medical goal. If funds arrive in parallel through other untraceable channels, our progress gauge no longer reflects reality and we would unintentionally mislead our donors. This would betray the very principle of our platform.",
+            },
+            {
+              num: "2",
+              icon: "🏥",
+              title: fr ? "Garantie d'un versement direct à l'hôpital" : "Guarantee of direct hospital payment",
+              body: fr
+                ? "Ayyad s'engage publiquement à verser 100% des dons collectés directement à l'établissement de santé qui prend en charge le patient — jamais en espèces, jamais sur un compte personnel. Cette promesse ne peut être tenue que si Ayyad est le seul canal de collecte actif sur le dossier. Dans le cas contraire, il devient impossible de tracer l'intégralité des fonds et de garantir qu'ils sont effectivement utilisés pour les soins."
+                : "Ayyad publicly commits to transferring 100% of collected donations directly to the healthcare facility caring for the patient — never in cash, never to a personal account. This promise can only be kept if Ayyad is the only active fundraising channel for the case. Otherwise, it becomes impossible to track all the funds and guarantee they are actually used for care.",
+            },
+            {
+              num: "3",
+              icon: "🛡️",
+              title: fr ? "Protection du patient et de sa famille" : "Patient and family protection",
+              body: fr
+                ? "Une collecte mixte sur plusieurs canaux expose la famille à des questions complexes en cas de surcollecte, à des soupçons injustifiés, et parfois à des tensions familiales ou communautaires. En cantonnant chaque dossier à un seul canal officiel et vérifié, nous protégeons la dignité du patient et la sérénité de ses proches."
+                : "A mixed fundraising effort across multiple channels exposes the family to complex questions in case of over-collection, to unjustified suspicion, and sometimes to family or community tensions. By confining each case to a single official and verified channel, we protect the patient's dignity and the peace of mind of their loved ones.",
+            },
+            {
+              num: "4",
+              icon: "🌱",
+              title: fr ? "Intégrité de la plateforme et des autres bénéficiaires" : "Platform integrity and other beneficiaries",
+              body: fr
+                ? "Chaque dossier publié sur Ayyad est vérifié sous 48 heures avec l'hôpital partenaire. Accepter des dossiers déjà mélangés à d'autres collectes affaiblirait la valeur de cette vérification pour l'ensemble des patients vraiment dépendants d'Ayyad pour leurs soins."
+                : "Every case published on Ayyad is verified within 48 hours with the partner hospital. Accepting cases already mixed with other fundraising would weaken the value of this verification for all patients truly dependent on Ayyad for their care.",
+            },
+          ].map(reason => (
+            <div key={reason.num} className="ayyad-card" style={{ padding:"clamp(20px, 3vw, 28px)", display:"flex", gap:18 }}>
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", flexShrink:0 }}>
+                <div style={{
+                  width:44, height:44, borderRadius:12,
+                  background:"linear-gradient(135deg, var(--ayyad-deep), var(--ayyad-emerald))",
+                  color:"#fff", fontFamily:"var(--font-serif)", fontWeight:800, fontSize:18,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  marginBottom:8,
+                }}>{reason.num}</div>
+                <div style={{ fontSize:24 }}>{reason.icon}</div>
+              </div>
+              <div style={{ minWidth:0 }}>
+                <h3 className="ayyad-h-display" style={{ fontSize:"clamp(1rem, 2vw, 1.2rem)", marginBottom:8 }}>
+                  {reason.title}
+                </h3>
+                <p style={{ color:"var(--ink-700)", fontSize:14.5, lineHeight:1.7 }}>
+                  {reason.body}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Quels dossiers Ayyad accepte */}
+        <div style={{
+          background:"linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)",
+          border:"1px solid rgba(16,185,129,0.30)",
+          borderRadius:20, padding:"clamp(24px, 4vw, 36px)",
+          marginBottom:32,
+        }}>
+          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.3rem, 2.4vw, 1.7rem)", marginBottom:18, color:"var(--ayyad-deep)" }}>
+            ✅ {fr ? "Quels dossiers Ayyad accepte" : "Which cases Ayyad accepts"}
+          </h2>
+          <ul style={{ paddingLeft:0, listStyle:"none", display:"flex", flexDirection:"column", gap:14 }}>
+            {[
+              fr ? "Les dossiers patients dont la demande de financement médical n'a pas encore été lancée publiquement" : "Patient cases whose medical funding request has not yet been publicly launched",
+              fr ? "Les dossiers dont les autres canaux de collecte ont été officiellement fermés, avec un justificatif des montants déjà collectés et un objectif Ayyad ajusté au solde restant à couvrir" : "Cases whose other fundraising channels have been officially closed, with proof of amounts already collected and an Ayyad goal adjusted to the remaining balance to cover",
+              fr ? "Les dossiers soumis directement à Ayyad dès le départ, sans communication préalable sur les réseaux sociaux" : "Cases submitted directly to Ayyad from the start, without prior communication on social media",
+            ].map((item, i) => (
+              <li key={i} style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                <span style={{ color:"var(--ayyad-emerald)", fontWeight:900, fontSize:18, flexShrink:0, lineHeight:1.4 }}>✓</span>
+                <span style={{ color:"var(--ink-800)", fontSize:14.5, lineHeight:1.65 }}>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Comment soumettre */}
+        <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.4rem, 2.6vw, 1.9rem)", marginBottom:8 }}>
+          {fr ? "Comment soumettre un dossier" : "How to submit a case"}
+        </h2>
+        <div style={{ width:48, height:3, background:"var(--grad-gold)", borderRadius:999, marginBottom:24 }} />
+        <p style={{ color:"var(--ink-700)", fontSize:15.5, lineHeight:1.75, marginBottom:24 }}>
+          {fr
+            ? "Toute demande passe par notre formulaire officiel. Notre équipe vérifie le dossier sous 48 heures en collaboration avec un hôpital partenaire, puis met la collecte en ligne avec un objectif financier basé sur le devis médical réel."
+            : "All requests go through our official form. Our team verifies the case within 48 hours in collaboration with a partner hospital, then puts the campaign online with a financial goal based on the actual medical quote."}
+        </p>
+        <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginBottom:48 }}>
+          <button onClick={() => setPage("submit")} className="ayyad-btn-primary" style={{ fontSize:14, padding:"13px 26px" }}>
+            📋 {fr ? "Soumettre un dossier" : "Submit a case"} →
+          </button>
+          <button onClick={() => setPage("how")} style={{
+            background:"transparent",
+            border:"1.5px solid rgba(13,92,46,0.22)",
+            color:"var(--ayyad-deep)",
+            fontWeight:700, fontSize:14,
+            padding:"13px 26px", borderRadius:9999, cursor:"pointer",
+          }}>
+            {fr ? "Comment ça marche" : "How it works"}
+          </button>
+        </div>
+
+        {/* Conclusion / engagement */}
+        <div style={{
+          background:"linear-gradient(135deg, #0a3d2e 0%, #0d5c2e 100%)",
+          color:"#fff",
+          borderRadius:20, padding:"clamp(24px, 4vw, 36px)",
+          textAlign:"center",
+        }}>
+          <p style={{ fontFamily:"var(--font-serif)", fontStyle:"italic", fontSize:"clamp(1.05rem, 2vw, 1.25rem)", lineHeight:1.6, marginBottom:16 }}>
+            {fr
+              ? "Notre engagement reste constant : financer des soins, pas alimenter des collectes parallèles. Cette discipline est ce qui fait d'Ayyad une plateforme dans laquelle les donateurs peuvent investir leur générosité en confiance, et les patients trouver un accompagnement médical sécurisé et digne."
+              : "Our commitment remains constant: to fund care, not to feed parallel fundraising. This discipline is what makes Ayyad a platform in which donors can invest their generosity with confidence, and patients find secure and dignified medical support."}
+          </p>
+          <p style={{ fontSize:13, color:"rgba(255,255,255,0.75)" }}>
+            {fr ? "Pour toute question :" : "For any question:"} <a href="mailto:contact@ayyadci.com" style={{ color:"#e9d59a", textDecoration:"none", fontWeight:700 }}>contact@ayyadci.com</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Submit Page ───────────────────────────────────────────────
+const SubmitPage = ({ setPage, user, lang }) => {
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({
+    title:"", description:"", hospital:"", city:"", amount:"",
+    category:"", categoryOther:"", beneficiary_phone:"", videoUrl:""
+  });
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState(null);
+  const [fileStates, setFileStates] = useState({medical:"idle",quote:"idle",id:"idle",consent:"idle"});
+  const [fileUrls, setFileUrls] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const t = T[lang].submit;
+  const allUploaded = Object.values(fileStates).every(s => s==="done");
+
+  // ID de session unique : permet d'organiser les fichiers par dossier dans le storage
+  const [sessionId] = useState(() => {
+    const uid = user?.id || "anon";
+    const ts = Date.now();
+    const rand = Math.random().toString(36).slice(2,7);
+    return `${uid}_${ts}_${rand}`;
+  });
+
+  const handlePhotoSelect = (file) => {
+    if (!file) return;
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = e => setPhotoPreview(e.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  // Photo de la collecte → bucket PUBLIC (case-photos), affichée à tous les visiteurs
+  const handlePhotoUpload = async () => {
+    if (!photoFile) return null;
+    setPhotoUploading(true);
+    const fileName = `dossiers/${sessionId}/photo_${Date.now()}_${sanitizeFileName(photoFile.name)}`;
+    const { error } = await supabase.storage.from(BUCKET_PUBLIC).upload(fileName, photoFile);
+    if (error) {
+      setPhotoUploading(false);
+      console.warn("[photo upload] échec:", error);
+      return null;
+    }
+    const { data: urlData } = supabase.storage.from(BUCKET_PUBLIC).getPublicUrl(fileName);
+    setPhotoUrl(urlData.publicUrl);
+    setPhotoUploading(false);
+    return urlData.publicUrl;
+  };
+
+  // Documents sensibles (medical, quote, id, consent) → bucket PRIVÉ
+  // On stocke uniquement le PATH dans la BDD, pas l'URL publique.
+  // L'admin / le propriétaire les consulte via /api/sign-url (signed URL TTL 5 min).
+  const handleFileUpload = async (key, file) => {
+    if (!file) return;
+    setFileStates(prev => ({...prev, [key]: "uploading"}));
+    const ext = file.name.split('.').pop().toLowerCase();
+    const mimeMap = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' };
+    const contentType = mimeMap[ext] || file.type || 'application/octet-stream';
+    const fileName = `dossiers/${sessionId}/${key}_${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from(BUCKET_PRIVATE).upload(fileName, file, { contentType });
+    if (error) {
+      setFileStates(prev => ({...prev, [key]: "error"}));
+      console.warn("[file upload] échec:", error);
+      return;
+    }
+    // ⚠️ On stocke le PATH (pas getPublicUrl) — le bucket sera privé
+    setFileUrls(prev => ({...prev, [key]: fileName}));
+    setFileStates(prev => ({...prev, [key]: "done"}));
+  };
+
+  const toEmbedUrl = (url) => {
+    if (!url || !url.trim()) return null;
+    // YouTube
+    const watchMatch = url.match(/youtube\.com\/watch\?v=([^&]+)/);
+    if (watchMatch) return "https://www.youtube.com/embed/" + watchMatch[1];
+    const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
+    const shortsMatch = url.match(/youtube\.com\/shorts\/([^?&]+)/);
+    if (shortsMatch) return 'https://www.youtube.com/embed/' + shortsMatch[1];
+    if (shortMatch) return "https://www.youtube.com/embed/" + shortMatch[1];
+    if (url.includes("youtube.com/embed/")) return url;
+    // TikTok — on stocke l'URL originale, embed via oembed
+    const tiktokMatch = url.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+    if (tiktokMatch) return "https://www.tiktok.com/embed/v2/" + tiktokMatch[1];
+    return null;
+  };
+
+  const getVideoType = (url) => {
+    if (!url) return null;
+    if (url.includes("youtube") || url.includes("youtu.be")) return "youtube";
+    if (url.includes("tiktok")) return "tiktok";
+    return null;
+  };
+
+  const embedPreview = toEmbedUrl(form.videoUrl);
+  const videoType = getVideoType(form.videoUrl);
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setSubmitError("");
+    // Upload photo if not done yet
+    let finalPhotoUrl = photoUrl;
+    if (photoFile && !photoUrl) {
+      finalPhotoUrl = await handlePhotoUpload();
+    }
+    const trackingId = "AYD-" + new Date().getFullYear() + "-" + Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => b.toString(16).padStart(2,"0")).join("").toUpperCase().slice(0,6);
+    const { error } = await supabase.from("cases").insert({
+      title: form.title,
+      description: form.description,
+      hospital: form.hospital,
+      city: form.city,
+      amount: parseFloat(form.amount),
+      category: form.category === "Autre" ? (form.categoryOther || "Autre") : form.category,
+      full_name: user?.name || "Anonyme",
+      photo_url: finalPhotoUrl || null,
+      beneficiary_phone: form.beneficiary_phone || null,
+      video_url: toEmbedUrl(form.videoUrl) || null,
+      status: "PENDING",
+      tracking_id: trackingId,
+      user_id: user?.id || null,
+      deadline_requested: form.deadlineRequested || null,
+      document_urls: fileUrls || {},
+    });
+    if (error) { setSubmitError(lang==="fr"?"Erreur lors de la soumission. Réessayez.":"Submission error. Please try again."); setSubmitting(false); return; }
+    try { emailNewCase({ caseTitle: form.title, hospital: form.hospital, city: form.city, amount: form.amount, trackingId }); } catch(e) { console.warn("Email non envoyé:", e); }
+    try { emailWelcomePatient({ beneficiaryEmail: user?.email || null, beneficiaryName: user?.name || user?.email?.split("@")[0] || "Patient", caseTitle: form.title, trackingId }); } catch(e) { console.warn("Email bienvenue non envoyé:", e); }
+    setStep(3);
+    setSubmitting(false);
+  };
+
+  if (!user) return (
+    <div className="max-w-md mx-auto px-4 py-20 text-center">
+      <div className="text-5xl mb-4">🔐</div>
+      <h2 className="text-xl font-black text-gray-900 mb-3">{t.loginRequired}</h2>
+      <button onClick={() => setPage("login")} className="bg-emerald-600 text-white font-bold px-8 py-3 rounded-xl shadow-md">{t.loginBtn}</button>
+    </div>
+  );
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">{t.back}</button>
+      <div className="flex items-center gap-1 mb-8">{t.steps.map((s,i)=><div key={i} className="flex items-center gap-1 flex-1 last:flex-none"><div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${step>i+1?"bg-emerald-500 text-white":step===i+1?"bg-emerald-600 text-white":"bg-gray-200 text-gray-500"}`}>{step>i+1?"✓":i+1}</div><span className={`text-xs font-medium flex-1 truncate ${step===i+1?"text-emerald-700":"text-gray-400"}`}>{s}</span>{i<2&&<div className={`h-0.5 flex-1 ${step>i+1?"bg-emerald-500":"bg-gray-200"}`}/>}</div>)}</div>
+      {/* ── Bandeau Politique d'admission — visible en TOUS LES ÉTAPES ── */}
+      {/* Avertit clairement avant que la personne commence à remplir : si le dossier
+          est déjà sur les réseaux sociaux, il ne sera pas accepté. Évite les heures
+          de saisie pour rien et les frustrations côté patient + côté admin. */}
+      <div style={{
+        background:"linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%)",
+        border:"2px solid rgba(245,158,11,0.30)",
+        borderRadius:14, padding:"14px 18px", marginBottom:20,
+        display:"flex", gap:14, alignItems:"flex-start",
+      }}>
+        <div style={{ fontSize:22, flexShrink:0 }}>⚠️</div>
+        <div style={{ minWidth:0, flex:1 }}>
+          <div style={{ fontWeight:800, fontSize:14, color:"#92400e", marginBottom:4 }}>
+            {lang==="fr" ? "Avant de soumettre : règle importante" : "Before submitting: important rule"}
+          </div>
+          <div style={{ fontSize:13, color:"#78350f", lineHeight:1.55 }}>
+            {lang==="fr"
+              ? <>Ayyad <strong>n'accepte pas les dossiers déjà lancés sur Facebook, TikTok, WhatsApp ou tout autre canal de collecte</strong>. Cette règle garantit la transparence pour nos donateurs et la sécurité pour le patient. </>
+              : <>Ayyad <strong>does not accept cases already launched on Facebook, TikTok, WhatsApp or any other fundraising channel</strong>. This rule guarantees transparency for our donors and safety for the patient. </>}
+            <button
+              onClick={() => setPage("politique-admission")}
+              style={{ color:"#0d5c2e", fontWeight:800, textDecoration:"underline", background:"transparent", border:"none", cursor:"pointer", padding:0, fontSize:13 }}
+            >
+              {lang==="fr" ? "Lire la politique complète →" : "Read the full policy →"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        {step===1&&<div className="space-y-5">
+          <h2 className="font-black text-xl text-gray-900">{t.infoTitle}</h2>
+
+          {/* === PHOTO BÉNÉFICIAIRE === */}
+          <div>
+            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+              📷 {lang==="fr" ? "Photo du bénéficiaire" : "Beneficiary photo"}
+              <span className="text-red-400 ml-1">*</span>
+            </label>
+            <p className="text-[11px] text-gray-400 mb-3">
+              {lang==="fr"
+                ? "Une photo récente montrant la situation actuelle du bénéficiaire. Cette photo sera affichée sur la collecte publique."
+                : "A recent photo showing the beneficiary's current situation. This photo will appear on the public campaign."}
+            </p>
+            {photoPreview ? (
+              <div className="relative">
+                <img src={photoPreview} alt="preview" className="w-full h-52 object-cover rounded-2xl border-2 border-emerald-300" />
+                <div className="absolute top-2 right-2 flex gap-2">
+                  <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full font-bold">✓ Photo sélectionnée</span>
+                  <button
+                    onClick={() => { setPhotoFile(null); setPhotoPreview(null); setPhotoUrl(null); }}
+                    className="bg-white border border-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full font-bold hover:bg-red-50 hover:text-red-500">
+                    ✕ Changer
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 transition-all group">
+                <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">📷</div>
+                <span className="text-sm font-semibold text-gray-600 group-hover:text-emerald-700">
+                  {lang==="fr" ? "Cliquez pour ajouter une photo" : "Click to add a photo"}
+                </span>
+                <span className="text-xs text-gray-400 mt-1">JPG, PNG — max 5 MB</span>
+                <input type="file" className="hidden" accept="image/jpeg,image/png,image/webp"
+                  onChange={e => {
+                    const f = e.target.files[0];
+                    if (!f) return;
+                    if (f.size > 5_000_000) { alert(lang==="fr" ? "Photo trop lourde (max 5 MB)" : "Photo too large (max 5 MB)"); return; }
+                    handlePhotoSelect(f);
+                  }} />
+              </label>
+            )}
+          </div>
+
+          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.titleField}</label><input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} autoComplete="off" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
+          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.descField}</label><textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={4} autoComplete="off" autoCorrect="off" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" /></div>
+
+          {/* Lien vidéo YouTube ou TikTok (optionnel) */}
+          <div>
+            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+              🎥 {lang==="fr" ? "Lien vidéo YouTube ou TikTok" : "YouTube or TikTok video link"}
+              <span className="text-gray-400 font-normal ml-2">({lang==="fr" ? "optionnel" : "optional"})</span>
+            </label>
+            <p className="text-[11px] text-gray-400 mb-2">
+              {lang==="fr"
+                ? "Collez le lien de votre vidéo YouTube ou TikTok. Elle sera visible sur votre page de collecte et augmente les dons."
+                : "Paste your YouTube or TikTok video link. It will appear on your campaign page and increases donations."}
+            </p>
+            <div className="flex gap-2 mb-2">
+              <span className="text-[11px] bg-red-50 text-red-600 border border-red-100 rounded-full px-2 py-0.5 font-medium">▶ YouTube</span>
+              <span className="text-[11px] bg-gray-900 text-white rounded-full px-2 py-0.5 font-medium">♪ TikTok</span>
+            </div>
+            <input
+              type="url"
+              value={form.videoUrl}
+              onChange={e => setForm({...form, videoUrl: e.target.value})}
+              placeholder="https://youtube.com/watch?v=... ou https://tiktok.com/@..."
+              autoComplete="off"
+              className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${embedPreview ? "border-emerald-300 bg-emerald-50" : "border-gray-200"}`}
+            />
+            {form.videoUrl && !embedPreview && (
+              <p className="text-xs text-red-500 mt-1">⚠️ {lang==="fr" ? "Lien non reconnu. Copiez le lien depuis YouTube ou TikTok." : "Link not recognized. Copy the link from YouTube or TikTok."}</p>
+            )}
+            {embedPreview && (
+              <div className="mt-3 rounded-xl overflow-hidden border border-emerald-200">
+                <iframe
+                  src={embedPreview}
+                  className={`w-full ${videoType === "tiktok" ? "h-96" : "h-40"}`}
+                  allowFullScreen
+                  allow="autoplay"
+                  title="preview"
+                />
+                <div className="bg-emerald-50 px-3 py-1.5 text-xs text-emerald-700 font-medium">
+                  ✅ {videoType === "tiktok" ? "TikTok" : "YouTube"} {lang==="fr" ? "— aperçu ci-dessus" : "— preview above"}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.hospitalField}</label>
+              <select value={form.hospital} onChange={e => {
+                const h = CI_HOPITAUX.find(x => x.nom === e.target.value);
+                setForm({...form, hospital: e.target.value, city: h?.ville || form.city});
+              }} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <option value="">— Choisir un hôpital —</option>
+                <optgroup label="🏛 CHU (Centres Hospitaliers Universitaires)">
+                  {CI_HOPITAUX.filter(h => h.type === "CHU").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
+                </optgroup>
+                <optgroup label="🏥 CHR (Centres Hospitaliers Régionaux)">
+                  {CI_HOPITAUX.filter(h => h.type === "CHR").map(h => <option key={h.nom} value={h.nom}>{h.nom} — {h.ville}</option>)}
+                </optgroup>
+                <optgroup label="🏢 Cliniques privées (Abidjan)">
+                  {CI_HOPITAUX.filter(h => h.type === "Clinique").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
+                </optgroup>
+                <optgroup label="Autre">
+                  {CI_HOPITAUX.filter(h => h.type === "Autre").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
+                </optgroup>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.cityField}</label>
+              <select value={form.city} onChange={e => setForm({...form, city: e.target.value})} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <option value="">— Choisir une ville —</option>
+                {CI_VILLES.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.amountField}</label>
+              <div className="relative">
+                <input
+                  type="text" inputMode="numeric" pattern="[0-9]*"
+                  value={form.amount}
+                  onChange={e => setForm({...form, amount: e.target.value.replace(/[^0-9]/g,"")})}
+                  placeholder="ex: 500000"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-14"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span>
+              </div>
+              {form.amount && Number(form.amount) > 0 && (
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {lang==="fr" ? "Montant collecté : " : "Amount to collect: "}
+                  <span className="font-bold text-emerald-700">{fmt(Math.round(Number(form.amount)*1.05))}</span>
+                  <span className="text-gray-400"> (devis + 5% Ayyad)</span>
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+                📱 {lang==="fr" ? "Téléphone mobile money" : "Mobile money phone"}
+              </label>
+              <div className="flex gap-1.5">
+                <span className="bg-gray-100 border border-gray-200 rounded-xl px-3 py-3 text-xs text-gray-500 font-mono flex-shrink-0">+225</span>
+                <input
+                  type="tel"
+                  value={form.beneficiary_phone}
+                  onChange={e => setForm({...form, beneficiary_phone: e.target.value.replace(/[^0-9]/g,"")})}
+                  placeholder="07 00 00 00 00"
+                  maxLength={10}
+                  className="flex-1 border border-gray-200 rounded-xl px-3 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                />
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1">{lang==="fr" ? "Pour recevoir un éventuel surplus" : "To receive any surplus"}</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-600 mb-3 block">{t.categoryField}</label>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                {key:"Cardiologie", enKey:"Cardiology", icon:"🫀"},
+                {key:"Oncologie", enKey:"Oncology", icon:"🎗️"},
+                {key:"Neurologie", enKey:"Neurology", icon:"🧠"},
+                {key:"Orthopédie", enKey:"Orthopedics", icon:"🦾"},
+                {key:"Pédiatrie", enKey:"Pediatrics", icon:"👶"},
+                {key:"Gynécologie", enKey:"Gynecology", icon:"🌸"},
+                {key:"Néphrologie", enKey:"Nephrology", icon:"🫘"},
+                {key:"Autre", enKey:"Other", icon:"🏥"},
+              ].map(cat => (
+                <button key={cat.key} type="button"
+                  onClick={() => setForm({...form, category: cat.key, categoryOther: ""})}
+                  className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all ${form.category===cat.key ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm" : "border-gray-200 hover:border-gray-300 text-gray-500 hover:bg-gray-50"}`}>
+                  <span className="text-xl">{cat.icon}</span>
+                  <span className="text-xs text-center leading-tight font-medium">{lang==="fr" ? cat.key : cat.enKey}</span>
+                </button>
+              ))}
+            </div>
+            {form.category === "Autre" && (
+              <div className="mt-3">
+                <input value={form.categoryOther || ""} onChange={e => setForm({...form, categoryOther: e.target.value})}
+                  placeholder={lang==="fr" ? "Précisez la spécialité médicale..." : "Specify the medical specialty..."}
+                  className="w-full border-2 border-emerald-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-emerald-50" />
+              </div>
+            )}
+          </div>
+
+          <button onClick={()=>setStep(2)}
+            disabled={!form.title||!form.description||!form.hospital||!form.amount||!photoPreview}
+            className="w-full bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">
+            {!photoPreview
+              ? (lang==="fr" ? "⚠️ Ajoutez une photo pour continuer" : "⚠️ Add a photo to continue")
+              : t.next}
+          </button>
+        </div>}
+
+        {step===2&&<div className="space-y-4">
+          <h2 className="font-black text-xl text-gray-900">{t.docsTitle}</h2>
+          <p className="text-sm text-gray-500">{t.docsSub}</p>
+
+          {/* Rappel photo */}
+          {photoPreview && (
+            <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+              <img src={photoPreview} alt="preview" className="w-14 h-14 object-cover rounded-xl flex-shrink-0" />
+              <div>
+                <div className="text-xs font-bold text-emerald-700">✅ Photo bénéficiaire</div>
+                <div className="text-[11px] text-gray-500">Sera affichée sur la collecte publique</div>
+              </div>
+            </div>
+          )}
+
+          {t.docs.map(doc=>{
+            const state = fileStates[doc.key];
+            return (
+              <div key={doc.key} className={`rounded-2xl border-2 transition-all ${state==="done"?"border-emerald-300 bg-emerald-50":state==="error"?"border-red-200 bg-red-50":"border-gray-200"}`}>
+                <div className="flex items-center gap-4 p-4">
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 ${state==="done"?"bg-emerald-100":"bg-gray-100"}`}>{doc.icon}</div>
+                  <div className="flex-1 min-w-0"><div className="font-semibold text-sm text-gray-900">{doc.title} <span className="text-red-400">*</span></div><div className="text-xs text-gray-500">{doc.desc}</div></div>
+                  <label className={`px-3 py-1.5 rounded-xl text-xs font-bold flex-shrink-0 cursor-pointer transition-colors ${state==="done"?"bg-emerald-600 text-white":state==="uploading"?"bg-gray-300 text-gray-500 cursor-wait":state==="error"?"bg-red-100 text-red-600":"bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+                    {state==="done"?t.uploaded:state==="uploading"?t.uploading:state==="error"?t.error:t.upload}
+                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e=>{const f=e.target.files[0];if(!f)return;if(f.size>10_000_000){alert(lang==="fr"?"Document trop lourd (max 10 MB)":"File too large (max 10 MB)");return;}handleFileUpload(doc.key,f);}} disabled={state==="uploading"||state==="done"} />
+                  </label>
+                </div>
+                {/* Lien de téléchargement du formulaire de consentement */}
+                {doc.key==="consent"&&(
+                  <div className="px-4 pb-3 flex items-center gap-2">
+                    <div className="w-11 flex-shrink-0"/>
+                    <div className="flex-1 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+                      <span className="text-emerald-600 text-sm">📥</span>
+                      <span className="text-xs text-gray-600 flex-1">
+                        {lang==="fr"
+                          ? "Téléchargez, imprimez, signez, puis uploadez le formulaire ci-dessus."
+                          : "Download, print, sign, then upload the form above."}
+                      </span>
+                      <a
+                        href="/AYYAD_Consentement.pdf"
+                        download="AYYAD_Formulaire_Consentement.pdf"
+                        className="flex-shrink-0 inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                        onClick={e=>e.stopPropagation()}
+                      >
+                        {lang==="fr" ? "Télécharger le formulaire" : "Download form"} →
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {!allUploaded&&<div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex gap-2 text-xs text-amber-700"><span>⚠️</span><span>{t.warning}</span></div>}
+          {submitError&&<div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-600 text-center">{submitError}</div>}
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={()=>setStep(1)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{t.back}</button>
+            <button onClick={handleSubmit} disabled={!allUploaded||submitting} className="bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 rounded-xl text-sm shadow-md">{submitting?"...":t.submit}</button>
+          </div>
+        </div>}
+
+        {step===3&&<div className="text-center space-y-5 py-4">
+          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-4xl">🎉</div>
+          <div><h2 className="font-black text-2xl text-gray-900 mb-2">{t.successTitle}</h2><p className="text-gray-500 text-sm">{t.successSub}</p></div>
+          <div className="bg-gray-50 rounded-2xl p-5 text-left space-y-3">{t.processSteps.map((s,i)=><div key={i} className="flex items-center gap-3 text-sm"><div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${i===0?"bg-emerald-500 text-white":"bg-gray-200 text-gray-500"}`}>{i===0?"✓":i+1}</div><span className={i===0?"text-emerald-700 font-medium":"text-gray-500"}>{s}</span></div>)}</div>
+          <button onClick={()=>setPage("home")} className="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">{t.backHome}</button>
+        </div>}
+      </div>
+    </div>
+  );
+};
+
+// ── How Page ──────────────────────────────────────────────────
+const HowPage = ({ lang, setPage }) => {
+  const t = T[lang].howPage;
+  return (
+    <div>
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-emerald-800 to-teal-700 text-white py-16 text-center px-4">
+        <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 mb-5 text-sm font-medium">
+          <span>💚</span> {lang==="fr" ? "Plateforme médicale vérifiée" : "Verified medical platform"}
+        </div>
+        <h1 className="text-4xl font-black mb-4">{t.title}</h1>
+        <p className="text-emerald-200 max-w-xl mx-auto">{t.sub}</p>
+      </div>
+
+      {/* Pour les donateurs */}
+      <div className="max-w-5xl mx-auto px-4 py-14">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl">💚</div>
+          <div>
+            <h2 className="text-2xl font-black text-gray-900">{t.forDonors.title}</h2>
+            <p className="text-gray-500 text-sm">{lang==="fr" ? "Comment faire un don sur Ayyad" : "How to donate on Ayyad"}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+          {t.forDonors.steps.map((step, i) => (
+            <div key={i} className="relative">
+              <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow h-full">
+                <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm font-black mb-3">{i+1}</div>
+                <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
+              </div>
+              {i < t.forDonors.steps.length-1 && <div className="hidden sm:block absolute top-6 -right-2 text-gray-300 text-lg z-10">→</div>}
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 text-center">
+          <button onClick={() => setPage("collectes")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-xl shadow-md transition-colors">
+            {lang==="fr" ? "Voir les collectes →" : "See campaigns →"}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-gray-50 border-y border-gray-100">
+        {/* Pour les bénéficiaires */}
+        <div className="max-w-5xl mx-auto px-4 py-14">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-xl">🏥</div>
+            <div>
+              <h2 className="text-2xl font-black text-gray-900">{t.forBenef.title}</h2>
+              <p className="text-gray-500 text-sm">{lang==="fr" ? "Comment soumettre votre dossier médical" : "How to submit your medical case"}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            {t.forBenef.steps.map((step, i) => (
+              <div key={i} className="relative">
+                <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow h-full">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-black mb-3">{i+1}</div>
+                  <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
+                </div>
+                {i < t.forBenef.steps.length-1 && <div className="hidden sm:block absolute top-6 -right-2 text-gray-300 text-lg z-10">→</div>}
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 text-center">
+            <button onClick={() => setPage("submit")} className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-xl shadow-md transition-colors">
+              {lang==="fr" ? "Soumettre un dossier →" : "Submit a case →"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Garanties */}
+      <div className="max-w-5xl mx-auto px-4 py-14">
+        <h2 className="text-2xl font-black text-gray-900 text-center mb-2">{lang==="fr" ? "Les garanties Ayyad" : "Ayyad guarantees"}</h2>
+        <p className="text-gray-500 text-center text-sm mb-10">{lang==="fr" ? "Ce qui nous différencie des autres plateformes" : "What sets us apart from other platforms"}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          {[
+            {icon:"🏥", title:lang==="fr"?"Versement direct à l'hôpital":"Direct payment to hospital", desc:lang==="fr"?"Les fonds ne passent jamais par le patient. Chaque virement est traçable.":"Funds never go through the patient. Every transfer is traceable."},
+            {icon:"🔍", title:lang==="fr"?"Vérification sous 48h":"Verification within 48h", desc:lang==="fr"?"Notre équipe contacte l'hôpital partenaire pour valider chaque dossier.":"Our team contacts the partner hospital to validate each case."},
+            {icon:"🔒", title:lang==="fr"?"Données chiffrées AES-256":"AES-256 encrypted data", desc:lang==="fr"?"Tous vos documents médicaux sont chiffrés et stockés en sécurité.":"All your medical documents are encrypted and stored securely."},
+          ].map((g,i) => (
+            <div key={i} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm text-center hover:shadow-md transition-shadow">
+              <div className="text-4xl mb-4">{g.icon}</div>
+              <h3 className="font-bold text-gray-900 mb-2">{g.title}</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">{g.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Fee section */}
+      <div className="bg-gray-900 py-14 px-4 text-white text-center">
+        <h2 className="text-2xl font-black mb-3">{t.feeTitle}</h2>
+        <p className="text-gray-300 mb-8 max-w-lg mx-auto text-sm">{t.feeSub}</p>
+        <div className="bg-white/10 rounded-2xl p-6 text-sm max-w-sm mx-auto border border-white/20 space-y-4">
+
+          {/* Donateur */}
+          <div>
+            <div className="text-gray-400 mb-1 text-xs uppercase tracking-wider">{t.youGive}</div>
+            <div className="text-3xl font-black">10 000 FCFA</div>
+          </div>
+
+          <div className="border-t border-white/20"/>
+
+          {/* Hôpital reçoit */}
+          <div className="flex justify-between items-center">
+            <span className="text-emerald-400 font-bold text-sm">🏥 {t.collectReceives}</span>
+            <span className="font-black text-xl text-emerald-400">10 000 FCFA</span>
+          </div>
+
+          <div className="border-t border-white/10"/>
+
+          {/* Explication objectif */}
+          <div className="bg-white/5 rounded-xl p-3 text-left space-y-1.5">
+            <div className="text-[11px] text-gray-300 font-semibold uppercase tracking-wide mb-2">
+              {lang==="fr" ? "Comment ça fonctionne ?" : "How does it work?"}
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">{lang==="fr" ? "Objectif affiché (devis × 1.05)" : "Displayed goal (quote × 1.05)"}</span>
+              <span className="text-white font-bold">10 500 FCFA</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">{lang==="fr" ? "dont devis hôpital" : "of which hospital quote"}</span>
+              <span className="text-emerald-400 font-bold">10 000 FCFA</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">{t.ayyadFee}</span>
+              <span className="text-amber-400 font-bold">500 FCFA</span>
+            </div>
+          </div>
+
+          <div className="text-[11px] text-gray-400 leading-relaxed">
+            {lang==="fr"
+              ? "✅ Votre don va intégralement à l'hôpital. Les 5% Ayyad sont intégrés dans l'objectif de collecte dès le départ."
+              : "✅ Your donation goes entirely to the hospital. The 5% Ayyad fee is built into the campaign goal from the start."}
+          </div>
+        </div>
+      </div>
+
+      {/* Section politique de remboursement */}
+      <div className="bg-white py-14 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-2xl text-2xl mb-4">🔄</div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2">
+              {lang==="fr" ? "Politique de remboursement" : "Refund policy"}
+            </h2>
+            <p className="text-gray-500 text-sm max-w-lg mx-auto">
+              {lang==="fr"
+                ? "Ayyad s'engage à une transparence totale sur la gestion des fonds dans toutes les situations."
+                : "Ayyad is committed to full transparency on fund management in all situations."}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Cas 1 — Dossier rejeté */}
+            <div className="border border-gray-100 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">❌</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Dossier rejeté après des dons" : "Case rejected after donations"}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                {lang==="fr"
+                  ? "Si Ayyad rejette un dossier après réception de dons (documents falsifiés, fraude détectée, etc.), chaque donateur enregistré est contacté par email."
+                  : "If Ayyad rejects a case after receiving donations (falsified documents, fraud detected, etc.), each registered donor is contacted by email."}
+              </p>
+              <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                <div className="text-[11px] font-bold text-gray-600 uppercase tracking-wide mb-1">
+                  {lang==="fr" ? "Le donateur choisit :" : "The donor chooses:"}
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Remboursement intégral sur son mobile money" : "Full refund to their mobile money account"}
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Redistribution aux cas urgents actifs" : "Redistribution to active urgent cases"}
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-400 mt-1 border-t border-gray-200 pt-2">
+                  {lang==="fr"
+                    ? "⏳ Sans réponse sous 14 jours → redistribution automatique aux cas urgents."
+                    : "⏳ No response within 14 days → automatic redistribution to urgent cases."}
+                </div>
+              </div>
+            </div>
+
+            {/* Cas 2 — Objectif non atteint */}
+            <div className="border border-gray-100 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">⏳</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Objectif non atteint en fin de collecte" : "Goal not reached at end of campaign"}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                {lang==="fr"
+                  ? "Si l'objectif n'est pas atteint à l'échéance, tous les donateurs ayant un compte sont notifiés et consultés."
+                  : "If the goal is not reached at deadline, all registered donors are notified and consulted."}
+              </p>
+              <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                <div className="text-[11px] font-bold text-gray-600 uppercase tracking-wide mb-1">
+                  {lang==="fr" ? "Notification envoyée avec choix :" : "Notification sent with choice:"}
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Remboursement intégral" : "Full refund"}
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Don maintenu → redistribué aux cas urgents" : "Donation kept → redistributed to urgent cases"}
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-400 mt-1 border-t border-gray-200 pt-2">
+                  {lang==="fr"
+                    ? "⏳ Sans réponse sous 14 jours → redistribution automatique aux cas urgents."
+                    : "⏳ No response within 14 days → automatic redistribution to urgent cases."}
+                </div>
+              </div>
+            </div>
+
+            {/* Cas 3 — Surcollecte */}
+            <div className="border border-gray-100 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🎉</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Objectif dépassé (surcollecte)" : "Goal exceeded (surplus)"}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                {lang==="fr"
+                  ? "Si les dons dépassent l'objectif, le surplus est réparti automatiquement selon la règle Ayyad."
+                  : "If donations exceed the goal, the surplus is automatically distributed according to Ayyad's rule."}
+              </p>
+              <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">🏥 {lang==="fr" ? "Hôpital (objectif atteint)" : "Hospital (goal met)"}</span>
+                  <span className="font-bold text-emerald-600">100%</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">👤 {lang==="fr" ? "70% surplus → bénéficiaire" : "70% surplus → beneficiary"}</span>
+                  <span className="font-bold text-blue-600">70%</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">🚨 {lang==="fr" ? "25% surplus → cas urgents" : "25% surplus → urgent cases"}</span>
+                  <span className="font-bold text-purple-600">25%</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">⚙️ {lang==="fr" ? "5% surplus → Ayyad" : "5% surplus → Ayyad"}</span>
+                  <span className="font-bold text-amber-600">5%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Cas 4 — Engagement transparence */}
+            <div className="border border-emerald-100 bg-emerald-50 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🔒</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Notre engagement" : "Our commitment"}
+                </div>
+              </div>
+              <div className="space-y-2">
+                {(lang==="fr" ? [
+                  "Chaque virement est documenté avec un reçu disponible publiquement",
+                  "Les donateurs enregistrés reçoivent un email de confirmation après chaque don",
+                  "Un rapport de transparence est publié trimestriellement",
+                  "Ayyad ne touche jamais à l'argent destiné à l'hôpital",
+                ] : [
+                  "Every transfer is documented with a publicly available receipt",
+                  "Registered donors receive a confirmation email after each donation",
+                  "A transparency report is published quarterly",
+                  "Ayyad never touches the money destined for the hospital",
+                ]).map((item, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-emerald-500 text-xs mt-0.5 flex-shrink-0">✓</span>
+                    <span className="text-xs text-gray-700">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-8">
+            <button
+              onClick={() => setPage("refund")}
+              className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold underline underline-offset-2">
+              {lang==="fr" ? "Lire la politique de remboursement complète →" : "Read the full refund policy →"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Admin Page — Real Supabase data ───────────────────────────
+const AdminTeamList = ({ user, fr }) => {
+  const [admins, setAdmins] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [fetchErr, setFetchErr] = React.useState(null);
+  const [showAdd, setShowAdd] = React.useState(false);
+  const [newEmail, setNewEmail] = React.useState("");
+  const [newRole, setNewRole] = React.useState("operator");
+  const [adding, setAdding] = React.useState(false);
+  const [msg, setMsg] = React.useState("");
+
+  const ROLES = [
+    { value: "super_admin", label: "Super Admin",              color: "bg-purple-100 text-purple-700" },
+    { value: "admin",       label: fr ? "Admin" : "Admin",    color: "bg-indigo-100 text-indigo-700" },
+    { value: "finance",     label: "Finance",                  color: "bg-blue-100 text-blue-700"   },
+    { value: "operator",    label: fr ? "Opérateur":"Operator", color: "bg-green-100 text-green-700" },
+  ];
+
+  const getRoleStyle = (role) => ROLES.find(r => r.value === role)?.color || "bg-gray-100 text-gray-600";
+  const getRoleLabel = (role) => ROLES.find(r => r.value === role)?.label || (role || "—");
+
+  const fetchAdmins = React.useCallback(async () => {
+    setLoading(true);
+    setFetchErr(null);
+    try {
+      // Ne pas utiliser .order("created_at") — la colonne peut ne pas exister
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("id, email, role, is_active");
+      if (error) {
+        setFetchErr(error.message);
+      } else {
+        setAdmins(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      setFetchErr(String(e?.message || e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => { fetchAdmins(); }, [fetchAdmins]);
+
+  const handleAdd = async () => {
+    if (!newEmail.includes("@")) return setMsg(fr ? "Email invalide" : "Invalid email");
+    setAdding(true);
+    setMsg("");
+    try {
+      const cleanEmail = newEmail.trim().toLowerCase();
+      // Chercher le full_name dans profiles, sinon utiliser le préfixe email
+      const { data: profileData } = await supabase.from("profiles").select("full_name").eq("email", cleanEmail).maybeSingle();
+      const fullName = profileData?.full_name || cleanEmail.split("@")[0];
+      const { error } = await supabase
+        .from("admin_users")
+        .insert({ email: cleanEmail, role: newRole, is_active: true, full_name: fullName });
+      if (error) {
+        setMsg(fr ? "Erreur : " + error.message : "Error: " + error.message);
+      } else {
+        setMsg(fr ? "Membre ajouté ✓" : "Member added ✓");
+        setNewEmail("");
+        setNewRole("operator");
+        setShowAdd(false);
+        fetchAdmins();
+      }
+    } catch(e) {
+      setMsg(String(e?.message || e));
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const toggleActive = async (admin) => {
+    if (!admin?.id || admin?.email === user?.email) return;
+    try {
+      await supabase.from("admin_users").update({ is_active: !admin.is_active }).eq("id", admin.id);
+      fetchAdmins();
+    } catch(e) { console.warn("toggleActive error:", e); }
+  };
+
+  const changeRole = async (admin, role) => {
+    if (!admin?.id || admin?.email === user?.email) return;
+    try {
+      await supabase.from("admin_users").update({ role }).eq("id", admin.id);
+      fetchAdmins();
+    } catch(e) { console.warn("changeRole error:", e); }
+  };
+
+  if (loading) return (
+    <div className="text-center py-12 text-gray-400">
+      <div className="text-2xl mb-2">⏳</div>
+      <p className="text-sm">{fr ? "Chargement de l'équipe…" : "Loading team…"}</p>
+    </div>
+  );
+
+  if (fetchErr) return (
+    <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-sm text-red-700">
+      <p className="font-bold mb-1">⚠️ {fr ? "Erreur de chargement" : "Loading error"}</p>
+      <p className="text-xs font-mono">{fetchErr}</p>
+      <p className="mt-3 text-xs text-red-500">
+        {fr
+          ? "Vérifiez que la table admin_users a une politique RLS SELECT pour les admins."
+          : "Make sure the admin_users table has a SELECT RLS policy for admins."}
+      </p>
+      <button onClick={fetchAdmins} className="mt-3 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold">
+        {fr ? "Réessayer" : "Retry"}
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Formulaire ajout — super_admin uniquement */}
+      {user?.adminRole === "super_admin" && (
+        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+          <button
+            onClick={() => setShowAdd(!showAdd)}
+            className="text-sm font-semibold text-emerald-700 hover:underline"
+          >
+            {showAdd ? (fr ? "▲ Annuler" : "▲ Cancel") : (fr ? "▼ Ajouter un membre" : "▼ Add member")}
+          </button>
+          {showAdd && (
+            <div className="mt-3 flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                placeholder="Email"
+                value={newEmail}
+                onChange={e => setNewEmail(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              />
+              <select
+                value={newRole}
+                onChange={e => setNewRole(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              >
+                {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
+              <button
+                onClick={handleAdd}
+                disabled={adding}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {adding ? "…" : (fr ? "Ajouter" : "Add")}
+              </button>
+            </div>
+          )}
+          {msg && <p className="mt-2 text-sm text-emerald-600">{msg}</p>}
+        </div>
+      )}
+
+      {/* Message si aucun admin visible (RLS probable) */}
+      {admins.length === 0 && !fetchErr && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-800">
+          <p className="font-bold mb-1">ℹ️ {fr ? "Aucun membre visible" : "No members visible"}</p>
+          <p className="text-xs">
+            {fr
+              ? "La table admin_users est vide ou la politique RLS ne permet pas de lister tous les membres. Exécutez le SQL ci-dessous dans Supabase pour corriger :"
+              : "The admin_users table is empty or the RLS policy doesn't allow listing all members. Run the SQL below in Supabase to fix:"}
+          </p>
+          <pre className="mt-3 bg-amber-100 rounded-lg p-3 text-xs overflow-x-auto whitespace-pre-wrap">{`CREATE POLICY "admin_users_select_for_admins"
+ON admin_users FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM admin_users a2
+    WHERE a2.email = auth.email() AND a2.is_active = true
+  )
+);`}</pre>
+        </div>
+      )}
+
+      {/* Liste des membres */}
+      {admins.map((admin, idx) => (
+        <div key={admin.id ?? idx} className={`flex items-center justify-between p-4 rounded-xl border ${admin.is_active !== false ? "bg-white border-gray-100" : "bg-gray-50 border-gray-200 opacity-60"}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
+              {(admin.email?.[0] || "?").toUpperCase()}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-800">{admin.email || "—"}</p>
+              <p className="text-xs text-gray-400">{admin.is_active !== false ? (fr ? "Actif" : "Active") : (fr ? "Désactivé" : "Disabled")}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {user?.adminRole === "super_admin" && admin.email !== user?.email ? (
+              <>
+                <select
+                  value={admin.role || "operator"}
+                  onChange={e => changeRole(admin, e.target.value)}
+                  className={`text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer ${getRoleStyle(admin.role)}`}
+                >
+                  {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                </select>
+                <button
+                  onClick={() => toggleActive(admin)}
+                  className={`text-xs px-3 py-1 rounded-full font-semibold ${admin.is_active !== false ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"}`}
+                >
+                  {admin.is_active !== false ? (fr ? "Désactiver" : "Disable") : (fr ? "Réactiver" : "Enable")}
+                </button>
+              </>
+            ) : (
+              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${getRoleStyle(admin.role)}`}>
+                {getRoleLabel(admin.role)}
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ── Error Boundary — capture les crashs React au lieu de page blanche ──
+class AdminErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, info) { console.error("AdminErrorBoundary caught:", error, info); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-sm text-red-700 space-y-3">
+          <div className="font-black text-base">⚠️ Erreur d'affichage</div>
+          <div className="font-mono text-xs bg-red-100 rounded-lg p-3 break-all">
+            {this.state.error?.message || String(this.state.error)}
+          </div>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold">
+            Réessayer
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ── Audit log helper ─────────────────────────────────────────
+const auditLog = async (user, action, target, oldVal = null, newVal = null) => {
+  try {
+    await supabase.from("audit_log").insert({
+      user_id:    user?.id   || null,
+      user_email: user?.email || "unknown",
+      user_role:  user?.adminRole || "unknown",
+      action,
+      target,
+      old_value:  oldVal !== null ? JSON.stringify(oldVal) : null,
+      new_value:  newVal !== null ? JSON.stringify(newVal) : null,
+      created_at: new Date().toISOString(),
+    });
+  } catch(e) { console.warn("auditLog error:", e); }
+};
+
+// ── Composant ligne employé avec édition inline ─────────────────────
+const StaffRow = ({ m, fr, paid, onPay, onDelete, onUpdate, fmt }) => {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ name: m.name, role: m.role||"", wave_number: m.wave_number||"", monthly_salary: m.monthly_salary });
+
+  const save = async () => {
+    const ok = await onUpdate(m.id, { ...form, monthly_salary: Number(form.monthly_salary) });
+    if (ok) setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="px-4 py-3 bg-blue-50 border-l-4 border-blue-400 space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] font-bold text-gray-500 uppercase">{fr?"Nom":"Name"}</label>
+            <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm mt-0.5" />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-500 uppercase">Rôle</label>
+            <input value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm mt-0.5" placeholder="IT, Finance..." />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-500 uppercase">Wave CI</label>
+            <input value={form.wave_number} onChange={e=>setForm(f=>({...f,wave_number:e.target.value}))}
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm mt-0.5" placeholder="+225 07..." />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-500 uppercase">{fr?"Salaire/mois":"Salary/month"}</label>
+            <input type="number" value={form.monthly_salary} onChange={e=>setForm(f=>({...f,monthly_salary:e.target.value}))}
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm mt-0.5" />
+          </div>
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button onClick={save} className="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-emerald-700">
+            ✓ {fr?"Enregistrer":"Save"}
+          </button>
+          <button onClick={()=>setEditing(false)} className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-200">
+            {fr?"Annuler":"Cancel"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-3 flex items-center justify-between gap-4 hover:bg-gray-50">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-700 font-black text-sm">{(m.name||"?")[0].toUpperCase()}</div>
+        <div>
+          <div className="font-semibold text-gray-900 text-sm">{m.name}</div>
+          <div className="text-xs text-gray-400">{m.role||"—"} · 🌊 {m.wave_number||"—"}</div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="text-right">
+          <div className="font-black text-sm text-gray-900">{fmt(m.monthly_salary)}</div>
+          <div className="text-[10px] text-gray-400">{fr?"/mois":"/month"}</div>
+        </div>
+        {paid ? (
+          <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded-lg">✅ {fr?"Payé":"Paid"}</span>
+        ) : (
+          <button onClick={onPay} className="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-blue-700">
+            🌊 {fr?"Payer":"Pay"}
+          </button>
+        )}
+        <button onClick={()=>setEditing(true)} title={fr?"Modifier":"Edit"}
+          className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg p-1.5 transition-colors text-sm">
+          ✏️
+        </button>
+        <button onClick={onDelete} title={fr?"Supprimer":"Delete"}
+          className="text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg p-1.5 transition-colors text-sm">
+          🗑️
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ── Composant Visiteurs connectés Admin ──────────────────────────────
+// ── Onglet Dons (Admin) ───────────────────────────────────────
+// adminCases: liste des cases déjà chargée par AdminPage (utilisée pour le sélecteur du don manuel)
+const AdminDonationsTab = ({ lang, adminCases = [] }) => {
+  const fr = lang === "fr";
+  const [donations, setDonations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [msg, setMsg] = useState("");
+  // ── Modal "Saisir un don manuel" ──
+  // Usage : un donateur paie sur Wave (ou autre canal) sans passer par le bouton Confirmer
+  // d'Ayyad → l'admin reçoit la notif Wave Business mais aucune ligne pending côté Ayyad.
+  // Cette modale permet de créer la ligne à la main pour faire avancer la jauge.
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualCases, setManualCases] = useState([]);
+  const [manualForm, setManualForm] = useState({
+    case_id: "",
+    amount: "",
+    donor_name: "",
+    donor_email: "",
+    payment_method: "WAVE",
+    reference: "",
+    message: "",
+    status: "confirmed", // par défaut confirmé puisqu'on saisit en réaction à un paiement reçu
+  });
+  const [manualSaving, setManualSaving] = useState(false);
+  const [manualError, setManualError] = useState("");
+
+  const fetchDonations = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("donations")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(300);
+      if (!error) setDonations(data || []);
+    } catch(e) { console.warn("fetchDonations error:", e); }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchDonations(); }, []);
+
+  // Ouvre la modale + utilise les cases déjà chargées par le parent AdminPage
+  // (au lieu de refetcher — ça nous évite tout souci de RLS/colonnes/_isDemo)
+  const openManualModal = () => {
+    setManualError("");
+    setManualForm({
+      case_id: "", amount: "", donor_name: "", donor_email: "",
+      payment_method: "WAVE", reference: "", message: "", status: "confirmed",
+    });
+    // On filtre côté client : on ne propose que les dossiers utilisables (pas PENDING/REJECTED, pas démo)
+    const usable = (adminCases || []).filter(c => !["PENDING", "REJECTED"].includes(c.status) && !c._isDemo);
+    setManualCases(usable);
+    if (usable.length === 0) {
+      setManualError(fr
+        ? "Aucun dossier validé trouvé. Vérifie que des dossiers sont en statut Approuvé/Collecte/Financé."
+        : "No approved case found. Check that some cases have status Approved/Collecting/Funded.");
+    }
+    setManualOpen(true);
+  };
+
+  const submitManualDonation = async () => {
+    setManualError("");
+    if (!manualForm.case_id) { setManualError(fr?"Sélectionnez un dossier.":"Select a case."); return; }
+    const amt = Number(manualForm.amount);
+    if (!amt || amt <= 0) { setManualError(fr?"Montant invalide.":"Invalid amount."); return; }
+    setManualSaving(true);
+    try {
+      // Via /api/donate (bypass RLS) avec fallback Supabase direct
+      const { error } = await createDonation({
+        case_id: manualForm.case_id,
+        donor_name: manualForm.donor_name || null,
+        donor_email: manualForm.donor_email || null,
+        amount: amt,
+        amount_fcfa: amt,
+        currency: "FCFA",
+        payment_method: manualForm.payment_method,
+        status: manualForm.status,
+        message: manualForm.message || null,
+        reference: manualForm.reference || ("MANUEL-" + Date.now()),
+      });
+      if (error) {
+        setManualError(error);
+        setManualSaving(false);
+        return;
+      }
+      // Si le don manuel est saisi en 'confirmed' direct, on déclenche le même
+      // recompute + email caseFunded que pour le flow normal de confirmation.
+      let justReached = false;
+      if (manualForm.status === "confirmed" && manualForm.case_id) {
+        try {
+          const r = await recomputeCaseTotalsAndNotify(manualForm.case_id);
+          justReached = r.justReached;
+        } catch(e) { console.warn("[manual donation recompute] échec:", e); }
+      }
+      setMsg(justReached
+        ? (fr ? "🎉 Objectif atteint ! Emails envoyés aux donateurs." : "🎉 Goal reached! Emails sent to donors.")
+        : (fr ? "✅ Don manuel enregistré !" : "✅ Manual donation recorded!"));
+      setTimeout(() => setMsg(""), 4000);
+      setManualOpen(false);
+      fetchDonations();
+    } catch(e) {
+      setManualError(e?.message || String(e));
+    } finally {
+      setManualSaving(false);
+    }
+  };
+
+  // Helper partagé : recalcule cases.collected/donors/goal_reached_at pour un dossier,
+  // et envoie l'email caseFunded à tous les donateurs si l'objectif vient d'être atteint
+  // (premier passage seulement, contrôlé par goal_reached_at).
+  // Retourne { justReached: bool, total: number, donors: number }
+  const recomputeCaseTotalsAndNotify = async (caseId) => {
+    if (!caseId) return { justReached: false, total: 0, donors: 0 };
+    // 1) Total des dons confirmés
+    const { data: confirmedDons } = await supabase.from("donations")
+      .select("amount_fcfa, amount, donor_email, donor_name")
+      .eq("case_id", caseId)
+      .eq("status", "confirmed");
+    const totalCollected = (confirmedDons || []).reduce(
+      (s, d) => s + Number(d.amount_fcfa || d.amount || 0), 0
+    );
+    const donorsCount = (confirmedDons || []).length;
+
+    // 2) État actuel du dossier
+    const { data: caseRow } = await supabase.from("cases")
+      .select("amount, goal_reached_at, status, title, full_name, beneficiary, tracking_id")
+      .eq("id", caseId)
+      .single();
+    if (!caseRow) return { justReached: false, total: totalCollected, donors: donorsCount };
+
+    const target = Number(caseRow.amount || 0);
+    const justReached = totalCollected >= target && target > 0 && !caseRow.goal_reached_at;
+
+    // 3) Update cases.collected/donors + goal_reached_at si premier passage
+    const updates = { collected: totalCollected, donors: donorsCount };
+    if (justReached) updates.goal_reached_at = new Date().toISOString();
+    await supabase.from("cases").update(updates).eq("id", caseId);
+
+    // 4) Email caseFunded à tous les donateurs (premier passage uniquement)
+    if (justReached) {
+      const beneficiaryName = caseRow.full_name || caseRow.beneficiary || "le bénéficiaire";
+      const caseTitleStr = typeof caseRow.title === "object"
+        ? (caseRow.title?.fr || caseRow.title?.en)
+        : caseRow.title;
+      for (const d of (confirmedDons || [])) {
+        if (d.donor_email) {
+          try {
+            await emailCaseFunded({
+              donorEmail: d.donor_email,
+              donorName: d.donor_name || "Donateur",
+              caseTitle: caseTitleStr,
+              beneficiary: beneficiaryName,
+              totalRaised: totalCollected,
+              trackingId: caseRow.tracking_id,
+            });
+          } catch(e) { console.warn("[caseFunded email] échec:", e); }
+        }
+      }
+    }
+    return { justReached, total: totalCollected, donors: donorsCount };
+  };
+
+  const confirm = async (id) => {
+    // Flip pending → confirmed
+    const { data: donation, error } = await supabase.from("donations")
+      .update({ status: "confirmed" })
+      .eq("id", id)
+      .select()
+      .single();
+    if (error || !donation) {
+      console.error("[confirm donation] échec:", error);
+      return;
+    }
+    const { justReached } = await recomputeCaseTotalsAndNotify(donation.case_id);
+    setMsg(justReached
+      ? (fr ? "🎉 Objectif atteint ! Emails envoyés aux donateurs." : "🎉 Goal reached! Emails sent to donors.")
+      : (fr ? "✅ Don confirmé !" : "✅ Donation confirmed!"));
+    setTimeout(() => setMsg(""), 4000);
+    fetchDonations();
+  };
+
+  const cancel = async (id) => {
+    const { error } = await supabase.from("donations").update({ status: "cancelled" }).eq("id", id);
+    if (!error) {
+      setMsg(fr ? "Don annulé." : "Donation cancelled.");
+      setTimeout(() => setMsg(""), 3000);
+      fetchDonations();
+    }
+  };
+
+  const filtered = donations.filter(d => {
+    const matchStatus = filterStatus === "all" || d.status === filterStatus;
+    const q = search.toLowerCase();
+    const matchSearch = !q ||
+      (d.donor_name || "").toLowerCase().includes(q) ||
+      (d.donor_email || "").toLowerCase().includes(q) ||
+      (d.reference || "").toLowerCase().includes(q) ||
+      String(d.amount || "").includes(q);
+    return matchStatus && matchSearch;
+  });
+
+  const totalConfirmed = donations.filter(d => d.status === "confirmed").reduce((s, d) => s + (d.amount_fcfa || d.amount || 0), 0);
+  const totalPending   = donations.filter(d => d.status === "pending").reduce((s, d) => s + (d.amount_fcfa || d.amount || 0), 0);
+
+  const statusBadge = (s) => {
+    if (s === "confirmed") return <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{fr?"Confirmé":"Confirmed"}</span>;
+    if (s === "cancelled") return <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">{fr?"Annulé":"Cancelled"}</span>;
+    return <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{fr?"En attente":"Pending"}</span>;
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">💚 {fr ? "Gestion des dons" : "Donations"}</h2>
+          <p className="text-xs text-gray-400 mt-0.5">{donations.length} {fr ? "dons enregistrés" : "donations recorded"}</p>
+        </div>
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          <button
+            onClick={openManualModal}
+            className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm"
+          >
+            ＋ {fr?"Saisir un don manuel":"Add manual donation"}
+          </button>
+          <button onClick={fetchDonations} className="text-xs text-emerald-600 hover:underline font-medium">↻ {fr?"Actualiser":"Refresh"}</button>
+        </div>
+      </div>
+
+      {/* Modale de saisie manuelle d'un don */}
+      {manualOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => !manualSaving && setManualOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-5 space-y-4 my-8" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="font-black text-lg text-gray-900">📝 {fr?"Don manuel":"Manual donation"}</h3>
+              <button onClick={() => setManualOpen(false)} disabled={manualSaving} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+            </div>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              {fr
+                ? "À utiliser quand tu reçois un paiement Wave (ou autre) sans qu'aucune ligne pending n'apparaisse dans Ayyad. Tu remplis ce que tu vois dans la notif Wave Business."
+                : "Use this when you receive a Wave payment (or other) but no pending line appears in Ayyad. Fill in what you see in the Wave Business notification."}
+            </p>
+            {manualError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-xs text-red-700">{manualError}</div>
+            )}
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-600 font-semibold">{fr?"Dossier *":"Case *"}</label>
+                <select
+                  value={manualForm.case_id}
+                  onChange={e => setManualForm(f => ({...f, case_id: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 bg-white"
+                >
+                  <option value="">— {fr?"Sélectionner":"Select"} —</option>
+                  {manualCases.map(c => {
+                    const t = typeof c.title === "object" ? (c.title.fr || c.title.en) : c.title;
+                    return <option key={c.id} value={c.id}>{(c.tracking_id || c.id.slice(0,8)) + " — " + (t || c.full_name || c.beneficiary || "—")}</option>;
+                  })}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-600 font-semibold">{fr?"Montant (FCFA) *":"Amount (FCFA) *"}</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={manualForm.amount}
+                  onChange={e => setManualForm(f => ({...f, amount: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1"
+                  placeholder="500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-gray-600 font-semibold">{fr?"Méthode":"Method"}</label>
+                  <select
+                    value={manualForm.payment_method}
+                    onChange={e => setManualForm(f => ({...f, payment_method: e.target.value}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 bg-white"
+                  >
+                    <option value="WAVE">🌊 Wave</option>
+                    <option value="CASH">💵 {fr?"Espèces":"Cash"}</option>
+                    <option value="BANK">🏦 {fr?"Virement banc.":"Bank transfer"}</option>
+                    <option value="OTHER">{fr?"Autre":"Other"}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 font-semibold">{fr?"Statut":"Status"}</label>
+                  <select
+                    value={manualForm.status}
+                    onChange={e => setManualForm(f => ({...f, status: e.target.value}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 bg-white"
+                  >
+                    <option value="confirmed">{fr?"Confirmé":"Confirmed"}</option>
+                    <option value="pending">{fr?"En attente":"Pending"}</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-gray-600 font-semibold">{fr?"Nom du donateur":"Donor name"}</label>
+                <input
+                  type="text"
+                  value={manualForm.donor_name}
+                  onChange={e => setManualForm(f => ({...f, donor_name: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1"
+                  placeholder={fr?"(optionnel — anonyme par défaut)":"(optional — anonymous by default)"}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-600 font-semibold">{fr?"Référence Wave / N° transaction":"Wave reference / Tx number"}</label>
+                <input
+                  type="text"
+                  value={manualForm.reference}
+                  onChange={e => setManualForm(f => ({...f, reference: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 font-mono"
+                  placeholder="TAUW20260429..."
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                disabled={manualSaving}
+                onClick={() => setManualOpen(false)}
+                className="border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl text-sm disabled:opacity-50"
+              >{fr?"Annuler":"Cancel"}</button>
+              <button
+                disabled={manualSaving}
+                onClick={submitManualDonation}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm shadow-sm disabled:opacity-60"
+              >{manualSaving ? (fr?"Enregistrement…":"Saving…") : (fr?"Enregistrer le don":"Save donation")}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {msg && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold px-4 py-3 rounded-xl">{msg}</div>}
+
+      {/* KPIs */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+          <div className="text-xl font-black text-gray-900">{donations.filter(d=>d.status==="pending").length}</div>
+          <div className="text-[11px] text-amber-600 font-bold mt-0.5">{fr?"En attente":"Pending"}</div>
+          <div className="text-[10px] text-gray-400">{new Intl.NumberFormat("fr").format(totalPending)} FCFA</div>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+          <div className="text-xl font-black text-emerald-700">{donations.filter(d=>d.status==="confirmed").length}</div>
+          <div className="text-[11px] text-emerald-600 font-bold mt-0.5">{fr?"Confirmés":"Confirmed"}</div>
+          <div className="text-[10px] text-gray-400">{new Intl.NumberFormat("fr").format(totalConfirmed)} FCFA</div>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+          <div className="text-xl font-black text-red-500">{donations.filter(d=>d.status==="cancelled").length}</div>
+          <div className="text-[11px] text-red-500 font-bold mt-0.5">{fr?"Annulés":"Cancelled"}</div>
+        </div>
+      </div>
+
+      {/* Filtres */}
+      <div className="flex gap-2 flex-wrap">
+        <input
+          value={search} onChange={e=>setSearch(e.target.value)}
+          placeholder={fr?"🔍 Rechercher donateur, référence…":"🔍 Search donor, reference…"}
+          className="flex-1 min-w-[180px] border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400"
+        />
+        {["all","pending","confirmed","cancelled"].map(s => (
+          <button key={s} onClick={()=>setFilterStatus(s)}
+            className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${filterStatus===s?"bg-emerald-600 text-white border-emerald-600":"bg-white text-gray-500 border-gray-200 hover:border-emerald-400"}`}>
+            {s==="all"?(fr?"Tous":"All"):s==="pending"?(fr?"En attente":"Pending"):s==="confirmed"?(fr?"Confirmés":"Confirmed"):(fr?"Annulés":"Cancelled")}
+          </button>
+        ))}
+      </div>
+
+      {/* Liste */}
+      {loading ? (
+        <div className="text-center py-12 text-gray-400 text-sm">{fr?"Chargement…":"Loading…"}</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 text-gray-400 text-sm">{fr?"Aucun don trouvé.":"No donations found."}</div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map(d => (
+            <div key={d.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  {/* Ligne 1 : montant + statut */}
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-black text-gray-900 text-base">{new Intl.NumberFormat("fr").format(d.amount_fcfa || d.amount)} FCFA</span>
+                    {d.currency !== "FCFA" && <span className="text-[10px] text-gray-400">({d.amount} {d.currency})</span>}
+                    {statusBadge(d.status)}
+                    <span className="text-[10px] text-gray-400">{d.payment_method === "WAVE" ? "🌊 Wave" : "💳 Carte"}</span>
+                  </div>
+                  {/* Ligne 2 : dossier */}
+                  {d.reference && (
+                    <div className="text-[11px] text-blue-600 font-mono mb-1">📂 {d.reference}</div>
+                  )}
+                  {/* Ligne 3 : donateur */}
+                  <div className="text-xs text-gray-500">
+                    {d.donor_name
+                      ? <><span className="font-semibold text-gray-700">{d.donor_name}</span>{d.donor_email && ` · ${d.donor_email}`}</>
+                      : <span className="italic text-gray-400">{fr?"Donateur anonyme":"Anonymous donor"}</span>
+                    }
+                  </div>
+                  {/* Message */}
+                  {d.message && <div className="text-[11px] text-emerald-600 italic mt-1">"{d.message}"</div>}
+                  {/* Date */}
+                  <div className="text-[10px] text-gray-300 mt-1">{new Date(d.created_at).toLocaleString(fr?"fr-CI":"en-US")}</div>
+                </div>
+                {/* Actions */}
+                {d.status === "pending" && (
+                  <div className="flex flex-col gap-1.5 flex-shrink-0">
+                    <button onClick={() => confirm(d.id)}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-colors">
+                      ✓ {fr?"Confirmer":"Confirm"}
+                    </button>
+                    <button onClick={() => cancel(d.id)}
+                      className="border border-red-200 text-red-500 hover:bg-red-50 text-xs font-bold px-3 py-1.5 rounded-xl transition-colors">
+                      ✕ {fr?"Annuler":"Cancel"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Composant Gestion des comptes Admin ──────────────────────────────
+const AdminAccountsTab = ({ lang, user: currentUser }) => {
+  const fr = lang === "fr";
+  const [accounts, setAccounts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all"); // all | admin | banned | regular
+  const [actionModal, setActionModal] = useState(null); // { account, action }
+  const [banReason, setBanReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [stats, setStats] = useState({ total: 0, admins: 0, banned: 0, thisMonth: 0 });
+
+  const load = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      setAccounts(data);
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      setStats({
+        total: data.length,
+        admins: data.filter(a => a.is_admin).length,
+        banned: data.filter(a => a.is_banned).length,
+        thisMonth: data.filter(a => new Date(a.created_at) >= monthStart).length,
+      });
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const fmtDate = (iso) => {
+    if (!iso) return "—";
+    return new Date(iso).toLocaleDateString(fr ? "fr-CI" : "en-US", { day:"2-digit", month:"short", year:"numeric" });
+  };
+
+  const fmtLast = (iso) => {
+    if (!iso) return fr ? "Jamais connecté" : "Never logged in";
+    const diff = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (diff < 60) return fr ? "À l'instant" : "Just now";
+    if (diff < 3600) return Math.floor(diff/60) + (fr ? " min" : " min ago");
+    if (diff < 86400) return Math.floor(diff/3600) + (fr ? " h" : " h ago");
+    if (diff < 2592000) return Math.floor(diff/86400) + (fr ? " j" : " d ago");
+    return fmtDate(iso);
+  };
+
+  const doAction = async () => {
+    if (!actionModal) return;
+    setSaving(true);
+    const { account, action } = actionModal;
+    let update = {};
+    if (action === "ban") update = { is_banned: true, ban_reason: banReason || (fr ? "Violation des conditions" : "Terms violation") };
+    if (action === "unban") update = { is_banned: false, ban_reason: null };
+    if (action === "promote") update = { is_admin: true };
+    if (action === "demote") update = { is_admin: false };
+    const { error } = await supabase.from("profiles").update(update).eq("id", account.id);
+    // Synchroniser avec admin_users via l'endpoint sécurisé /api/promote-admin
+    if (!error && (action === "promote" || action === "demote")) {
+      const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+      const token = session?.access_token || null;
+      const fullName = account.full_name || account.name || (account.email||"").split("@")[0];
+      try {
+        const pr = await fetch("/api/promote-admin", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            action,
+            target_user_id: account.id,
+            target_email: account.email,
+            target_full_name: fullName,
+          }),
+        });
+        if (!pr.ok) {
+          const pe = await pr.json().catch(() => ({}));
+          console.error("[promote-admin] Erreur:", pe.error);
+        }
+      } catch (e) {
+        console.error("[promote-admin] Erreur réseau:", e);
+      }
+    }
+    if (!error) {
+      setAccounts(prev => prev.map(a => a.id === account.id ? { ...a, ...update } : a));
+      setStats(s => ({
+        ...s,
+        admins: action === "promote" ? s.admins + 1 : action === "demote" ? s.admins - 1 : s.admins,
+        banned: action === "ban" ? s.banned + 1 : action === "unban" ? s.banned - 1 : s.banned,
+      }));
+    }
+    setSaving(false);
+    setActionModal(null);
+    setBanReason("");
+  };
+
+  const filtered = accounts.filter(a => {
+    if (filter === "admin" && !a.is_admin) return false;
+    if (filter === "banned" && !a.is_banned) return false;
+    if (filter === "regular" && (a.is_admin || a.is_banned)) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return (a.email||"").toLowerCase().includes(q) || (a.full_name||a.name||"").toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  const statCards = [
+    { label: fr ? "Comptes total" : "Total accounts", value: stats.total, icon: "👤", color: "emerald" },
+    { label: fr ? "Ce mois" : "This month", value: stats.thisMonth, icon: "🆕", color: "blue" },
+    { label: fr ? "Admins" : "Admins", value: stats.admins, icon: "🛡️", color: "purple" },
+    { label: fr ? "Bannis" : "Banned", value: stats.banned, icon: "🚫", color: "red" },
+  ];
+
+  const colorMap = { emerald: "bg-emerald-50 text-emerald-700 border-emerald-100", blue: "bg-blue-50 text-blue-700 border-blue-100", purple: "bg-purple-50 text-purple-700 border-purple-100", red: "bg-red-50 text-red-700 border-red-100" };
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">👤 {fr ? "Gestion des comptes" : "Account Management"}</h2>
+          <p className="text-sm text-gray-500 mt-0.5">{fr ? "Tous les comptes inscrits sur la plateforme" : "All accounts registered on the platform"}</p>
+        </div>
+        <button onClick={load} className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-gray-600">🔄 {fr ? "Actualiser" : "Refresh"}</button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {statCards.map(s => (
+          <div key={s.label} className={`rounded-xl border p-4 ${colorMap[s.color]}`}>
+            <div className="text-2xl font-black">{loading ? "—" : s.value}</div>
+            <div className="text-xs font-medium mt-1 opacity-80">{s.icon} {s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters + Search */}
+      <div className="flex flex-wrap gap-2">
+        {[["all", fr?"Tous":"All"],["regular",fr?"Standard":"Regular"],["admin","Admin"],["banned",fr?"Bannis":"Banned"]].map(([id,lbl]) => (
+          <button key={id} onClick={() => setFilter(id)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filter===id ? "bg-emerald-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>{lbl}</button>
+        ))}
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder={fr ? "Rechercher nom ou email..." : "Search name or email..."}
+          className="flex-1 min-w-[200px] border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400"
+        />
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <div className="text-center text-gray-400 py-12">⏳ {fr ? "Chargement..." : "Loading..."}</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center text-gray-400 py-12">{fr ? "Aucun compte trouvé" : "No accounts found"}</div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+            <span className="text-xs text-gray-500 font-medium">{filtered.length} {fr ? "compte(s)" : "account(s)"}</span>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {filtered.map(a => (
+              <div key={a.id} className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${a.is_banned ? "opacity-60" : ""}`}>
+                {/* Avatar */}
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${a.is_admin ? "bg-purple-100 text-purple-700" : a.is_banned ? "bg-red-100 text-red-500" : "bg-emerald-100 text-emerald-700"}`}>
+                  {(a.full_name || a.name || a.email || "?")[0].toUpperCase()}
+                </div>
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-sm text-gray-800 truncate">{a.full_name || a.name || "—"}</span>
+                    {a.is_admin && <span className="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded-full">🛡️ Admin</span>}
+                    {a.is_banned && <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">🚫 {fr?"Banni":"Banned"}</span>}
+                  </div>
+                  <div className="text-xs text-gray-400 truncate">{a.email || "—"}</div>
+                </div>
+                {/* Dates */}
+                <div className="hidden sm:block text-right flex-shrink-0">
+                  <div className="text-xs text-gray-500">{fr ? "Inscrit" : "Joined"}: {fmtDate(a.created_at)}</div>
+                  <div className="text-xs text-gray-400">{fr ? "Dernière co." : "Last login"}: {fmtLast(a.last_login)}</div>
+                </div>
+                {/* Actions */}
+                {a.id !== currentUser?.id && (
+                  <div className="flex gap-1 flex-shrink-0">
+                    {a.is_banned ? (
+                      <button onClick={() => setActionModal({ account: a, action: "unban" })} className="text-xs bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-lg hover:bg-green-100 font-medium">✓ {fr?"Réactiver":"Unban"}</button>
+                    ) : (
+                      <button onClick={() => setActionModal({ account: a, action: "ban" })} className="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg hover:bg-red-100 font-medium">🚫 {fr?"Bannir":"Ban"}</button>
+                    )}
+                    {a.is_admin ? (
+                      <button onClick={() => setActionModal({ account: a, action: "demote" })} className="text-xs bg-purple-50 text-purple-600 border border-purple-200 px-2.5 py-1 rounded-lg hover:bg-purple-100 font-medium">↓ {fr?"Retirer admin":"Remove admin"}</button>
+                    ) : (
+                      <button onClick={() => setActionModal({ account: a, action: "promote" })} className="text-xs bg-purple-50 text-purple-600 border border-purple-200 px-2.5 py-1 rounded-lg hover:bg-purple-100 font-medium">🛡️ {fr?"Promouvoir":"Promote"}</button>
+                    )}
+                  </div>
+                )}
+                {a.id === currentUser?.id && (
+                  <span className="text-xs text-gray-400 italic flex-shrink-0">{fr?"(vous)":"(you)"}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Action Modal */}
+      {actionModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+            <h3 className="font-black text-lg text-gray-900 mb-2">
+              {actionModal.action === "ban" && (fr ? "🚫 Bannir ce compte" : "🚫 Ban this account")}
+              {actionModal.action === "unban" && (fr ? "✓ Réactiver ce compte" : "✓ Unban this account")}
+              {actionModal.action === "promote" && (fr ? "🛡️ Promouvoir en admin" : "🛡️ Promote to admin")}
+              {actionModal.action === "demote" && (fr ? "↓ Retirer les droits admin" : "↓ Remove admin rights")}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              <strong>{actionModal.account.full_name || actionModal.account.name || actionModal.account.email}</strong>
+            </p>
+            {actionModal.action === "ban" && (
+              <textarea
+                value={banReason}
+                onChange={e => setBanReason(e.target.value)}
+                rows={2}
+                placeholder={fr ? "Motif du bannissement..." : "Ban reason..."}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400 mb-4"
+              />
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => { setActionModal(null); setBanReason(""); }} className="border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl text-sm">{fr?"Annuler":"Cancel"}</button>
+              <button onClick={doAction} disabled={saving} className={`font-bold py-2.5 rounded-xl text-sm text-white shadow-md ${actionModal.action==="ban"?"bg-red-600":actionModal.action==="promote"?"bg-purple-600":"bg-emerald-600"}`}>
+                {saving ? "..." : (fr?"Confirmer":"Confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AdminVisitorsTab = ({ lang }) => {
+  const fr = lang === "fr";
+  const [visitors, setVisitors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("user_activity")
+      .select("*")
+      .order("last_seen", { ascending: false })
+      .limit(200);
+    setVisitors(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const fmt = (iso) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = Math.floor((now - d) / 1000);
+    if (diff < 60) return fr ? "À l'instant" : "Just now";
+    if (diff < 3600) return Math.floor(diff / 60) + (fr ? " min" : " min ago");
+    if (diff < 86400) return Math.floor(diff / 3600) + (fr ? " h" : " h ago");
+    return Math.floor(diff / 86400) + (fr ? " j" : " d ago");
+  };
+
+  const filtered = visitors.filter(v =>
+    !search || v.email?.toLowerCase().includes(search.toLowerCase()) || v.name?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">👁️ {fr ? "Visiteurs connectés" : "Logged-in visitors"}</h2>
+          <p className="text-sm text-gray-500 mt-0.5">{fr ? "Utilisateurs qui se sont connectés à la plateforme" : "Users who logged into the platform"}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="bg-emerald-100 text-emerald-700 text-sm font-bold px-3 py-1 rounded-full">{visitors.length} {fr ? "utilisateurs" : "users"}</span>
+          <button onClick={load} className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-gray-600">🔄 {fr ? "Actualiser" : "Refresh"}</button>
+        </div>
+      </div>
+
+      <input
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder={fr ? "Rechercher par nom ou email..." : "Search by name or email..."}
+        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+      />
+
+      {loading ? (
+        <div className="text-center text-gray-400 py-12">⏳ {fr ? "Chargement..." : "Loading..."}</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center text-gray-400 py-12">
+          {search ? (fr ? "Aucun résultat" : "No results") : (fr ? "Aucune visite enregistrée pour l'instant" : "No visits recorded yet")}
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{fr ? "Utilisateur" : "User"}</th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3">Email</th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{fr ? "Dernière visite" : "Last seen"}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((v, i) => (
+                <tr key={v.user_id} className={"border-b border-gray-50 hover:bg-gray-50 transition-colors" + (i === filtered.length - 1 ? " border-0" : "")}>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-sm flex-shrink-0">
+                        {(v.name || v.email || "?")[0].toUpperCase()}
+                      </div>
+                      <span className="font-medium text-gray-800 truncate max-w-[140px]">{v.name || "—"}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 truncate max-w-[180px]">{v.email}</td>
+                  <td className="px-4 py-3">
+                    <span className="text-xs font-semibold bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full whitespace-nowrap">
+                      🟢 {fmt(v.last_seen)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Composant Gestion Témoignages Admin ──────────────────────────────
+const AdminTestimonialsTab = ({ lang, user }) => {
+  const fr = lang === "fr";
+  const [testimonials, setTestimonials] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("pending"); // pending | approved | rejected | all
+  const [editing, setEditing] = useState(null); // témoignage en cours d'édition
+  const [editForm, setEditForm] = useState({});
+  const [msg, setMsg] = useState("");
+
+  const fetchTestimonials = React.useCallback(async () => {
+    setLoading(true);
+    const query = supabase.from("testimonials").select("*").order("created_at", { ascending: false }).limit(200);
+    const { data, error } = filter === "all" ? await query : await query.eq("status", filter);
+    if (!error) setTestimonials(data || []);
+    setLoading(false);
+  }, [filter]);
+
+  useEffect(() => { fetchTestimonials(); }, [fetchTestimonials]);
+
+  const approve = async (id) => {
+    await supabase.from("testimonials").update({ status: "approved", reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq("id", id);
+    setMsg(fr ? "✓ Témoignage approuvé" : "✓ Testimonial approved");
+    fetchTestimonials();
+    setTimeout(() => setMsg(""), 3000);
+  };
+
+  const reject = async (id) => {
+    await supabase.from("testimonials").update({ status: "rejected", reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq("id", id);
+    setMsg(fr ? "Témoignage rejeté" : "Testimonial rejected");
+    fetchTestimonials();
+    setTimeout(() => setMsg(""), 3000);
+  };
+
+  const deleteTestimonial = async (id) => {
+    if (!window.confirm(fr ? "Supprimer ce témoignage ?" : "Delete this testimonial?")) return;
+    await supabase.from("testimonials").delete().eq("id", id);
+    setMsg(fr ? "Témoignage supprimé" : "Testimonial deleted");
+    fetchTestimonials();
+    setTimeout(() => setMsg(""), 3000);
+  };
+
+  const saveEdit = async () => {
+    await supabase.from("testimonials").update({
+      beneficiary: editForm.beneficiary,
+      message_fr: editForm.message_fr,
+      message_en: editForm.message_en,
+      stars: Number(editForm.stars),
+      admin_note: editForm.admin_note,
+    }).eq("id", editing);
+    setEditing(null);
+    setMsg(fr ? "✓ Témoignage modifié" : "✓ Testimonial updated");
+    fetchTestimonials();
+    setTimeout(() => setMsg(""), 3000);
+  };
+
+  const statusColors = { pending: "bg-yellow-100 text-yellow-700", approved: "bg-green-100 text-green-700", rejected: "bg-red-100 text-red-700" };
+  const statusLabels = { pending: fr ? "En attente" : "Pending", approved: fr ? "Approuvé" : "Approved", rejected: fr ? "Rejeté" : "Rejected" };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h2 className="text-xl font-bold text-gray-800">💬 {fr ? "Gestion des témoignages" : "Testimonial management"}</h2>
+        {msg && <span className="text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">{msg}</span>}
+      </div>
+
+      {/* Filtres */}
+      <div className="flex gap-2 flex-wrap">
+        {["pending","approved","rejected","all"].map(s => (
+          <button key={s} onClick={() => setFilter(s)}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${filter===s ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+            {s==="all" ? (fr?"Tous":"All") : statusLabels[s]}
+          </button>
+        ))}
+      </div>
+
+      {loading && <div className="text-center py-10 text-gray-400">{fr ? "Chargement..." : "Loading..."}</div>}
+
+      {!loading && testimonials.length === 0 && (
+        <div className="text-center py-16 text-gray-400">
+          <div className="text-4xl mb-3">💬</div>
+          <p>{fr ? "Aucun témoignage dans cette catégorie." : "No testimonials in this category."}</p>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {testimonials.map(t => (
+          <div key={t.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            {editing === t.id ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 mb-1 block">{fr?"Nom":"Name"}</label>
+                    <input value={editForm.beneficiary||""} onChange={e=>setEditForm(f=>({...f,beneficiary:e.target.value}))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 mb-1 block">⭐ {fr?"Note":"Stars"}</label>
+                    <select value={editForm.stars||5} onChange={e=>setEditForm(f=>({...f,stars:e.target.value}))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                      {[5,4,3,2,1].map(n=><option key={n} value={n}>{n} ⭐</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Message (FR)</label>
+                  <textarea value={editForm.message_fr||""} onChange={e=>setEditForm(f=>({...f,message_fr:e.target.value}))}
+                    rows={4} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Message (EN)</label>
+                  <textarea value={editForm.message_en||""} onChange={e=>setEditForm(f=>({...f,message_en:e.target.value}))}
+                    rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">{fr?"Note interne (non visible)":"Internal note (not public)"}</label>
+                  <input value={editForm.admin_note||""} onChange={e=>setEditForm(f=>({...f,admin_note:e.target.value}))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button onClick={saveEdit} className="bg-emerald-600 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-emerald-700">
+                    {fr?"Enregistrer":"Save"}
+                  </button>
+                  <button onClick={()=>setEditing(null)} className="bg-gray-100 text-gray-700 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-gray-200">
+                    {fr?"Annuler":"Cancel"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-gray-800">{t.beneficiary}</span>
+                      {t.age && <span className="text-xs text-gray-400">{t.age} ans</span>}
+                      {t.city && <span className="text-xs text-gray-400">· {t.city}</span>}
+                      {t.hospital && <span className="text-xs text-gray-400">· {t.hospital}</span>}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusColors[t.status]}`}>{statusLabels[t.status]}</span>
+                      {t.category_fr && <span className="text-xs text-gray-400">{t.category_fr}</span>}
+                      {t.amount && <span className="text-xs font-semibold text-emerald-700">{t.amount.toLocaleString()} FCFA</span>}
+                      <span className="text-xs text-gray-300">{new Date(t.created_at).toLocaleDateString("fr-FR")}</span>
+                    </div>
+                  </div>
+                  <span className="text-lg">{"⭐".repeat(t.stars||5)}</span>
+                </div>
+                <blockquote className="text-sm text-gray-700 italic border-l-3 border-emerald-300 pl-3 mb-3">
+                  "{t.message_fr}"
+                </blockquote>
+                {t.admin_note && (
+                  <div className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mb-3">
+                    📝 {t.admin_note}
+                  </div>
+                )}
+                <div className="flex gap-2 flex-wrap">
+                  {t.status !== "approved" && (
+                    <button onClick={()=>approve(t.id)} className="text-xs bg-green-600 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-green-700">
+                      ✓ {fr?"Approuver":"Approve"}
+                    </button>
+                  )}
+                  {t.status !== "rejected" && (
+                    <button onClick={()=>reject(t.id)} className="text-xs bg-orange-500 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-orange-600">
+                      ✗ {fr?"Rejeter":"Reject"}
+                    </button>
+                  )}
+                  <button onClick={()=>{ setEditing(t.id); setEditForm({beneficiary:t.beneficiary,message_fr:t.message_fr,message_en:t.message_en,stars:t.stars,admin_note:t.admin_note||""}); }}
+                    className="text-xs bg-gray-100 text-gray-700 font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-200">
+                    ✏️ {fr?"Modifier":"Edit"}
+                  </button>
+                  <button onClick={()=>deleteTestimonial(t.id)} className="text-xs bg-red-50 text-red-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-red-100">
+                    🗑️ {fr?"Supprimer":"Delete"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ── AdminExportTab — super_admin uniquement ───────────────────
+const AdminExportTab = ({ lang, user }) => {
+  const fr = lang === "fr";
+  const fmtN = n => (n||0).toLocaleString("fr-FR");
+
+  // État
+  const today = new Date().toISOString().slice(0,10);
+  const firstDay = new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0,10);
+  const [dateFrom, setDateFrom] = useState(firstDay);
+  const [dateTo,   setDateTo]   = useState(today);
+  const [loading,  setLoading]  = useState(false);
+  const [sections, setSections] = useState({
+    dossiers: true, dons: true, virements: true,
+    finance: true, salaires: true, bilan: true, audit: true
+  });
+
+  const toggleSection = k => setSections(p => ({...p, [k]: !p[k]}));
+
+  // Labels sections
+  const SECTION_LABELS = {
+    dossiers:  fr ? "📋 Dossiers"        : "📋 Cases",
+    dons:      fr ? "💚 Dons"            : "💚 Donations",
+    virements: fr ? "🏦 Virements"       : "🏦 Payouts",
+    finance:   fr ? "💰 Finance"         : "💰 Finance",
+    salaires:  fr ? "👔 Salaires"        : "👔 Salaries",
+    bilan:     fr ? "📈 Bilan"           : "📈 Reporting",
+    audit:     fr ? "📝 Journal d'audit" : "📝 Audit log",
+  };
+
+  // ── Fetch toutes les données ──
+  const fetchData = async () => {
+    const from = dateFrom ? new Date(dateFrom).toISOString() : null;
+    const to   = dateTo   ? new Date(dateTo + "T23:59:59").toISOString() : null;
+    const applyRange = (q, field) => {
+      if (from) q = q.gte(field, from);
+      if (to)   q = q.lte(field, to);
+      return q;
+    };
+
+    const fetches = {};
+    if (sections.dossiers || sections.bilan || sections.virements) {
+      let q = supabase.from("cases").select("*").order("created_at", {ascending:false}).limit(1000);
+      q = applyRange(q, "created_at");
+      fetches.cases = q;
+    }
+    if (sections.dons) {
+      let q = supabase.from("donations").select("*").order("created_at", {ascending:false}).limit(1000);
+      q = applyRange(q, "created_at");
+      fetches.donations = q;
+    }
+    if (sections.salaires || sections.bilan) {
+      let q = supabase.from("salary_payments").select("*, staff_members(name,role)").order("payment_date", {ascending:false}).limit(500);
+      q = applyRange(q, "payment_date");
+      fetches.salaries = q;
+    }
+    if (sections.finance || sections.bilan) {
+      let q = supabase.from("ayyad_expenses").select("*").order("date", {ascending:false}).limit(500);
+      q = applyRange(q, "date");
+      fetches.expenses = q;
+    }
+    if (sections.audit) {
+      let q = supabase.from("audit_log").select("*").order("created_at", {ascending:false}).limit(500);
+      q = applyRange(q, "created_at");
+      fetches.audit = q;
+    }
+
+    const keys = Object.keys(fetches);
+    const results = await Promise.all(keys.map(k => fetches[k]));
+    const data = {};
+    keys.forEach((k,i) => { data[k] = results[i].data || []; });
+    return data;
+  };
+
+  // ── Helpers XML ──
+  const xmlCell = (val, type="String") => {
+    const safe = String(val ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    if (type==="Number") return `<Cell><Data ss:Type="Number">${safe}</Data></Cell>`;
+    return `<Cell><Data ss:Type="String">${safe}</Data></Cell>`;
+  };
+  const xmlRow = cols => `<Row>${cols.join("")}</Row>`;
+  const xmlHeader = cols => `<Row>${cols.map(c=>`<Cell ss:StyleID="header"><Data ss:Type="String">${String(c).replace(/&/g,"&amp;")}</Data></Cell>`).join("")}</Row>`;
+
+  const buildSheet = (name, headers, rows) => {
+    const headerRow = xmlHeader(headers);
+    const dataRows = rows.map(r => xmlRow(r.map((v,i) => {
+      const isNum = typeof v === "number";
+      return xmlCell(v ?? "", isNum ? "Number" : "String");
+    }))).join("\n");
+    return `<Worksheet ss:Name="${name.replace(/[\\/*?[\]]/g,"_").slice(0,31)}">
+<Table>
+${headerRow}
+${dataRows}
+</Table>
+</Worksheet>`;
+  };
+
+  // ── Export Excel (SpreadsheetML) ──
+  const exportExcel = async () => {
+    setLoading(true);
+    try {
+      const d = await fetchData();
+      const sheets = [];
+
+      if (sections.dossiers && d.cases) {
+        const headers = fr
+          ? ["Ref","Titre","Bénéficiaire","Hôpital","Ville","Catégorie","Objectif","Collecté","Donateurs","Statut","Urgent","Date"]
+          : ["Ref","Title","Beneficiary","Hospital","City","Category","Goal","Collected","Donors","Status","Urgent","Date"];
+        const rows = d.cases.map(c => [
+          c.tracking_id||"", c.title||"", c.full_name||"", c.hospital||"", c.city||"",
+          c.category||"", c.amount||0, c.collected||0, c.donors||0,
+          c.status||"", c.urgent?"Oui":"Non", c.created_at?.slice(0,10)||""
+        ]);
+        sheets.push(buildSheet(fr?"Dossiers":"Cases", headers, rows));
+      }
+
+      if (sections.dons && d.donations) {
+        const headers = fr
+          ? ["Date","Donateur","Email","Montant (FCFA)","Devise","Méthode","Statut","Message","Référence"]
+          : ["Date","Donor","Email","Amount (FCFA)","Currency","Method","Status","Message","Reference"];
+        const rows = d.donations.map(r => [
+          r.created_at?.slice(0,10)||"", r.donor_name||"Anonyme", r.donor_email||"",
+          r.amount_fcfa||r.amount||0, r.currency||"FCFA", r.payment_method||"",
+          r.status||"", r.message||"", r.reference||""
+        ]);
+        sheets.push(buildSheet(fr?"Dons":"Donations", headers, rows));
+      }
+
+      if (sections.virements && d.cases) {
+        const payouts = d.cases.filter(c=>c.payout_status);
+        const headers = fr
+          ? ["Ref","Titre","Hôpital","Collecté","Montant hôpital","Frais Ayyad","Statut virement","Date virement"]
+          : ["Ref","Title","Hospital","Collected","Hospital amount","Ayyad fee","Payout status","Payout date"];
+        const rows = payouts.map(c => {
+          const col = c.collected||0;
+          const fee = Math.round(col*0.05);
+          return [c.tracking_id||"", c.title||"", c.hospital||"", col, col-fee, fee, c.payout_status||"", c.payout_date?.slice(0,10)||""];
+        });
+        sheets.push(buildSheet(fr?"Virements":"Payouts", headers, rows));
+      }
+
+      if (sections.finance && d.expenses) {
+        const headers = fr
+          ? ["Date","Libellé","Catégorie","Montant (FCFA)","Référence"]
+          : ["Date","Label","Category","Amount (FCFA)","Reference"];
+        const rows = d.expenses.map(e => [e.date?.slice(0,10)||"", e.label||"", e.category||"", e.amount||0, e.reference||""]);
+        sheets.push(buildSheet(fr?"Finance":"Finance", headers, rows));
+      }
+
+      if (sections.salaires && d.salaries) {
+        const headers = fr
+          ? ["Mois","Employé","Rôle","Montant (FCFA)","Méthode","Statut","Date paiement"]
+          : ["Month","Employee","Role","Amount (FCFA)","Method","Status","Payment date"];
+        const rows = d.salaries.map(p => [
+          p.payment_month||"", p.staff_members?.name||"", p.staff_members?.role||"",
+          p.amount||0, p.payment_method||"WAVE", p.status||"", p.payment_date?.slice(0,10)||""
+        ]);
+        sheets.push(buildSheet(fr?"Salaires":"Salaries", headers, rows));
+      }
+
+      if (sections.bilan && d.cases) {
+        const allActive = d.cases.filter(c=>!["PENDING","REJECTED"].includes(c.status));
+        const totalCol = allActive.reduce((s,c)=>s+(c.collected||0),0);
+        const fees = Math.round(totalCol*0.05);
+        const totalSal = (d.salaries||[]).reduce((s,p)=>s+(p.amount||0),0);
+        const totalExp = (d.expenses||[]).reduce((s,e)=>s+(e.amount||0),0);
+        const headers = fr ? ["Indicateur","Valeur"] : ["Indicator","Value"];
+        const rows = [
+          [fr?"Période":"Period", `${dateFrom} → ${dateTo}`],
+          [fr?"Nombre de dossiers":"Number of cases", allActive.length],
+          [fr?"Total collecté (FCFA)":"Total raised (FCFA)", totalCol],
+          [fr?"Frais Ayyad 5% (FCFA)":"Ayyad 5% fee (FCFA)", fees],
+          [fr?"Total salaires (FCFA)":"Total salaries (FCFA)", totalSal],
+          [fr?"Total charges (FCFA)":"Total expenses (FCFA)", totalExp],
+          [fr?"Solde (FCFA)":"Balance (FCFA)", fees - totalSal - totalExp],
+          [fr?"Dossiers objectif atteint":"Cases goal reached", allActive.filter(c=>(c.collected||0)>=(c.amount||1)).length],
+          [fr?"Virements confirmés":"Confirmed payouts", allActive.filter(c=>c.payout_status==="confirmed").length],
+        ];
+        sheets.push(buildSheet(fr?"Bilan":"Reporting", headers, rows));
+      }
+
+      if (sections.audit && d.audit) {
+        const headers = fr
+          ? ["Horodatage","Opérateur","Rôle","Action","Cible","Ancienne valeur","Nouvelle valeur"]
+          : ["Timestamp","Operator","Role","Action","Target","Old value","New value"];
+        const rows = d.audit.map(l => [
+          l.created_at?.slice(0,19).replace("T"," ")||"",
+          l.user_email||"", l.user_role||"", l.action||"",
+          l.target||"", l.old_value||"", l.new_value||""
+        ]);
+        sheets.push(buildSheet(fr?"Journal audit":"Audit log", headers, rows));
+      }
+
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:x="urn:schemas-microsoft-com:office:excel">
+<Styles>
+  <Style ss:ID="header">
+    <Font ss:Bold="1" ss:Color="#FFFFFF"/>
+    <Interior ss:Color="#0d5c2e" ss:Pattern="Solid"/>
+  </Style>
+</Styles>
+${sheets.join("\n")}
+</Workbook>`;
+
+      const blob = new Blob([xml], {type:"application/vnd.ms-excel;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `ayyad_export_${dateFrom}_${dateTo}.xls`;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch(e) { console.error("Export Excel error:", e); alert(fr?"Erreur lors de l'export.":"Export error."); }
+    setLoading(false);
+  };
+
+  // ── Export PDF (HTML print) ──
+  const exportPDF = async () => {
+    setLoading(true);
+    try {
+      const d = await fetchData();
+      const period = `${dateFrom} → ${dateTo}`;
+      const now = new Date().toLocaleString("fr");
+
+      let html = `<!DOCTYPE html><html lang="${lang}"><head><meta charset="UTF-8">
+<title>Ayyad — Export ${period}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111;background:#fff;padding:20px}
+  h1{font-size:18px;color:#0d5c2e;margin-bottom:4px}
+  .sub{color:#6b7280;font-size:10px;margin-bottom:20px}
+  h2{font-size:13px;color:#0d5c2e;margin:24px 0 8px;border-bottom:2px solid #0d5c2e;padding-bottom:4px}
+  table{width:100%;border-collapse:collapse;margin-bottom:12px}
+  th{background:#0d5c2e;color:#fff;padding:5px 7px;text-align:left;font-size:10px}
+  td{padding:4px 7px;border-bottom:1px solid #e5e7eb;font-size:10px}
+  tr:nth-child(even) td{background:#f9fafb}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+  .kpi{border:1px solid #e5e7eb;border-radius:6px;padding:8px;text-align:center}
+  .kpi-v{font-size:14px;font-weight:700;color:#0d5c2e}
+  .kpi-l{font-size:9px;color:#6b7280;margin-top:2px}
+  .footer{margin-top:30px;border-top:1px solid #e5e7eb;padding-top:10px;font-size:9px;color:#9ca3af}
+  @media print{body{padding:10px}.no-print{display:none}}
+</style></head><body>
+<h1>AYYAD — ${fr?"Rapport d'export":"Export Report"}</h1>
+<div class="sub">${fr?"Période":"Period"} : ${period} · ${fr?"Généré le":"Generated"} : ${now}</div>`;
+
+      if (sections.bilan && d.cases) {
+        const allActive = d.cases.filter(c=>!["PENDING","REJECTED"].includes(c.status));
+        const totalCol = allActive.reduce((s,c)=>s+(c.collected||0),0);
+        const fees = Math.round(totalCol*0.05);
+        const totalSal = (d.salaries||[]).reduce((s,p)=>s+(p.amount||0),0);
+        const totalExp = (d.expenses||[]).reduce((s,e)=>s+(e.amount||0),0);
+        const balance = fees - totalSal - totalExp;
+        html += `<h2>${fr?"Bilan de la période":"Period Summary"}</h2>
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-v">${allActive.length}</div><div class="kpi-l">${fr?"Dossiers":"Cases"}</div></div>
+  <div class="kpi"><div class="kpi-v">${fmtN(totalCol)}</div><div class="kpi-l">${fr?"Collecté (FCFA)":"Raised (FCFA)"}</div></div>
+  <div class="kpi"><div class="kpi-v">${fmtN(fees)}</div><div class="kpi-l">${fr?"Frais Ayyad 5%":"Ayyad 5% fee"}</div></div>
+  <div class="kpi"><div class="kpi-v" style="color:${balance<0?"#dc2626":"#0d5c2e"}">${fmtN(balance)}</div><div class="kpi-l">${fr?"Solde":"Balance"}</div></div>
+</div>`;
+      }
+
+      if (sections.dossiers && d.cases) {
+        html += `<h2>${fr?"Dossiers":"Cases"}</h2>
+<table><thead><tr>
+  <th>${fr?"Référence":"Ref"}</th><th>${fr?"Titre":"Title"}</th><th>${fr?"Bénéficiaire":"Beneficiary"}</th>
+  <th>${fr?"Hôpital":"Hospital"}</th><th>${fr?"Objectif":"Goal"}</th><th>${fr?"Collecté":"Raised"}</th><th>Statut</th>
+</tr></thead><tbody>`;
+        d.cases.forEach(c => {
+          html += `<tr><td>${c.tracking_id||""}</td><td>${c.title||""}</td><td>${c.full_name||""}</td>
+<td>${c.hospital||""}</td><td>${fmtN(c.amount||0)}</td><td>${fmtN(c.collected||0)}</td><td>${c.status||""}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+
+      if (sections.dons && d.donations) {
+        const totalDons = d.donations.filter(d=>d.status==="confirmed").reduce((s,d)=>s+(d.amount_fcfa||d.amount||0),0);
+        html += `<h2>${fr?"Dons":"Donations"} (${d.donations.length} — ${fmtN(totalDons)} FCFA ${fr?"confirmés":"confirmed"})</h2>
+<table><thead><tr>
+  <th>${fr?"Date":"Date"}</th><th>${fr?"Donateur":"Donor"}</th><th>${fr?"Montant":"Amount"}</th>
+  <th>${fr?"Méthode":"Method"}</th><th>Statut</th>
+</tr></thead><tbody>`;
+        d.donations.forEach(r => {
+          html += `<tr><td>${r.created_at?.slice(0,10)||""}</td><td>${r.donor_name||"Anonyme"}</td>
+<td>${fmtN(r.amount_fcfa||r.amount||0)} FCFA</td><td>${r.payment_method||""}</td><td>${r.status||""}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+
+      if (sections.virements && d.cases) {
+        const payouts = d.cases.filter(c=>c.payout_status);
+        if (payouts.length > 0) {
+          html += `<h2>${fr?"Virements hospitaliers":"Hospital Payouts"}</h2>
+<table><thead><tr>
+  <th>${fr?"Référence":"Ref"}</th><th>${fr?"Hôpital":"Hospital"}</th><th>${fr?"Collecté":"Raised"}</th>
+  <th>${fr?"Montant hôpital":"Hospital amount"}</th><th>${fr?"Frais Ayyad":"Ayyad fee"}</th><th>Statut</th>
+</tr></thead><tbody>`;
+          payouts.forEach(c => {
+            const col = c.collected||0;
+            const fee = Math.round(col*0.05);
+            html += `<tr><td>${c.tracking_id||""}</td><td>${c.hospital||""}</td><td>${fmtN(col)}</td>
+<td>${fmtN(col-fee)}</td><td>${fmtN(fee)}</td><td>${c.payout_status||""}</td></tr>`;
+          });
+          html += `</tbody></table>`;
+        }
+      }
+
+      if (sections.salaires && d.salaries) {
+        html += `<h2>${fr?"Salaires":"Salaries"}</h2>
+<table><thead><tr>
+  <th>${fr?"Mois":"Month"}</th><th>${fr?"Employé":"Employee"}</th><th>${fr?"Rôle":"Role"}</th>
+  <th>${fr?"Montant":"Amount"}</th><th>Statut</th>
+</tr></thead><tbody>`;
+        d.salaries.forEach(p => {
+          html += `<tr><td>${p.payment_month||""}</td><td>${p.staff_members?.name||""}</td>
+<td>${p.staff_members?.role||""}</td><td>${fmtN(p.amount||0)} FCFA</td><td>${p.status||""}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+
+      if (sections.finance && d.expenses) {
+        html += `<h2>${fr?"Charges de fonctionnement":"Operating Expenses"}</h2>
+<table><thead><tr>
+  <th>${fr?"Date":"Date"}</th><th>${fr?"Libellé":"Label"}</th><th>${fr?"Catégorie":"Category"}</th><th>${fr?"Montant":"Amount"}</th>
+</tr></thead><tbody>`;
+        d.expenses.forEach(e => {
+          html += `<tr><td>${e.date?.slice(0,10)||""}</td><td>${e.label||""}</td><td>${e.category||""}</td><td>${fmtN(e.amount||0)} FCFA</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+
+      if (sections.audit && d.audit) {
+        html += `<h2>${fr?"Journal d'audit":"Audit Log"}</h2>
+<table><thead><tr>
+  <th>${fr?"Horodatage":"Timestamp"}</th><th>${fr?"Opérateur":"Operator"}</th><th>${fr?"Rôle":"Role"}</th>
+  <th>${fr?"Action":"Action"}</th><th>${fr?"Cible":"Target"}</th>
+</tr></thead><tbody>`;
+        d.audit.forEach(l => {
+          html += `<tr><td>${l.created_at?.slice(0,19).replace("T"," ")||""}</td><td>${l.user_email||""}</td>
+<td>${l.user_role||""}</td><td>${l.action||""}</td><td>${l.target||""}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+
+      html += `<div class="footer">AYYAD CI · ${fr?"Rapport généré automatiquement":"Automatically generated report"} · ${now}</div>
+<script>window.onload=()=>window.print();</script>
+</body></html>`;
+
+      const w = window.open("","_blank","width=1000,height=700");
+      if (w) { w.document.write(html); w.document.close(); }
+      else alert(fr?"Autorisez les pop-ups pour générer le PDF.":"Please allow pop-ups to generate the PDF.");
+    } catch(e) { console.error("Export PDF error:", e); alert(fr?"Erreur lors de l'export PDF.":"PDF export error."); }
+    setLoading(false);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-emerald-800 to-emerald-600 rounded-2xl p-5 text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <span className="text-2xl">📤</span>
+          <h2 className="text-lg font-black">{fr?"Export des données":"Data Export"}</h2>
+          <span className="ml-auto bg-purple-200 text-purple-800 text-xs font-bold px-2 py-0.5 rounded-full">super_admin</span>
+        </div>
+        <p className="text-emerald-100 text-xs">
+          {fr?"Exportez les données de la plateforme au format Excel ou PDF.":"Export platform data in Excel or PDF format."}
+        </p>
+      </div>
+
+      {/* Plage de dates */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <h3 className="font-bold text-gray-900 text-sm mb-4">📅 {fr?"Plage de dates":"Date range"}</h3>
+        <div className="flex flex-wrap gap-4 items-center">
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">{fr?"Du":"From"}</label>
+            <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">{fr?"Au":"To"}</label>
+            <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+          </div>
+          <div className="flex gap-2 mt-4">
+            {[
+              {label:fr?"Ce mois":"This month", fn:()=>{const n=new Date();const y=n.getFullYear();const m=n.getMonth();setDateFrom(`${y}-${String(m+1).padStart(2,"0")}-01`);setDateTo(today);}},
+              {label:fr?"Cette année":"This year",  fn:()=>{setDateFrom(`${new Date().getFullYear()}-01-01`);setDateTo(today);}},
+              {label:fr?"Tout":"All",                fn:()=>{setDateFrom("2024-01-01");setDateTo(today);}},
+            ].map(b=>(
+              <button key={b.label} onClick={b.fn}
+                className="text-xs bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-300 text-gray-600 hover:text-emerald-700 px-3 py-1.5 rounded-lg font-medium transition-all">
+                {b.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Sections */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <h3 className="font-bold text-gray-900 text-sm mb-4">📂 {fr?"Sections à inclure":"Sections to include"}</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {Object.keys(SECTION_LABELS).map(k=>(
+            <button key={k} onClick={()=>toggleSection(k)}
+              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-semibold transition-all ${sections[k]?"bg-emerald-50 border-emerald-300 text-emerald-700":"bg-gray-50 border-gray-200 text-gray-500"}`}>
+              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${sections[k]?"bg-emerald-600 border-emerald-600":"border-gray-300"}`}>
+                {sections[k]&&<span className="text-white text-[10px]">✓</span>}
+              </div>
+              {SECTION_LABELS[k]}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 mt-3">
+          <button onClick={()=>setSections({dossiers:true,dons:true,virements:true,finance:true,salaires:true,bilan:true,audit:true})}
+            className="text-xs text-emerald-600 hover:underline font-semibold">{fr?"Tout sélectionner":"Select all"}</button>
+          <span className="text-gray-300">·</span>
+          <button onClick={()=>setSections({dossiers:false,dons:false,virements:false,finance:false,salaires:false,bilan:false,audit:false})}
+            className="text-xs text-gray-400 hover:underline font-semibold">{fr?"Tout désélectionner":"Deselect all"}</button>
+        </div>
+      </div>
+
+      {/* Boutons export */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <button onClick={exportExcel} disabled={loading || !Object.values(sections).some(Boolean)}
+          className="flex items-center justify-center gap-3 bg-emerald-700 hover:bg-emerald-800 disabled:bg-gray-300 text-white font-black py-4 rounded-2xl shadow-md transition-all text-base">
+          <span className="text-2xl">📊</span>
+          <div className="text-left">
+            <div>{loading ? (fr?"Chargement...":"Loading...") : (fr?"Exporter Excel":"Export Excel")}</div>
+            <div className="text-xs text-emerald-200 font-normal">{fr?"Fichier .xls (compatible Excel & LibreOffice)":".xls file (Excel & LibreOffice)"}</div>
+          </div>
+        </button>
+
+        <button onClick={exportPDF} disabled={loading || !Object.values(sections).some(Boolean)}
+          className="flex items-center justify-center gap-3 bg-gray-800 hover:bg-gray-900 disabled:bg-gray-300 text-white font-black py-4 rounded-2xl shadow-md transition-all text-base">
+          <span className="text-2xl">📄</span>
+          <div className="text-left">
+            <div>{loading ? (fr?"Chargement...":"Loading...") : (fr?"Exporter PDF":"Export PDF")}</div>
+            <div className="text-xs text-gray-400 font-normal">{fr?"Impression → Enregistrer en PDF":"Print → Save as PDF"}</div>
+          </div>
+        </button>
+      </div>
+
+      {/* Note */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
+        🔐 {fr
+          ? "Cette fonctionnalité est réservée aux super administrateurs. Toutes les exportations sont enregistrées dans le journal d'audit."
+          : "This feature is restricted to super administrators. All exports are recorded in the audit log."}
+      </div>
+    </div>
+  );
+};
+
+
 const AdminPage = ({ user, setPage, lang }) => {
   const [tab, setTab] = useState("overview");
   const [cases, setCases] = useState([]);
