@@ -280,6 +280,7 @@ const CI_HOPITAUX = [
   { nom: "CHR de Toumodi", ville: "Toumodi", type: "CHR" },
   { nom: "CHR de Yamoussoukro", ville: "Yamoussoukro", type: "CHR" },
   // Cliniques privées Abidjan
+  { nom: "Clinique Providence", ville: "Abidjan", type: "Clinique" },
   { nom: "Clinique Procréa", ville: "Abidjan", type: "Clinique" },
   { nom: "Clinique Sainte Marie", ville: "Abidjan", type: "Clinique" },
   { nom: "Clinique du Plateau", ville: "Abidjan", type: "Clinique" },
