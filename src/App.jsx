@@ -4467,6 +4467,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       disabled={donSubmitting}
                       onClick={async () => {
                         if (donSubmitting) return;
+                        if (c._isDemo) { setDonError("Ceci est un dossier de démonstration. Les dons ne sont pas activés."); return; }
                         setDonError("");
                         setDonSubmitting(true);
                         // On évite de stocker l'email entier comme nom public (RGPD)
