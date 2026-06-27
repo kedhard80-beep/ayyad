@@ -7930,7 +7930,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                         {(c.full_name||c.title||"?")[0].toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-gray-900 truncate">{c.title||c.full_name||lang==="fr"?"Sans titre":"Untitled"}</div>
+                        <div className="text-sm font-semibold text-gray-900 truncate">{c.title || c.full_name || (lang==="fr" ? "Sans titre" : "Untitled")}</div>
                         <div className="text-xs text-gray-500 truncate">🏥 {c.hospital||"—"} · 💰 {c.amount?fmt(c.amount):"—"}</div>
                       </div>
                       <Badge color={statusColor(c.status)}>{t.statusLabels[c.status]||c.status}</Badge>
@@ -7966,7 +7966,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                   <div key={c.id} className="p-5">
                     <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-gray-900 mb-1">{c.title||lang==="fr"?"Sans titre":"Untitled"}</div>
+                        <div className="font-bold text-gray-900 mb-1">{c.title || (lang==="fr" ? "Sans titre" : "Untitled")}</div>
                         <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-2">
                           <span>👤 {c.full_name||"—"}</span>
                           <span>🏥 {c.hospital||"—"}</span>
