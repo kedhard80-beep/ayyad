@@ -6692,7 +6692,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
             </p>
             {photoPreview ? (
               <div className="relative">
-                <img src={photoPreview} alt="preview" className="w-full h-52 object-cover rounded-2xl border-2 border-emerald-300" />
+                <img src={photoPreview} alt="preview" className="w-full max-h-96 object-contain rounded-2xl border-2 border-emerald-300 bg-gray-50" />
                 <div className="absolute top-2 right-2 flex gap-2">
                   <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full font-bold">✓ Photo sélectionnée</span>
                   <button
