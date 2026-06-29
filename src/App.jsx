@@ -29,7 +29,7 @@ async function fetchConfirmedTotals(caseIds) {
     map[k].collected += Number(d.amount_fcfa || d.amount || 0);
     // Comptage donateurs : par donor_id si connecté, sinon par donor_email,
     // sinon chaque don anonyme = 1 donateur (id de la donation)
-    map[k].donorKeys.add(d.donor_id || d.donor_email || ("anon-" + d.id));
+    map[k].donorKeys.add(d.donor_id || ("anon-" + d.id));
   }
   const out = {};
   for (const k of Object.keys(map)) {
@@ -3597,6 +3597,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [paymentRef, setPaymentRef] = useState("");
   // États pour l'enregistrement du don (évite l'insert silencieux + double-clic)
   const [donSubmitting, setDonSubmitting] = useState(false);
+  const [qrInserted, setQrInserted] = useState(false);
   const [donError, setDonError] = useState("");
 
   // Si l'utilisateur se connecte/déconnecte pendant qu'il est sur la page, on resynchronise
@@ -4380,7 +4381,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         // dans l'app Wave et le donateur ne revient jamais cliquer "Confirmer"
                         // → l'argent arrive sur le marchand mais aucune trace côté Ayyad.
                         // On ne bloque PAS la navigation (pas de e.preventDefault) — fire-and-forget.
-                        if (donSubmitting) return;
+                        if (donSubmitting || qrInserted) return;
+                        setQrInserted(true);
                         // On évite de stocker l'email entier comme nom public (RGPD).
                         // Si pas de prénom dans le metadata, on prend la partie avant @ de l'email.
                         const _donName = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
@@ -4491,6 +4493,12 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       disabled={donSubmitting}
                       onClick={async () => {
                         if (donSubmitting) return;
+                        if (qrInserted) {
+                          const _dn2 = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
+                          setLastDonation({ donorName: anonymous?"Donateur anonyme":(_dn2||"Donateur"), amount: amountInFcfa });
+                          setDonMode("success");
+                          return;
+                        }
                         if (c._isDemo) { setDonError("Ceci est un dossier de démonstration. Les dons ne sont pas activés."); return; }
                         setDonError("");
                         setDonSubmitting(true);
