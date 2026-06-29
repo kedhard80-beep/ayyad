@@ -1157,7 +1157,7 @@ const MediaSection = ({ c, lang, t }) => {
       {photos.length > 0 && (
         <div>
           <div className="relative overflow-hidden" style={{height:"220px"}}>
-            <img src={photos[activePhoto]} alt={"Photo "+c.beneficiary} className="w-full h-full object-cover" />
+            <img src={photos[activePhoto]} alt={"Photo "+c.beneficiary} className="w-full h-full object-contain bg-gray-900" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             <div className="absolute bottom-3 left-3 text-white text-xs font-semibold bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
               📍 {c.hospital} · {c.city}
@@ -1177,7 +1177,7 @@ const MediaSection = ({ c, lang, t }) => {
             <div className="flex gap-2 p-3 overflow-x-auto">
               {photos.map((ph, i) => (
                 <button key={i} onClick={() => setActivePhoto(i)} className={"flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all "+(i===activePhoto?"border-emerald-500":"border-transparent opacity-60 hover:opacity-100")}>
-                  <img src={ph} alt="" className="w-full h-full object-cover" />
+                  <img src={ph} alt="" className="w-full h-full object-contain bg-gray-900" />
                 </button>
               ))}
             </div>
@@ -3929,10 +3929,10 @@ const CasePage = ({ c, setPage, lang, user }) => {
       <Confetti active={showConfetti} />
 
       {/* ── HERO ── */}
-      <div className="relative w-full overflow-hidden" style={{minHeight:"340px",maxHeight:"480px",height:"42vw"}}>
+      <div className="relative w-full overflow-hidden bg-gray-900" style={{minHeight:"400px",maxHeight:"680px",height:"60vw"}}>
         {/* Image de fond */}
         {c.image && c.image.startsWith("http")
-          ? <img src={c.image} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          ? <img src={c.image} alt="" className="absolute inset-0 w-full h-full object-contain" />
           : <div className="absolute inset-0 bg-gradient-to-br from-emerald-700 via-teal-600 to-emerald-900 flex items-center justify-center text-[clamp(80px,15vw,160px)]">{c.image}</div>
         }
         {/* Gradient overlay */}
