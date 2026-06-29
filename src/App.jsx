@@ -3598,6 +3598,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
   // États pour l'enregistrement du don (évite l'insert silencieux + double-clic)
   const [donSubmitting, setDonSubmitting] = useState(false);
   const [qrInserted, setQrInserted] = useState(false);
+  const [qrInserted, setQrInserted] = useState(false);
   const [donError, setDonError] = useState("");
 
   // Si l'utilisateur se connecte/déconnecte pendant qu'il est sur la page, on resynchronise
@@ -4765,7 +4766,8 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
     setManualSaving(true);
     try {
       // Via /api/donate (bypass RLS) avec fallback Supabase direct
-      const { error } = await createDonation({
+      // Insertion directe Supabase (pas /api/donate qui force status=pending)
+      const { error: insManualErr } = await supabase.from("donations").insert({
         case_id: manualForm.case_id,
         donor_name: manualForm.donor_name || null,
         donor_email: manualForm.donor_email || null,
@@ -4777,8 +4779,8 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
         message: manualForm.message || null,
         reference: manualForm.reference || ("MANUEL-" + Date.now()),
       });
-      if (error) {
-        setManualError(error);
+      if (insManualErr) {
+        setManualError(insManualErr.message || "Erreur lors de l'insertion.");
         setManualSaving(false);
         return;
       }
