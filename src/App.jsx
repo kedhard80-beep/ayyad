@@ -7493,6 +7493,7 @@ const AdminPage = ({ user, setPage, lang }) => {
   const [editAmountVal, setEditAmountVal] = useState("");
   const [editAmountHospital, setEditAmountHospital] = useState("");
   const [editAmountDeadline, setEditAmountDeadline] = useState("");
+  const [editAmountCity, setEditAmountCity] = useState("");
   const [loadingCases, setLoadingCases] = useState(true);
 
   // ── Nouveaux états : Finance / Salaires / Audit / Bilan ──
@@ -8040,6 +8041,13 @@ const AdminPage = ({ user, setPage, lang }) => {
                               placeholder="Hôpital"
                             />
                             <input
+                              type="text"
+                              value={editAmountCity}
+                              onChange={e => setEditAmountCity(e.target.value)}
+                              className="w-full text-xs border border-emerald-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                              placeholder="Ville"
+                            />
+                            <input
                               type="date"
                               value={editAmountDeadline}
                               onChange={e => setEditAmountDeadline(e.target.value)}
@@ -8053,6 +8061,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                                   if (amt && !isNaN(amt)) updates.amount = amt;
                                   if (editAmountHospital.trim()) updates.hospital = editAmountHospital.trim();
                                   if (editAmountDeadline) updates.deadline = editAmountDeadline;
+                                  if (editAmountCity.trim()) updates.city = editAmountCity.trim();
                                   if (Object.keys(updates).length === 0) return;
                                   await supabase.from("cases").update(updates).eq("id", c.id);
                                   setCases(prev => prev.map(x => x.id === c.id ? {...x, ...updates} : x));
@@ -8067,7 +8076,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                           </div>
                         ) : (
                           <button
-                            onClick={() => { setEditAmountId(c.id); setEditAmountVal(c.amount || ""); setEditAmountHospital(c.hospital || ""); setEditAmountDeadline(c.deadline ? c.deadline.slice(0,10) : ""); }}
+                            onClick={() => { setEditAmountId(c.id); setEditAmountVal(c.amount || ""); setEditAmountHospital(c.hospital || ""); setEditAmountDeadline(c.deadline ? c.deadline.slice(0,10) : ""); setEditAmountCity(c.city || ""); }}
                             className="text-xs px-2.5 py-1 rounded-full font-bold border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all flex-shrink-0">
                             ✏️ Modifier
                           </button>
