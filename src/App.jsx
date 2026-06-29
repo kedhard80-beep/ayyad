@@ -3641,7 +3641,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [lastDonation, setLastDonation] = useState(null); // pour le certificat
 
   useEffect(() => {
-    // Chargement initial des derniers dons
+    // Chargement initial des derniers dons + resync du compteur
     const loadRecent = async () => {
       if (!c.id || c._isDemo) return;
       const { data } = await supabase.from("donations")
@@ -3651,6 +3651,16 @@ const CasePage = ({ c, setPage, lang, user }) => {
         .order("created_at",{ascending:false})
         .limit(5);
       if (data) setRecentDonations(data);
+      // Resync : recalcule liveDonors et liveCollected depuis les vrais dons confirmés
+      // (corrige les cas où selectedCase était en mémoire avec une valeur périmée)
+      const { data: allConfirmed } = await supabase.from("donations")
+        .select("id,amount_fcfa,amount")
+        .eq("case_id", c.id)
+        .eq("status","confirmed");
+      if (allConfirmed) {
+        setLiveDonors(allConfirmed.length);
+        setLiveCollected(allConfirmed.reduce((s,d)=>s+Number(d.amount_fcfa||d.amount||0),0));
+      }
     };
     loadRecent();
 
