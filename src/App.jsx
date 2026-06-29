@@ -7489,6 +7489,9 @@ class AdminErrorBoundary extends React.Component {
 const AdminPage = ({ user, setPage, lang }) => {
   const [tab, setTab] = useState("overview");
   const [cases, setCases] = useState([]);
+  const [editAmountId, setEditAmountId] = useState(null);
+  const [editAmountVal, setEditAmountVal] = useState("");
+  const [editAmountHospital, setEditAmountHospital] = useState("");
   const [loadingCases, setLoadingCases] = useState(true);
 
   // ── Nouveaux états : Finance / Salaires / Audit / Bilan ──
@@ -8016,6 +8019,49 @@ const AdminPage = ({ user, setPage, lang }) => {
                             }}
                             className={`text-xs px-2.5 py-1 rounded-full font-bold border transition-all flex-shrink-0 ${c.urgent ? "bg-red-100 text-red-600 border-red-200 hover:bg-red-200" : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200"}`}>
                             {c.urgent ? "🔕 Retirer urgent" : "🚨 Marquer urgent"}
+                          </button>
+                        )}
+                        {/* Bouton Modifier montant + hôpital */}
+                        {editAmountId === c.id ? (
+                          <div className="flex flex-col gap-1 min-w-[220px]">
+                            <input
+                              type="number"
+                              value={editAmountVal}
+                              onChange={e => setEditAmountVal(e.target.value)}
+                              className="w-full text-xs border border-emerald-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                              placeholder="Montant FCFA"
+                            />
+                            <input
+                              type="text"
+                              value={editAmountHospital}
+                              onChange={e => setEditAmountHospital(e.target.value)}
+                              className="w-full text-xs border border-emerald-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                              placeholder="Hôpital"
+                            />
+                            <div className="flex gap-1">
+                              <button
+                                onClick={async () => {
+                                  const amt = parseFloat(editAmountVal);
+                                  const updates = {};
+                                  if (amt && !isNaN(amt)) updates.amount = amt;
+                                  if (editAmountHospital.trim()) updates.hospital = editAmountHospital.trim();
+                                  if (Object.keys(updates).length === 0) return;
+                                  await supabase.from("cases").update(updates).eq("id", c.id);
+                                  setCases(prev => prev.map(x => x.id === c.id ? {...x, ...updates} : x));
+                                  auditLog(user, "CASE_UPDATED", c.title || c.id);
+                                  setEditAmountId(null);
+                                }}
+                                className="flex-1 text-xs px-2 py-1 rounded-lg font-bold bg-emerald-600 text-white hover:bg-emerald-700">
+                                ✓ Sauvegarder
+                              </button>
+                              <button onClick={() => setEditAmountId(null)} className="text-xs px-2 py-1 rounded-lg font-bold bg-gray-100 text-gray-600 hover:bg-gray-200">✕</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => { setEditAmountId(c.id); setEditAmountVal(c.amount || ""); setEditAmountHospital(c.hospital || ""); }}
+                            className="text-xs px-2.5 py-1 rounded-full font-bold border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all flex-shrink-0">
+                            ✏️ Modifier
                           </button>
                         )}
                         {/* Bouton Supprimer — visible uniquement pour super_admin */}
@@ -10281,8 +10327,8 @@ const TrackingPage = ({ setPage, setSelectedCase, lang }) => {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               {/* Photo */}
               {photo && (
-                <div className="h-40 overflow-hidden">
-                  <img src={photo} alt={getTitle(caseData)} className="w-full h-full object-cover object-center" />
+                <div className="overflow-hidden bg-gray-50">
+                  <img src={photo} alt={getTitle(caseData)} className="w-full max-h-[420px] object-contain" />
                 </div>
               )}
               <div className="p-5">
