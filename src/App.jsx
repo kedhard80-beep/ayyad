@@ -375,7 +375,7 @@ const T = {
 // ── Demo cases visibility (admin can toggle via dashboard) ───
 // true = campagnes fictives visibles sur la plateforme publique
 // false = seules les vraies campagnes Supabase sont affichées
-const DEMO_CASES_VISIBLE = localStorage.getItem("ayyadShowDemo") !== "false";
+const DEMO_CASES_VISIBLE = localStorage.getItem("ayyadShowDemo") === "true";
 const getDisplayCases = () => DEMO_CASES_VISIBLE ? MOCK_CASES : [];
 
 // ── Static mock cases for homepage display ───────────────────
@@ -7547,7 +7547,7 @@ const AdminPage = ({ user, setPage, lang }) => {
   const unresolved = alerts.filter(a=>!a.resolved).length;
 
   // Toggle visibilité campagnes démo
-  const [demoVisible, setDemoVisible] = useState(localStorage.getItem("ayyadShowDemo") !== "false");
+  const [demoVisible, setDemoVisible] = useState(localStorage.getItem("ayyadShowDemo") === "true");
   const toggleDemo = () => {
     const next = !demoVisible;
     localStorage.setItem("ayyadShowDemo", next ? "true" : "false");
@@ -11294,7 +11294,7 @@ export default function AyyadApp() {
     // Deep-link: ?case=AYD-2025-001
     const params = new URLSearchParams(window.location.search);
     const caseId = params.get("case");
-    if (caseId && /^[A-Z]{3}-\d{4}-[A-Z0-9]{3,8}$/i.test(caseId)) {
+    if (caseId && /^[A-Z]{2,5}-[\d]{4}(-[\w]{2,8}){1,3}$/i.test(caseId)) {
       // Try MOCK_CASES first, then Supabase
       const mockMatch = MOCK_CASES.find(c => c.trackingId === caseId);
       if (mockMatch) {
