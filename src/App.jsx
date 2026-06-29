@@ -1134,7 +1134,8 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
 const MediaSection = ({ c, lang, t }) => {
   const [activePhoto, setActivePhoto] = useState(0);
   const photos = c.photos || [];
-  const hasMedia = photos.length > 0 || c.videoUrl;
+  const videoUrl = c.videoUrl || c.video_url || null;
+  const hasMedia = photos.length > 0 || videoUrl;
   if (!hasMedia) return (
     <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 text-center">
       <div className="text-3xl mb-2">📸</div>
@@ -1150,7 +1151,7 @@ const MediaSection = ({ c, lang, t }) => {
         </div>
         <div className="flex gap-1 text-xs text-gray-400">
           {photos.length > 0 && <span className="bg-gray-100 px-2 py-0.5 rounded-full">{photos.length} {lang==="fr"?"photo(s)":"photo(s)"}</span>}
-          {c.videoUrl && <span className="bg-gray-100 px-2 py-0.5 rounded-full">1 {lang==="fr"?"vidéo":"video"}</span>}
+          {videoUrl && <span className="bg-gray-100 px-2 py-0.5 rounded-full">1 {lang==="fr"?"vidéo":"video"}</span>}
         </div>
       </div>
       {/* Galerie photos */}
@@ -1185,19 +1186,19 @@ const MediaSection = ({ c, lang, t }) => {
         </div>
       )}
       {/* Vidéo */}
-      {c.videoUrl && (() => {
-        const isTikTok = c.videoUrl.includes("tiktok.com");
+      {videoUrl && (() => {
+        const isTikTok = videoUrl.includes("tiktok.com");
         return (
           <div>
             {photos.length > 0 && <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{isTikTok ? "TikTok" : t.video.title}</div>}
             {!photos.length && <div className="px-4 py-2 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{isTikTok ? "TikTok" : t.video.title}</div>}
             {isTikTok ? (
               <div className="flex justify-center bg-black">
-                <iframe src={c.videoUrl} className="w-full max-w-xs" style={{height:"560px"}} allowFullScreen allow="autoplay" title="TikTok video" />
+                <iframe src={videoUrl} className="w-full max-w-xs" style={{height:"560px"}} allowFullScreen allow="autoplay" title="TikTok video" />
               </div>
             ) : (
               <div className="relative w-full" style={{paddingBottom:"56.25%"}}>
-                <iframe src={c.videoUrl} className="absolute inset-0 w-full h-full" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Patient video" />
+                <iframe src={videoUrl} className="absolute inset-0 w-full h-full" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Patient video" />
               </div>
             )}
           </div>
