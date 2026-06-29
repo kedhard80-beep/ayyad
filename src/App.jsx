@@ -1134,7 +1134,19 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
 const MediaSection = ({ c, lang, t }) => {
   const [activePhoto, setActivePhoto] = useState(0);
   const photos = c.photos || [];
-  const videoUrl = c.videoUrl || c.video_url || null;
+  const rawVideoUrl = c.videoUrl || c.video_url || null;
+  const videoUrl = (() => {
+    if (!rawVideoUrl) return null;
+    // Convertir TikTok share URL → embed URL si pas déjà converti
+    const ttMatch = rawVideoUrl.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+    if (ttMatch) return "https://www.tiktok.com/embed/v2/" + ttMatch[1];
+    // YouTube
+    const ytWatch = rawVideoUrl.match(/youtube\.com\/watch\?v=([^&]+)/);
+    if (ytWatch) return "https://www.youtube.com/embed/" + ytWatch[1];
+    const ytShort = rawVideoUrl.match(/youtu\.be\/([^?&]+)/);
+    if (ytShort) return "https://www.youtube.com/embed/" + ytShort[1];
+    return rawVideoUrl;
+  })();
   const hasMedia = photos.length > 0 || videoUrl;
   if (!hasMedia) return (
     <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 text-center">
