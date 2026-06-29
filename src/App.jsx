@@ -252,6 +252,7 @@ const CI_HOPITAUX = [
   { nom: "CHU de Treichville", ville: "Abidjan", type: "CHU" },
   { nom: "CHU de Yopougon", ville: "Abidjan", type: "CHU" },
   { nom: "CHU de Bouaké", ville: "Bouaké", type: "CHU" },
+  { nom: "Hôpital Jean-Baptiste Vatelot", ville: "Bouaké", type: "Clinique" },
   { nom: "CHR d'Abengourou", ville: "Abengourou", type: "CHR" },
   { nom: "CHR d'Agboville", ville: "Agboville", type: "CHR" },
   { nom: "CHR de Bondoukou", ville: "Bondoukou", type: "CHR" },
