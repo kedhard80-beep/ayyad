@@ -11216,8 +11216,8 @@ export default function AyyadApp() {
       el.setAttribute("content", content);
     };
     if (page === "case" && selectedCase) {
-      const title = typeof selectedCase.title==="object" ? (selectedCase.title.fr||selectedCase.title.en) : (selectedCase.title||"Ayyad");
-      const desc = typeof selectedCase.desc==="object" ? (selectedCase.desc.fr||selectedCase.desc.en||"") : (selectedCase.description||"");
+      const title = (selectedCase.title && typeof selectedCase.title==="object") ? (selectedCase.title.fr||selectedCase.title.en||"Ayyad") : (selectedCase.title||"Ayyad");
+      const desc = (selectedCase.desc && typeof selectedCase.desc==="object") ? (selectedCase.desc.fr||selectedCase.desc.en||"") : (selectedCase.description||selectedCase.desc||"");
       const img = selectedCase.photos?.[0] || selectedCase.image || "https://ayyadci.com/og-default.png";
       const url = "https://ayyadci.com/?p=case&case="+(selectedCase.trackingId||selectedCase.tracking_id||selectedCase.id);
       document.title = title + " — Ayyad CI";
