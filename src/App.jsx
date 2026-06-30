@@ -3599,6 +3599,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [donSubmitting, setDonSubmitting] = useState(false);
   const [qrInserted, setQrInserted] = useState(false);
   const [qrInserted, setQrInserted] = useState(false);
+  const [qrInserted, setQrInserted] = useState(false);
   const [donError, setDonError] = useState("");
 
   // Si l'utilisateur se connecte/déconnecte pendant qu'il est sur la page, on resynchronise
@@ -11192,6 +11193,9 @@ const ChangePasswordPage = ({ setPage, lang }) => {
 };
 
 export default function AyyadApp() {
+  // Lire ?case= MAINTENANT avant que pushState ne l'écrase (les useEffects tournent après)
+  const _initialCaseId = useRef(new URLSearchParams(window.location.search).get("case")).current;
+
   // Initialiser la page depuis l'URL pour survivre aux rafraîchissements
   const [page, setPage] = useState(() => {
     const p = new URLSearchParams(window.location.search).get("p");
@@ -11302,8 +11306,9 @@ export default function AyyadApp() {
     });
 
     // Deep-link: ?case=AYD-2025-001
-    const params = new URLSearchParams(window.location.search);
-    const caseId = params.get("case");
+    // NB: on utilise _initialCaseId (lu avant pushState) car window.location.search
+    // a déjà été écrasé par pushState("?p=home") dans le premier useEffect.
+    const caseId = _initialCaseId;
     if (caseId && /^[A-Z]{2,5}-[\d]{4}(-[\w]{2,8}){1,3}$/i.test(caseId)) {
       // Try MOCK_CASES first, then Supabase
       const mockMatch = MOCK_CASES.find(c => c.trackingId === caseId);
