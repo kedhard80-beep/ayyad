@@ -3598,9 +3598,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
   // États pour l'enregistrement du don (évite l'insert silencieux + double-clic)
   const [donSubmitting, setDonSubmitting] = useState(false);
   const [qrInserted, setQrInserted] = useState(false);
-  const [qrInserted, setQrInserted] = useState(false);
-  const [qrInserted, setQrInserted] = useState(false);
-  const [donError, setDonError] = useState("");
+      const [donError, setDonError] = useState("");
 
   // Si l'utilisateur se connecte/déconnecte pendant qu'il est sur la page, on resynchronise
   useEffect(() => {
