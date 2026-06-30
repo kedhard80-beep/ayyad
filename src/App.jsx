@@ -774,8 +774,8 @@ const CaseCard = ({ c, lang, t, onClick }) => {
   const fr = lang === "fr";
   const tc = t.card;
   const photo = c.photo_url || (c.photos && c.photos[0]) || null;
-  const title = typeof c.title === "object" ? (c.title[lang] || c.title.fr) : c.title;
-  const category = typeof c.category === "object" ? (c.category[lang] || c.category.fr) : c.category;
+  const title = typeof c.title === "object" ? ((c.title?.[lang] || c.title?.fr || c.title || "") || c.title.fr) : c.title;
+  const category = typeof c.category === "object" ? ((c.category?.[lang] || c.category?.fr || c.category || "") || c.category.fr) : c.category;
 
   return (
     <div
@@ -1066,7 +1066,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
                       <div style={{position:"absolute", bottom:0, left:0, right:0, padding:"24px 20px 20px"}}>
                         <div style={{fontSize:"19px", fontWeight:900, color:"#fff", lineHeight:1.25, marginBottom:6,
                           textShadow:"0 1px 4px rgba(0,0,0,0.4)"}}>
-                          {c.title[lang]}
+                          {(c.title?.[lang] || c.title?.fr || c.title || "")}
                         </div>
                         <div style={{fontSize:"12px", color:"rgba(255,255,255,0.80)", marginBottom:14}}>
                           🏥 {c.hospital} · 📍 {c.city}
@@ -1577,7 +1577,7 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
 
   const trackingId = c.trackingId || c.tracking_id || ("AYD-" + c.id);
   const shareUrl = "https://ayyadci.com/?case=" + trackingId;
-  const title = typeof c.title === "object" ? c.title[lang] : (c.title || "");
+  const title = typeof c.title === "object" ? (c.title?.[lang] || c.title?.fr || c.title || "") : (c.title || "");
   const beneficiary = c.beneficiary || c.full_name || "";
   const pct = c.required ? Math.min(100, Math.round(((c.collected||0)/c.required)*100)) : 0;
 
@@ -2811,7 +2811,7 @@ const TestimonialsCarousel = ({ lang }) => {
                   marginBottom: 32,
                   fontWeight: 500,
                 }}>
-                  « {t.message[lang]} »
+                  « {(t.message?.[lang] || t.message?.fr || "")} »
                 </p>
 
                 {/* Auteur */}
@@ -2836,7 +2836,7 @@ const TestimonialsCarousel = ({ lang }) => {
                       color:"#e9d59a",
                       fontSize: 11, fontWeight:700, letterSpacing:1.2, textTransform:"uppercase",
                       padding:"6px 14px", borderRadius:999,
-                    }}>{t.category[lang]}</span>
+                    }}>{(t.category?.[lang] || t.category?.fr || "")}</span>
                   </div>
                 </div>
               </div>
@@ -2902,9 +2902,9 @@ const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
                   <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">🚨 URGENT</span>
                   {c.daysLeft <= 7 && <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">⏱️ {c.daysLeft}j restants</span>}
                 </div>
-                <h3 className="font-black text-gray-900">{c.title[lang]}</h3>
+                <h3 className="font-black text-gray-900">{(c.title?.[lang] || c.title?.fr || c.title || "")}</h3>
                 <p className="text-xs text-gray-400 mt-0.5">{c.hospital} · {c.city}</p>
-                <p className="text-sm text-gray-600 mt-2 line-clamp-2">{c.desc[lang]}</p>
+                <p className="text-sm text-gray-600 mt-2 line-clamp-2">{(c.desc?.[lang]  || c.desc?.fr  || c.desc  || "")}</p>
                 <div className="mt-3">
                   <div className="flex justify-between text-xs text-gray-500 mb-1">
                     <span>{c.collected.toLocaleString()} FCFA</span>
@@ -2981,7 +2981,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
     ...dbCases.map(normalizCase),
     ...getDisplayCases().filter(c => c.status !== "FUNDED"),
   ];
-  const cases = allCases.filter(c => c.category[lang] === specialite);
+  const cases = allCases.filter(c => (c.category?.[lang] || c.category?.fr || c.category || "") === specialite);
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-br from-emerald-700 to-teal-600 text-white py-10 px-4">
@@ -3014,7 +3014,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
                     {c.urgent && <span className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">🚨 URGENT</span>}
                   </div>
                   <div className="p-4">
-                    <div className="font-bold text-gray-900 text-sm leading-snug group-hover:text-emerald-700 mb-1">{c.title[lang]}</div>
+                    <div className="font-bold text-gray-900 text-sm leading-snug group-hover:text-emerald-700 mb-1">{(c.title?.[lang] || c.title?.fr || c.title || "")}</div>
                     <div className="text-xs text-gray-400 mb-3">🏥 {c.hospital} · 📍 {c.city}</div>
                     <div className="flex justify-between text-xs text-gray-500 mb-1">
                       <span className="font-semibold text-gray-800">{fmt(c.collected)}</span>
@@ -3078,7 +3078,7 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
     : mockActive;
   const groups = {};
   active.forEach(c => {
-    const cat = c.category[lang];
+    const cat = (c.category?.[lang] || c.category?.fr || c.category || "");
     if (!groups[cat]) groups[cat] = { label: cat, cases: [] };
     groups[cat].cases.push(c);
   });
@@ -3226,7 +3226,7 @@ const CollectesPage = ({ setPage, lang }) => {
               <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-5">
                 <div className="text-4xl overflow-hidden">{c.image && (c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-full object-cover rounded-t-2xl" /> : c.image)}</div>
                 <div className="flex-1">
-                  <div className="font-bold text-gray-900">{c.title[lang]}</div>
+                  <div className="font-bold text-gray-900">{(c.title?.[lang] || c.title?.fr || c.title || "")}</div>
                   <div className="text-xs text-gray-400 mt-0.5">{c.hospital} · {c.city}</div>
                   <div className="mt-2">
                     <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -3974,12 +3974,12 @@ const CasePage = ({ c, setPage, lang, user }) => {
         <div className="absolute bottom-0 left-0 right-0 z-10 px-5 pb-7 max-w-6xl mx-auto" style={{left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"72rem"}}>
           {/* Badges */}
           <div className="flex flex-wrap gap-2 mb-3">
-            <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">{c.category[lang]}</span>
+            <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">{(c.category?.[lang] || c.category?.fr || c.category || "")}</span>
             <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm border border-white/30">✓ {t.badges.verified}</span>
             {funded && <span className="bg-emerald-400/90 text-white text-xs font-bold px-3 py-1 rounded-full">✓ {t.badges.funded}</span>}
             {c.urgent && <span className="bg-red-500/90 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">🚨 {t.badges.urgent}</span>}
           </div>
-          <h1 className="text-2xl md:text-4xl font-black text-white leading-tight mb-3" style={{textShadow:"0 2px 12px rgba(0,0,0,0.5)"}}>{c.title[lang]}</h1>
+          <h1 className="text-2xl md:text-4xl font-black text-white leading-tight mb-3" style={{textShadow:"0 2px 12px rgba(0,0,0,0.5)"}}>{(c.title?.[lang] || c.title?.fr || c.title || "")}</h1>
           <div className="flex flex-wrap gap-x-5 gap-y-1 text-white/80 text-sm">
             <span>🏥 {c.hospital}</span>
             <span>📍 {c.city}</span>
@@ -4070,7 +4070,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             {/* Description */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8">
               <h2 className="text-lg font-black text-gray-900 mb-4">{lang==="fr"?"L'histoire de ce patient":"This patient's story"}</h2>
-              <p className="text-gray-600 leading-relaxed text-base">{c.desc[lang]}</p>
+              <p className="text-gray-600 leading-relaxed text-base">{(c.desc?.[lang]  || c.desc?.fr  || c.desc  || "")}</p>
             </div>
 
             {/* Derniers donateurs */}
@@ -4571,7 +4571,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     donorName: lastDonation.donorName,
                     amount: lastDonation.amount,
                     beneficiary: c.beneficiary || c.full_name || "",
-                    caseTitle: typeof c.title==="object" ? c.title[lang] : (c.title||""),
+                    caseTitle: typeof c.title==="object" ? (c.title?.[lang] || c.title?.fr || c.title || "") : (c.title||""),
                     trackingId: c.trackingId || c.tracking_id || ("AYD-"+c.id),
                     date: new Date().toLocaleDateString(lang==="fr"?"fr-CI":"en-US"),
                     lang,
@@ -10279,8 +10279,8 @@ const TrackingPage = ({ setPage, setSelectedCase, lang }) => {
 
   const fmt = n => (n||0).toLocaleString("fr-FR");
 
-  const getTitle = (c) => typeof c.title === "object" ? c.title[lang] : (c.title || "—");
-  const getDesc  = (c) => typeof c.desc === "object"  ? c.desc[lang]  : (c.description || "");
+  const getTitle = (c) => typeof c.title === "object" ? (c.title?.[lang] || c.title?.fr || c.title || "") : (c.title || "—");
+  const getDesc  = (c) => typeof c.desc === "object"  ? (c.desc?.[lang]  || c.desc?.fr  || c.desc  || "")  : (c.description || "");
 
   const required   = caseData ? (caseData.required || caseData.amount || 0) : 0;
   const collected  = caseData ? (caseData.collected || 0) : 0;
