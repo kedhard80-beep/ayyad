@@ -190,10 +190,16 @@ async function enrichCasesWithTotals(cases) {
   const totals = await fetchConfirmedTotals(cases.map(c => c.id));
   return cases.map(c => {
     const t = totals[c.id];
+    // Calcul daysLeft depuis deadline si pas déjà défini
+    const daysLeft = c.daysLeft !== undefined ? c.daysLeft
+      : (c.deadline ? Math.max(0, Math.ceil((new Date(c.deadline) - new Date()) / 86400000)) : undefined);
     return {
       ...c,
-      collected: t ? t.collected : Number(c.collected || 0),
-      donors:    t ? t.donors    : Number(c.donors || 0),
+      collected:  t ? t.collected : Number(c.collected || 0),
+      donors:     t ? t.donors    : Number(c.donors || 0),
+      required:   Number(c.required || c.amount || 0),
+      trackingId: c.trackingId || c.tracking_id || "",
+      daysLeft,
     };
   });
 }
@@ -3717,7 +3723,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
     }
   }, []);
 
-  const percent = pct(liveCollected, c.required);
+  const percent = pct(liveCollected, c.required || 1);
   const funded = c.status==="FUNDED"; // seul FUNDED bloque les dons
   const goalReached = !funded && (c.collected||0) >= (c.required||1); // objectif atteint mais collecte encore ouverte
   const t = T[lang];
