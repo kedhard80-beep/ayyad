@@ -382,11 +382,10 @@ const T = {
 // true = campagnes fictives visibles sur la plateforme publique
 // false = seules les vraies campagnes Supabase sont affichées
 const DEMO_CASES_VISIBLE = localStorage.getItem("ayyadShowDemo") === "true";
-const getDisplayCases = () => { const pinned = MOCK_CASES.filter(c => !c._isDemo); return DEMO_CASES_VISIBLE ? MOCK_CASES : pinned; };
+const getDisplayCases = () => DEMO_CASES_VISIBLE ? MOCK_CASES : [];
 
 // ── Static mock cases for homepage display ───────────────────
 const MOCK_CASES = [
-  { id:0, trackingId:"AYD-2026-06-001", title:{fr:"Stomie de Djana — opération urgente (5 ans)",en:"Djana's stoma — urgent surgery (5 years old)"}, beneficiary:"Djana Coulibaly", age:5, city:"Abidjan", hospital:"CHU d'Abidjan", category:{fr:"Pédiatrie",en:"Pediatrics"}, required:1145000, collected:37000, donors:14, daysLeft:1, image:"👧", urgent:true, videoUrl:null, waveUrl:"https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/", desc:{fr:"Djana a 5 ans et vit avec une stomie depuis des mois — une poche accrochée à son ventre. L'hôpital est prêt à l'opérer dès que les fonds sont réunis. Il manque 1 145 000 FCFA. Chaque don compte.",en:"Djana is 5 years old and has been living with a stoma for months. The hospital is ready to operate once the funds are raised. 1,145,000 FCFA is still needed. Every donation counts."}, status:"COLLECTING" },
   { id:1, _isDemo:true, trackingId:"AYD-2025-001", title:{fr:"Opération cardiaque urgente pour Aminata",en:"Urgent heart surgery for Aminata"}, beneficiary:"Aminata Koné", age:34, city:"Abidjan", hospital:"CHU de Cocody", category:{fr:"Cardiologie",en:"Cardiology"}, required:1800000, collected:1260000, donors:87, daysLeft:2, image:"🫀", urgent:true, videoUrl:"https://www.youtube.com/embed/dQw4w9WgXcQ", photos:["https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=600&h=400&fit=crop&crop=faces","https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&q=80&fit=crop"], desc:{fr:"Aminata souffre d'une cardiopathie valvulaire sévère nécessitant un remplacement de valve urgent. Sans cette intervention, son pronostic vital est engagé dans les 3 prochains mois.",en:"Aminata suffers from severe valvular heart disease requiring urgent valve replacement. Without this procedure, her life is at risk within 3 months."}, status:"COLLECTING" },
   { id:2, _isDemo:true, trackingId:"AYD-2025-002", title:{fr:"Dialyse rénale pour Kofi Asante",en:"Kidney dialysis for Kofi Asante"}, beneficiary:"Kofi Asante", age:52, city:"Bouaké", hospital:"CHU de Bouaké", category:{fr:"Néphrologie",en:"Nephrology"}, required:997500, collected:1150000, donors:74, daysLeft:0, image:"🫘", urgent:false, videoUrl:null, desc:{fr:"Kofi est en insuffisance rénale chronique terminale. Il a besoin de 3 séances de dialyse par semaine pendant 6 mois en attente de greffe.",en:"Kofi has end-stage chronic kidney failure. He needs 3 dialysis sessions per week for 6 months while awaiting a transplant."}, status:"FUNDED" },
   { id:3, _isDemo:true, trackingId:"AYD-2025-003", title:{fr:"Chimiothérapie pour Fatou Diallo",en:"Chemotherapy for Fatou Diallo"}, beneficiary:"Fatou Diallo", age:28, city:"Abidjan", hospital:"Institut National d'Oncologie", category:{fr:"Oncologie",en:"Oncology"}, required:2400000, collected:480000, donors:31, daysLeft:45, image:"🎗️", urgent:false, videoUrl:null, photos:["https://images.unsplash.com/photo-1589156229687-496a31ad1d1f?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Fatou, jeune maman de 2 enfants, a reçu un diagnostic de cancer du sein au stade II. Un protocole de chimiothérapie de 6 cycles est nécessaire.",en:"Fatou, a young mother of 2, was diagnosed with stage II breast cancer. A 6-cycle chemotherapy protocol is needed."}, status:"COLLECTING" },
@@ -2882,19 +2881,38 @@ const TestimonialsCarousel = ({ lang }) => {
 // ── HomePage
 // ── Cas Urgents Page ──────────────────────────────────────────
 const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
-  const [dbCases, setDbCases] = useState([]);
+  const [dbUrgents, setDbUrgents] = useState([]);
   useEffect(() => {
-    supabase.from("cases").select("*").eq("status","COLLECTING").order("created_at",{ascending:false}).limit(50).then(async ({ data }) => {
-      if (data && data.length > 0) {
-        const enriched = await enrichCasesWithTotals(data);
-        setDbCases(enriched.filter(c => c.urgent || c.is_urgent));
-      }
-    });
+    supabase.from("cases").select("*")
+      .eq("status", "COLLECTING")
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .then(async ({ data }) => {
+        if (data && data.length > 0) {
+          const enriched = await enrichCasesWithTotals(data);
+          const calcDaysLeft = (c) => {
+            if (c.deadline) { const diff = new Date(c.deadline) - new Date(); return Math.max(0, Math.ceil(diff / (1000*60*60*24))); }
+            return 30;
+          };
+          const normalized = enriched.map(c => ({
+            ...c,
+            title: typeof c.title === "object" ? c.title : { fr: c.title || "Sans titre", en: c.title || "Untitled" },
+            desc: typeof c.desc === "object" ? c.desc : { fr: c.description || "", en: c.description || "" },
+            required: Number(c.required || c.amount || 0),
+            collected: Number(c.collected || 0),
+            donors: Number(c.donors || 0),
+            trackingId: c.trackingId || c.tracking_id || "",
+            image: c.photo_url || c.image || null,
+            daysLeft: calcDaysLeft(c),
+            urgent: c.urgent ?? false,
+          })).filter(c => c.urgent || c.daysLeft <= 7);
+          setDbUrgents(normalized);
+        }
+      });
   }, []);
-  const mockUrgents = getDisplayCases().filter(c => c.urgent || c.daysLeft <= 7);
-  const djana = MOCK_CASES.find(c => c.trackingId === "AYD-2026-06-001");
-  const dbExcluded = dbCases.filter(db => (db.tracking_id||db.trackingId) !== "AYD-2026-06-001");
-  const urgents = [...(djana ? [djana] : []), ...mockUrgents.filter(c => c.trackingId !== "AYD-2026-06-001"), ...dbExcluded];
+  const dbTids = new Set(dbUrgents.map(c => c.trackingId));
+  const mockUrgents = getDisplayCases().filter(c => (c.urgent || c.daysLeft <= 7) && !dbTids.has(c.trackingId));
+  const urgents = [...dbUrgents, ...mockUrgents];
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-br from-red-700 to-red-500 text-white py-16 px-4 text-center">
