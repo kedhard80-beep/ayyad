@@ -3307,16 +3307,15 @@ const DonationTicker = ({ lang }) => {
       }).subscribe();
     return () => supabase.removeChannel(ch);
   },[]);
-  if (dons.length===0) return null;
-  const items = [...dons,...dons]; // double pour loop infinie
+  const items = dons.length > 0 ? [...dons,...dons] : [];
   return (
-    <div className="bg-emerald-800 overflow-hidden py-2">
+    <div className="bg-emerald-800 overflow-hidden py-2" style={{minHeight:"32px"}}>
       <style>{`
         @keyframes ticker { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
         .ticker-track { display:flex; animation: ticker 25s linear infinite; white-space:nowrap; }
         .ticker-track:hover { animation-play-state:paused; }
       `}</style>
-      <div className="ticker-track">
+      {items.length > 0 && <div className="ticker-track">
         {items.map((d,i) => (
           <span key={i} className="flex items-center gap-2 text-xs text-emerald-100 font-medium px-6 flex-shrink-0">
             <span className="text-emerald-300">💚</span>
@@ -3325,7 +3324,7 @@ const DonationTicker = ({ lang }) => {
             <span className="text-emerald-500 mx-2">·</span>
           </span>
         ))}
-      </div>
+      </div>}
     </div>
   );
 };
