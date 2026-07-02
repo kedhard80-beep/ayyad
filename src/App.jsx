@@ -8150,6 +8150,40 @@ const AdminPage = ({ user, setPage, lang }) => {
                             ✏️ Modifier
                           </button>
                         )}
+                        {/* Bouton modifier vidéo */}
+                        {editVideoUrl[c.id] !== undefined ? (
+                          <div className="flex gap-1 min-w-[200px]">
+                            <input
+                              type="url"
+                              value={editVideoUrl[c.id]}
+                              onChange={e => setEditVideoUrl(prev => ({...prev, [c.id]: e.target.value}))}
+                              className="flex-1 text-xs border border-blue-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                              placeholder="https://youtu.be/..."
+                            />
+                            <button
+                              onClick={async () => {
+                                let url = editVideoUrl[c.id].trim();
+                                const ytShort = url.match(/youtu\.be\/([^?&]+)/);
+                                const ytWatch = url.match(/youtube\.com\/watch\?v=([^&]+)/);
+                                const ytShorts = url.match(/youtube\.com\/shorts\/([^?&]+)/);
+                                if (ytShort) url = "https://www.youtube.com/embed/" + ytShort[1];
+                                else if (ytWatch) url = "https://www.youtube.com/embed/" + ytWatch[1];
+                                else if (ytShorts) url = "https://www.youtube.com/embed/" + ytShorts[1];
+                                await supabase.from("cases").update({ video_url: url || null }).eq("id", c.id);
+                                setCases(prev => prev.map(x => x.id === c.id ? {...x, video_url: url} : x));
+                                setEditVideoUrl(prev => { const n = {...prev}; delete n[c.id]; return n; });
+                                auditLog(user, "CASE_VIDEO_UPDATED", c.title || c.id);
+                              }}
+                              className="text-xs px-2 py-1 rounded-lg font-bold bg-blue-600 text-white hover:bg-blue-700">✓</button>
+                            <button onClick={() => setEditVideoUrl(prev => { const n = {...prev}; delete n[c.id]; return n; })} className="text-xs px-2 py-1 rounded-lg font-bold bg-gray-100 text-gray-600 hover:bg-gray-200">✕</button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setEditVideoUrl(prev => ({...prev, [c.id]: c.video_url || ""}))}
+                            className="text-xs px-2.5 py-1 rounded-full font-bold border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all flex-shrink-0">
+                            🎥 Vidéo
+                          </button>
+                        )}
                         {/* Bouton Supprimer — visible uniquement pour super_admin */}
                         {user?.adminRole === "super_admin" && !c._isDemo && !c._mock && (
                           <button
