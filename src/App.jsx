@@ -4414,44 +4414,11 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => {
-                        // ⚠️ Pré-insert : on enregistre le don côté Ayyad AVANT que le donateur
-                        // ne quitte la page pour Wave. Sinon, sur mobile, le flow se termine
-                        // dans l'app Wave et le donateur ne revient jamais cliquer "Confirmer"
-                        // → l'argent arrive sur le marchand mais aucune trace côté Ayyad.
-                        // On ne bloque PAS la navigation (pas de e.preventDefault) — fire-and-forget.
-                        if (donSubmitting || qrInserted) return;
+                        // On marque que le QR a été touché (pour éviter double-insert côté Confirmer)
+                        // Mais on n'insère PAS le don ici — on attend la confirmation "Oui, j'ai payé"
+                        // pour éviter les faux "En attente" quand l'utilisateur abandonne sur Wave.
+                        if (qrInserted) return;
                         setQrInserted(true);
-                        // On évite de stocker l'email entier comme nom public (RGPD).
-                        // Si pas de prénom dans le metadata, on prend la partie avant @ de l'email.
-                        const _donName = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
-                        const refToUse = paymentRef || buildPaymentRef(c);
-                        // Fire-and-forget — on ne bloque pas la nav vers Wave
-                        createDonation({
-                          case_id: c.id || null,
-                          donor_id: user?.id || null,
-                          donor_name: _donName,
-                          donor_email: anonymous ? null : (user?.email || null),
-                          amount: Number(amount),
-                          amount_fcfa: amountInFcfa,
-                          currency,
-                          payment_method: "WAVE",
-                          status: "pending",
-                          message: message || null,
-                          reference: refToUse,
-                        }).then(({ error }) => {
-                          if (error) console.warn("[pré-insert QR tap] échec:", error);
-                        });
-                        // Email léger en parallèle (ne bloque pas la nav)
-                        try {
-                          emailDonConfirm({
-                            donorEmail: anonymous ? null : (user?.email || null),
-                            donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"),
-                            amount: fmt(Number(amount)),
-                            beneficiary: c.beneficiary,
-                            caseTitle: c.title,
-                            trackingId: c.tracking_id || c.trackingId,
-                          });
-                        } catch(e) { /* silent */ }
                       }}
                       className="relative block group"
                       title={lang==="fr"?"Toucher pour payer (mobile)":"Tap to pay (mobile)"}
@@ -4549,13 +4516,6 @@ const CasePage = ({ c, setPage, lang, user }) => {
                           disabled={donSubmitting}
                           onClick={async () => {
                             if (donSubmitting) return;
-                            if (qrInserted) {
-                              const _dn2 = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
-                              setLastDonation({ donorName: anonymous?"Donateur anonyme":(_dn2||"Donateur"), amount: amountInFcfa });
-                              setDonMode("success");
-                              setShowPayConfirm(false);
-                              return;
-                            }
                             if (c._isDemo) { setDonError("Ceci est un dossier de démonstration. Les dons ne sont pas activés."); setShowPayConfirm(false); return; }
                             setDonError("");
                             setDonSubmitting(true);
