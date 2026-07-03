@@ -3636,6 +3636,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [donSubmitting, setDonSubmitting] = useState(false);
   const [qrInserted, setQrInserted] = useState(false);
       const [donError, setDonError] = useState("");
+  const [showPayConfirm, setShowPayConfirm] = useState(false);
 
   // Si l'utilisateur se connecte/déconnecte pendant qu'il est sur la page, on resynchronise
   useEffect(() => {
@@ -4520,76 +4521,112 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       <div className="mt-1 text-[11px] text-red-500">{lang==="fr"?"Aucun email n'a été envoyé. Réessayez ou contactez le support.":"No email was sent. Please retry or contact support."}</div>
                     </div>
                   )}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      disabled={donSubmitting}
-                      onClick={() => { setDonError(""); setDonMode(anonymous?"anonymous":"logged"); }}
-                      className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm disabled:opacity-50"
-                    >{td.modify}</button>
-                    <button
-                      disabled={donSubmitting}
-                      onClick={async () => {
-                        if (donSubmitting) return;
-                        if (qrInserted) {
-                          const _dn2 = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
-                          setLastDonation({ donorName: anonymous?"Donateur anonyme":(_dn2||"Donateur"), amount: amountInFcfa });
-                          setDonMode("success");
-                          return;
-                        }
-                        if (c._isDemo) { setDonError("Ceci est un dossier de démonstration. Les dons ne sont pas activés."); return; }
-                        setDonError("");
-                        setDonSubmitting(true);
-                        // On évite de stocker l'email entier comme nom public (RGPD)
-                        const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
-                        const refToUse = paymentRef || buildPaymentRef(c);
-                        try {
-                          // Création du don via /api/donate (bypass RLS) avec fallback Supabase
-                          const { error: insErr } = await createDonation({
-                            case_id: c.id || null,
-                            donor_id: user?.id || null,
-                            donor_name: _donName2,
-                            donor_email: anonymous ? null : (user?.email || null),
-                            amount: Number(amount),
-                            amount_fcfa: amountInFcfa,
-                            currency,
-                            payment_method: "WAVE",
-                            status: "pending",
-                            message: message || null,
-                            reference: refToUse,
-                          });
-                          if (insErr) {
-                            console.error("[donation insert] échec:", insErr);
-                            setDonError(insErr);
-                            setDonSubmitting(false);
-                            return; // pas d'email, pas de success
-                          }
-                          // Succès → on stocke le contexte pour le certificat, on bascule sur l'écran de remerciement, on envoie l'email
-                          setLastDonation({ donorName: anonymous?"Donateur anonyme":(_donName2||"Donateur"), amount: amountInFcfa });
-                          setDonMode("success");
-                          try {
-                            await emailDonConfirm({
-                              donorEmail: anonymous ? null : (user?.email || null),
-                              donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"),
-                              amount: fmt(Number(amount)),
-                              beneficiary: c.beneficiary,
-                              caseTitle: c.title,
-                              trackingId: c.tracking_id || c.trackingId,
-                            });
-                          } catch(emailErr) {
-                            console.warn("[donation email] échec (non bloquant):", emailErr);
-                          }
-                        } catch(err) {
-                          console.error("[donation flow] exception:", err);
-                          setDonError(err?.message || String(err));
-                        } finally {
-                          setDonSubmitting(false);
-                        }
-                      }}
-                      className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md disabled:opacity-60"
-                    >
-                      {donSubmitting ? (lang==="fr"?"Enregistrement…":"Saving…") : td.confirmBtn}
-                    </button>
-                  </div>
+                  {/* ── Confirmation intermédiaire : "Avez-vous bien payé ?" ── */}
+                  {showPayConfirm ? (
+                    <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 space-y-3">
+                      <div className="text-center space-y-1">
+                        <div className="text-3xl">📲</div>
+                        <div className="font-black text-gray-800 text-sm leading-snug">
+                          {lang==="fr"
+                            ? `Avez-vous bien envoyé ${Math.round(Number(amount)).toLocaleString("fr-FR")} FCFA via Wave CI ?`
+                            : `Have you sent ${Math.round(Number(amount)).toLocaleString("fr-FR")} FCFA via Wave CI?`}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {lang==="fr"
+                            ? "Vérifiez votre historique Wave avant de confirmer."
+                            : "Check your Wave history before confirming."}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          disabled={donSubmitting}
+                          onClick={() => { setShowPayConfirm(false); setDonError(""); }}
+                          className="border-2 border-gray-300 text-gray-600 font-semibold py-3 rounded-xl text-sm disabled:opacity-50"
+                        >
+                          {lang==="fr" ? "❌ Non, pas encore" : "❌ Not yet"}
+                        </button>
+                        <button
+                          disabled={donSubmitting}
+                          onClick={async () => {
+                            if (donSubmitting) return;
+                            if (qrInserted) {
+                              const _dn2 = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
+                              setLastDonation({ donorName: anonymous?"Donateur anonyme":(_dn2||"Donateur"), amount: amountInFcfa });
+                              setDonMode("success");
+                              setShowPayConfirm(false);
+                              return;
+                            }
+                            if (c._isDemo) { setDonError("Ceci est un dossier de démonstration. Les dons ne sont pas activés."); setShowPayConfirm(false); return; }
+                            setDonError("");
+                            setDonSubmitting(true);
+                            const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
+                            const refToUse = paymentRef || buildPaymentRef(c);
+                            try {
+                              const { error: insErr } = await createDonation({
+                                case_id: c.id || null,
+                                donor_id: user?.id || null,
+                                donor_name: _donName2,
+                                donor_email: anonymous ? null : (user?.email || null),
+                                amount: Number(amount),
+                                amount_fcfa: amountInFcfa,
+                                currency,
+                                payment_method: "WAVE",
+                                status: "pending",
+                                message: message || null,
+                                reference: refToUse,
+                              });
+                              if (insErr) {
+                                console.error("[donation insert] échec:", insErr);
+                                setDonError(insErr);
+                                setDonSubmitting(false);
+                                setShowPayConfirm(false);
+                                return;
+                              }
+                              setLastDonation({ donorName: anonymous?"Donateur anonyme":(_donName2||"Donateur"), amount: amountInFcfa });
+                              setDonMode("success");
+                              setShowPayConfirm(false);
+                              try {
+                                await emailDonConfirm({
+                                  donorEmail: anonymous ? null : (user?.email || null),
+                                  donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"),
+                                  amount: fmt(Number(amount)),
+                                  beneficiary: c.beneficiary,
+                                  caseTitle: c.title,
+                                  trackingId: c.tracking_id || c.trackingId,
+                                });
+                              } catch(emailErr) {
+                                console.warn("[donation email] échec (non bloquant):", emailErr);
+                              }
+                            } catch(err) {
+                              console.error("[donation flow] exception:", err);
+                              setDonError(err?.message || String(err));
+                              setShowPayConfirm(false);
+                            } finally {
+                              setDonSubmitting(false);
+                            }
+                          }}
+                          className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md disabled:opacity-60"
+                        >
+                          {donSubmitting ? (lang==="fr"?"Enregistrement…":"Saving…") : (lang==="fr" ? "✅ Oui, j'ai payé" : "✅ Yes, I paid")}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        disabled={donSubmitting}
+                        onClick={() => { setDonError(""); setShowPayConfirm(false); setDonMode(anonymous?"anonymous":"logged"); }}
+                        className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm disabled:opacity-50"
+                      >{td.modify}</button>
+                      <button
+                        disabled={donSubmitting}
+                        onClick={() => { setDonError(""); setShowPayConfirm(true); }}
+                        className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md disabled:opacity-60"
+                      >
+                        {td.confirmBtn}
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>}
