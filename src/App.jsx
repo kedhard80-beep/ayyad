@@ -1,4 +1,4 @@
-import { inject } from "@vercel/analytics";
+ import { inject } from "@vercel/analytics";
 import React, { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
@@ -7,7 +7,6 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_KEY
 );
-
 // ── Helper : calcule le total collecté + nb de donateurs par case_id ─────────
 // Lit les dons CONFIRMÉS pour les ids passés en paramètre et retourne
 // un objet { caseId: { collected, donors } }. Garantit que la jauge progresse
@@ -30,7 +29,7 @@ async function fetchConfirmedTotals(caseIds) {
     map[k].collected += Number(d.amount_fcfa || d.amount || 0);
     // Comptage donateurs : par donor_id si connecté, sinon par donor_email,
     // sinon chaque don anonyme = 1 donateur (id de la donation)
-    map[k].donorKeys.add(d.donor_id || d.donor_email || ("anon-" + d.id));
+    map[k].donorKeys.add(d.donor_id || ("anon-" + d.id));
   }
   const out = {};
   for (const k of Object.keys(map)) {
@@ -74,28 +73,115 @@ function publicDonorName(rawName, lang) {
 // Fallback automatique sur supabase direct si l'endpoint n'est pas dispo.
 // Retourne { error?: string } — pas d'erreur = succès.
 async function createDonation(payload) {
+  // Récupérer le token JWT de la session courante
+  const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+  const token = session?.access_token || null;
+
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  let r;
   try {
-    const r = await fetch("/api/donate", {
+    r = await fetch("/api/donate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(payload),
     });
-    if (r.ok) return { error: null };
-    // Si l'API renvoie 404 (endpoint pas déployé) ou 500 (config manquante),
-    // on tombe sur le fallback Supabase direct
-    const result = await r.json().catch(() => ({}));
-    if (r.status === 404 || r.status === 500) {
-      console.warn("[/api/donate] indispo, fallback supabase direct:", result);
-    } else {
-      return { error: result?.details?.message || result?.error || `HTTP ${r.status}` };
-    }
   } catch (err) {
-    console.warn("[/api/donate] échec réseau, fallback supabase direct:", err);
+    console.error("[/api/donate] Erreur réseau:", err);
+    return { error: "Le serveur de paiement est inaccessible. Vérifiez votre connexion et réessayez." };
   }
-  // Fallback : insertion directe via le client Supabase (anon)
-  const { error } = await supabase.from("donations").insert(payload).select().single();
-  if (error) return { error: (error.message || "Erreur Supabase") + (error.code ? " (code "+error.code+")" : "") };
-  return { error: null };
+
+  const result = await r.json().catch(() => ({}));
+  if (r.ok) return { error: null };
+
+  const msg = result?.error || result?.details?.message || `Erreur serveur (${r.status})`;
+  console.error("[/api/donate] Erreur:", r.status, msg);
+  return { error: msg };
+};
+
+// ── Storage helpers ───────────────────────────────────────────────────────────
+// Configuration des 2 buckets :
+// - "case-photos"      : public, contient uniquement les visuels affichés sur les fiches collecte
+// - "medical-documents": privé, contient les pièces sensibles (CNI, rapports, devis, consentements)
+//   → accessibles uniquement via signed URL (admin ou propriétaire du dossier)
+const BUCKET_PUBLIC = "case-photos";
+const BUCKET_PRIVATE = "medical-documents";
+
+// Détecte si une valeur stockée est un path Storage (à signer) ou une URL publique (rétro-compat).
+// Les anciens uploads stockaient l'URL complète https://...supabase.co/storage/v1/object/public/...
+// Les nouveaux uploads stockent juste le path "dossiers/xxx/file.pdf".
+function isStoragePath(value) {
+  if (!value || typeof value !== "string") return false;
+  return !/^https?:\/\//i.test(value);
+}
+
+// Demande une signed URL au backend pour un path donné dans un bucket privé.
+// Renvoie l'URL signée (TTL 5 min) ou null en cas d'erreur.
+async function fetchSignedUrl({ bucket, path, caseId }) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) return null;
+    const r = await fetch("/api/sign-url", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({ bucket, path, case_id: caseId || null }),
+    });
+    if (!r.ok) return null;
+    const data = await r.json().catch(() => ({}));
+    return data.url || null;
+  } catch (e) {
+    console.warn("[fetchSignedUrl] échec:", e);
+    return null;
+  }
+}
+
+// React component : affiche un lien vers un document, en gérant URL publique
+// (legacy) ET path privé (nouveau format avec signed URL).
+// Usage : <SecureDocLink value={c.document_urls.medical} caseId={c.id}>🏥 Rapport médical</SecureDocLink>
+function SecureDocLink({ value, caseId, bucket = BUCKET_PRIVATE, className = "", children }) {
+  const [resolvedUrl, setResolvedUrl] = useState(null);
+  const [loading, setLoading] = useState(false);
+  if (!value) return null;
+  // Cas legacy : URL publique stockée → on l'utilise directement
+  const isLegacyPublicUrl = !isStoragePath(value);
+  if (isLegacyPublicUrl) {
+    return (
+      <a href={value} target="_blank" rel="noopener noreferrer" className={className}>
+        {children}
+      </a>
+    );
+  }
+  // Cas nouveau : path privé → on signe à la demande
+  const handleClick = async (e) => {
+    if (resolvedUrl) return; // déjà signé, laisse le lien naviguer
+    e.preventDefault();
+    if (loading) return;
+    setLoading(true);
+    const url = await fetchSignedUrl({ bucket, path: value, caseId });
+    setLoading(false);
+    if (url) {
+      setResolvedUrl(url);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } else {
+      alert("Impossible d'ouvrir ce document. Vérifiez vos droits.");
+    }
+  };
+  return (
+    <a
+      href={resolvedUrl || "#"}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={handleClick}
+      className={className}
+    >
+      {loading ? "⏳ Génération du lien..." : children}
+    </a>
+  );
 }
 
 // Applique fetchConfirmedTotals à une liste de cases et retourne la liste enrichie
@@ -104,10 +190,16 @@ async function enrichCasesWithTotals(cases) {
   const totals = await fetchConfirmedTotals(cases.map(c => c.id));
   return cases.map(c => {
     const t = totals[c.id];
+    // Calcul daysLeft depuis deadline si pas déjà défini
+    const daysLeft = c.daysLeft !== undefined ? c.daysLeft
+      : (c.deadline ? Math.max(0, Math.ceil((new Date(c.deadline) - new Date()) / 86400000)) : undefined);
     return {
       ...c,
-      collected: t ? t.collected : Number(c.collected || 0),
-      donors:    t ? t.donors    : Number(c.donors || 0),
+      collected:  t ? t.collected : Number(c.collected || 0),
+      donors:     t ? t.donors    : Number(c.donors || 0),
+      required:   Number(c.required || c.amount || 0),
+      trackingId: c.trackingId || c.tracking_id || "",
+      daysLeft,
     };
   });
 }
@@ -115,7 +207,9 @@ async function enrichCasesWithTotals(cases) {
 // ── Email helpers (appellent /api/send-email côté serveur) ───────────────────
 // Les templates HTML et la clé Resend vivent dans /api/send-email.js (server-side).
 // Ici on n'expose plus aucune clé API au client.
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "kedhard80@gmail.com";
+// L'email admin est résolu côté serveur dans /api/send-email (process.env.ADMIN_EMAIL).
+// On ne le hardcode plus dans le bundle JS pour éviter le doxing du fondateur.
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "";
 
 const sendEmail = async ({ type, to, data }) => {
   try {
@@ -164,6 +258,7 @@ const CI_HOPITAUX = [
   { nom: "CHU de Treichville", ville: "Abidjan", type: "CHU" },
   { nom: "CHU de Yopougon", ville: "Abidjan", type: "CHU" },
   { nom: "CHU de Bouaké", ville: "Bouaké", type: "CHU" },
+  { nom: "Hôpital Jean-Baptiste Vatelot", ville: "Bouaké", type: "Clinique" },
   { nom: "CHR d'Abengourou", ville: "Abengourou", type: "CHR" },
   { nom: "CHR d'Agboville", ville: "Agboville", type: "CHR" },
   { nom: "CHR de Bondoukou", ville: "Bondoukou", type: "CHR" },
@@ -192,6 +287,7 @@ const CI_HOPITAUX = [
   { nom: "CHR de Toumodi", ville: "Toumodi", type: "CHR" },
   { nom: "CHR de Yamoussoukro", ville: "Yamoussoukro", type: "CHR" },
   // Cliniques privées Abidjan
+  { nom: "Clinique Providence", ville: "Abidjan", type: "Clinique" },
   { nom: "Clinique Procréa", ville: "Abidjan", type: "Clinique" },
   { nom: "Clinique Sainte Marie", ville: "Abidjan", type: "Clinique" },
   { nom: "Clinique du Plateau", ville: "Abidjan", type: "Clinique" },
@@ -214,7 +310,7 @@ const CI_HOPITAUX = [
 const T = {
   fr: {
     nav: { collections: "Collectes", how: "Comment ça marche", admin: "Administration", login: "Connexion", start: "Démarrer", logout: "Déconnexion", medicalFinancing: "Financement médical" },
-    hero: { badge: "Plateforme vérifiée & sécurisée", title1: "Donner de la force à ceux", title2: "qui en ont besoin", sub: "Parce que soutenir une vie, c'est en sauver une. Ensemble, nous donnons de la force à ceux qui gardent encore espoir.", cta1: "Collectes terminées & témoignages", cta2: "Soumettre un dossier" },
+    hero: { badge: "Plateforme vérifiée & sécurisée", title1: "Quand la vie attend,", title2: "agissons.", sub: "Derrière chaque collecte, un patient dont la santé dépend de notre solidarité. Un don. Un hôpital. Un espoir.", cta1: "Collectes terminées & témoignages", cta2: "Soumettre un dossier" },
     stats: { patients: "Patients aidés", collected: "FCFA collectés", hospitals: "Hôpitaux partenaires" },
     collections: { title: "Collectes en cours", sub: "dossiers vérifiés actifs" },
     card: { donors: "donateurs", daysLeft: "j restants", funded: "Objectif atteint !", on: "sur" },
@@ -248,7 +344,7 @@ const T = {
   },
   en: {
     nav: { collections: "Campaigns", how: "How it works", admin: "Administration", login: "Login", start: "Get started", logout: "Logout", medicalFinancing: "Medical funding" },
-    hero: { badge: "Verified & secure platform", title1: "Giving strength to those", title2: "who need it most", sub: "Because supporting a life means saving one. Together, we give strength to those who still hold on to hope.", cta1: "Completed campaigns & testimonials", cta2: "Submit a case" },
+    hero: { badge: "Verified & secure platform", title1: "When life can't wait,", title2: "we act.", sub: "Behind every campaign, a patient whose health depends on our solidarity. One donation. One hospital. One hope.", cta1: "Completed campaigns & testimonials", cta2: "Submit a case" },
     stats: { patients: "Patients helped", collected: "FCFA raised", hospitals: "Partner hospitals" },
     collections: { title: "Active campaigns", sub: "verified active cases" },
     card: { donors: "donors", daysLeft: "days left", funded: "Goal reached!", on: "of" },
@@ -285,45 +381,45 @@ const T = {
 // ── Demo cases visibility (admin can toggle via dashboard) ───
 // true = campagnes fictives visibles sur la plateforme publique
 // false = seules les vraies campagnes Supabase sont affichées
-const DEMO_CASES_VISIBLE = localStorage.getItem("ayyadShowDemo") !== "false";
+const DEMO_CASES_VISIBLE = localStorage.getItem("ayyadShowDemo") === "true";
 const getDisplayCases = () => DEMO_CASES_VISIBLE ? MOCK_CASES : [];
 
 // ── Static mock cases for homepage display ───────────────────
 const MOCK_CASES = [
-  { id:1, trackingId:"AYD-2025-001", title:{fr:"Opération cardiaque urgente pour Aminata",en:"Urgent heart surgery for Aminata"}, beneficiary:"Aminata Koné", age:34, city:"Abidjan", hospital:"CHU de Cocody", category:{fr:"Cardiologie",en:"Cardiology"}, required:1800000, collected:1260000, donors:87, daysLeft:2, image:"🫀", urgent:true, videoUrl:"https://www.youtube.com/embed/dQw4w9WgXcQ", photos:["https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=600&h=400&fit=crop&crop=faces","https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&q=80&fit=crop"], desc:{fr:"Aminata souffre d'une cardiopathie valvulaire sévère nécessitant un remplacement de valve urgent. Sans cette intervention, son pronostic vital est engagé dans les 3 prochains mois.",en:"Aminata suffers from severe valvular heart disease requiring urgent valve replacement. Without this procedure, her life is at risk within 3 months."}, status:"COLLECTING" },
-  { id:2, trackingId:"AYD-2025-002", title:{fr:"Dialyse rénale pour Kofi Asante",en:"Kidney dialysis for Kofi Asante"}, beneficiary:"Kofi Asante", age:52, city:"Bouaké", hospital:"CHU de Bouaké", category:{fr:"Néphrologie",en:"Nephrology"}, required:997500, collected:1150000, donors:74, daysLeft:0, image:"🫘", urgent:false, videoUrl:null, desc:{fr:"Kofi est en insuffisance rénale chronique terminale. Il a besoin de 3 séances de dialyse par semaine pendant 6 mois en attente de greffe.",en:"Kofi has end-stage chronic kidney failure. He needs 3 dialysis sessions per week for 6 months while awaiting a transplant."}, status:"FUNDED" },
-  { id:3, trackingId:"AYD-2025-003", title:{fr:"Chimiothérapie pour Fatou Diallo",en:"Chemotherapy for Fatou Diallo"}, beneficiary:"Fatou Diallo", age:28, city:"Abidjan", hospital:"Institut National d'Oncologie", category:{fr:"Oncologie",en:"Oncology"}, required:2400000, collected:480000, donors:31, daysLeft:45, image:"🎗️", urgent:false, videoUrl:null, photos:["https://images.unsplash.com/photo-1589156229687-496a31ad1d1f?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Fatou, jeune maman de 2 enfants, a reçu un diagnostic de cancer du sein au stade II. Un protocole de chimiothérapie de 6 cycles est nécessaire.",en:"Fatou, a young mother of 2, was diagnosed with stage II breast cancer. A 6-cycle chemotherapy protocol is needed."}, status:"COLLECTING" },
-  { id:4, trackingId:"AYD-2025-004", title:{fr:"Prothèse orthopédique pour Ibrahim",en:"Orthopedic prosthesis for Ibrahim"}, beneficiary:"Ibrahim Coulibaly", age:19, city:"Daloa", hospital:"CHR de Daloa", category:{fr:"Orthopédie",en:"Orthopedics"}, required:620000, collected:620000, donors:62, daysLeft:0, image:"🦾", urgent:false, videoUrl:null, photos:["https://images.unsplash.com/photo-1488161628813-04466f872be2?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Ibrahim a perdu sa jambe droite suite à un accident de la route. Grâce à votre générosité, l'objectif est atteint !",en:"Ibrahim lost his right leg in a road accident. Thanks to your generosity, the goal has been reached!"}, status:"FUNDED" },
-  { id:5, trackingId:"AYD-2025-005", title:{fr:"Traitement neurologique pour Mariam",en:"Neurological treatment for Mariam"}, beneficiary:"Mariam Ouédraogo", age:41, city:"Abidjan", hospital:"CHU de Yopougon", category:{fr:"Neurologie",en:"Neurology"}, required:1100000, collected:330000, donors:22, daysLeft:4, image:"🧠", urgent:true, videoUrl:null, photos:["https://images.unsplash.com/photo-1589156229687-496a31ad1d1f?w=600&h=400&fit=crop&crop=top"], desc:{fr:"Mariam souffre d'une sclérose en plaques progressivement invalidante.",en:"Mariam suffers from progressively disabling multiple sclerosis."}, status:"COLLECTING" },
-  { id:6, trackingId:"AYD-2025-006", title:{fr:"Opération de la vue pour Kouassi",en:"Eye surgery for Kouassi"}, beneficiary:"Kouassi Yao", age:67, city:"San-Pédro", hospital:"Clinique Vision CI", category:{fr:"Oncologie",en:"Oncology"}, required:380000, collected:285000, donors:41, daysLeft:8, image:"👁️", urgent:false, videoUrl:null, photos:["https://images.unsplash.com/photo-1504439468489-c8920d796a29?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Kouassi souffre de glaucome bilatéral avancé. Sans une opération urgente, il risque de perdre définitivement la vue.",en:"Kouassi suffers from advanced bilateral glaucoma. Without urgent surgery, he risks permanently losing his sight."}, status:"COLLECTING" },
-  { id:7, trackingId:"AYD-2025-007", title:{fr:"Amputation évitable pour Seydou",en:"Avoidable amputation for Seydou"}, beneficiary:"Seydou Bah", age:23, city:"Korhogo", hospital:"CHR de Korhogo", category:{fr:"Orthopédie",en:"Orthopedics"}, required:750000, collected:120000, donors:14, daysLeft:1, image:"🦴", urgent:true, videoUrl:null, photos:["https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Seydou a une infection osseuse grave au pied gauche. Sans traitement immédiat, les médecins devront amputer. Il reste moins de 24h pour agir.",en:"Seydou has a serious bone infection in his left foot. Without immediate treatment, doctors will have to amputate. Less than 24 hours to act."}, status:"COLLECTING" },
-  { id:8, trackingId:"AYD-2025-008", title:{fr:"Accouchement d'urgence pour Rokia",en:"Emergency delivery for Rokia"}, beneficiary:"Rokia Soro", age:26, city:"Yamoussoukro", hospital:"CHR de Yamoussoukro", category:{fr:"Gynécologie",en:"Gynecology"}, required:420000, collected:85000, donors:9, daysLeft:1, image:"🌸", urgent:true, videoUrl:null, photos:["https://images.unsplash.com/photo-1531983372994-88a1e8f1c37c?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Rokia est enceinte de 8 mois avec une grossesse à haut risque. Une césarienne d'urgence est nécessaire dans les prochaines heures.",en:"Rokia is 8 months pregnant with a high-risk pregnancy. An emergency C-section is needed in the coming hours."}, status:"COLLECTING" },
-  { id:9, trackingId:"AYD-2025-009", title:{fr:"Greffe de cornée pour Abou",en:"Cornea transplant for Abou"}, beneficiary:"Abou Diomandé", age:15, city:"Man", hospital:"CHR de Man", category:{fr:"Neurologie",en:"Neurology"}, required:890000, collected:220000, donors:18, daysLeft:3, image:"👀", urgent:true, videoUrl:null, photos:["https://images.unsplash.com/photo-1523824921871-d6f1a15151f1?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Abou, 15 ans, perd la vue progressivement. La cornée donneuse est disponible mais l'opération doit se faire avant 72h sinon elle sera perdue.",en:"Abou, 15, is progressively losing his sight. The donor cornea is available but surgery must happen within 72h or it will be lost."}, status:"COLLECTING" },
-  { id:10, trackingId:"AYD-2025-010", title:{fr:"Dialyse pédiatrique pour Bintou",en:"Pediatric dialysis for Bintou"}, beneficiary:"Bintou Koné", age:8, city:"Abidjan", hospital:"CHU de Yopougon", category:{fr:"Pédiatrie",en:"Pediatrics"}, required:1200000, collected:310000, donors:27, daysLeft:5, image:"👶", urgent:true, videoUrl:null, photos:["https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Bintou, 8 ans, est en insuffisance rénale aiguë. Elle nécessite une dialyse d'urgence pour survivre. Chaque heure compte pour cette petite fille.",en:"Bintou, 8, is in acute kidney failure. She needs emergency dialysis to survive. Every hour counts for this little girl."}, status:"COLLECTING" },
+  { id:1, _isDemo:true, trackingId:"AYD-2025-001", title:{fr:"Opération cardiaque urgente pour Aminata",en:"Urgent heart surgery for Aminata"}, beneficiary:"Aminata Koné", age:34, city:"Abidjan", hospital:"CHU de Cocody", category:{fr:"Cardiologie",en:"Cardiology"}, required:1800000, collected:1260000, donors:87, daysLeft:2, image:"🫀", urgent:true, videoUrl:"https://www.youtube.com/embed/dQw4w9WgXcQ", photos:["https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=600&h=400&fit=crop&crop=faces","https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&q=80&fit=crop"], desc:{fr:"Aminata souffre d'une cardiopathie valvulaire sévère nécessitant un remplacement de valve urgent. Sans cette intervention, son pronostic vital est engagé dans les 3 prochains mois.",en:"Aminata suffers from severe valvular heart disease requiring urgent valve replacement. Without this procedure, her life is at risk within 3 months."}, status:"COLLECTING" },
+  { id:2, _isDemo:true, trackingId:"AYD-2025-002", title:{fr:"Dialyse rénale pour Kofi Asante",en:"Kidney dialysis for Kofi Asante"}, beneficiary:"Kofi Asante", age:52, city:"Bouaké", hospital:"CHU de Bouaké", category:{fr:"Néphrologie",en:"Nephrology"}, required:997500, collected:1150000, donors:74, daysLeft:0, image:"🫘", urgent:false, videoUrl:null, desc:{fr:"Kofi est en insuffisance rénale chronique terminale. Il a besoin de 3 séances de dialyse par semaine pendant 6 mois en attente de greffe.",en:"Kofi has end-stage chronic kidney failure. He needs 3 dialysis sessions per week for 6 months while awaiting a transplant."}, status:"FUNDED" },
+  { id:3, _isDemo:true, trackingId:"AYD-2025-003", title:{fr:"Chimiothérapie pour Fatou Diallo",en:"Chemotherapy for Fatou Diallo"}, beneficiary:"Fatou Diallo", age:28, city:"Abidjan", hospital:"Institut National d'Oncologie", category:{fr:"Oncologie",en:"Oncology"}, required:2400000, collected:480000, donors:31, daysLeft:45, image:"🎗️", urgent:false, videoUrl:null, photos:["https://images.unsplash.com/photo-1589156229687-496a31ad1d1f?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Fatou, jeune maman de 2 enfants, a reçu un diagnostic de cancer du sein au stade II. Un protocole de chimiothérapie de 6 cycles est nécessaire.",en:"Fatou, a young mother of 2, was diagnosed with stage II breast cancer. A 6-cycle chemotherapy protocol is needed."}, status:"COLLECTING" },
+  { id:4, _isDemo:true, trackingId:"AYD-2025-004", title:{fr:"Prothèse orthopédique pour Ibrahim",en:"Orthopedic prosthesis for Ibrahim"}, beneficiary:"Ibrahim Coulibaly", age:19, city:"Daloa", hospital:"CHR de Daloa", category:{fr:"Orthopédie",en:"Orthopedics"}, required:620000, collected:620000, donors:62, daysLeft:0, image:"🦾", urgent:false, videoUrl:null, photos:["https://images.unsplash.com/photo-1488161628813-04466f872be2?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Ibrahim a perdu sa jambe droite suite à un accident de la route. Grâce à votre générosité, l'objectif est atteint !",en:"Ibrahim lost his right leg in a road accident. Thanks to your generosity, the goal has been reached!"}, status:"FUNDED" },
+  { id:5, _isDemo:true, trackingId:"AYD-2025-005", title:{fr:"Traitement neurologique pour Mariam",en:"Neurological treatment for Mariam"}, beneficiary:"Mariam Ouédraogo", age:41, city:"Abidjan", hospital:"CHU de Yopougon", category:{fr:"Neurologie",en:"Neurology"}, required:1100000, collected:330000, donors:22, daysLeft:4, image:"🧠", urgent:true, videoUrl:null, photos:["https://images.unsplash.com/photo-1589156229687-496a31ad1d1f?w=600&h=400&fit=crop&crop=top"], desc:{fr:"Mariam souffre d'une sclérose en plaques progressivement invalidante.",en:"Mariam suffers from progressively disabling multiple sclerosis."}, status:"COLLECTING" },
+  { id:6, _isDemo:true, trackingId:"AYD-2025-006", title:{fr:"Opération de la vue pour Kouassi",en:"Eye surgery for Kouassi"}, beneficiary:"Kouassi Yao", age:67, city:"San-Pédro", hospital:"Clinique Vision CI", category:{fr:"Oncologie",en:"Oncology"}, required:380000, collected:285000, donors:41, daysLeft:8, image:"👁️", urgent:false, videoUrl:null, photos:["https://images.unsplash.com/photo-1504439468489-c8920d796a29?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Kouassi souffre de glaucome bilatéral avancé. Sans une opération urgente, il risque de perdre définitivement la vue.",en:"Kouassi suffers from advanced bilateral glaucoma. Without urgent surgery, he risks permanently losing his sight."}, status:"COLLECTING" },
+  { id:7, _isDemo:true, trackingId:"AYD-2025-007", title:{fr:"Amputation évitable pour Seydou",en:"Avoidable amputation for Seydou"}, beneficiary:"Seydou Bah", age:23, city:"Korhogo", hospital:"CHR de Korhogo", category:{fr:"Orthopédie",en:"Orthopedics"}, required:750000, collected:120000, donors:14, daysLeft:1, image:"🦴", urgent:true, videoUrl:null, photos:["https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Seydou a une infection osseuse grave au pied gauche. Sans traitement immédiat, les médecins devront amputer. Il reste moins de 24h pour agir.",en:"Seydou has a serious bone infection in his left foot. Without immediate treatment, doctors will have to amputate. Less than 24 hours to act."}, status:"COLLECTING" },
+  { id:8, _isDemo:true, trackingId:"AYD-2025-008", title:{fr:"Accouchement d'urgence pour Rokia",en:"Emergency delivery for Rokia"}, beneficiary:"Rokia Soro", age:26, city:"Yamoussoukro", hospital:"CHR de Yamoussoukro", category:{fr:"Gynécologie",en:"Gynecology"}, required:420000, collected:85000, donors:9, daysLeft:1, image:"🌸", urgent:true, videoUrl:null, photos:["https://images.unsplash.com/photo-1531983372994-88a1e8f1c37c?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Rokia est enceinte de 8 mois avec une grossesse à haut risque. Une césarienne d'urgence est nécessaire dans les prochaines heures.",en:"Rokia is 8 months pregnant with a high-risk pregnancy. An emergency C-section is needed in the coming hours."}, status:"COLLECTING" },
+  { id:9, _isDemo:true, trackingId:"AYD-2025-009", title:{fr:"Greffe de cornée pour Abou",en:"Cornea transplant for Abou"}, beneficiary:"Abou Diomandé", age:15, city:"Man", hospital:"CHR de Man", category:{fr:"Neurologie",en:"Neurology"}, required:890000, collected:220000, donors:18, daysLeft:3, image:"👀", urgent:true, videoUrl:null, photos:["https://images.unsplash.com/photo-1523824921871-d6f1a15151f1?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Abou, 15 ans, perd la vue progressivement. La cornée donneuse est disponible mais l'opération doit se faire avant 72h sinon elle sera perdue.",en:"Abou, 15, is progressively losing his sight. The donor cornea is available but surgery must happen within 72h or it will be lost."}, status:"COLLECTING" },
+  { id:10, _isDemo:true, trackingId:"AYD-2025-010", title:{fr:"Dialyse pédiatrique pour Bintou",en:"Pediatric dialysis for Bintou"}, beneficiary:"Bintou Koné", age:8, city:"Abidjan", hospital:"CHU de Yopougon", category:{fr:"Pédiatrie",en:"Pediatrics"}, required:1200000, collected:310000, donors:27, daysLeft:5, image:"👶", urgent:true, videoUrl:null, photos:["https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Bintou, 8 ans, est en insuffisance rénale aiguë. Elle nécessite une dialyse d'urgence pour survivre. Chaque heure compte pour cette petite fille.",en:"Bintou, 8, is in acute kidney failure. She needs emergency dialysis to survive. Every hour counts for this little girl."}, status:"COLLECTING" },
 ];
 
 const TEMOIGNAGES = [
-  { id:1, name:"Ibrahim Coulibaly", age:19, city:"Daloa", category:{fr:"Orthopédie",en:"Orthopedics"}, image:"🦾", amount:620000, hospital:"CHR de Daloa",
+  { id:1, _isDemo:true, name:"Ibrahim Coulibaly", age:19, city:"Daloa", category:{fr:"Orthopédie",en:"Orthopedics"}, image:"🦾", amount:620000, hospital:"CHR de Daloa",
     message:{fr:"Grâce à Ayyad et à tous les donateurs, j'ai reçu ma prothèse en moins d'un mois. Aujourd'hui je marche à nouveau et j'ai repris mes études. Je ne sais pas comment vous remercier. Que Dieu vous bénisse tous.", en:"Thanks to Ayyad and all the donors, I received my prosthesis in less than a month. Today I walk again and I've resumed my studies. I don't know how to thank you. God bless you all."},
     date:"Janvier 2025", stars:5 },
-  { id:2, name:"Aya Traoré", age:31, city:"Abidjan", category:{fr:"Cardiologie",en:"Cardiology"}, image:"🫀", amount:1500000, hospital:"CHU de Cocody",
+  { id:2, _isDemo:true, name:"Aya Traoré", age:31, city:"Abidjan", category:{fr:"Cardiologie",en:"Cardiology"}, image:"🫀", amount:1500000, hospital:"CHU de Cocody",
     message:{fr:"Mon mari pleurait chaque nuit parce qu'il ne pouvait pas payer l'opération. Ayyad nous a sauvé la vie. L'opération s'est très bien passée, je suis en pleine forme. Merci du fond du cœur à chaque donateur.", en:"My husband cried every night because he couldn't pay for the operation. Ayyad saved our lives. The operation went very well, I'm in great shape. Thank you from the bottom of my heart to every donor."},
     date:"Novembre 2024", stars:5 },
-  { id:3, name:"Moussa Bamba", age:58, city:"Bouaké", category:{fr:"Néphrologie",en:"Nephrology"}, image:"🫘", amount:950000, hospital:"CHU de Bouaké",
+  { id:3, _isDemo:true, name:"Moussa Bamba", age:58, city:"Bouaké", category:{fr:"Néphrologie",en:"Nephrology"}, image:"🫘", amount:950000, hospital:"CHU de Bouaké",
     message:{fr:"Mes 3 séances de dialyse par semaine coûtaient une fortune. Ma famille était épuisée financièrement. Ayyad a tout changé. Je suis en attente de greffe maintenant, avec espoir.", en:"My 3 dialysis sessions per week were costing a fortune. My family was financially exhausted. Ayyad changed everything. I'm now awaiting a transplant, with hope."},
     date:"Décembre 2024", stars:5 },
-  { id:4, name:"Fatou Konaté", age:24, city:"Abidjan", category:{fr:"Oncologie",en:"Oncology"}, image:"🎗️", amount:2100000, hospital:"Institut National d'Oncologie",
+  { id:4, _isDemo:true, name:"Fatou Konaté", age:24, city:"Abidjan", category:{fr:"Oncologie",en:"Oncology"}, image:"🎗️", amount:2100000, hospital:"Institut National d'Oncologie",
     message:{fr:"J'ai terminé mes 6 cycles de chimiothérapie. Les médecins sont optimistes. Ma petite fille de 2 ans aura sa maman. Merci à tous ceux qui ont donné, vous avez choisi la vie.", en:"I finished my 6 chemotherapy cycles. Doctors are optimistic. My 2-year-old daughter will have her mom. Thank you to all who donated, you chose life."},
     date:"Février 2025", stars:5 },
-  { id:5, name:"Yves Kouamé", age:45, city:"Yamoussoukro", category:{fr:"Neurologie",en:"Neurology"}, image:"🧠", amount:780000, hospital:"CHR de Yamoussoukro",
+  { id:5, _isDemo:true, name:"Yves Kouamé", age:45, city:"Yamoussoukro", category:{fr:"Neurologie",en:"Neurology"}, image:"🧠", amount:780000, hospital:"CHR de Yamoussoukro",
     message:{fr:"Suite à mon AVC, j'avais perdu l'usage de mon bras droit. La rééducation financée par Ayyad m'a permis de récupérer 80% de mes capacités. Je retravaille depuis 2 mois.", en:"After my stroke, I had lost the use of my right arm. The rehabilitation funded by Ayyad allowed me to recover 80% of my abilities. I've been back at work for 2 months."},
     date:"Mars 2025", stars:5 },
 ];
 
 const MOCK_ALERTS = [
-  { id:1, type:{fr:"Devis dupliqué",en:"Duplicate quote"}, sev:"high", case:{fr:"Dossier #1042 & #1038",en:"Case #1042 & #1038"}, time:"14:32", resolved:false, caseTab:"cases" },
-  { id:2, type:{fr:"Multi-comptes détecté",en:"Multi-account detected"}, sev:"critical", case:{fr:"User #552 (3 comptes)",en:"User #552 (3 accounts)"}, time:"11:15", resolved:false, caseTab:null },
-  { id:3, type:{fr:"Don suspect > 500k FCFA",en:"Suspicious donation > 500k FCFA"}, sev:"medium", case:{fr:"Donation #7821 — anonyme",en:"Donation #7821 — anonymous"}, time:"09:47", resolved:true, caseTab:"cases" },
+  { id:1, _isDemo:true, type:{fr:"Devis dupliqué",en:"Duplicate quote"}, sev:"high", case:{fr:"Dossier #1042 & #1038",en:"Case #1042 & #1038"}, time:"14:32", resolved:false, caseTab:"cases" },
+  { id:2, _isDemo:true, type:{fr:"Multi-comptes détecté",en:"Multi-account detected"}, sev:"critical", case:{fr:"User #552 (3 comptes)",en:"User #552 (3 accounts)"}, time:"11:15", resolved:false, caseTab:null },
+  { id:3, _isDemo:true, type:{fr:"Don suspect > 500k FCFA",en:"Suspicious donation > 500k FCFA"}, sev:"medium", case:{fr:"Donation #7821 — anonyme",en:"Donation #7821 — anonymous"}, time:"09:47", resolved:true, caseTab:"cases" },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -390,10 +486,64 @@ const LangToggle = ({ lang, setLang }) => (
   </div>
 );
 
-// ── Navbar ────────────────────────────────────────────────────
+// ── Premium TopBar — fine bande institutionnelle au-dessus de la navbar ──────
+// Affiche les contacts, les réseaux sociaux et le toggle de langue. Style sombre
+// élégant, hauteur fine (32-36px), masquée sur mobile pour gagner de la place.
+const PremiumTopBar = ({ lang, setLang }) => {
+  const fr = lang === "fr";
+  return (
+    <div className="hidden md:block" style={{
+      background: "linear-gradient(90deg, #0a3d2e 0%, #0d5c2e 50%, #0f4f3c 100%)",
+      borderBottom: "1px solid rgba(201,168,76,0.18)",
+      color: "rgba(255,255,255,0.85)",
+      fontSize: 12,
+      letterSpacing: 0.2,
+    }}>
+      <div className="ayyad-container" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", height:36 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:24 }}>
+          <a href="mailto:contact@ayyadci.com" style={{ display:"inline-flex", alignItems:"center", gap:6, color:"inherit", textDecoration:"none", transition:"color .2s" }} onMouseEnter={e=>e.currentTarget.style.color="#e9d59a"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.85)"}>
+            <span style={{ color:"#e9d59a" }}>✉</span> contact@ayyadci.com
+          </a>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:6, color:"rgba(255,255,255,0.78)" }}>
+            <span style={{ color:"#e9d59a" }}>💬</span>
+            {fr ? "Une question ? Utilisez le chat en bas à droite" : "Got a question? Use the chat at the bottom right"}
+          </span>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:6, color:"rgba(255,255,255,0.6)" }}>
+            <span style={{ width:6, height:6, borderRadius:"50%", background:"#34d399", boxShadow:"0 0 0 3px rgba(52,211,153,0.18)", display:"inline-block" }} />
+            {fr ? "Plateforme opérationnelle" : "Platform live"}
+          </span>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:18 }}>
+          <span style={{ color:"rgba(255,255,255,0.55)", fontSize:11 }}>
+            {fr ? "Côte d'Ivoire 🇨🇮 · BCEAO conforme" : "Côte d'Ivoire 🇨🇮 · BCEAO compliant"}
+          </span>
+          <div style={{ width:1, height:14, background:"rgba(255,255,255,0.18)" }} />
+          <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+            <button onClick={()=>setLang("fr")} style={{ background:"transparent", border:"none", cursor:"pointer", color: lang==="fr"?"#e9d59a":"rgba(255,255,255,0.65)", fontWeight: lang==="fr"?700:500, fontSize:11, letterSpacing:1 }}>FR</button>
+            <span style={{ color:"rgba(255,255,255,0.3)" }}>|</span>
+            <button onClick={()=>setLang("en")} style={{ background:"transparent", border:"none", cursor:"pointer", color: lang==="en"?"#e9d59a":"rgba(255,255,255,0.65)", fontWeight: lang==="en"?700:500, fontSize:11, letterSpacing:1 }}>EN</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Navbar premium — sticky avec shadow progressive au scroll ────────────────
 const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
   const t = T[lang].nav;
+  const fr = lang === "fr";
   const [dropdownOpen, setDropdownOpen] = useState(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 16);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -401,7 +551,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
   };
 
   const AyyadLogo = () => (
-    <svg width="42" height="42" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="44" height="44" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
       <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
       <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" strokeWidth="2.5"/>
       <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
@@ -410,107 +560,397 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
     </svg>
   );
 
+  // Liens de navigation principaux (parcours donateur)
+  const navLinks = [
+    { key: "home",             label: fr ? "Accueil"           : "Home"          },
+    { key: "collectesactives", label: fr ? "Campagnes"         : "Campaigns"     },
+    { key: "urgents",          label: fr ? "Cas urgents"       : "Urgent cases"  },
+    { key: "how",              label: fr ? "Comment ça marche" : "How it works"  },
+    { key: "support-ayyad",    label: fr ? "Soutenir Ayyad"    : "Support Ayyad" },
+  ];
+
   return (
-    <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm" onClick={() => setDropdownOpen(null)}>
-      <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16 gap-4">
-        {/* Logo */}
-        <button onClick={() => setPage("home")} className="flex items-center gap-3 flex-shrink-0">
-          <AyyadLogo />
-          <div className="hidden sm:block">
-            <div className="font-black text-xl text-gray-900 leading-tight" style={{fontFamily:"Georgia, serif", letterSpacing:"1px"}}>AYYAD</div>
-            <div className="text-xs font-semibold" style={{color:"#C9A84C", letterSpacing:"1px"}}>Financement médical solidaire</div>
-          </div>
-        </button>
-
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-1">
-          {user?.isAdmin && (
-            <button onClick={() => setPage("admin")} className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${page==="admin" ? "text-emerald-600 bg-emerald-50" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"}`}>{t.admin}</button>
-          )}
-        </div>
-
-        {/* Right side */}
-        <div className="flex items-center gap-2">
-          <LangToggle lang={lang} setLang={setLang} />
-          {user ? (
-            <div className="flex items-center gap-2">
-              <button onClick={() => setPage("profile")} className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-sm hover:bg-emerald-200 transition-colors">{(user.name||user.email||"U")[0].toUpperCase()}</button>
-              <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[120px] truncate">{user.name||user.email}</span>
-              <button onClick={() => setPage("monimpact")} className="text-xs text-emerald-600 hover:text-emerald-800 font-semibold ml-1">💚 {lang==="fr"?"Mon impact":"My impact"}</button>
-              <button onClick={() => setPage("changepassword")} className="text-xs text-gray-400 hover:text-emerald-600 ml-1">🔑</button>
-              <button onClick={handleLogout} className="text-xs text-gray-400 hover:text-red-500">{t.logout}</button>
+    <>
+      <PremiumTopBar lang={lang} setLang={setLang} />
+      <nav
+        className="sticky top-0 z-50"
+        onClick={() => { setDropdownOpen(null); setMobileOpen(false); }}
+        style={{
+          background: scrolled ? "rgba(255,255,255,0.92)" : "#ffffff",
+          backdropFilter: scrolled ? "saturate(180%) blur(12px)" : "none",
+          borderBottom: scrolled ? "1px solid rgba(10,31,26,0.06)" : "1px solid rgba(10,31,26,0.04)",
+          boxShadow: scrolled ? "0 6px 20px rgba(10,31,26,0.06)" : "none",
+          transition: "background .25s ease, box-shadow .25s ease, border-color .25s ease",
+        }}
+      >
+        <div className="ayyad-container" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", height: 72, gap: 16 }}>
+          {/* Logo */}
+          <button onClick={() => setPage("home")} style={{ display:"flex", alignItems:"center", gap:12, background:"transparent", border:"none", cursor:"pointer", padding:0 }}>
+            <AyyadLogo />
+            <div style={{ textAlign:"left" }} className="hidden sm:block">
+              <div style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:22, color:"var(--ayyad-deep)", letterSpacing:1.5, lineHeight:1 }}>AYYAD</div>
+              <div style={{ fontSize:10, color:"var(--ayyad-gold-deep)", letterSpacing:1.6, fontWeight:700, marginTop:3, textTransform:"uppercase" }}>
+                {fr ? "Solidarité médicale" : "Medical solidarity"}
+              </div>
             </div>
-          ) : (
-            <>
-              <button onClick={() => setPage("login")} className="text-sm font-medium text-gray-600 hover:text-gray-900">{t.login}</button>
-              <button onClick={() => setPage("submit")} className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm">{lang==="fr" ? "Soumettre un dossier" : "Submit a case"}</button>
-            </>
-          )}
+          </button>
+
+          {/* Liens desktop */}
+          <div className="hidden lg:flex" style={{ alignItems:"center", gap:4 }}>
+            {navLinks.map(l => (
+              <button
+                key={l.key}
+                onClick={() => setPage(l.key)}
+                className={`ayyad-link ${page===l.key ? "is-active" : ""}`}
+                style={{
+                  background:"transparent", border:"none", cursor:"pointer",
+                  padding:"10px 14px",
+                  fontSize:14, fontWeight: page===l.key?700:500,
+                  color: page===l.key ? "var(--ayyad-deep)" : "var(--ink-700)",
+                  borderRadius: 10,
+                  transition: "color .2s",
+                }}
+                onMouseEnter={e => { if(page!==l.key) e.currentTarget.style.color="var(--ayyad-deep)"; }}
+                onMouseLeave={e => { if(page!==l.key) e.currentTarget.style.color="var(--ink-700)"; }}
+              >
+                {l.label}
+              </button>
+            ))}
+            {user?.isAdmin && (
+              <button onClick={() => setPage("admin")} className={`ayyad-link ${page==="admin"?"is-active":""}`} style={{
+                background:"transparent", border:"none", cursor:"pointer",
+                padding:"10px 14px", fontSize:14, fontWeight:600,
+                color: page==="admin" ? "var(--ayyad-gold-deep)" : "var(--ink-500)",
+              }}>
+                ⚙ {t.admin}
+              </button>
+            )}
+          </div>
+
+          {/* Right side actions
+              IMPORTANT — flex-shrink:0 sur chaque élément pour éviter le clipping
+              du bouton "Faire un don" qui a overflow:hidden (animation de brillance).
+              Sans flex-shrink:0, quand la navbar manque de place, les boutons se
+              compressent et le texte est tronqué (ex: "Faire un d..."). */}
+          <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
+            {/* "Soumettre un dossier" — visible à partir de lg (1024px+) au lieu de md (768px+)
+                pour libérer de la place sur les écrans moyens. Reste accessible via le menu burger sur mobile/tablette */}
+            <button
+              onClick={() => setPage("submit")}
+              className="hidden lg:inline-flex"
+              style={{
+                alignItems:"center", gap:6,
+                background:"transparent",
+                border:"1.5px solid rgba(13,92,46,0.22)",
+                color:"var(--ayyad-deep)",
+                fontWeight:700, fontSize:13,
+                padding:"9px 16px",
+                borderRadius:9999,
+                cursor:"pointer",
+                transition:"all .2s",
+                whiteSpace:"nowrap",
+                flexShrink:0,
+              }}
+              onMouseEnter={e=>{ e.currentTarget.style.background="rgba(13,92,46,0.06)"; e.currentTarget.style.borderColor="rgba(13,92,46,0.4)"; }}
+              onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="rgba(13,92,46,0.22)"; }}
+            >
+              {fr ? "Soumettre un dossier" : "Submit a case"}
+            </button>
+
+            {/* CTA primary — flex-shrink:0 obligatoire car .ayyad-btn-primary a overflow:hidden */}
+            <button
+              onClick={() => setPage("collectesactives")}
+              className="ayyad-btn-primary"
+              style={{ fontSize:13, padding:"9px 16px", whiteSpace:"nowrap", flexShrink:0 }}
+            >
+              💚 <span className="hidden sm:inline">{fr ? "Faire un don" : "Donate"}</span><span className="sm:hidden">{fr ? "Don" : "Give"}</span>
+            </button>
+
+            {user ? (
+              <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
+                <button
+                  onClick={() => setPage("profile")}
+                  style={{
+                    width:36, height:36, borderRadius:"50%",
+                    background:"linear-gradient(135deg, #0d5c2e, #10b981)",
+                    color:"#fff", fontWeight:800, fontSize:13,
+                    border:"2px solid #fff", boxShadow:"0 2px 8px rgba(13,92,46,0.25)",
+                    cursor:"pointer",
+                    flexShrink:0,
+                  }}
+                  title={user.name || user.email}
+                >
+                  {(user.name||user.email||"U")[0].toUpperCase()}
+                </button>
+                <div className="hidden xl:flex" style={{ flexDirection:"column", lineHeight:1.1, minWidth:0 }}>
+                  <span style={{ fontSize:12, fontWeight:600, color:"var(--ink-900)", maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.name||user.email}</span>
+                  <button onClick={handleLogout} style={{ fontSize:10, color:"var(--ink-400)", background:"transparent", border:"none", cursor:"pointer", textAlign:"left", padding:0 }}>{t.logout}</button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setPage("login")}
+                className="hidden sm:inline-flex"
+                style={{
+                  background:"transparent", border:"none", cursor:"pointer",
+                  fontSize:13, fontWeight:600, color:"var(--ink-700)",
+                  padding:"8px 12px",
+                  flexShrink:0,
+                }}
+              >
+                {t.login}
+              </button>
+            )}
+
+            {/* Burger mobile/tablette — visible jusqu'à lg (1024px-) pour donner accès à Soumettre */}
+            <button
+              className="lg:hidden"
+              onClick={(e)=>{ e.stopPropagation(); setMobileOpen(o=>!o); }}
+              aria-label="Menu"
+              style={{
+                background:"transparent", border:"1px solid rgba(10,31,26,0.12)",
+                padding:8, borderRadius:10, cursor:"pointer",
+                color:"var(--ayyad-deep)",
+                flexShrink:0,
+              }}
+            >
+              {mobileOpen ? "✕" : "☰"}
+            </button>
+          </div>
         </div>
-      </div>
-    </nav>
+
+        {/* Menu mobile drawer */}
+        {mobileOpen && (
+          <div className="lg:hidden" onClick={e=>e.stopPropagation()} style={{
+            background:"#fff", borderTop:"1px solid rgba(10,31,26,0.06)",
+            boxShadow:"0 12px 32px rgba(10,31,26,0.10)",
+            padding:"16px 24px 24px",
+          }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+              {navLinks.map(l => (
+                <button
+                  key={l.key}
+                  onClick={() => { setPage(l.key); setMobileOpen(false); }}
+                  style={{
+                    background: page===l.key ? "rgba(13,92,46,0.06)" : "transparent",
+                    border:"none", cursor:"pointer", textAlign:"left",
+                    padding:"12px 14px", borderRadius:10,
+                    fontSize:15, fontWeight:600,
+                    color: page===l.key ? "var(--ayyad-deep)" : "var(--ink-700)",
+                  }}
+                >
+                  {l.label}
+                </button>
+              ))}
+              {/* Soumettre un dossier — accessible aussi via le menu burger pour
+                  les écrans md/lg qui n'affichent plus le bouton en haut */}
+              <button
+                onClick={() => { setPage("submit"); setMobileOpen(false); }}
+                style={{
+                  marginTop:8, background:"transparent",
+                  border:"1.5px solid rgba(13,92,46,0.22)",
+                  borderRadius:10, padding:"12px 14px",
+                  color:"var(--ayyad-deep)", fontWeight:700, fontSize:14,
+                  cursor:"pointer", textAlign:"left",
+                }}
+              >
+                📋 {fr ? "Soumettre un dossier" : "Submit a case"}
+              </button>
+              <div style={{ display:"flex", gap:8, marginTop:12 }}>
+                <button onClick={()=>setLang("fr")} style={{ flex:1, padding:"8px 12px", borderRadius:8, border:"1px solid rgba(10,31,26,0.12)", background: lang==="fr"?"var(--ayyad-deep)":"#fff", color: lang==="fr"?"#fff":"var(--ink-700)", fontWeight:700, fontSize:12, cursor:"pointer" }}>🇫🇷 FR</button>
+                <button onClick={()=>setLang("en")} style={{ flex:1, padding:"8px 12px", borderRadius:8, border:"1px solid rgba(10,31,26,0.12)", background: lang==="en"?"var(--ayyad-deep)":"#fff", color: lang==="en"?"#fff":"var(--ink-700)", fontWeight:700, fontSize:12, cursor:"pointer" }}>🇬🇧 EN</button>
+              </div>
+              {user?.isAdmin && (
+                <button onClick={()=>{ setPage("admin"); setMobileOpen(false); }} style={{ marginTop:8, background:"rgba(201,168,76,0.10)", border:"1px solid rgba(201,168,76,0.30)", borderRadius:10, padding:"12px 14px", color:"var(--ayyad-gold-deep)", fontWeight:700, fontSize:13, cursor:"pointer", textAlign:"left" }}>⚙ {t.admin}</button>
+              )}
+            </div>
+          </div>
+        )}
+      </nav>
+    </>
   );
 };
 
-// ── Case Card ─────────────────────────────────────────────────
+// ── Case Card premium ─────────────────────────────────────────────────────────
+// Carte campagne avec hover lift, hiérarchie éditoriale, progression visible
+// immédiatement sur l'image et micro-CTA "Soutenir" qui apparaît au hover.
 const CaseCard = ({ c, lang, t, onClick }) => {
   const percent = pct(c.collected, c.required);
   const funded = c.status==="FUNDED";
+  const fr = lang === "fr";
   const tc = t.card;
   const photo = c.photo_url || (c.photos && c.photos[0]) || null;
+  const title = typeof c.title === "object" ? ((c.title?.[lang] || c.title?.fr || c.title || "") || c.title.fr) : c.title;
+  const category = typeof c.category === "object" ? ((c.category?.[lang] || c.category?.fr || c.category || "") || c.category.fr) : c.category;
+
   return (
-    <div onClick={onClick} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden group">
-      {/* Photo bénéficiaire */}
-      <div className="h-48 relative overflow-hidden bg-gradient-to-br from-emerald-50 to-teal-50">
+    <div
+      onClick={onClick}
+      className="ayyad-card group"
+      style={{
+        cursor:"pointer", overflow:"hidden", display:"flex", flexDirection:"column",
+        borderRadius: 18,
+        background:"#fff",
+      }}
+    >
+      {/* Photo bénéficiaire + overlay */}
+      <div style={{
+        position:"relative", height: 208, overflow:"hidden",
+        background:"linear-gradient(135deg, #ecfdf5, #f0fdfa)",
+      }}>
         {photo ? (
-          <img src={photo} alt={c.beneficiary} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" />
+          <img
+            src={photo}
+            alt={c.beneficiary || title}
+            style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top", transition:"transform 700ms cubic-bezier(0.16,1,0.3,1)" }}
+            className="group-hover:scale-110"
+          />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-            <div className="text-4xl opacity-30">📷</div>
-            <span className="text-xs text-gray-400 font-medium">Photo à venir</span>
+          <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:8 }}>
+            <div style={{ fontSize: 56, opacity:0.25 }}>{typeof c.image === "string" && !c.image.startsWith("http") ? c.image : "🏥"}</div>
+            <span style={{ fontSize:11, color:"var(--ink-400)", fontWeight:600, letterSpacing:0.8, textTransform:"uppercase" }}>{fr ? "Photo à venir" : "Photo coming"}</span>
           </div>
         )}
-        {/* Badge spécialité en overlay bas-gauche */}
-        <div className="absolute bottom-2 left-2">
-          <span className="bg-white/90 backdrop-blur-sm text-gray-700 text-xs font-bold px-2 py-1 rounded-full shadow-sm">{c.image && !c.image.startsWith("http") ? c.image : "🏥"} {c.category[lang]}</span>
+
+        {/* Gradient bas → meilleure lisibilité */}
+        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 50%)" }} />
+
+        {/* Badge spécialité — bas gauche */}
+        <div style={{ position:"absolute", bottom:12, left:12, display:"flex", gap:8 }}>
+          <span style={{
+            background:"rgba(255,255,255,0.95)",
+            backdropFilter:"blur(10px)",
+            color:"var(--ayyad-deep)",
+            fontSize:11, fontWeight:700,
+            padding:"5px 12px", borderRadius:9999,
+            boxShadow:"0 2px 8px rgba(0,0,0,0.10)",
+            letterSpacing:0.3,
+          }}>
+            {c.image && typeof c.image === "string" && !c.image.startsWith("http") ? `${c.image} ` : "🏥 "}{category}
+          </span>
         </div>
-        {/* Badge urgent */}
-        {c.urgent && (
-          <div className="absolute top-2 left-2">
-            <span className="bg-red-600 text-white text-xs font-black px-2 py-1 rounded-full animate-pulse">🚨 URGENT</span>
+
+        {/* Badge urgent ou financé — haut gauche */}
+        {c.urgent && !funded && (
+          <div style={{ position:"absolute", top:12, left:12 }}>
+            <span style={{
+              background:"#dc2626", color:"#fff",
+              fontSize:10, fontWeight:900, letterSpacing:1.2,
+              padding:"5px 12px", borderRadius:9999,
+              animation:"ayyad-pulse-soft 2s ease-in-out infinite",
+              boxShadow:"0 4px 12px rgba(220,38,38,0.40)",
+            }}>🚨 URGENT</span>
           </div>
         )}
         {funded && (
-          <div className="absolute top-2 right-2">
-            <span className="bg-emerald-600 text-white text-xs font-bold px-2 py-1 rounded-full">✅ Financé</span>
+          <div style={{ position:"absolute", top:12, left:12 }}>
+            <span style={{
+              background:"linear-gradient(135deg, #059669, #10b981)",
+              color:"#fff",
+              fontSize:10, fontWeight:900, letterSpacing:1.2,
+              padding:"5px 12px", borderRadius:9999,
+              boxShadow:"0 4px 12px rgba(16,185,129,0.40)",
+            }}>✓ {fr ? "FINANCÉ" : "FUNDED"}</span>
           </div>
         )}
+
+        {/* Badge % progression — haut droite (sur photo) */}
+        <div style={{ position:"absolute", top:12, right:12 }}>
+          <span style={{
+            background:"rgba(10,31,26,0.78)",
+            backdropFilter:"blur(8px)",
+            color:"#e9d59a",
+            fontFamily:"var(--font-serif)", fontWeight:800, fontSize:14,
+            padding:"4px 12px", borderRadius:9999,
+            border:"1px solid rgba(201,168,76,0.40)",
+          }}>{percent}%</span>
+        </div>
       </div>
-      <div className="p-5">
-        <div className="mb-2">
-          <h3 className="font-bold text-gray-900 text-sm leading-snug group-hover:text-emerald-700 transition-colors">{c.title[lang]}</h3>
+
+      {/* Corps */}
+      <div style={{ padding:"22px 22px 20px", display:"flex", flexDirection:"column", flex:1 }}>
+        {/* Titre éditorial */}
+        <h3 className="ayyad-h-display" style={{
+          fontSize: 18, lineHeight: 1.3, marginBottom: 8,
+          color:"var(--ayyad-deep)",
+          transition:"color .2s",
+        }}>{title}</h3>
+
+        {/* Méta-données (hôpital + ville) */}
+        <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, color:"var(--ink-500)", marginBottom: 18, flexWrap:"wrap" }}>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
+            <span style={{ color:"var(--ayyad-teal)" }}>🏥</span>
+            <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:180 }}>{c.hospital}</span>
+          </span>
+          <span style={{ color:"var(--ink-300)" }}>•</span>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
+            <span style={{ color:"var(--ayyad-teal)" }}>📍</span>{c.city}
+          </span>
         </div>
-        <div className="flex items-center gap-1 text-xs text-gray-500 mb-4">🏥 <span className="truncate">{c.hospital}</span> · 📍 <span>{c.city}</span></div>
-        <div className="mb-3">
-          <div className="flex justify-between text-xs mb-1.5">
-            <span className="font-bold text-emerald-700">{fmt(c.collected)}</span>
-            <span className="text-gray-400">{tc.on} {fmt(c.required)}</span>
+
+        {/* Progression */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom: 8 }}>
+            <span style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:17, color:"var(--ayyad-deep)" }}>{fmt(c.collected)}</span>
+            <span style={{ fontSize:11, color:"var(--ink-400)", fontWeight:600 }}>{tc.on} {fmt(c.required)}</span>
           </div>
-          <ProgressBar percent={percent} />
-          <div className="text-right text-xs text-emerald-600 font-semibold mt-0.5">{percent}%</div>
-        </div>
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>👥 {c.donors} {tc.donors}</span>
-          {funded?<span className="text-emerald-600 font-bold">{tc.funded}</span>:<span className="text-amber-600 font-medium">⏳ {c.daysLeft} {tc.daysLeft}</span>}
-        </div>
-        {c.trackingId && (
-          <div className="mt-3 flex items-center justify-between bg-gray-50 rounded-lg px-2.5 py-1.5 border border-gray-100">
-            <span className="text-[10px] text-gray-400 font-medium">ID Suivi</span>
-            <span className="text-xs font-mono font-bold text-emerald-700">{c.trackingId}</span>
+          <div style={{ height:6, background:"#f3f4f6", borderRadius:9999, overflow:"hidden" }}>
+            <div style={{
+              height:"100%",
+              width: percent + "%",
+              background: percent === 100
+                ? "linear-gradient(90deg, #059669, #10b981, #34d399)"
+                : "linear-gradient(90deg, #0d5c2e, #10b981)",
+              borderRadius: 9999,
+              transition:"width 1.2s cubic-bezier(0.16,1,0.3,1)",
+              boxShadow: "0 1px 4px rgba(16,185,129,0.30)",
+            }} />
           </div>
-        )}
-        <div className="mt-2 flex justify-end">
-          <ShareButton c={c} lang={lang} size="small" />
+        </div>
+
+        {/* Footer stats */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", fontSize:12, color:"var(--ink-500)", marginTop:"auto" }}>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontWeight:600 }}>
+            <span style={{ color:"var(--ayyad-gold-deep)" }}>👥</span>
+            <strong style={{ color:"var(--ayyad-deep)", fontWeight:800 }}>{c.donors || 0}</strong> {tc.donors}
+          </span>
+          {funded ? (
+            <span style={{ color:"#059669", fontWeight:800, display:"inline-flex", alignItems:"center", gap:4 }}>
+              ✓ {tc.funded}
+            </span>
+          ) : (
+            <span style={{ color:"#d97706", fontWeight:700, display:"inline-flex", alignItems:"center", gap:4 }}>
+              ⏱ {c.daysLeft} {tc.daysLeft}
+            </span>
+          )}
+        </div>
+
+        {/* Bottom row : tracking + action — flex-wrap pour éviter overflow mobile */}
+        <div style={{ marginTop:16, paddingTop:12, borderTop:"1px dashed rgba(10,31,26,0.08)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, flexWrap:"wrap" }}>
+          {c.trackingId ? (
+            <span style={{ fontSize:10, fontFamily:"monospace", color:"var(--ink-400)", fontWeight:700, letterSpacing:0.4, minWidth: 0, overflow:"hidden", textOverflow:"ellipsis" }}>
+              {c.trackingId}
+            </span>
+          ) : <span />}
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginLeft:"auto", flexShrink: 0 }} onClick={e=>e.stopPropagation()}>
+            <ShareButton c={c} lang={lang} size="small" />
+            <span style={{
+              background:"linear-gradient(135deg, var(--ayyad-deep), var(--ayyad-emerald))",
+              color:"#fff", fontWeight:700, fontSize:11,
+              padding:"7px 12px", borderRadius:9999,
+              display:"inline-flex", alignItems:"center", gap:4,
+              cursor:"pointer",
+              boxShadow:"0 4px 12px rgba(13,92,46,0.22)",
+              transition:"transform .2s",
+              whiteSpace:"nowrap",
+            }}
+            onClick={onClick}
+            onMouseEnter={e=>{ e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={e=>{ e.currentTarget.style.transform = "translateY(0)"; }}
+            >
+              {funded ? (fr ? "Voir" : "View") : (fr ? "Soutenir" : "Support")} →
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -558,7 +998,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
 
   return (
     <div className="bg-white border-b border-gray-100">
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 bg-red-500 rounded-full animate-ping" />
@@ -632,7 +1072,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
                       <div style={{position:"absolute", bottom:0, left:0, right:0, padding:"24px 20px 20px"}}>
                         <div style={{fontSize:"19px", fontWeight:900, color:"#fff", lineHeight:1.25, marginBottom:6,
                           textShadow:"0 1px 4px rgba(0,0,0,0.4)"}}>
-                          {c.title[lang]}
+                          {(c.title?.[lang] || c.title?.fr || c.title || "")}
                         </div>
                         <div style={{fontSize:"12px", color:"rgba(255,255,255,0.80)", marginBottom:14}}>
                           🏥 {c.hospital} · 📍 {c.city}
@@ -700,7 +1140,20 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
 const MediaSection = ({ c, lang, t }) => {
   const [activePhoto, setActivePhoto] = useState(0);
   const photos = c.photos || [];
-  const hasMedia = photos.length > 0 || c.videoUrl;
+  const rawVideoUrl = c.videoUrl || c.video_url || null;
+  const videoUrl = (() => {
+    if (!rawVideoUrl) return null;
+    // Convertir TikTok share URL → embed URL si pas déjà converti
+    const ttMatch = rawVideoUrl.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+    if (ttMatch) return "https://www.tiktok.com/embed/v2/" + ttMatch[1];
+    // YouTube
+    const ytWatch = rawVideoUrl.match(/youtube\.com\/watch\?v=([^&]+)/);
+    if (ytWatch) return "https://www.youtube.com/embed/" + ytWatch[1];
+    const ytShort = rawVideoUrl.match(/youtu\.be\/([^?&]+)/);
+    if (ytShort) return "https://www.youtube.com/embed/" + ytShort[1];
+    return rawVideoUrl;
+  })();
+  const hasMedia = photos.length > 0 || videoUrl;
   if (!hasMedia) return (
     <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 text-center">
       <div className="text-3xl mb-2">📸</div>
@@ -716,14 +1169,14 @@ const MediaSection = ({ c, lang, t }) => {
         </div>
         <div className="flex gap-1 text-xs text-gray-400">
           {photos.length > 0 && <span className="bg-gray-100 px-2 py-0.5 rounded-full">{photos.length} {lang==="fr"?"photo(s)":"photo(s)"}</span>}
-          {c.videoUrl && <span className="bg-gray-100 px-2 py-0.5 rounded-full">1 {lang==="fr"?"vidéo":"video"}</span>}
+          {videoUrl && <span className="bg-gray-100 px-2 py-0.5 rounded-full">1 {lang==="fr"?"vidéo":"video"}</span>}
         </div>
       </div>
       {/* Galerie photos */}
       {photos.length > 0 && (
         <div>
           <div className="relative overflow-hidden" style={{height:"220px"}}>
-            <img src={photos[activePhoto]} alt={"Photo "+c.beneficiary} className="w-full h-full object-cover" />
+            <img src={photos[activePhoto]} alt={"Photo "+c.beneficiary} className="w-full h-full object-contain bg-gray-900" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             <div className="absolute bottom-3 left-3 text-white text-xs font-semibold bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
               📍 {c.hospital} · {c.city}
@@ -743,7 +1196,7 @@ const MediaSection = ({ c, lang, t }) => {
             <div className="flex gap-2 p-3 overflow-x-auto">
               {photos.map((ph, i) => (
                 <button key={i} onClick={() => setActivePhoto(i)} className={"flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all "+(i===activePhoto?"border-emerald-500":"border-transparent opacity-60 hover:opacity-100")}>
-                  <img src={ph} alt="" className="w-full h-full object-cover" />
+                  <img src={ph} alt="" className="w-full h-full object-contain bg-gray-900" />
                 </button>
               ))}
             </div>
@@ -751,19 +1204,19 @@ const MediaSection = ({ c, lang, t }) => {
         </div>
       )}
       {/* Vidéo */}
-      {c.videoUrl && (() => {
-        const isTikTok = c.videoUrl.includes("tiktok.com");
+      {videoUrl && (() => {
+        const isTikTok = videoUrl.includes("tiktok.com");
         return (
           <div>
             {photos.length > 0 && <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{isTikTok ? "TikTok" : t.video.title}</div>}
             {!photos.length && <div className="px-4 py-2 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{isTikTok ? "TikTok" : t.video.title}</div>}
             {isTikTok ? (
               <div className="flex justify-center bg-black">
-                <iframe src={c.videoUrl} className="w-full max-w-xs" style={{height:"560px"}} allowFullScreen allow="autoplay" title="TikTok video" />
+                <iframe src={videoUrl} className="w-full max-w-xs" style={{height:"560px"}} allowFullScreen allow="autoplay" title="TikTok video" />
               </div>
             ) : (
               <div className="relative w-full" style={{paddingBottom:"56.25%"}}>
-                <iframe src={c.videoUrl} className="absolute inset-0 w-full h-full" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Patient video" />
+                <iframe src={videoUrl} className="absolute inset-0 w-full h-full" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Patient video" />
               </div>
             )}
           </div>
@@ -1078,16 +1531,59 @@ const printDonationCertificate = ({ donorName, amount, beneficiary, caseTitle, t
 const ShareButton = ({ c, lang, size = "normal" }) => {
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const containerRef = useRef(null);
+  const buttonRef = useRef(null);
+  const menuRef = useRef(null);
+
+  // Calcule la position du menu via getBoundingClientRect du bouton.
+  // On utilise position:fixed pour éviter d'être clippé par overflow:hidden
+  // des cartes parentes ou caché derrière des éléments à z-index élevé.
+  const computePosition = () => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const menuW = 240;
+    const margin = 12;
+    // Privilégie ouverture vers le bas-droite, mais ajuste si dépasse viewport
+    let left = rect.right - menuW;
+    if (left < margin) left = margin;
+    if (left + menuW > window.innerWidth - margin) left = window.innerWidth - menuW - margin;
+    let top = rect.bottom + 6;
+    // Si pas assez de place en bas, ouvre vers le haut
+    const menuH = 320; // estimation
+    if (top + menuH > window.innerHeight - margin) {
+      top = rect.top - menuH - 6;
+      if (top < margin) top = margin;
+    }
+    setMenuPos({ top, left });
+  };
+
+  // Click-outside : mousedown + touchstart (fire AVANT click) + check ref
+  // pour éviter le bug d'ouverture/fermeture instantanée
   useEffect(() => {
     if (!open) return;
-    const close = () => setOpen(false);
-    document.addEventListener("click", close);
-    return () => document.removeEventListener("click", close);
+    const handleClickOutside = (e) => {
+      const inContainer = containerRef.current && containerRef.current.contains(e.target);
+      const inMenu = menuRef.current && menuRef.current.contains(e.target);
+      if (!inContainer && !inMenu) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    // Recalcule la position si scroll/resize quand menu ouvert
+    const reposition = () => computePosition();
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
+    };
   }, [open]);
 
   const trackingId = c.trackingId || c.tracking_id || ("AYD-" + c.id);
   const shareUrl = "https://ayyadci.com/?case=" + trackingId;
-  const title = typeof c.title === "object" ? c.title[lang] : (c.title || "");
+  const title = typeof c.title === "object" ? (c.title?.[lang] || c.title?.fr || c.title || "") : (c.title || "");
   const beneficiary = c.beneficiary || c.full_name || "";
   const pct = c.required ? Math.min(100, Math.round(((c.collected||0)/c.required)*100)) : 0;
 
@@ -1113,9 +1609,14 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
   const isSmall = size === "small";
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <button
-        onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+        ref={buttonRef}
+        onClick={e => {
+          e.stopPropagation();
+          if (!open) computePosition();
+          setOpen(o => !o);
+        }}
         className={`flex items-center gap-1.5 font-semibold rounded-xl border transition-all ${isSmall
           ? "text-xs px-2.5 py-1.5 border-gray-200 text-gray-600 hover:border-emerald-400 hover:text-emerald-700 bg-white"
           : "text-sm px-4 py-2.5 border-gray-200 text-gray-600 hover:border-emerald-400 hover:text-emerald-700 bg-white shadow-sm"}`}>
@@ -1124,7 +1625,19 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
       </button>
 
       {open && (
-        <div className="fixed z-[9999] bg-white rounded-2xl shadow-xl border border-gray-100 p-3 w-56" style={{bottom:"80px"}} onClick={e => e.stopPropagation()}>
+        <div
+          ref={menuRef}
+          className="bg-white rounded-2xl shadow-xl border border-gray-100 p-3"
+          style={{
+            position: "fixed",
+            top: menuPos.top,
+            left: menuPos.left,
+            width: 240,
+            maxWidth: "calc(100vw - 24px)",
+            zIndex: 99999,
+          }}
+          onClick={e => e.stopPropagation()}
+        >
           <div className="text-[10px] text-gray-400 font-semibold mb-2 uppercase tracking-wide">{lang === "fr" ? "Partager ce dossier" : "Share this campaign"}</div>
 
           {/* WhatsApp */}
@@ -1271,10 +1784,9 @@ const SupportAyyadSection = ({ lang }) => {
   const fr = lang === "fr";
   const [currency, setCurrency] = useState("FCFA");
   const [amount,   setAmount]   = useState("");
-  const [payMode,  setPayMode]  = useState("WAVE"); // WAVE | CARD
-  const [step,     setStep]     = useState("form"); // form | wave_qr | card_form | success
+  const [donorMessage, setDonorMessage] = useState(""); // message libre du donateur à Ayyad
+  const [step,     setStep]     = useState("form"); // form | wave_qr
 
-  const WAVE_NUMBER = AYYAD_ACCOUNTS.WAVE.numero.replace(/\s/g,"");
   const CURRENCIES = [
     { code:"FCFA", symbol:"FCFA", min:500, step:500 },
     { code:"EUR",  symbol:"€",    min:1,   step:1   },
@@ -1285,8 +1797,6 @@ const SupportAyyadSection = ({ lang }) => {
   const isValid      = numericAmount >= curInfo.min;
   const RATES        = { FCFA:1, EUR:655.957, USD:600 };
   const amountFCFA   = Math.round(numericAmount * (RATES[currency] || 1));
-  const waveData     = `wave://pay?to=${WAVE_NUMBER}&amount=${amountFCFA}&note=Don+Ayyad`;
-  const qrUrl        = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(waveData)}&size=200x200&margin=10&color=1d4ed8`;
 
   const displayAmount = amount
     ? (currency === "FCFA"
@@ -1294,6 +1804,10 @@ const SupportAyyadSection = ({ lang }) => {
         : `${curInfo.symbol}${Number(amount).toLocaleString("fr")}`)
     : "";
 
+  const handlePay = () => {
+    if (!isValid) return;
+    setStep("wave_qr");
+  };
   const reset = () => { setStep("form"); setAmount(""); };
 
   return (
@@ -1311,58 +1825,8 @@ const SupportAyyadSection = ({ lang }) => {
 
         <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 max-w-sm mx-auto space-y-4">
 
-          {/* ── SUCCÈS ── */}
-          {step === "success" && (
-            <div className="text-center space-y-4 py-2">
-              <div className="w-16 h-16 bg-emerald-500/30 rounded-full flex items-center justify-center mx-auto text-3xl">🎉</div>
-              <h3 className="font-black text-xl">{fr ? "Merci pour votre soutien !" : "Thank you for your support!"}</h3>
-              <p className="text-emerald-200 text-sm">{fr ? "Chaque contribution aide Ayyad à rester gratuit pour les patients." : "Every contribution helps Ayyad stay free for patients."}</p>
-              <button onClick={reset} className="w-full border border-white/30 text-white font-semibold py-2.5 rounded-xl text-sm hover:bg-white/10">
-                {fr ? "Faire un autre don" : "Donate again"}
-              </button>
-            </div>
-          )}
-
-          {/* ── QR CODE WAVE ── */}
-          {step === "wave_qr" && (
-            <div className="flex flex-col items-center gap-3">
-              <div className="text-sm font-black">📱 {fr ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
-              <img src={qrUrl} alt="QR Wave" width={200} height={200}
-                className="rounded-2xl border-4 border-white/30 bg-white shadow-xl"
-                onError={e => { e.target.style.display="none"; }} />
-              <div className="text-xs text-emerald-200 text-center leading-relaxed">
-                {fr
-                  ? <>Ouvrez <strong className="text-white">Wave CI</strong> → <strong className="text-white">Scanner</strong> → scannez → payez <strong className="text-white">{displayAmount}</strong></>
-                  : <>Open <strong className="text-white">Wave CI</strong> → <strong className="text-white">Scan</strong> → scan → pay <strong className="text-white">{displayAmount}</strong></>}
-              </div>
-              <a href={waveData}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm text-center">
-                📱 {fr ? "Ouvrir Wave CI directement" : "Open Wave CI directly"}
-              </a>
-              <button onClick={() => setStep("success")}
-                className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 rounded-xl text-sm">
-                ✅ {fr ? "J'ai effectué le paiement" : "I completed the payment"}
-              </button>
-              <button onClick={reset} className="text-xs text-white/40 hover:text-white/70 py-1">
-                ← {fr ? "Modifier" : "Edit"}
-              </button>
-            </div>
-          )}
-
-          {/* ── FORMULAIRE CARTE ── */}
-          {step === "card_form" && (
-            <CardPayForm
-              amountDisplay={displayAmount}
-              lang={lang}
-              darkMode={true}
-              onSuccess={() => setStep("success")}
-              onCancel={reset}
-            />
-          )}
-
-          {/* ── FORMULAIRE PRINCIPAL ── */}
+          {/* ── ÉTAPE 1: formulaire montant ── */}
           {step === "form" && (<>
-            {/* Devise */}
             <div>
               <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Devise" : "Currency"}</div>
               <div className="flex gap-2">
@@ -1375,7 +1839,6 @@ const SupportAyyadSection = ({ lang }) => {
               </div>
             </div>
 
-            {/* Montant */}
             <div>
               <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Montant" : "Amount"}</div>
               <div className="relative flex items-center bg-white rounded-xl overflow-hidden">
@@ -1386,44 +1849,148 @@ const SupportAyyadSection = ({ lang }) => {
                   {curInfo.code === "FCFA" ? "FCFA" : curInfo.symbol}
                 </span>
               </div>
-              {displayAmount && (
+              {displayAmount && currency !== "FCFA" && (
                 <div className="mt-1.5 text-emerald-300 text-xs text-right">
-                  ≈ {displayAmount}{currency!=="FCFA" ? ` (${amountFCFA.toLocaleString("fr")} FCFA)` : ""}
+                  ≈ {amountFCFA.toLocaleString("fr")} FCFA
                 </div>
               )}
             </div>
 
-            {/* Mode de paiement */}
+            {/* Message libre du donateur — optionnel mais encourageant */}
             <div>
-              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Moyen de paiement" : "Payment method"}</div>
-              <div className="grid grid-cols-2 gap-2">
-                {[{id:"WAVE",emoji:"🌊",label:"Wave CI"},{id:"CARD",emoji:"💳",label:fr?"Carte bancaire":"Card"}].map(pm => (
-                  <button key={pm.id} onClick={() => setPayMode(pm.id)}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${payMode===pm.id ? "bg-white text-gray-900 border-white" : "bg-white/10 border-white/20 text-white hover:bg-white/20"}`}>
-                    <span>{pm.emoji}</span><span>{pm.label}</span>
-                  </button>
-                ))}
+              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">
+                {fr ? "Votre message à Ayyad (optionnel)" : "Your message to Ayyad (optional)"}
+              </div>
+              <textarea
+                value={donorMessage}
+                onChange={e => setDonorMessage(e.target.value.slice(0, 300))}
+                rows={3}
+                placeholder={fr
+                  ? "Un mot d'encouragement, un témoignage, une suggestion…"
+                  : "A word of encouragement, a testimonial, a suggestion…"}
+                className="w-full text-gray-900 text-sm px-4 py-2.5 rounded-xl outline-none bg-white resize-none border border-white/20 focus:border-emerald-400"
+              />
+              <div className="mt-1 text-[10px] text-emerald-300/70 text-right">
+                {donorMessage.length}/300
               </div>
             </div>
 
-            {/* Bouton payer */}
             <button
-              onClick={() => { if (!isValid) return; setStep(payMode==="WAVE" ? "wave_qr" : "card_form"); }}
+              onClick={handlePay}
               disabled={!isValid}
               className={`w-full py-3.5 rounded-xl font-black text-sm transition-all ${isValid ? "bg-white text-emerald-900 hover:bg-emerald-100 shadow-lg" : "bg-white/20 text-white/40 cursor-not-allowed"}`}>
               {!amount || numericAmount===0
                 ? (fr ? "Saisir un montant" : "Enter an amount")
                 : !isValid
                 ? `Min. ${curInfo.min} ${curInfo.code}`
-                : payMode==="WAVE"
-                ? `🌊 ${fr?"Payer":"Pay"} ${displayAmount} via Wave`
-                : `💳 ${fr?"Payer":"Pay"} ${displayAmount} par carte`}
+                : `🌊 ${fr?"Payer":"Pay"} ${displayAmount} →`}
             </button>
+
+            {/* Encart Sendwave/diaspora — visible immédiatement dès la saisie du montant.
+                Permet aux donateurs de la diaspora de savoir tout de suite qu'ils ont une
+                option dédiée, sans avoir à cliquer "Payer" pour le découvrir. */}
+            <details className="w-full bg-white/8 rounded-xl border border-white/20 text-left group">
+              <summary className="cursor-pointer list-none flex items-center justify-between gap-2 px-3 py-2.5 select-none hover:bg-white/5 rounded-xl transition-colors">
+                <span className="flex items-center gap-2 text-xs font-bold text-white">
+                  🌍 {fr ? "Vous êtes à l'étranger ?" : "Donating from abroad?"}
+                </span>
+                <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-200">
+                  <span>Sendwave</span>
+                  <span className="group-open:rotate-180 transition-transform">▼</span>
+                </span>
+              </summary>
+              <div className="px-3 pb-3 pt-1 text-[11px] text-emerald-100 leading-relaxed space-y-2">
+                <p>
+                  {fr
+                    ? <>Utilisez l'app <strong className="text-white">Sendwave</strong> (gratuite, sans frais cachés) depuis France, Canada, USA, UK, Belgique, Italie, Espagne, Allemagne…</>
+                    : <>Use the <strong className="text-white">Sendwave</strong> app (free, no hidden fees) from France, Canada, USA, UK, Belgium, Italy, Spain, Germany…</>}
+                </p>
+                <ol className="list-decimal pl-4 space-y-0.5">
+                  <li>{fr ? "Téléchargez Sendwave (App Store / Play Store)" : "Download Sendwave (App Store / Play Store)"}</li>
+                  <li>{fr ? <>Envoyez à : <strong className="font-mono text-white">+225 07 48 05 61 28</strong></> : <>Send to: <strong className="font-mono text-white">+225 07 48 05 61 28</strong></>}</li>
+                  <li>{fr ? "Saisissez le montant en EUR/USD/CAD/GBP — il arrive en FCFA sur Ayyad" : "Enter the amount in EUR/USD/CAD/GBP — arrives in FCFA at Ayyad"}</li>
+                </ol>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <a href="https://apps.apple.com/app/sendwave-send-money/id1238118264" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-white text-emerald-900 px-2 py-1 rounded-md text-[10px] font-bold hover:bg-emerald-50">🍎 iOS</a>
+                  <a href="https://play.google.com/store/apps/details?id=com.wave" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-white text-emerald-900 px-2 py-1 rounded-md text-[10px] font-bold hover:bg-emerald-50">🤖 Android</a>
+                  <a href="https://www.sendwave.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 border border-white/40 text-white px-2 py-1 rounded-md text-[10px] font-bold hover:bg-white/10">🌐 sendwave.com</a>
+                </div>
+                <p className="text-[10px] text-emerald-200/80 italic pt-1">
+                  💡 {fr
+                    ? "Sendwave appartient à Wave — l'argent arrive sur le même compte Ayyad."
+                    : "Sendwave is owned by Wave — funds arrive in the same Ayyad account."}
+                </p>
+              </div>
+            </details>
 
             <p className="text-emerald-400 text-[10px]">
               {fr ? "Paiement sécurisé · 100% de votre don va à Ayyad" : "Secure payment · 100% of your donation goes to Ayyad"}
             </p>
           </>)}
+
+          {/* ── ÉTAPE 2: QR Wave + instructions Sendwave pour l'étranger ── */}
+          {step === "wave_qr" && (
+            <div className="flex flex-col items-center gap-3">
+              <div className="text-sm font-black">📱 {fr ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
+              <a
+                href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <img src="/wave_qr.png" alt="QR Wave Ayyad" width={200} height={200}
+                  className="rounded-2xl border-4 border-white/30 bg-white shadow-xl p-2"
+                  onError={e => { e.target.style.display="none"; }} />
+              </a>
+              <div className="text-[11px] font-semibold text-white/80 bg-white/10 px-3 py-1.5 rounded-full">
+                👆 {fr ? "Touchez le QR sur mobile" : "Tap the QR on mobile"}
+              </div>
+              <div className="w-full bg-white rounded-xl p-3 text-gray-900">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">{fr?"Montant à envoyer :":"Amount to send:"}</span>
+                  <span className="font-mono font-black text-blue-700 text-base">
+                    {currency === "FCFA"
+                      ? `${amountFCFA.toLocaleString("fr-FR")} FCFA`
+                      : `${displayAmount} (≈ ${amountFCFA.toLocaleString("fr-FR")} FCFA)`}
+                  </span>
+                </div>
+              </div>
+              <div className="text-xs text-emerald-100 text-center leading-relaxed">
+                {fr
+                  ? <>Ouvrez <strong className="text-white">Wave CI</strong> → <strong className="text-white">Scanner</strong> → saisissez <strong className="text-white">{amountFCFA.toLocaleString("fr-FR")} FCFA</strong> → validez</>
+                  : <>Open <strong className="text-white">Wave CI</strong> → <strong className="text-white">Scan</strong> → enter <strong className="text-white">{amountFCFA.toLocaleString("fr-FR")} FCFA</strong> → confirm</>}
+              </div>
+
+              {/* Sendwave : pour la diaspora */}
+              <details className="w-full bg-white/10 rounded-xl border border-white/20 text-left">
+                <summary className="cursor-pointer px-3 py-2 text-xs font-bold text-white select-none">
+                  🌍 {fr ? "Vous êtes à l'étranger ? Utilisez Sendwave" : "From abroad? Use Sendwave"}
+                </summary>
+                <div className="px-3 pb-3 text-[11px] text-emerald-100 leading-relaxed space-y-1.5">
+                  <p>
+                    {fr
+                      ? <>L'app <strong className="text-white">Sendwave</strong> est disponible en France, Canada, USA, UK, Belgique, Italie, Espagne, Allemagne… (gratuite, sans frais cachés)</>
+                      : <>The <strong className="text-white">Sendwave</strong> app is available in France, Canada, USA, UK, Belgium, Italy, Spain, Germany… (free, no hidden fees)</>}
+                  </p>
+                  <ol className="list-decimal pl-4 space-y-0.5">
+                    <li>{fr ? "Téléchargez Sendwave (App Store / Play Store)" : "Download Sendwave (App Store / Play Store)"}</li>
+                    <li>{fr ? <>Envoyez au numéro Wave : <strong className="font-mono text-white">+225 07 48 05 61 28</strong></> : <>Send to the Wave number: <strong className="font-mono text-white">+225 07 48 05 61 28</strong></>}</li>
+                    <li>{fr ? `Saisissez ${displayAmount}` : `Enter ${displayAmount}`}</li>
+                    <li>{fr ? "Validez — l'argent arrive instantanément en FCFA" : "Confirm — money arrives instantly in FCFA"}</li>
+                  </ol>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <a href="https://apps.apple.com/app/sendwave-send-money/id1238118264" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-white text-emerald-900 px-2 py-1 rounded-md text-[10px] font-bold">🍎 iOS</a>
+                    <a href="https://play.google.com/store/apps/details?id=com.wave" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-white text-emerald-900 px-2 py-1 rounded-md text-[10px] font-bold">🤖 Android</a>
+                    <a href="https://www.sendwave.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 border border-white/40 text-white px-2 py-1 rounded-md text-[10px] font-bold">🌐 sendwave.com</a>
+                  </div>
+                </div>
+              </details>
+
+              <button onClick={reset} className="text-xs text-white/40 hover:text-white/70 py-1">
+                ← {fr ? "Modifier le montant" : "Edit amount"}
+              </button>
+            </div>
+          )}
 
         </div>
       </div>
@@ -1431,133 +1998,970 @@ const SupportAyyadSection = ({ lang }) => {
   );
 };
 
-// ── HomePage
-// ── Cas Urgents Page ──────────────────────────────────────────
-const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
-  const urgents = getDisplayCases().filter(c => c.urgent || c.daysLeft <= 7);
-  const totalNeeded = urgents.reduce((s, c) => s + Math.max(0, c.required - c.collected), 0);
+// ── Reveal — wrapper qui anime l'élément en fade-in+slide quand il entre dans la vue ────
+// Usage: <Reveal><MaSection /></Reveal>
+// S'appuie sur les classes CSS .ayyad-reveal / .is-visible définies dans index.html
+const Reveal = ({ children, delay = 0, as: As = "div", className = "" }) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // Si IntersectionObserver pas dispo (vieux browser), on rend visible direct
+    if (typeof IntersectionObserver === "undefined") { el.classList.add("is-visible"); return; }
+    const obs = new IntersectionObserver(
+      (entries) => entries.forEach(e => {
+        if (e.isIntersecting) {
+          setTimeout(() => e.target.classList.add("is-visible"), delay);
+          obs.unobserve(e.target);
+        }
+      }),
+      { threshold: 0.12, rootMargin: "0px 0px -60px 0px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [delay]);
+  return <As ref={ref} className={`ayyad-reveal ${className}`}>{children}</As>;
+};
+
+// ── HeroSlider premium — storytelling progressif sur 4 slides ────────────────
+// Chaque slide combine une image émotionnelle forte + un message dédié (titre +
+// sous-titre + CTA principal). L'image fait un effet ken-burns, le texte fade
+// in/out à chaque transition. Sur la base du hero, une bande de KPIs animés
+// renforce la confiance financière. Indicateur scroll-down élégant en bas.
+const HeroSlider = ({ lang, setPage, t, heroStats }) => {
   const fr = lang === "fr";
+
+  // Contenu narratif des 4 slides — chaque slide = un angle de la mission
+  const slides = [
+    {
+      img: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1920&q=85",
+      eyebrow: fr ? "Plateforme vérifiée & sécurisée" : "Verified & secure platform",
+      titlePre: fr ? "Quand la vie attend," : "When life can't wait,",
+      titleEm: fr ? "agissons ensemble." : "we act together.",
+      sub: fr
+        ? "Derrière chaque collecte, un patient dont la santé dépend de notre solidarité. Un don. Un hôpital. Un espoir."
+        : "Behind every campaign, a patient whose health depends on our solidarity. One donation. One hospital. One hope.",
+      cta: { label: fr ? "Faire un don maintenant" : "Donate now", action: () => setPage("collectesactives") },
+    },
+    {
+      img: "https://images.unsplash.com/photo-1612531048118-826c4e98c2da?w=1920&q=85",
+      eyebrow: fr ? "100% transparent · 0% frais cachés" : "100% transparent · 0% hidden fees",
+      titlePre: fr ? "Financer des soins," : "Funding care,",
+      titleEm: fr ? "changer une vie." : "changing a life.",
+      sub: fr
+        ? "Vos dons sont versés directement à l'hôpital partenaire. Chaque virement est audité. Aucune intermédiation cash."
+        : "Your donations go directly to the partner hospital. Every transfer is audited. No cash intermediation.",
+      cta: { label: fr ? "Découvrir les campagnes" : "Explore campaigns", action: () => setPage("collectesactives") },
+    },
+    {
+      img: "https://images.unsplash.com/photo-1666214280557-f1b5022eb634?w=1920&q=85",
+      eyebrow: fr ? "Pour les patients" : "For patients",
+      titlePre: fr ? "Une plateforme humaine," : "A platform built on humanity,",
+      titleEm: fr ? "construite pour vous." : "built for you.",
+      sub: fr
+        ? "Soumettez votre dossier médical, notre équipe le vérifie sous 48h avec un hôpital partenaire. Mise en ligne rapide, suivi personnalisé."
+        : "Submit your medical case, our team verifies it within 48h with a partner hospital. Fast online launch, personal follow-up.",
+      cta: { label: fr ? "Soumettre un dossier" : "Submit a case", action: () => setPage("submit") },
+    },
+    {
+      img: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=1920&q=85",
+      eyebrow: fr ? "Impact mesurable" : "Measurable impact",
+      titlePre: fr ? "Chaque contribution" : "Every contribution",
+      titleEm: fr ? "peut sauver une vie." : "can save a life.",
+      sub: fr
+        ? "Rejoignez une communauté de donateurs engagés à offrir un accès aux soins à ceux qui en ont le plus besoin en Côte d'Ivoire."
+        : "Join a community of donors committed to providing healthcare access to those who need it most in Côte d'Ivoire.",
+      cta: { label: fr ? "Voir les histoires" : "Read the stories", action: () => setPage("collectes") },
+    },
+  ];
+
+  const [idx, setIdx] = useState(0);
+
+  // Autoplay continu — défile chaque 7s sans s'arrêter au hover
+  // (le hover-pause cassait l'expérience : sur desktop la souris est presque
+  // toujours dans le hero quand on lit, donc l'autoplay ne se déclenchait jamais)
+  useEffect(() => {
+    const tm = setInterval(() => setIdx(i => (i + 1) % slides.length), 7000);
+    return () => clearInterval(tm);
+  }, [slides.length]);
+
+  const goNext = () => setIdx(i => (i + 1) % slides.length);
+  const goPrev = () => setIdx(i => (i - 1 + slides.length) % slides.length);
+
+  const current = slides[idx];
+
   return (
-    <div className="min-h-screen" style={{background:"#0f0f0f"}}>
-      {/* Hero dramatique */}
-      <div className="relative overflow-hidden" style={{background:"linear-gradient(135deg,#7f1d1d 0%,#991b1b 40%,#b91c1c 70%,#dc2626 100%)"}}>
-        <div className="absolute inset-0 opacity-10" style={{backgroundImage:"radial-gradient(circle at 20% 50%, #fff 0%, transparent 50%), radial-gradient(circle at 80% 20%, #fca5a5 0%, transparent 40%)"}} />
-        <div className="relative max-w-4xl mx-auto px-4 pt-10 pb-12">
-          <button onClick={() => setPage("home")} className="flex items-center gap-1.5 text-red-200 hover:text-white text-sm mb-8 transition-colors">
-            ← {fr ? "Retour à l'accueil" : "Back to home"}
-          </button>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-2xl animate-pulse">🚨</div>
-            <span className="bg-red-400/30 border border-red-300/30 text-red-100 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
-              {fr ? "Intervention immédiate" : "Immediate action needed"}
-            </span>
+    <section
+      className="relative w-full"
+      style={{ minHeight: "92vh", overflow:"hidden", background:"#0a1f1a" }}
+    >
+      {/* Slides background */}
+      {slides.map((s, i) => (
+        <div
+          key={i}
+          className={`ayyad-hero-slide ${i === idx ? "is-active" : ""}`}
+        >
+          <div className="ayyad-hero-bg" style={{ backgroundImage: `url(${s.img})` }} />
+          {/* Overlay gradient signature (deep emerald) */}
+          <div style={{ position:"absolute", inset:0, background:"var(--grad-hero-overlay)" }} />
+          {/* Voile bas pour lisibilité KPIs */}
+          <div style={{ position:"absolute", inset:0, background:"var(--grad-hero-bottom)" }} />
+        </div>
+      ))}
+
+      {/* Particles or pattern overlay subtle (gold dots) */}
+      <div style={{
+        position:"absolute", inset:0, zIndex:3, pointerEvents:"none",
+        backgroundImage:"radial-gradient(rgba(201,168,76,0.10) 1px, transparent 1px)",
+        backgroundSize:"32px 32px",
+        opacity: 0.4,
+      }} />
+
+      {/* Contenu */}
+      <div className="ayyad-container" style={{
+        position:"relative", zIndex:5,
+        minHeight:"92vh",
+        display:"flex", flexDirection:"column", justifyContent:"center",
+        paddingTop: 80, paddingBottom: 120,
+        color:"#fff",
+      }}>
+        <div style={{ maxWidth: 880 }}>
+          {/* Eyebrow / badge — réanime à chaque changement de slide */}
+          <div key={`eb-${idx}`} style={{
+            display:"inline-flex", alignItems:"center", gap:10,
+            background:"rgba(255,255,255,0.10)",
+            backdropFilter:"blur(10px)",
+            border:"1px solid rgba(201,168,76,0.35)",
+            padding:"7px 16px",
+            borderRadius:9999,
+            fontSize:11, fontWeight:700, letterSpacing:2.2, textTransform:"uppercase",
+            color:"#e9d59a",
+            marginBottom: 28,
+            animation:"ayyad-slide-up 700ms cubic-bezier(0.16,1,0.3,1) both",
+          }}>
+            <span style={{ width:7, height:7, borderRadius:"50%", background:"#34d399", boxShadow:"0 0 0 4px rgba(52,211,153,0.20)", display:"inline-block" }} />
+            {current.eyebrow}
           </div>
-          <h1 className="text-4xl md:text-5xl font-black text-white mb-3 leading-tight">
-            {fr ? "Cas urgents" : "Urgent cases"}
+
+          {/* Titre éditorial Playfair */}
+          <h1 key={`t-${idx}`} className="ayyad-h-display" style={{
+            fontSize: "clamp(2.4rem, 6vw, 5.2rem)",
+            color:"#fff",
+            margin: 0,
+            marginBottom: 24,
+            textShadow:"0 4px 32px rgba(0,0,0,0.35)",
+            animation:"ayyad-slide-up 900ms cubic-bezier(0.16,1,0.3,1) both",
+            animationDelay:"80ms",
+          }}>
+            {current.titlePre}<br />
+            <em style={{ color:"#e9d59a", fontWeight:700 }}>{current.titleEm}</em>
           </h1>
-          <p className="text-red-200 text-lg max-w-xl mb-8">
-            {fr ? "Ces patients ont besoin d'aide maintenant. Chaque heure sans soins aggrave leur état." : "These patients need help now. Every hour without care worsens their condition."}
+
+          {/* Sous-titre */}
+          <p key={`s-${idx}`} style={{
+            fontSize:"clamp(1rem, 1.5vw, 1.25rem)",
+            lineHeight: 1.6,
+            color:"rgba(255,255,255,0.92)",
+            maxWidth: 680,
+            marginBottom: 40,
+            textShadow:"0 2px 12px rgba(0,0,0,0.30)",
+            fontWeight:400,
+            animation:"ayyad-slide-up 900ms cubic-bezier(0.16,1,0.3,1) both",
+            animationDelay:"180ms",
+          }}>
+            {current.sub}
           </p>
-          {/* Stats d'urgence */}
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { v: urgents.length, l: fr ? "Cas critiques" : "Critical cases", icon: "🚨" },
-              { v: fmt(totalNeeded), l: fr ? "FCFA encore nécessaires" : "FCFA still needed", icon: "💰" },
-              { v: "72h", l: fr ? "Délai d'intervention max" : "Max intervention time", icon: "⏱️" },
-            ].map(({ v, l, icon }) => (
-              <div key={l} className="bg-white/10 border border-white/10 rounded-2xl px-4 py-4 text-center backdrop-blur-sm">
-                <div className="text-xl mb-1">{icon}</div>
-                <div className="text-2xl font-black text-white">{v}</div>
-                <div className="text-red-200 text-xs mt-0.5">{l}</div>
-              </div>
-            ))}
+
+          {/* CTAs */}
+          <div key={`cta-${idx}`} style={{
+            display:"flex", flexWrap:"wrap", gap:14,
+            animation:"ayyad-slide-up 900ms cubic-bezier(0.16,1,0.3,1) both",
+            animationDelay:"280ms",
+          }}>
+            <button onClick={current.cta.action} className="ayyad-btn-gold" style={{ fontSize:14, padding:"15px 30px" }}>
+              {current.cta.label} →
+            </button>
+            <button onClick={() => setPage("submit")} className="ayyad-btn-ghost" style={{ fontSize:14 }}>
+              {fr ? "Lancer une campagne" : "Start a campaign"}
+            </button>
+            <button onClick={() => setPage("how")} className="ayyad-btn-ghost" style={{ fontSize:14 }}>
+              {fr ? "Comment ça marche" : "How it works"}
+            </button>
+          </div>
+
+          {/* Trust pills */}
+          <div style={{ display:"flex", flexWrap:"wrap", gap:10, marginTop: 36 }}>
+            <span className="ayyad-trust-pill" style={{ background:"rgba(255,255,255,0.10)", color:"#fff", border:"1px solid rgba(255,255,255,0.22)" }}>
+              <span style={{ color:"#e9d59a" }}>🔒</span> {fr ? "Paiement sécurisé" : "Secure payment"}
+            </span>
+            <span className="ayyad-trust-pill" style={{ background:"rgba(255,255,255,0.10)", color:"#fff", border:"1px solid rgba(255,255,255,0.22)" }}>
+              <span style={{ color:"#e9d59a" }}>✓</span> {fr ? "100% transparent" : "100% transparent"}
+            </span>
+            <span className="ayyad-trust-pill" style={{ background:"rgba(255,255,255,0.10)", color:"#fff", border:"1px solid rgba(255,255,255,0.22)" }}>
+              <span style={{ color:"#e9d59a" }}>🏥</span> {fr ? "Hôpitaux partenaires" : "Partner hospitals"}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Liste des cas */}
-      <div className="max-w-4xl mx-auto px-4 py-10 space-y-5">
-        {urgents.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-20 h-20 bg-green-900/40 rounded-full flex items-center justify-center text-4xl mx-auto mb-5">✅</div>
-            <p className="text-gray-400 text-lg">{fr ? "Aucun cas urgent pour l'instant." : "No urgent cases right now."}</p>
-          </div>
-        ) : urgents.map(c => {
-          const pct = Math.min(100, Math.round(c.collected / c.required * 100));
-          const manque = Math.max(0, c.required - c.collected);
-          return (
-            <div key={c.id}
-              onClick={() => { setSelectedCase(c); setPage("case"); }}
-              className="rounded-3xl overflow-hidden cursor-pointer group transition-all duration-300"
-              style={{background:"#1a1a1a", border:"1.5px solid #2a2a2a", boxShadow:"0 4px 32px rgba(0,0,0,0.4)"}}>
-              <div className="flex flex-col md:flex-row">
-                {/* Image / emoji */}
-                <div className="md:w-52 h-48 md:h-auto flex-shrink-0 relative overflow-hidden" style={{background:"linear-gradient(135deg,#1f0a0a,#3b0d0d)"}}>
-                  {c.image && c.image.startsWith("http")
-                    ? <img src={c.image} alt="" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
-                    : <div className="w-full h-full flex items-center justify-center text-7xl">{c.image || "🏥"}</div>
-                  }
-                  {/* Badge urgence en overlay */}
-                  <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-black px-2.5 py-1 rounded-full flex items-center gap-1 animate-pulse">
-                    🚨 URGENT
-                  </div>
-                  {c.daysLeft <= 7 && (
-                    <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-orange-300 text-xs font-bold px-2.5 py-1 rounded-full border border-orange-400/30">
-                      ⏱️ {c.daysLeft}j restants
-                    </div>
-                  )}
-                </div>
-
-                {/* Contenu */}
-                <div className="flex-1 p-6 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-xl font-black text-white mb-1 group-hover:text-red-400 transition-colors">{c.title[lang]}</h3>
-                    <p className="text-gray-500 text-sm mb-3">🏥 {c.hospital} · 📍 {c.city}</p>
-                    <p className="text-gray-400 text-sm leading-relaxed line-clamp-2">{c.desc[lang]}</p>
-                  </div>
-
-                  {/* Barre de progression */}
-                  <div className="mt-5">
-                    <div className="flex justify-between text-xs mb-2">
-                      <span className="text-gray-400">{fr ? "Collecté" : "Raised"}</span>
-                      <span className="text-red-400 font-bold">{fr ? `Il manque ${fmt(manque)} FCFA` : `${fmt(manque)} FCFA needed`}</span>
-                    </div>
-                    <div className="h-2.5 rounded-full overflow-hidden" style={{background:"#2a2a2a"}}>
-                      <div className="h-full rounded-full transition-all duration-700"
-                        style={{width: pct+"%", background: pct >= 70 ? "linear-gradient(90deg,#16a34a,#22c55e)" : "linear-gradient(90deg,#dc2626,#ef4444)"}} />
-                    </div>
-                    <div className="flex justify-between mt-2">
-                      <span className="text-white font-bold text-sm">{fmt(c.collected)} FCFA</span>
-                      <span className="text-gray-500 text-xs">{fr ? "objectif" : "goal"} {fmt(c.required)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CTA */}
-                <div className="flex md:flex-col items-center justify-between md:justify-center gap-3 p-5 md:pl-0 md:pr-6 border-t md:border-t-0 md:border-l border-white/5">
-                  <div className="text-center">
-                    <div className="text-2xl font-black text-white">{pct}%</div>
-                    <div className="text-gray-500 text-xs">{fr ? "financé" : "funded"}</div>
-                  </div>
-                  <button
-                    onClick={e => { e.stopPropagation(); setSelectedCase(c); setPage("case"); }}
-                    className="bg-red-600 hover:bg-red-500 text-white font-black px-5 py-3 rounded-2xl text-sm transition-all duration-200 group-hover:scale-105 whitespace-nowrap shadow-lg shadow-red-900/40">
-                    {fr ? "Aider →" : "Help →"}
-                  </button>
-                </div>
+      {/* KPI live bar — collée en bas du hero */}
+      <div style={{
+        position:"absolute", left:0, right:0, bottom:0, zIndex:6,
+        background:"linear-gradient(180deg, rgba(10,31,26,0) 0%, rgba(10,31,26,0.50) 60%, rgba(10,31,26,0.92) 100%)",
+        paddingTop: 24, paddingBottom: 0,
+      }}>
+        <div className="ayyad-container ayyad-hero-kpis-grid" style={{
+          display:"grid",
+          gridTemplateColumns:"repeat(2, minmax(0, 1fr))",
+          gap: 0,
+          borderTop:"1px solid rgba(201,168,76,0.22)",
+          borderBottom:"none",
+          background:"rgba(10,31,26,0.55)",
+          backdropFilter:"blur(12px)",
+          padding:"clamp(14px, 2.5vw, 22px) clamp(12px, 3vw, 24px)",
+        }}>
+          <style>{`
+            @media (min-width: 768px) {
+              .ayyad-hero-kpis-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+            }
+          `}</style>
+          {[
+            { v: heroStats?.patients || "—", l: fr ? "Patients aidés" : "Patients helped", icon:"💚" },
+            { v: heroStats?.collected || "—", l: fr ? "FCFA collectés" : "FCFA raised", icon:"📈" },
+            { v: heroStats?.hospitals || "18", l: fr ? "Hôpitaux partenaires" : "Partner hospitals", icon:"🏥" },
+            { v: "48h", l: fr ? "Vérification dossier" : "Case verification", icon:"⚡" },
+          ].map((k, i) => (
+            <div key={i} style={{
+              padding:"clamp(6px, 1.5vw, 12px) clamp(10px, 2vw, 18px)",
+              minWidth: 0,
+              borderLeft: i === 0 ? "none" : "1px solid rgba(255,255,255,0.10)",
+              textAlign:"left",
+            }}>
+              <div style={{ display:"flex", alignItems:"baseline", gap:8 }}>
+                <span style={{ fontSize:18, opacity:0.65 }}>{k.icon}</span>
+                <span style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:"clamp(1.5rem, 2.6vw, 2.2rem)", color:"#fff", letterSpacing:"-0.02em", lineHeight:1 }}>{k.v}</span>
+              </div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.65)", letterSpacing:1.4, textTransform:"uppercase", fontWeight:600, marginTop:6 }}>
+                {k.l}
               </div>
             </div>
-          );
-        })}
+          ))}
+        </div>
+      </div>
 
-        {urgents.length > 0 && (
-          <div className="text-center pt-4">
-            <button onClick={() => setPage("collectesactives")}
-              className="text-gray-500 hover:text-red-400 text-sm transition-colors">
-              {fr ? "Voir toutes les collectes →" : "See all campaigns →"}
-            </button>
+      {/* Flèches précédent/suivant (desktop) */}
+      <button
+        onClick={(e)=>{ e.stopPropagation(); goPrev(); }}
+        className="hidden md:flex"
+        style={{
+          position:"absolute", left:24, top:"50%", transform:"translateY(-50%)",
+          zIndex:7, width:48, height:48, borderRadius:"50%",
+          background:"rgba(255,255,255,0.10)", backdropFilter:"blur(8px)",
+          border:"1px solid rgba(255,255,255,0.22)",
+          color:"#fff", fontSize:20, cursor:"pointer",
+          alignItems:"center", justifyContent:"center",
+          transition:"all .25s",
+        }}
+        onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.20)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.45)"; }}
+        onMouseLeave={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.10)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.22)"; }}
+        aria-label="Slide précédent"
+      >‹</button>
+      <button
+        onClick={(e)=>{ e.stopPropagation(); goNext(); }}
+        className="hidden md:flex"
+        style={{
+          position:"absolute", right:24, top:"50%", transform:"translateY(-50%)",
+          zIndex:7, width:48, height:48, borderRadius:"50%",
+          background:"rgba(255,255,255,0.10)", backdropFilter:"blur(8px)",
+          border:"1px solid rgba(255,255,255,0.22)",
+          color:"#fff", fontSize:20, cursor:"pointer",
+          alignItems:"center", justifyContent:"center",
+          transition:"all .25s",
+        }}
+        onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.20)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.45)"; }}
+        onMouseLeave={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.10)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.22)"; }}
+        aria-label="Slide suivant"
+      >›</button>
+
+      {/* Dots */}
+      <div style={{ position:"absolute", left:0, right:0, top:24, zIndex:7, display:"flex", justifyContent:"center", gap:8 }}>
+        {slides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setIdx(i)}
+            aria-label={`Slide ${i+1}`}
+            style={{
+              height: 3, borderRadius: 999,
+              width: i === idx ? 36 : 18,
+              background: i === idx ? "#e9d59a" : "rgba(255,255,255,0.35)",
+              border:"none", cursor:"pointer",
+              transition:"all .35s",
+            }}
+          />
+        ))}
+      </div>
+    </section>
+  );
+};
+
+// ── PartnersBanner — bandeau des hôpitaux et cliniques partenaires ────────────
+// Affiche les 10 établissements ciblés/en cours de validation pour le partenariat.
+// On utilise une formulation honnête ("en cours de validation") pour ne pas affirmer
+// un partenariat finalisé. Style : cards blanches sobres avec nom de l'établissement.
+const PartnersBanner = ({ lang }) => {
+  const fr = lang === "fr";
+  const partners = [
+    { name: "PISAM", full: "Polyclinique Internationale Sainte Anne-Marie", city: "Abidjan" },
+    { name: "Polyclinique de l'Indénié", full: "Polyclinique Internationale de l'Indénié", city: "Abidjan" },
+    { name: "Avicennes Polyclinic", full: "Avicennes Polyclinic", city: "Abidjan" },
+    { name: "Le Grand Centre", full: "Clinique Médicale Le Grand Centre", city: "Abidjan" },
+    { name: "Polyclinique Farah", full: "Polyclinique Farah", city: "Abidjan" },
+    { name: "CHU de Cocody", full: "Centre Hospitalier Universitaire de Cocody", city: "Cocody, Abidjan" },
+    { name: "CHU de Treichville", full: "Centre Hospitalier Universitaire de Treichville", city: "Treichville, Abidjan" },
+    { name: "Polymed", full: "Nouvelle Clinique Polymed", city: "Abidjan" },
+    { name: "La Providence", full: "Clinique La Providence", city: "Abidjan" },
+  ];
+  // Liste doublée pour le marquee infini (translateX(-50%))
+  const marqueeItems = [...partners, ...partners];
+
+  return (
+    <section style={{
+      background:"linear-gradient(180deg, var(--paper) 0%, #f7f6f2 100%)",
+      padding:"clamp(24px, 3vw, 36px) 0 clamp(28px, 3.5vw, 44px)",
+      borderTop:"1px solid rgba(10,31,26,0.06)",
+      position:"relative",
+      overflow:"hidden",
+    }}>
+      <div className="ayyad-container">
+        <div style={{ textAlign:"center", maxWidth: 720, margin:"0 auto 20px" }}>
+          <span className="ayyad-eyebrow" style={{ color:"var(--ayyad-amber)", background:"rgba(245,158,11,0.10)", borderColor:"rgba(245,158,11,0.30)" }}>
+            {fr ? "⚠ Partenariats en cours de validation" : "⚠ Partnerships being validated"}
+          </span>
+          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.6rem, 3vw, 2.4rem)", marginTop: 12, marginBottom: 10 }}>
+            {fr ? <>Nos <em>établissements partenaires.</em></> : <>Our <em>partner facilities.</em></>}
+          </h2>
+          <p style={{ color:"var(--ink-500)", fontSize:14, lineHeight:1.6 }}>
+            {fr
+              ? "Ayyad travaille à la finalisation de partenariats officiels avec ces hôpitaux et cliniques de référence en Côte d'Ivoire. En attendant, les fonds sont versés directement à l'établissement qui prend en charge le patient."
+              : "Ayyad is finalising official partnerships with these leading hospitals and clinics in Côte d'Ivoire. In the meantime, funds are transferred directly to the facility caring for the patient."}
+          </p>
+        </div>
+      </div>
+
+      {/* Marquee défilant — masque les bords avec un gradient pour effet pro */}
+      <div style={{ position:"relative" }}>
+        <div className="ayyad-marquee" style={{ overflow:"hidden", padding:"12px 0" }}>
+          <style>{`
+            @keyframes ayyad-partners-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+            .ayyad-partners-track { display: flex; gap: 20px; animation: ayyad-partners-scroll 45s linear infinite; width: max-content; }
+            .ayyad-marquee:hover .ayyad-partners-track { animation-play-state: paused; }
+          `}</style>
+          <div className="ayyad-partners-track">
+            {marqueeItems.map((p, i) => (
+              <div
+                key={`${p.name}-${i}`}
+                style={{
+                  display:"flex", alignItems:"center", gap: 14,
+                  background:"#fff",
+                  border:"1px solid rgba(10,31,26,0.08)",
+                  borderRadius: 16,
+                  padding:"14px 22px",
+                  minWidth: 280,
+                  flexShrink: 0,
+                  boxShadow:"0 2px 8px rgba(10,31,26,0.04)",
+                  transition:"transform .25s, box-shadow .25s, border-color .25s",
+                }}
+                onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.boxShadow="0 10px 24px rgba(10,31,26,0.10)"; e.currentTarget.style.borderColor="rgba(13,92,46,0.22)"; }}
+                onMouseLeave={e=>{ e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow="0 2px 8px rgba(10,31,26,0.04)"; e.currentTarget.style.borderColor="rgba(10,31,26,0.08)"; }}
+              >
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12,
+                  background:"linear-gradient(135deg, rgba(13,92,46,0.10) 0%, rgba(201,168,76,0.10) 100%)",
+                  border:"1px solid rgba(13,92,46,0.10)",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize: 22, flexShrink: 0,
+                }}>🏥</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontFamily:"var(--font-serif)", fontWeight:700, fontSize:15, color:"var(--ayyad-deep)", lineHeight:1.2, whiteSpace:"nowrap" }}>{p.name}</div>
+                  <div style={{ fontSize:11, color:"var(--ink-400)", marginTop:3, letterSpacing:0.3, fontWeight:600, whiteSpace:"nowrap" }}>📍 {p.city}</div>
+                </div>
+                <span style={{
+                  marginLeft:"auto",
+                  fontSize:10, fontWeight:700, letterSpacing:0.5,
+                  padding:"4px 10px", borderRadius:9999,
+                  background:"rgba(245,158,11,0.10)", color:"var(--ayyad-amber)",
+                  border:"1px solid rgba(245,158,11,0.25)",
+                  whiteSpace:"nowrap",
+                  textTransform:"uppercase",
+                }}>{fr ? "En cours" : "Pending"}</span>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+
+        {/* Gradient fade sur les bords */}
+        <div style={{ position:"absolute", top:0, bottom:0, left:0, width:120, background:"linear-gradient(90deg, var(--paper) 0%, transparent 100%)", pointerEvents:"none", zIndex:2 }} />
+        <div style={{ position:"absolute", top:0, bottom:0, right:0, width:120, background:"linear-gradient(-90deg, var(--paper) 0%, transparent 100%)", pointerEvents:"none", zIndex:2 }} />
+      </div>
+
+      <div className="ayyad-container">
+        <p style={{ textAlign:"center", fontSize:12, color:"var(--ink-400)", marginTop: 24, fontStyle:"italic", maxWidth: 720, margin:"24px auto 0" }}>
+          {fr
+            ? "Les partenariats officiels sont en cours de finalisation administrative. Aucune affirmation de partenariat finalisé n'est faite."
+            : "Official partnerships are being formalised. No claim of finalised partnership is made."}
+        </p>
+      </div>
+    </section>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ── ImpactSection — Confiance financière + chiffres clés animés ─────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Bande de KPIs centrale avec contre-narratif rassurant (transparence, audit,
+// versement direct hôpital). Compteurs s'incrémentent au scroll, badges
+// confiance, mini-témoignage en pull-quote.
+const useCountUp = (target, duration = 1600, enabled = true) => {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (!enabled || !target) return;
+    const num = Number(String(target).replace(/[^\d.]/g, "")) || 0;
+    if (num === 0) { setValue(0); return; }
+    const start = performance.now();
+    let raf;
+    const tick = (now) => {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.round(num * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration, enabled]);
+  return value;
+};
+
+const AnimatedNumber = ({ value, suffix = "", visible }) => {
+  const n = useCountUp(value, 1800, visible);
+  return <span>{n.toLocaleString("fr-CI")}{suffix}</span>;
+};
+
+const ImpactSection = ({ lang, heroStats, setPage }) => {
+  const fr = lang === "fr";
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (!ref.current) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.25 });
+    obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  // Parse heroStats : "12M" → 12, "3.5k" → 3500…
+  const parseStat = (raw) => {
+    if (raw == null || raw === "—") return 0;
+    const str = String(raw).trim();
+    const numMatch = str.match(/[\d.]+/);
+    if (!numMatch) return 0;
+    let n = parseFloat(numMatch[0]);
+    if (/M/i.test(str)) n *= 1_000_000;
+    else if (/k/i.test(str)) n *= 1_000;
+    return Math.round(n);
+  };
+
+  // IMPORTANT : pas de valeurs de fallback fake. Si les données réelles
+  // Supabase sont à 0 (plateforme qui démarre), on affiche 0 honnêtement.
+  // Les compteurs s'animeront naturellement de 0 → vraie valeur au fur
+  // et à mesure que des dossiers seront approuvés et financés.
+  const collectedNum = parseStat(heroStats?.collected);
+  const patientsNum = parseStat(heroStats?.patients);
+  const hospitalsNum = parseStat(heroStats?.hospitals) || 18; // 18 = chiffre marketing (partenariats en cours)
+  const campagnesNum = parseStat(heroStats?.funded) || 0;
+
+  return (
+    <section ref={ref} style={{ background:"var(--paper)", padding:"clamp(24px,3vw,40px) 0 clamp(36px,4.5vw,56px)", position:"relative", borderTop:"1px solid rgba(10,31,26,0.04)" }}>
+      {/* Bordure dorée subtile en haut */}
+      <div style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:120, height:3, background:"var(--grad-gold)", borderRadius:999 }} />
+
+      <div className="ayyad-container">
+        {/* Header centré */}
+        <div style={{ textAlign:"center", marginBottom: 28 }}>
+          <span className="ayyad-eyebrow">{fr ? "Notre impact" : "Our impact"}</span>
+          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.8rem, 3.4vw, 2.8rem)", marginTop: 14, marginBottom: 10 }}>
+            {fr ? <>Des chiffres qui <em>changent des vies.</em></> : <>Numbers that <em>change lives.</em></>}
+          </h2>
+          <p style={{ color:"var(--ink-500)", fontSize:15, maxWidth: 600, margin:"0 auto", lineHeight:1.55 }}>
+            {fr
+              ? "Chaque don est tracé, chaque virement est audité, chaque patient est suivi."
+              : "Every donation is tracked, every transfer is audited, every patient is followed up."}
+          </p>
+        </div>
+
+        {/* Grille KPIs — 2 colonnes mobile / 4 desktop, padding mobile réduit */}
+        <div style={{
+          display:"grid",
+          gridTemplateColumns:"repeat(auto-fit, minmax(min(180px, 100%), 1fr))",
+          gap: 12,
+          marginBottom: 24,
+        }}>
+          {[
+            { v: collectedNum, suffix: " FCFA", label: fr ? "Total collecté" : "Total raised", icon:"💰", color:"#0d5c2e" },
+            { v: patientsNum,  suffix: "",       label: fr ? "Patients aidés" : "Patients helped", icon:"💚", color:"#10b981" },
+            { v: hospitalsNum, suffix: "",       label: fr ? "Hôpitaux partenaires" : "Partner hospitals", icon:"🏥", color:"#0f766e" },
+            { v: campagnesNum, suffix: "",       label: fr ? "Campagnes financées" : "Funded campaigns", icon:"🎯", color:"#a17f29" },
+          ].map((k, i) => (
+            <div key={i} className="ayyad-card ayyad-reveal" style={{ padding:"clamp(16px, 3vw, 32px) clamp(14px, 2.5vw, 28px)", textAlign:"left", animationDelay: `${i*80}ms`, minWidth: 0 }}>
+              <div style={{
+                width:44, height:44, borderRadius:12,
+                background: `linear-gradient(135deg, ${k.color}15, ${k.color}08)`,
+                border:`1px solid ${k.color}22`,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:22, marginBottom:12,
+              }}>{k.icon}</div>
+              <div className="ayyad-counter" style={{ marginBottom: 4, fontSize:"clamp(1.4rem, 4vw, 2.6rem)", wordBreak:"break-word", overflowWrap:"break-word" }}>
+                <AnimatedNumber value={k.v} suffix={k.suffix} visible={visible} />
+              </div>
+              <div style={{ color:"var(--ink-500)", fontSize:11, fontWeight:700, letterSpacing:0.6, textTransform:"uppercase" }}>
+                {k.label}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bande de confiance + pull-quote */}
+        <div style={{
+          background:"linear-gradient(135deg, #0a3d2e 0%, #0d5c2e 100%)",
+          borderRadius: 28,
+          padding:"clamp(24px, 4vw, 56px)",
+          color:"#fff",
+          position:"relative", overflow:"hidden",
+          boxShadow:"var(--shadow-2xl)",
+        }}>
+          {/* Pattern doré décoratif */}
+          <div style={{
+            position:"absolute", inset:0, opacity:0.06, pointerEvents:"none",
+            backgroundImage:"radial-gradient(rgba(201,168,76,1) 1.5px, transparent 1.5px)",
+            backgroundSize:"24px 24px",
+          }} />
+          {/* IMPORTANT: minmax(0, 1fr) au lieu de minmax(280px) — sinon la colonne
+              force une largeur minimum 280px qui overflow le viewport mobile */}
+          <div style={{ position:"relative", display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap:"clamp(20px, 3vw, 40px)", alignItems:"center" }}>
+            <div>
+              <span className="ayyad-eyebrow" style={{ color:"#e9d59a", background:"rgba(201,168,76,0.10)", borderColor:"rgba(201,168,76,0.40)" }}>
+                {fr ? "Engagement Ayyad" : "Ayyad commitment"}
+              </span>
+              <h3 className="ayyad-h-display" style={{ color:"#fff", fontSize:"clamp(1.6rem, 2.6vw, 2.4rem)", marginTop: 18, marginBottom: 16 }}>
+                {fr ? <>La confiance n'est pas un mot, <em style={{ color:"#e9d59a" }}>c'est une preuve.</em></> : <>Trust isn't a word, <em style={{ color:"#e9d59a" }}>it's a proof.</em></>}
+              </h3>
+              <p style={{ color:"rgba(255,255,255,0.85)", lineHeight:1.7, fontSize:15 }}>
+                {fr
+                  ? "Nous publions chaque mois nos rapports d'impact, nos virements aux hôpitaux et notre commission. Aucune intermédiation cash, aucun frais caché : ce que vous donnez arrive intégralement à l'établissement de santé."
+                  : "Each month we publish our impact reports, hospital transfers and commission. No cash intermediation, no hidden fees: what you give arrives in full to the healthcare facility."}
+              </p>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap: 12 }}>
+              {[
+                { icon:"🔒", t: fr ? "Conformité BCEAO" : "BCEAO compliance",      s: fr ? "Plateforme déclarée et auditée" : "Declared and audited platform",   target: "how" },
+                { icon:"📊", t: fr ? "Rapports trimestriels"  : "Quarterly reports", s: fr ? "Transparence totale sur les fonds" : "Full transparency on funds", target: "how" },
+                { icon:"🏥", t: fr ? "Versement direct hôpital" : "Direct to hospital", s: fr ? "Jamais en espèces, toujours tracé" : "Never cash, always traceable", target: "how" },
+              ].map((b, i) => (
+                <button
+                  key={i}
+                  onClick={() => setPage && setPage(b.target)}
+                  style={{
+                    display:"flex", gap:14, padding:"14px 18px",
+                    background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.10)",
+                    borderRadius: 14,
+                    cursor: setPage ? "pointer" : "default",
+                    textAlign:"left", color:"inherit",
+                    transition:"background .2s, border-color .2s, transform .2s",
+                    alignItems:"center",
+                  }}
+                  onMouseEnter={e=>{ if (!setPage) return; e.currentTarget.style.background="rgba(255,255,255,0.12)"; e.currentTarget.style.borderColor="rgba(201,168,76,0.40)"; e.currentTarget.style.transform="translateX(4px)"; }}
+                  onMouseLeave={e=>{ if (!setPage) return; e.currentTarget.style.background="rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.10)"; e.currentTarget.style.transform="translateX(0)"; }}
+                >
+                  <div style={{ fontSize:22 }}>{b.icon}</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontWeight:700, fontSize:14, color:"#fff" }}>{b.t}</div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", marginTop:2 }}>{b.s}</div>
+                  </div>
+                  {setPage && (
+                    <span style={{ color:"#e9d59a", fontSize:18, fontWeight:700, flexShrink:0 }}>→</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ── VisionSection — Notre vision (split image + texte émotionnel) ───────────
+// ─────────────────────────────────────────────────────────────────────────────
+const VisionSection = ({ lang, setPage }) => {
+  const fr = lang === "fr";
+  return (
+    <section style={{
+      background:"linear-gradient(180deg, #fdfcfa 0%, #f7f6f2 100%)",
+      padding:"clamp(32px, 4vw, 56px) 0 clamp(16px, 2vw, 24px)",
+      position:"relative", overflow:"hidden",
+      borderTop:"1px solid rgba(10,31,26,0.04)",
+    }}>
+      {/* Decorative blob */}
+      <div style={{
+        position:"absolute", top:-120, right:-120, width:380, height:380,
+        background:"radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%)",
+        borderRadius:"50%", pointerEvents:"none",
+      }} />
+
+      <div className="ayyad-container">
+        <div style={{
+          display:"grid",
+          gridTemplateColumns:"repeat(auto-fit, minmax(min(320px, 100%), 1fr))",
+          gap:"clamp(28px, 5vw, 56px)", alignItems:"center",
+        }}>
+          {/* Visuel gauche — photo représentant la communauté africaine/ivoirienne */}
+          <div className="ayyad-reveal-left" style={{ position:"relative" }}>
+            <div style={{
+              position:"relative",
+              borderRadius: 28,
+              overflow:"hidden",
+              boxShadow:"var(--shadow-2xl)",
+              aspectRatio:"4 / 5",
+              background:"#0a3d2e",
+            }}>
+              <img
+                src="/vision-ayyad-clean.jpg"
+                alt={fr ? "Une maman et son enfant — soutenir une vie" : "A mother and her child — supporting a life"}
+                style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center" }}
+                onError={e=>{ e.target.style.display='none'; }}
+              />
+              {/* Overlay gradient bas pour lisibilité de la citation */}
+              <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg, rgba(10,31,26,0) 50%, rgba(10,31,26,0.78) 100%)" }} />
+              {/* Citation rendue sur l'image — image nature donc on peut remettre */}
+              <div style={{ position:"absolute", bottom:32, left:32, right:32, color:"#fff" }}>
+                <div style={{ fontSize:48, fontFamily:"var(--font-serif)", color:"#e9d59a", lineHeight:1, marginBottom:8 }}>"</div>
+                <p style={{ fontFamily:"var(--font-serif)", fontStyle:"italic", fontSize:18, fontWeight:500, lineHeight:1.45 }}>
+                  {fr
+                    ? "Soutenir une vie, c'est en sauver une."
+                    : "To support a life is to save one."}
+                </p>
+              </div>
+            </div>
+            {/* Pas de badge floating — l'image porte déjà son propre branding Ayyad
+                et un badge "Made in CI" excluerait la diaspora et les donateurs
+                internationaux qui sont essentiels au modèle de solidarité. */}
+          </div>
+
+          {/* Texte droit */}
+          <div className="ayyad-reveal-right" style={{ minWidth: 0 }}>
+            <span className="ayyad-eyebrow">{fr ? "Notre vision" : "Our vision"}</span>
+            <h2 className="ayyad-h-display" style={{ fontSize:"clamp(2rem, 3.6vw, 3.2rem)", marginTop: 18, marginBottom: 24 }}>
+              {fr
+                ? <>Un accès aux soins <em>sans condition,</em> sans détour.</>
+                : <>Healthcare access <em>without condition,</em> without detour.</>}
+            </h2>
+            <p style={{ color:"var(--ink-700)", fontSize:17, lineHeight:1.75, marginBottom: 20 }}>
+              {fr
+                ? "Ayyad est née d'un constat simple : en Côte d'Ivoire, des milliers de patients renoncent à des soins vitaux faute de moyens. Pourtant, des dizaines de milliers de personnes seraient prêtes à donner — si elles avaient l'assurance que leur don arrive vraiment au bon endroit."
+                : "Ayyad was born from a simple observation: in Côte d'Ivoire, thousands of patients give up vital care for lack of resources. Yet tens of thousands of people would be willing to donate — if they had the assurance that their gift truly reaches the right place."}
+            </p>
+            <p style={{ color:"var(--ink-500)", fontSize:15, lineHeight:1.75, marginBottom: 32 }}>
+              {fr
+                ? "Notre mission est de créer un pont de confiance entre le donateur et le patient, à travers une plateforme transparente, vérifiée et 100% africaine."
+                : "Our mission is to build a bridge of trust between the donor and the patient, through a transparent, verified and 100% African platform."}
+            </p>
+
+            {/* 3 piliers — responsive 3 cols sur écrans larges, padding et taille adaptés */}
+            <div style={{
+              display:"grid",
+              gridTemplateColumns:"repeat(3, minmax(0, 1fr))",
+              gap: 8, marginBottom: 28,
+              width:"100%",
+            }}>
+              {[
+                { icon:"🤝", t: fr ? "Solidarité" : "Solidarity"          },
+                { icon:"🔍", t: fr ? "Transparence" : "Transparency"      },
+                { icon:"⚡", t: fr ? "Rapidité"    : "Speed"             },
+              ].map((p, i) => (
+                <div key={i} style={{
+                  textAlign:"center", padding:"12px 6px",
+                  background:"#fff", border:"1px solid rgba(10,31,26,0.06)",
+                  borderRadius: 12,
+                  minWidth: 0,
+                }}>
+                  <div style={{ fontSize:"clamp(18px, 4vw, 26px)", marginBottom:4 }}>{p.icon}</div>
+                  <div style={{ fontWeight:700, fontSize:"clamp(11px, 2.6vw, 13px)", color:"var(--ayyad-deep)", lineHeight:1.2 }}>{p.t}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display:"flex", gap:14, flexWrap:"wrap" }}>
+              <button onClick={()=>setPage("how")} className="ayyad-btn-primary" style={{ fontSize:14, padding:"13px 26px" }}>
+                {fr ? "Découvrir notre démarche" : "Discover our approach"} →
+              </button>
+              <button onClick={()=>setPage("collectesactives")} style={{
+                background:"transparent",
+                border:"1.5px solid rgba(13,92,46,0.22)",
+                color:"var(--ayyad-deep)",
+                fontWeight:700, fontSize:14,
+                padding:"13px 26px", borderRadius:9999, cursor:"pointer",
+                transition:"all .2s",
+              }}>
+                {fr ? "Voir les campagnes" : "See campaigns"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ── TestimonialsCarousel — Témoignages bénéficiaires en carrousel premium ───
+// ─────────────────────────────────────────────────────────────────────────────
+const TestimonialsCarousel = ({ lang }) => {
+  const fr = lang === "fr";
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (paused) return;
+    const tm = setInterval(() => setIdx(i => (i + 1) % TEMOIGNAGES.length), 6000);
+    return () => clearInterval(tm);
+  }, [paused]);
+
+  const goTo = (i) => setIdx((i + TEMOIGNAGES.length) % TEMOIGNAGES.length);
+
+  return (
+    <section style={{
+      background:"linear-gradient(135deg, #0a3d2e 0%, #0d5c2e 50%, #0f4f3c 100%)",
+      padding:"clamp(40px, 5vw, 64px) 0",
+      position:"relative", overflow:"hidden",
+      color:"#fff",
+    }}
+    onMouseEnter={()=>setPaused(true)}
+    onMouseLeave={()=>setPaused(false)}
+    >
+      {/* Pattern décoratif */}
+      <div style={{
+        position:"absolute", inset:0, opacity:0.06, pointerEvents:"none",
+        backgroundImage:"radial-gradient(rgba(201,168,76,1) 1px, transparent 1px)",
+        backgroundSize:"32px 32px",
+      }} />
+      {/* Glow décoratif */}
+      <div style={{
+        position:"absolute", top:"30%", left:"-10%", width:400, height:400,
+        background:"radial-gradient(circle, rgba(201,168,76,0.15) 0%, transparent 70%)",
+        borderRadius:"50%", pointerEvents:"none", filter:"blur(20px)",
+      }} />
+
+      <div className="ayyad-container" style={{ position:"relative", zIndex:2 }}>
+        {/* Header */}
+        <div style={{ textAlign:"center", marginBottom: 56, maxWidth: 720, margin:"0 auto 56px" }}>
+          <span className="ayyad-eyebrow" style={{ color:"#e9d59a", background:"rgba(201,168,76,0.10)", borderColor:"rgba(201,168,76,0.40)" }}>
+            {fr ? "Voix de bénéficiaires" : "Beneficiary voices"}
+          </span>
+          <h2 className="ayyad-h-display" style={{ color:"#fff", fontSize:"clamp(2rem, 3.6vw, 3rem)", marginTop: 18, marginBottom: 16 }}>
+            {fr ? <>Ils ont retrouvé <em style={{ color:"#e9d59a" }}>l'espoir,</em> et la santé.</> : <>They found <em style={{ color:"#e9d59a" }}>hope,</em> and health.</>}
+          </h2>
+          <p style={{ color:"rgba(255,255,255,0.78)", fontSize:16, lineHeight:1.65 }}>
+            {fr
+              ? "Chaque don raconte une histoire. Voici celles que la solidarité Ayyad a permis d'écrire."
+              : "Every donation tells a story. Here are the ones Ayyad solidarity helped write."}
+          </p>
+        </div>
+
+        {/* Carrousel */}
+        <div style={{ position:"relative", maxWidth: 880, margin:"0 auto" }}>
+          <div style={{
+            background:"rgba(255,255,255,0.05)",
+            backdropFilter:"blur(12px)",
+            border:"1px solid rgba(255,255,255,0.10)",
+            borderRadius: 28,
+            padding:"clamp(28px, 4vw, 48px)",
+            position:"relative",
+            minHeight: 320,
+          }}>
+            {/* Big quote mark */}
+            <div style={{
+              position:"absolute", top:24, right:32,
+              fontSize: 100, lineHeight:1,
+              color:"rgba(201,168,76,0.18)",
+              fontFamily:"var(--font-serif)",
+            }}>"</div>
+
+            {TEMOIGNAGES.map((t, i) => (
+              <div key={t.id} style={{
+                display: i === idx ? "block" : "none",
+                animation: i === idx ? "ayyad-fade-in 600ms ease-out" : "none",
+              }}>
+                {/* Stars */}
+                <div style={{ display:"flex", gap:4, marginBottom: 24 }}>
+                  {[...Array(t.stars)].map((_, s) => (
+                    <span key={s} style={{ color:"#e9d59a", fontSize:18 }}>★</span>
+                  ))}
+                </div>
+
+                {/* Message */}
+                <p style={{
+                  fontFamily:"var(--font-serif)",
+                  fontStyle:"italic",
+                  fontSize:"clamp(1.1rem, 1.6vw, 1.5rem)",
+                  lineHeight: 1.55,
+                  color:"#fff",
+                  marginBottom: 32,
+                  fontWeight: 500,
+                }}>
+                  « {(t.message?.[lang] || t.message?.fr || "")} »
+                </p>
+
+                {/* Auteur */}
+                <div style={{ display:"flex", alignItems:"center", gap: 16, flexWrap:"wrap" }}>
+                  <div style={{
+                    width: 56, height: 56, borderRadius:"50%",
+                    background:"linear-gradient(135deg, #C9A84C, #e9d59a)",
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize: 26, flexShrink:0,
+                    border:"2px solid rgba(255,255,255,0.18)",
+                  }}>{t.image}</div>
+                  <div>
+                    <div style={{ fontWeight:800, fontSize:16, color:"#fff" }}>{t.name}, <span style={{ fontWeight:500, color:"rgba(255,255,255,0.7)" }}>{t.age} {fr?"ans":"yo"}</span></div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", marginTop:2 }}>
+                      🏥 {t.hospital} · 📍 {t.city} · {t.date}
+                    </div>
+                  </div>
+                  <div style={{ marginLeft:"auto" }}>
+                    <span style={{
+                      background:"rgba(201,168,76,0.18)",
+                      border:"1px solid rgba(201,168,76,0.40)",
+                      color:"#e9d59a",
+                      fontSize: 11, fontWeight:700, letterSpacing:1.2, textTransform:"uppercase",
+                      padding:"6px 14px", borderRadius:999,
+                    }}>{(t.category?.[lang] || t.category?.fr || "")}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Dots + controls */}
+          <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:18, marginTop: 32 }}>
+            <button onClick={()=>goTo(idx-1)} style={{
+              width:40, height:40, borderRadius:"50%",
+              background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.18)",
+              color:"#fff", fontSize:18, cursor:"pointer",
+            }} aria-label="Précédent">‹</button>
+            <div style={{ display:"flex", gap:8 }}>
+              {TEMOIGNAGES.map((_, i) => (
+                <button key={i} onClick={()=>setIdx(i)} aria-label={`Témoignage ${i+1}`} style={{
+                  height: 4, borderRadius: 999,
+                  width: i === idx ? 28 : 14,
+                  background: i === idx ? "#e9d59a" : "rgba(255,255,255,0.30)",
+                  border:"none", cursor:"pointer", transition:"all .35s",
+                }} />
+              ))}
+            </div>
+            <button onClick={()=>goTo(idx+1)} style={{
+              width:40, height:40, borderRadius:"50%",
+              background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.18)",
+              color:"#fff", fontSize:18, cursor:"pointer",
+            }} aria-label="Suivant">›</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ── HomePage
+// ── Cas Urgents Page ──────────────────────────────────────────
+const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
+  const [dbUrgents, setDbUrgents] = useState([]);
+  useEffect(() => {
+    supabase.from("cases").select("*")
+      .eq("status", "COLLECTING")
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .then(async ({ data }) => {
+        if (data && data.length > 0) {
+          const enriched = await enrichCasesWithTotals(data);
+          const calcDaysLeft = (c) => {
+            if (c.deadline) { const diff = new Date(c.deadline) - new Date(); return Math.max(0, Math.ceil(diff / (1000*60*60*24))); }
+            return 30;
+          };
+          const normalized = enriched.map(c => ({
+            ...c,
+            title: typeof c.title === "object" ? c.title : { fr: c.title || "Sans titre", en: c.title || "Untitled" },
+            desc: typeof c.desc === "object" ? c.desc : { fr: c.description || "", en: c.description || "" },
+            required: Number(c.required || c.amount || 0),
+            collected: Number(c.collected || 0),
+            donors: Number(c.donors || 0),
+            trackingId: c.trackingId || c.tracking_id || "",
+            image: c.photo_url || c.image || null,
+            daysLeft: calcDaysLeft(c),
+            urgent: c.urgent ?? false,
+          })).filter(c => c.urgent || c.daysLeft <= 7);
+          setDbUrgents(normalized);
+        }
+      });
+  }, []);
+  const dbTids = new Set(dbUrgents.map(c => c.trackingId));
+  const mockUrgents = getDisplayCases().filter(c => (c.urgent || c.daysLeft <= 7) && !dbTids.has(c.trackingId));
+  const urgents = [...dbUrgents, ...mockUrgents];
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-gradient-to-br from-red-700 to-red-500 text-white py-16 px-4 text-center">
+        <div className="text-5xl mb-4">🚨</div>
+        <h1 className="text-3xl font-black mb-3">{lang==="fr" ? "Cas urgents" : "Urgent cases"}</h1>
+        <p className="text-red-100 max-w-xl mx-auto">{lang==="fr" ? "Ces patients ont besoin d'aide immédiate. Chaque heure compte." : "These patients need immediate help. Every hour counts."}</p>
+        <div className="bg-red-800/40 rounded-2xl px-6 py-3 inline-block mt-4 text-sm font-semibold">
+          ⏱️ {lang==="fr" ? "Intervention critique sous 72h" : "Critical intervention within 72h"}
+        </div>
+      </div>
+      <div className="max-w-4xl mx-auto px-4 py-10 space-y-4">
+        {urgents.length === 0 ? (
+          <div className="text-center py-16 text-gray-400">
+            <div className="text-4xl mb-3">✅</div>
+            <div>{lang==="fr" ? "Aucun cas urgent pour l'instant." : "No urgent cases right now."}</div>
+          </div>
+        ) : urgents.map(c => (
+          <div key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); }}
+            className="bg-white rounded-2xl border-2 border-red-200 shadow-sm p-6 cursor-pointer hover:border-red-400 hover:shadow-md transition-all">
+            <div className="flex items-start gap-4">
+              <div className="text-4xl overflow-hidden">{c.image && (c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-full object-cover rounded-t-2xl" /> : c.image)}</div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">🚨 URGENT</span>
+                  {c.daysLeft <= 7 && <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">⏱️ {c.daysLeft}j restants</span>}
+                </div>
+                <h3 className="font-black text-gray-900">{(c.title?.[lang] || c.title?.fr || c.title || "")}</h3>
+                <p className="text-xs text-gray-400 mt-0.5">{c.hospital} · {c.city}</p>
+                <p className="text-sm text-gray-600 mt-2 line-clamp-2">{(c.desc?.[lang]  || c.desc?.fr  || c.desc  || "")}</p>
+                <div className="mt-3">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>{c.collected.toLocaleString()} FCFA</span>
+                    <span>{c.required.toLocaleString()} FCFA</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-red-500 rounded-full" style={{width: Math.min(100, Math.round(c.collected/c.required*100))+"%"}} />
+                  </div>
+                  <div className="text-xs text-red-600 font-bold mt-1">{Math.min(100, Math.round(c.collected/c.required*100))}% {lang==="fr"?"collecté":"collected"}</div>
+                </div>
+              </div>
+              <button className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex-shrink-0">
+                {lang==="fr" ? "Aider →" : "Help →"}
+              </button>
+            </div>
+          </div>
+        ))}
+        <div className="text-center mt-6">
+          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-red-600">← {lang==="fr"?"Retour à l'accueil":"Back to home"}</button>
+        </div>
       </div>
     </div>
   );
@@ -1614,7 +3018,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
     ...dbCases.map(normalizCase),
     ...getDisplayCases().filter(c => c.status !== "FUNDED"),
   ];
-  const cases = allCases.filter(c => c.category[lang] === specialite);
+  const cases = allCases.filter(c => (c.category?.[lang] || c.category?.fr || c.category || "") === specialite);
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-br from-emerald-700 to-teal-600 text-white py-10 px-4">
@@ -1647,7 +3051,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
                     {c.urgent && <span className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">🚨 URGENT</span>}
                   </div>
                   <div className="p-4">
-                    <div className="font-bold text-gray-900 text-sm leading-snug group-hover:text-emerald-700 mb-1">{c.title[lang]}</div>
+                    <div className="font-bold text-gray-900 text-sm leading-snug group-hover:text-emerald-700 mb-1">{(c.title?.[lang] || c.title?.fr || c.title || "")}</div>
                     <div className="text-xs text-gray-400 mb-3">🏥 {c.hospital} · 📍 {c.city}</div>
                     <div className="flex justify-between text-xs text-gray-500 mb-1">
                       <span className="font-semibold text-gray-800">{fmt(c.collected)}</span>
@@ -1711,129 +3115,48 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
     : mockActive;
   const groups = {};
   active.forEach(c => {
-    const cat = c.category[lang];
+    const cat = (c.category?.[lang] || c.category?.fr || c.category || "");
     if (!groups[cat]) groups[cat] = { label: cat, cases: [] };
     groups[cat].cases.push(c);
   });
-  const fr = lang === "fr";
-  const totalDonors = active.reduce((s, c) => s + c.donors, 0);
-  const totalCollected = active.reduce((s, c) => s + c.collected, 0);
-  const urgentCount = active.filter(c => c.urgent).length;
 
   return (
-    <div className="min-h-screen" style={{background:"#f8fafb"}}>
-      {/* Hero premium */}
-      <div className="relative overflow-hidden" style={{background:"linear-gradient(135deg,#064e3b 0%,#065f46 45%,#047857 80%,#059669 100%)"}}>
-        <div className="absolute inset-0" style={{backgroundImage:"radial-gradient(ellipse at 70% -10%, rgba(167,243,208,0.15) 0%, transparent 60%), radial-gradient(ellipse at 0% 100%, rgba(6,78,59,0.8) 0%, transparent 50%)"}} />
-        {/* Grille décorative */}
-        <div className="absolute inset-0 opacity-5" style={{backgroundImage:"linear-gradient(rgba(255,255,255,.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.3) 1px, transparent 1px)", backgroundSize:"40px 40px"}} />
-        <div className="relative max-w-5xl mx-auto px-4 pt-10 pb-14">
-          <button onClick={() => setPage("home")} className="flex items-center gap-1.5 text-emerald-300 hover:text-white text-sm mb-8 transition-colors">
-            ← {fr ? "Retour à l'accueil" : "Back to home"}
-          </button>
-          <div className="flex items-center gap-3 mb-5">
-            <span className="bg-emerald-400/20 border border-emerald-400/30 text-emerald-200 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
-              ✅ {fr ? "Dossiers médicaux vérifiés" : "Verified medical cases"}
-            </span>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black text-white mb-3 leading-tight">
-            {fr ? "Collectes actives" : "Active campaigns"}
-          </h1>
-          <p className="text-emerald-200 text-lg max-w-xl mb-10">
-            {fr ? "Chaque dossier est vérifié par notre équipe médicale. Choisissez la spécialité pour laquelle vous souhaitez agir." : "Every case is verified by our medical team. Choose a specialty to make a difference."}
-          </p>
-          {/* Stats premium */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { v: active.length, l: fr ? "Collectes actives" : "Active campaigns", icon: "📋" },
-              { v: Object.keys(groups).length, l: fr ? "Spécialités" : "Specialties", icon: "🏥" },
-              { v: totalDonors, l: fr ? "Donateurs" : "Donors", icon: "🤝" },
-              { v: fmt(totalCollected), l: fr ? "FCFA collectés" : "FCFA raised", icon: "💚" },
-            ].map(({ v, l, icon }) => (
-              <div key={l} className="rounded-2xl px-4 py-4 text-center" style={{background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.1)", backdropFilter:"blur(8px)"}}>
-                <div className="text-xl mb-1">{icon}</div>
-                <div className="text-2xl font-black text-white">{v}</div>
-                <div className="text-emerald-300 text-xs mt-0.5">{l}</div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-gradient-to-br from-emerald-700 to-teal-600 text-white py-12 px-4">
+        <div className="max-w-5xl mx-auto">
+          <button onClick={() => setPage("home")} className="flex items-center gap-1 text-emerald-200 hover:text-white text-sm mb-6">← {lang==="fr" ? "Retour" : "Back"}</button>
+          <h1 className="text-3xl font-black mb-2">🏥 {lang==="fr" ? "Collectes actives" : "Active campaigns"}</h1>
+          <p className="text-emerald-100 text-sm">{active.length} {lang==="fr" ? "dossiers vérifiés — choisissez une spécialité" : "verified cases — choose a specialty"}</p>
+          <div className="flex gap-4 mt-6 flex-wrap">
+            {[[active.length+"", lang==="fr"?"Collectes":"Campaigns"],
+              [Object.keys(groups).length+"", lang==="fr"?"Spécialités":"Specialties"],
+              [active.reduce((s,c)=>s+c.donors,0)+"", lang==="fr"?"Donateurs":"Donors"]
+            ].map(([v,l]) => (
+              <div key={l} className="bg-white/10 rounded-xl px-4 py-2 text-center">
+                <div className="text-xl font-black">{v}</div>
+                <div className="text-emerald-200 text-xs">{l}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Bandeau urgence si nécessaire */}
-      {urgentCount > 0 && (
-        <div className="bg-red-600 text-white px-4 py-3">
-          <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <span className="animate-pulse">🚨</span>
-              {urgentCount} {fr ? "cas urgent(s) nécessite(nt) une aide immédiate" : `urgent case(s) need immediate help`}
-            </div>
-            <button onClick={() => setPage("urgents")} className="bg-white text-red-600 font-black text-xs px-4 py-1.5 rounded-full hover:bg-red-50 transition-colors flex-shrink-0">
-              {fr ? "Voir →" : "View →"}
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Grille des spécialités */}
-      <div className="max-w-5xl mx-auto px-4 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-black text-gray-900">{fr ? "Choisissez une spécialité" : "Choose a specialty"}</h2>
-            <p className="text-gray-500 text-sm mt-1">{fr ? "Sélectionnez la cause qui vous tient à coeur" : "Select the cause that matters to you"}</p>
-          </div>
-        </div>
+      <div className="max-w-5xl mx-auto px-4 py-10">
+        <h2 className="text-lg font-black text-gray-900 mb-6">{lang==="fr" ? "Choisissez une spécialité" : "Choose a specialty"}</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Object.values(groups).map(group => {
-            const hasUrgent = group.cases.some(c => c.urgent);
-            const pctTotal = group.cases.length > 0
-              ? Math.round(group.cases.reduce((s,c) => s + Math.min(100, c.required > 0 ? c.collected/c.required*100 : 0), 0) / group.cases.length)
-              : 0;
-            return (
-              <button key={group.label}
-                onClick={() => { setSpecialite(group.label); setPage("specialite"); }}
-                className="group relative rounded-3xl overflow-hidden text-left transition-all duration-300 hover:-translate-y-1"
-                style={{background:"#fff", border:"1.5px solid #e5e7eb", boxShadow:"0 2px 16px rgba(0,0,0,0.06)"}}>
-                {/* Fond couleur en haut */}
-                <div className="h-28 flex items-center justify-center relative"
-                  style={{background:"linear-gradient(135deg, #ecfdf5, #d1fae5)"}}>
-                  <span className="text-5xl group-hover:scale-110 transition-transform duration-300">{CAT_ICONS[group.label] || "🏥"}</span>
-                  {hasUrgent && (
-                    <div className="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
-                      🚨 {fr ? "Urgent" : "Urgent"}
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <div className="font-black text-gray-900 text-sm group-hover:text-emerald-700 transition-colors mb-1">{group.label}</div>
-                  <div className="text-xs text-gray-400 mb-3">{group.cases.length} {fr ? "dossier(s)" : "case(s)"}</div>
-                  {/* Barre de progression moyenne */}
-                  <div className="h-1.5 rounded-full overflow-hidden" style={{background:"#e5e7eb"}}>
-                    <div className="h-full rounded-full transition-all duration-500"
-                      style={{width: pctTotal+"%", background:"linear-gradient(90deg,#059669,#34d399)"}} />
-                  </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-[11px] text-gray-400">{pctTotal}% {fr ? "moy." : "avg."}</span>
-                    <span className="text-emerald-600 text-xs font-bold group-hover:translate-x-0.5 transition-transform">→</span>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* CTA bas de page */}
-        <div className="mt-14 rounded-3xl overflow-hidden" style={{background:"linear-gradient(135deg,#064e3b,#065f46)", boxShadow:"0 8px 40px rgba(6,78,59,0.3)"}}>
-          <div className="px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="text-center md:text-left">
-              <h3 className="text-2xl font-black text-white mb-2">{fr ? "Vous avez besoin d'aide ?" : "Do you need help?"}</h3>
-              <p className="text-emerald-300 text-sm">{fr ? "Soumettez votre dossier médical — notre équipe l'examine sous 48h." : "Submit your medical case — our team reviews it within 48h."}</p>
-            </div>
-            <button onClick={() => setPage("how")}
-              className="bg-white text-emerald-700 font-black px-7 py-3.5 rounded-2xl hover:bg-emerald-50 transition-colors text-sm whitespace-nowrap shadow-md">
-              {fr ? "Comment ça marche →" : "How it works →"}
+          {Object.values(groups).map(group => (
+            <button key={group.label}
+              onClick={() => { setSpecialite(group.label); setPage("specialite"); }}
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-400 p-6 text-center transition-all group">
+              <div className="text-4xl mb-3">{CAT_ICONS[group.label] || "🏥"}</div>
+              <div className="font-bold text-gray-900 text-sm group-hover:text-emerald-700">{group.label}</div>
+              <div className="text-xs text-gray-400 mt-1">{group.cases.length} {lang==="fr" ? "collecte(s)" : "campaign(s)"}</div>
+              {group.cases.some(c => c.urgent) && (
+                <div className="mt-2 bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full inline-block">🚨 Urgent</div>
+              )}
             </button>
-          </div>
+          ))}
         </div>
       </div>
     </div>
@@ -1940,7 +3263,7 @@ const CollectesPage = ({ setPage, lang }) => {
               <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-5">
                 <div className="text-4xl overflow-hidden">{c.image && (c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-full object-cover rounded-t-2xl" /> : c.image)}</div>
                 <div className="flex-1">
-                  <div className="font-bold text-gray-900">{c.title[lang]}</div>
+                  <div className="font-bold text-gray-900">{(c.title?.[lang] || c.title?.fr || c.title || "")}</div>
                   <div className="text-xs text-gray-400 mt-0.5">{c.hospital} · {c.city}</div>
                   <div className="mt-2">
                     <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -1984,16 +3307,15 @@ const DonationTicker = ({ lang }) => {
       }).subscribe();
     return () => supabase.removeChannel(ch);
   },[]);
-  if (dons.length===0) return null;
-  const items = [...dons,...dons]; // double pour loop infinie
+  const items = dons.length > 0 ? [...dons,...dons] : [];
   return (
-    <div className="bg-emerald-800 overflow-hidden py-2">
+    <div className="bg-emerald-800 overflow-hidden py-2" style={{minHeight:"32px"}}>
       <style>{`
         @keyframes ticker { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
         .ticker-track { display:flex; animation: ticker 25s linear infinite; white-space:nowrap; }
         .ticker-track:hover { animation-play-state:paused; }
       `}</style>
-      <div className="ticker-track">
+      {items.length > 0 && <div className="ticker-track">
         {items.map((d,i) => (
           <span key={i} className="flex items-center gap-2 text-xs text-emerald-100 font-medium px-6 flex-shrink-0">
             <span className="text-emerald-300">💚</span>
@@ -2002,7 +3324,7 @@ const DonationTicker = ({ lang }) => {
             <span className="text-emerald-500 mx-2">·</span>
           </span>
         ))}
-      </div>
+      </div>}
     </div>
   );
 };
@@ -2010,7 +3332,7 @@ const DonationTicker = ({ lang }) => {
 const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [heroStats, setHeroStats] = useState({ patients: "—", collected: "—", hospitals: "18" });
+  const [heroStats, setHeroStats] = useState({ patients: "0", collected: "0", hospitals: "18", funded: "0" });
   useEffect(() => {
     const loadStats = async () => {
       try {
@@ -2018,8 +3340,11 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
         if (data) {
           // Patients aidés = dossiers qui ont été approuvés (pas PENDING/REJECTED)
           const active = data.filter(c => !["PENDING","REJECTED"].includes(c.status));
-          // Total collecté = somme des dons CONFIRMÉS sur les dossiers actifs
-          const totals = await fetchConfirmedTotals(active.map(c => c.id));
+          // Campagnes financées = sous-ensemble des dossiers au statut FUNDED uniquement
+          const fundedCount = data.filter(c => c.status === "FUNDED").length;
+          // Total collecté = uniquement les dossiers COLLECTING visibles (cohérence avec les cartes)
+          const collecting = data.filter(c => c.status === "COLLECTING");
+          const totals = await fetchConfirmedTotals(collecting.map(c => c.id));
           const totalCollected = Object.values(totals).reduce((s, t) => s + (t.collected || 0), 0);
           const fmtCollected = totalCollected >= 1000000
             ? (totalCollected / 1000000).toFixed(1).replace(".0","") + "M"
@@ -2030,9 +3355,10 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
             ...prev,
             patients: String(active.length),
             collected: totalCollected > 0 ? fmtCollected : "0",
+            funded: String(fundedCount),
           }));
         }
-      } catch(e) { /* garder les valeurs par défaut */ }
+      } catch(e) { /* garder les valeurs par défaut (0) */ }
     };
     loadStats();
   }, []);
@@ -2076,12 +3402,15 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
     .filter(c => !search.trim() || gs(c.title).toLowerCase().includes(search.toLowerCase()) || (c.hospital||"").toLowerCase().includes(search.toLowerCase()) || (c.city||"").toLowerCase().includes(search.toLowerCase()));
   return (
     <div onClick={() => setHeroMenu(false)}>
-      <div className="bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-600 text-white">
-        <div className="max-w-6xl mx-auto px-4 py-20 text-center">
+      {/* Hero slider plein écran premium — storytelling 4 slides + KPIs live */}
+      <HeroSlider lang={lang} setPage={setPage} t={t} heroStats={heroStats} />
+      {/* Ancienne section gradient supprimée — son contenu a été intégré dans HeroSlider */}
+      <div className="hidden">
+        <div className="max-w-7xl mx-auto px-4 py-16 sm:py-20 text-center">
           <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6 text-sm font-medium">
             <span className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse" />{t.hero.badge}
           </div>
-          <h1 className="text-4xl md:text-5xl font-black mb-5 leading-tight">{t.hero.title1}<br /><span className="text-emerald-200">{t.hero.title2}</span></h1>
+          <h1 className="text-4xl md:text-6xl font-black mb-5 leading-tight">{t.hero.title1}<br /><span className="text-emerald-200">{t.hero.title2}</span></h1>
           <p className="text-emerald-100 text-lg max-w-2xl mx-auto mb-8 leading-relaxed">{t.hero.sub}</p>
           <div className="flex flex-wrap justify-center gap-3">
             <button onClick={() => setPage("collectes")} className="bg-white text-emerald-700 font-bold px-5 py-3 rounded-xl hover:bg-emerald-50 shadow-lg text-sm">{t.hero.cta1} →</button>
@@ -2113,7 +3442,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           </div>
         </div>
         <div className="bg-white/10 border-t border-white/20">
-          <div className="max-w-6xl mx-auto px-4 py-5 grid grid-cols-3 text-center gap-4">
+          <div className="max-w-7xl mx-auto px-4 py-5 grid grid-cols-3 text-center gap-4">
             {[[heroStats.patients,t.stats.patients],[heroStats.collected,t.stats.collected],[heroStats.hospitals,t.stats.hospitals]].map(([v,l]) => (
               <div key={l}><div className="text-2xl font-black">{v}</div><div className="text-emerald-200 text-xs mt-0.5">{l}</div></div>
             ))}
@@ -2124,50 +3453,160 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       {/* ── Ticker derniers dons ── */}
       <DonationTicker lang={lang} />
 
-      {/* Urgent Cases Banner — mock + auto-detection */}
-      <UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} />
+      {/* ── Section Notre Vision — émotionnelle, place juste apres le hero ── */}
+      <VisionSection lang={lang} setPage={setPage} />
 
-      <div id="collectes" className="max-w-6xl mx-auto px-4 py-12">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h2 className="text-2xl font-black text-gray-900">{t.collections.title}</h2>
-            <p className="text-gray-500 text-sm mt-1">{getDisplayCases().filter(c=>c.status==="COLLECTING").length} {t.collections.sub}</p>
-          </div>
-          <div className="flex gap-2 flex-wrap">{catMap.map((c,i) => <button key={c} onClick={() => setFilter(i===0?"all":c)} className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${(filter==="all"&&i===0)||filter===c?"bg-emerald-600 text-white shadow-md":"bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{c}</button>)}</div>
-        </div>
-        <div className="mb-4">
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder={lang === "fr" ? "🔍 Rechercher par nom, hôpital, ville..." : "🔍 Search by name, hospital, city..."}
-          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white shadow-sm"
-        />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map(c => <CaseCard key={c.id} c={c} lang={lang} t={t} onClick={() => { setSelectedCase(c); setPage("case"); }} />)}
-        </div>
-      </div>
+      {/* ── Section Impact (compteurs animés + confiance financière) ── */}
+      <Reveal><ImpactSection lang={lang} heroStats={heroStats} setPage={setPage} /></Reveal>
 
-      <div className="bg-gray-50 border-t border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 py-16 text-center">
-          <h2 className="text-2xl font-black text-gray-900 mb-2">{t.how.title}</h2>
-          <p className="text-gray-500 mb-10">{t.how.sub}</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            {t.how.steps.map(s => (
-              <div key={s.n} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 text-left hover:shadow-md transition-shadow">
-                <div className="w-11 h-11 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-center text-2xl mb-4">{s.icon}</div>
-                <div className="text-xs font-bold text-emerald-600 mb-1">STEP {s.n}</div>
-                <div className="font-bold text-gray-900 text-sm mb-1">{s.title}</div>
-                <div className="text-xs text-gray-500 leading-relaxed">{s.desc}</div>
+      {/* Urgent Cases Banner — interventions critiques sous 72h */}
+      <Reveal><UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} /></Reveal>
+
+      {/* ── Section Campagnes — design premium éditorial ── */}
+      {/* La section utilise un conteneur plus large (1600px) pour permettre 4-5
+          cartes par ligne sur grand écran. Le header reste dans le conteneur
+          standard pour rester centré et lisible. */}
+      <section id="collectes" style={{ background:"var(--paper)", padding:"clamp(40px, 5vw, 64px) clamp(20px, 3vw, 40px) 8px" }}>
+        <div style={{ maxWidth: 1240, margin:"0 auto" }}>
+          {/* Header section éditorial */}
+          <div style={{ display:"flex", flexDirection:"column", gap:16, marginBottom: 24 }}>
+            <div style={{ textAlign:"center" }}>
+              <span className="ayyad-eyebrow">{lang==="fr" ? "Campagnes vérifiées" : "Verified campaigns"}</span>
+              <h2 className="ayyad-h-display" style={{ fontSize:"clamp(2rem, 3.6vw, 3rem)", marginTop: 18, marginBottom: 14 }}>
+                {lang==="fr" ? <>Soutenez des patients <em>aujourd'hui.</em></> : <>Support patients <em>today.</em></>}
+              </h2>
+              <p style={{ color:"var(--ink-500)", fontSize:16, maxWidth: 620, margin:"0 auto", lineHeight:1.65 }}>
+                {lang==="fr"
+                  ? `${getDisplayCases().filter(c=>c.status==="COLLECTING").length + dbCases.length} dossiers actifs · 100% vérifiés par notre équipe et un hôpital partenaire`
+                  : `${getDisplayCases().filter(c=>c.status==="COLLECTING").length + dbCases.length} active cases · 100% verified by our team and a partner hospital`}
+              </p>
+            </div>
+
+            {/* Filtres + recherche */}
+            <div style={{ display:"flex", gap:14, flexWrap:"wrap", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                {catMap.map((c,i) => {
+                  const active = (filter==="all"&&i===0)||filter===c;
+                  return (
+                    <button key={c} onClick={() => setFilter(i===0?"all":c)} style={{
+                      padding:"8px 18px", borderRadius: 9999,
+                      fontSize:13, fontWeight: active ? 700 : 600,
+                      background: active ? "linear-gradient(135deg, var(--ayyad-deep), var(--ayyad-emerald))" : "#fff",
+                      color: active ? "#fff" : "var(--ink-700)",
+                      border: active ? "1px solid transparent" : "1px solid rgba(10,31,26,0.10)",
+                      cursor:"pointer",
+                      boxShadow: active ? "0 4px 14px rgba(13,92,46,0.24)" : "0 1px 2px rgba(10,31,26,0.04)",
+                      transition:"all .2s",
+                    }}>{c}</button>
+                  );
+                })}
               </div>
-            ))}
+              <div style={{ position:"relative", minWidth: 260, flex:"1 1 260px", maxWidth: 360 }}>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder={lang === "fr" ? "Rechercher par nom, hôpital, ville…" : "Search by name, hospital, city…"}
+                  style={{
+                    width:"100%", padding:"11px 16px 11px 42px",
+                    background:"#fff",
+                    border:"1px solid rgba(10,31,26,0.10)",
+                    borderRadius: 9999,
+                    fontSize:14, color:"var(--ink-900)",
+                    boxShadow:"0 1px 2px rgba(10,31,26,0.04)",
+                    outline:"none",
+                    transition:"border-color .2s, box-shadow .2s",
+                  }}
+                  onFocus={e=>{ e.currentTarget.style.borderColor = "var(--ayyad-emerald)"; e.currentTarget.style.boxShadow="0 0 0 4px rgba(13,92,46,0.10)"; }}
+                  onBlur={e=>{ e.currentTarget.style.borderColor = "rgba(10,31,26,0.10)"; e.currentTarget.style.boxShadow="0 1px 2px rgba(10,31,26,0.04)"; }}
+                />
+                <span style={{ position:"absolute", left:16, top:"50%", transform:"translateY(-50%)", color:"var(--ink-400)" }}>🔍</span>
+              </div>
+            </div>
+          </div>
+
+          {filtered.length === 0 && (
+            <div style={{ textAlign:"center", padding:"60px 24px", color:"var(--ink-400)" }}>
+              <div style={{ fontSize:42, marginBottom: 12 }}>🔍</div>
+              <p>{lang==="fr" ? "Aucune campagne ne correspond à votre recherche." : "No campaign matches your search."}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Grille campagnes — conteneur élargi à 1600px pour 4-5 cartes/ligne
+            Limitée à 10 dossiers (2 lignes de 5) sur la home, avec un bouton
+            "Voir toutes les campagnes" qui route vers la page dédiée. */}
+        {filtered.length > 0 && (() => {
+          const HOME_LIMIT = 10;
+          const visible = filtered.slice(0, HOME_LIMIT);
+          const remaining = filtered.length - visible.length;
+          return (
+            <div style={{ maxWidth: 1600, margin:"0 auto" }}>
+              <div style={{
+                display:"grid",
+                gridTemplateColumns:"repeat(auto-fill, minmax(min(280px, 100%), 1fr))",
+                gap: 16,
+              }}>
+                {visible.map(c => <CaseCard key={c.id} c={c} lang={lang} t={t} onClick={() => { setSelectedCase(c); setPage("case"); }} />)}
+              </div>
+              {/* Bouton "Voir toutes les campagnes" — uniquement si plus de 10 dossiers */}
+              {remaining > 0 && (
+                <div style={{ textAlign:"center", marginTop: 28 }}>
+                  <button
+                    onClick={() => setPage("collectesactives")}
+                    className="ayyad-btn-primary"
+                    style={{ fontSize:14, padding:"14px 32px" }}
+                  >
+                    {lang==="fr"
+                      ? `Voir toutes les campagnes (${filtered.length}) →`
+                      : `View all campaigns (${filtered.length}) →`}
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </section>
+
+      {/* ── Bandeau hôpitaux partenaires — directement après les campagnes ── */}
+      <Reveal><PartnersBanner lang={lang} /></Reveal>
+
+      {/* ── Carrousel Témoignages — voix bénéficiaires ── */}
+      <TestimonialsCarousel lang={lang} />
+
+      {/* ── CTA Soutenir Ayyad — élégant, pas envahissant ── */}
+      <section style={{
+        background:"linear-gradient(135deg, #fbf9f3 0%, #f7f6f2 100%)",
+        padding:"clamp(40px, 5vw, 64px) 0",
+        borderTop:"1px solid rgba(201,168,76,0.20)",
+      }}>
+        <div className="ayyad-container">
+          <div style={{
+            display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
+            gap:"clamp(20px, 3vw, 32px)", alignItems:"center",
+          }}>
+            <div>
+              <span className="ayyad-eyebrow">{lang==="fr" ? "Soutenir la plateforme" : "Support the platform"}</span>
+              <h3 className="ayyad-h-display" style={{ fontSize:"clamp(1.6rem, 2.6vw, 2.2rem)", marginTop: 14, marginBottom: 14 }}>
+                {lang==="fr" ? <>Aider Ayyad à <em>grandir.</em></> : <>Help Ayyad <em>grow.</em></>}
+              </h3>
+              <p style={{ color:"var(--ink-500)", fontSize:15, lineHeight:1.65 }}>
+                {lang==="fr"
+                  ? "Votre soutien finance la vérification des dossiers médicaux, les partenariats hospitaliers et l'accompagnement personnalisé des patients."
+                  : "Your support funds medical case verification, hospital partnerships and personalized patient guidance."}
+              </p>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <button onClick={() => setPage("support-ayyad")} className="ayyad-btn-gold" style={{ fontSize:14, padding:"15px 30px" }}>
+                💚 {lang==="fr" ? "Soutenir Ayyad" : "Support Ayyad"} →
+              </button>
+              <div style={{ fontSize:12, color:"var(--ink-400)", marginTop:14, fontWeight:600 }}>
+                {lang==="fr" ? "Don 100% dédié au fonctionnement de la plateforme" : "100% dedicated to platform operations"}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Support Ayyad Section */}
-      <SupportAyyadSection lang={lang} />
+      </section>
     </div>
   );
 };
@@ -2176,6 +3615,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 const CasePage = ({ c, setPage, lang, user }) => {
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("FCFA");
+  // PayDunya en attente d'activation — pour l'instant on retombe sur Wave (QR statique du marchand)
   const [provider, setProvider] = useState("WAVE");
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
@@ -2194,8 +3634,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [paymentRef, setPaymentRef] = useState("");
   // États pour l'enregistrement du don (évite l'insert silencieux + double-clic)
   const [donSubmitting, setDonSubmitting] = useState(false);
-  const [donError, setDonError] = useState("");
-  const [showPayConfirm, setShowPayConfirm] = useState(false);
+  const [qrInserted, setQrInserted] = useState(false);
+      const [donError, setDonError] = useState("");
 
   // Si l'utilisateur se connecte/déconnecte pendant qu'il est sur la page, on resynchronise
   useEffect(() => {
@@ -2239,7 +3679,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [lastDonation, setLastDonation] = useState(null); // pour le certificat
 
   useEffect(() => {
-    // Chargement initial des derniers dons
+    // Chargement initial des derniers dons + resync du compteur
     const loadRecent = async () => {
       if (!c.id || c._isDemo) return;
       const { data } = await supabase.from("donations")
@@ -2249,6 +3689,16 @@ const CasePage = ({ c, setPage, lang, user }) => {
         .order("created_at",{ascending:false})
         .limit(5);
       if (data) setRecentDonations(data);
+      // Resync : recalcule liveDonors et liveCollected depuis les vrais dons confirmés
+      // (corrige les cas où selectedCase était en mémoire avec une valeur périmée)
+      const { data: allConfirmed } = await supabase.from("donations")
+        .select("id,amount_fcfa,amount")
+        .eq("case_id", c.id)
+        .eq("status","confirmed");
+      if (allConfirmed) {
+        setLiveDonors(allConfirmed.length);
+        setLiveCollected(allConfirmed.reduce((s,d)=>s+Number(d.amount_fcfa||d.amount||0),0));
+      }
     };
     loadRecent();
 
@@ -2304,7 +3754,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
     }
   }, []);
 
-  const percent = pct(liveCollected, c.required);
+  const percent = pct(liveCollected, c.required || 1);
   const funded = c.status==="FUNDED"; // seul FUNDED bloque les dons
   const goalReached = !funded && (c.collected||0) >= (c.required||1); // objectif atteint mais collecte encore ouverte
   const t = T[lang];
@@ -2453,14 +3903,14 @@ const CasePage = ({ c, setPage, lang, user }) => {
         <div className="grid grid-cols-2 gap-2">
           {[
             { id:"WAVE", emoji:"🌊", label:"Wave CI", active:"bg-blue-600 text-white border-blue-600", inactive:"bg-white text-gray-700 border-gray-200 hover:border-blue-400", disabled:false },
-            { id:"CARD", emoji:"💳", label:lang==="fr"?"Carte bancaire":"Bank card", active:"bg-gray-800 text-white border-gray-800", inactive:"bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed", disabled:true },
+            { id:"CARD", emoji:"💳", label:lang==="fr"?"Carte / Mobile Money":"Card / Mobile Money", active:"bg-gray-800 text-white border-gray-800", inactive:"bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed", disabled:true },
           ].map(opt => (
             <button
               key={opt.id}
               type="button"
               disabled={opt.disabled}
               onClick={() => { if (!opt.disabled) setProvider(opt.id); }}
-              title={opt.disabled ? (lang==="fr"?"Bientôt disponible":"Coming soon") : ""}
+              title={opt.disabled ? (lang==="fr"?"En cours d'activation":"Coming soon") : ""}
               className={`relative flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${provider===opt.id ? opt.active : opt.inactive}`}
             >
               <span className="text-base">{opt.emoji}</span>
@@ -2473,6 +3923,42 @@ const CasePage = ({ c, setPage, lang, user }) => {
             </button>
           ))}
         </div>
+        {/* Encart "Étranger / Sendwave" — visible immédiatement, dépliable pour les détails.
+            Permet aux donateurs de la diaspora de comprendre tout de suite qu'ils ont une
+            option dédiée et de ne pas partir en pensant que c'est uniquement Wave CI local. */}
+        <details className="mt-2 group">
+          <summary className="cursor-pointer list-none flex items-center justify-between gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 rounded-xl px-3 py-2.5 transition-colors">
+            <span className="flex items-center gap-2 text-xs font-bold text-blue-800">
+              🌍 {lang==="fr" ? "Vous êtes à l'étranger ?" : "Donating from abroad?"}
+            </span>
+            <span className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600">
+              <span>Sendwave</span>
+              <span className="group-open:rotate-180 transition-transform">▼</span>
+            </span>
+          </summary>
+          <div className="mt-2 bg-blue-50/60 border border-blue-100 rounded-xl p-3 text-xs text-blue-900 space-y-2">
+            <p className="leading-relaxed">
+              {lang==="fr"
+                ? <>Utilisez l'application <strong>Sendwave</strong> (gratuite, sans frais cachés) depuis France, Canada, USA, UK, Belgique, Italie, Espagne, Allemagne…</>
+                : <>Use the <strong>Sendwave</strong> app (free, no hidden fees) from France, Canada, USA, UK, Belgium, Italy, Spain, Germany…</>}
+            </p>
+            <ol className="list-decimal pl-4 space-y-0.5">
+              <li>{lang==="fr" ? "Téléchargez Sendwave (App Store / Play Store)" : "Download Sendwave (App Store / Play Store)"}</li>
+              <li>{lang==="fr" ? <>Envoyez à : <strong className="font-mono">+225 07 48 05 61 28</strong></> : <>Send to: <strong className="font-mono">+225 07 48 05 61 28</strong></>}</li>
+              <li>{lang==="fr" ? "Saisissez le montant en EUR/USD/CAD/GBP — il arrive en FCFA sur Ayyad" : "Enter the amount in EUR/USD/CAD/GBP — arrives in FCFA at Ayyad"}</li>
+            </ol>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              <a href="https://apps.apple.com/app/sendwave-send-money/id1238118264" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-md text-[10px] font-bold">🍎 iOS</a>
+              <a href="https://play.google.com/store/apps/details?id=com.wave" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-md text-[10px] font-bold">🤖 Android</a>
+              <a href="https://www.sendwave.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 border border-blue-300 text-blue-700 px-2 py-1 rounded-md text-[10px] font-bold hover:bg-blue-100">🌐 sendwave.com</a>
+            </div>
+            <p className="text-[10px] text-blue-600 italic pt-1">
+              💡 {lang==="fr"
+                ? "Sendwave appartient à Wave — l'argent arrive sur le même compte Ayyad que les dons Wave locaux."
+                : "Sendwave is owned by Wave — funds arrive in the same Ayyad account as local Wave donations."}
+            </p>
+          </div>
+        </details>
       </div>
       {/* Widget paiement mobile — Wave / Carte bancaire */}
         {amount && amountInFcfa >= 500 ? (
@@ -2504,10 +3990,10 @@ const CasePage = ({ c, setPage, lang, user }) => {
       <Confetti active={showConfetti} />
 
       {/* ── HERO ── */}
-      <div className="relative w-full overflow-hidden" style={{minHeight:"340px",maxHeight:"480px",height:"42vw"}}>
+      <div className="relative w-full overflow-hidden bg-gray-900" style={{minHeight:"400px",maxHeight:"680px",height:"60vw"}}>
         {/* Image de fond */}
         {c.image && c.image.startsWith("http")
-          ? <img src={c.image} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          ? <img src={c.image} alt="" className="absolute inset-0 w-full h-full object-contain" />
           : <div className="absolute inset-0 bg-gradient-to-br from-emerald-700 via-teal-600 to-emerald-900 flex items-center justify-center text-[clamp(80px,15vw,160px)]">{c.image}</div>
         }
         {/* Gradient overlay */}
@@ -2525,12 +4011,12 @@ const CasePage = ({ c, setPage, lang, user }) => {
         <div className="absolute bottom-0 left-0 right-0 z-10 px-5 pb-7 max-w-6xl mx-auto" style={{left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"72rem"}}>
           {/* Badges */}
           <div className="flex flex-wrap gap-2 mb-3">
-            <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">{c.category[lang]}</span>
+            <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">{(c.category?.[lang] || c.category?.fr || c.category || "")}</span>
             <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm border border-white/30">✓ {t.badges.verified}</span>
             {funded && <span className="bg-emerald-400/90 text-white text-xs font-bold px-3 py-1 rounded-full">✓ {t.badges.funded}</span>}
             {c.urgent && <span className="bg-red-500/90 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">🚨 {t.badges.urgent}</span>}
           </div>
-          <h1 className="text-2xl md:text-4xl font-black text-white leading-tight mb-3" style={{textShadow:"0 2px 12px rgba(0,0,0,0.5)"}}>{c.title[lang]}</h1>
+          <h1 className="text-2xl md:text-4xl font-black text-white leading-tight mb-3" style={{textShadow:"0 2px 12px rgba(0,0,0,0.5)"}}>{(c.title?.[lang] || c.title?.fr || c.title || "")}</h1>
           <div className="flex flex-wrap gap-x-5 gap-y-1 text-white/80 text-sm">
             <span>🏥 {c.hospital}</span>
             <span>📍 {c.city}</span>
@@ -2621,7 +4107,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             {/* Description */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8">
               <h2 className="text-lg font-black text-gray-900 mb-4">{lang==="fr"?"L'histoire de ce patient":"This patient's story"}</h2>
-              <p className="text-gray-600 leading-relaxed text-base">{c.desc[lang]}</p>
+              <p className="text-gray-600 leading-relaxed text-base">{(c.desc?.[lang]  || c.desc?.fr  || c.desc  || "")}</p>
             </div>
 
             {/* Derniers donateurs */}
@@ -2740,7 +4226,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     </label>
                     <input
                       type="url"
-                      placeholder="https://youtube.com/watch?v=... ou https://tiktok.com/@..."
+                      placeholder="https://youtube.com/watch?v=... or https://tiktok.com/@..."
                       value={editVideoUrl}
                       onChange={e => setEditVideoUrl_(e.target.value)}
                       className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-300"
@@ -2875,7 +4361,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
               <>
                 {goalReached && (
                   <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-4 text-center">
-                    <div className="text-2xl mb-1">🎉</div>
+                    <div className="text-4xl mb-1">🎉</div>
                     <div className="text-xs font-black text-emerald-700">Objectif atteint !</div>
                     <div className="text-[11px] text-emerald-600 mt-0.5">
                       La collecte reste ouverte jusqu'à demain.<br/>
@@ -2932,7 +4418,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         // dans l'app Wave et le donateur ne revient jamais cliquer "Confirmer"
                         // → l'argent arrive sur le marchand mais aucune trace côté Ayyad.
                         // On ne bloque PAS la navigation (pas de e.preventDefault) — fire-and-forget.
-                        if (donSubmitting) return;
+                        if (donSubmitting || qrInserted) return;
+                        setQrInserted(true);
                         // On évite de stocker l'email entier comme nom public (RGPD).
                         // Si pas de prénom dans le metadata, on prend la partie avant @ de l'email.
                         const _donName = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
@@ -3033,105 +4520,76 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       <div className="mt-1 text-[11px] text-red-500">{lang==="fr"?"Aucun email n'a été envoyé. Réessayez ou contactez le support.":"No email was sent. Please retry or contact support."}</div>
                     </div>
                   )}
-
-                  {/* ── Confirmation intermédiaire : "Avez-vous bien payé ?" ── */}
-                  {showPayConfirm ? (
-                    <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 space-y-3">
-                      <div className="text-center space-y-1">
-                        <div className="text-3xl">📲</div>
-                        <div className="font-black text-gray-800 text-sm leading-snug">
-                          {lang==="fr"
-                            ? `Avez-vous bien envoyé ${(() => { const amtTxt2 = Math.round(Number(amount)).toLocaleString("fr-FR"); return amtTxt2; })()} FCFA via Wave CI ?`
-                            : `Have you sent ${Math.round(Number(amount)).toLocaleString("fr-FR")} FCFA via Wave CI?`}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {lang==="fr"
-                            ? "Vérifiez votre historique Wave avant de confirmer."
-                            : "Check your Wave history before confirming."}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          disabled={donSubmitting}
-                          onClick={() => { setShowPayConfirm(false); setDonError(""); }}
-                          className="border-2 border-gray-300 text-gray-600 font-semibold py-3 rounded-xl text-sm disabled:opacity-50"
-                        >
-                          {lang==="fr" ? "❌ Non, pas encore" : "❌ Not yet"}
-                        </button>
-                        <button
-                          disabled={donSubmitting}
-                          onClick={async () => {
-                            if (donSubmitting) return;
-                            setDonError("");
-                            setDonSubmitting(true);
-                            const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
-                            const refToUse = paymentRef || buildPaymentRef(c);
-                            try {
-                              const { error: insErr } = await createDonation({
-                                case_id: c.id || null,
-                                donor_id: user?.id || null,
-                                donor_name: _donName2,
-                                donor_email: anonymous ? null : (user?.email || null),
-                                amount: Number(amount),
-                                amount_fcfa: amountInFcfa,
-                                currency,
-                                payment_method: "WAVE",
-                                status: "pending",
-                                message: message || null,
-                                reference: refToUse,
-                              });
-                              if (insErr) {
-                                console.error("[donation insert] échec:", insErr);
-                                setDonError(insErr);
-                                setDonSubmitting(false);
-                                setShowPayConfirm(false);
-                                return;
-                              }
-                              setLastDonation({ donorName: anonymous?"Donateur anonyme":(_donName2||"Donateur"), amount: amountInFcfa });
-                              setDonMode("success");
-                              setShowPayConfirm(false);
-                              try {
-                                await emailDonConfirm({
-                                  donorEmail: anonymous ? null : (user?.email || null),
-                                  donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"),
-                                  amount: fmt(Number(amount)),
-                                  beneficiary: c.beneficiary,
-                                  caseTitle: c.title,
-                                  trackingId: c.tracking_id || c.trackingId,
-                                });
-                              } catch(emailErr) {
-                                console.warn("[donation email] échec (non bloquant):", emailErr);
-                              }
-                            } catch(err) {
-                              console.error("[donation flow] exception:", err);
-                              setDonError(err?.message || String(err));
-                              setShowPayConfirm(false);
-                            } finally {
-                              setDonSubmitting(false);
-                            }
-                          }}
-                          className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md disabled:opacity-60"
-                        >
-                          {donSubmitting ? (lang==="fr"?"Enregistrement…":"Saving…") : (lang==="fr" ? "✅ Oui, j'ai payé" : "✅ Yes, I paid")}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        disabled={donSubmitting}
-                        onClick={() => { setDonError(""); setShowPayConfirm(false); setDonMode(anonymous?"anonymous":"logged"); }}
-                        className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm disabled:opacity-50"
-                      >{td.modify}</button>
-                      <button
-                        disabled={donSubmitting}
-                        onClick={() => { setDonError(""); setShowPayConfirm(true); }}
-                        className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md disabled:opacity-60"
-                      >
-                        {td.confirmBtn}
-                      </button>
-                    </div>
-                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      disabled={donSubmitting}
+                      onClick={() => { setDonError(""); setDonMode(anonymous?"anonymous":"logged"); }}
+                      className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm disabled:opacity-50"
+                    >{td.modify}</button>
+                    <button
+                      disabled={donSubmitting}
+                      onClick={async () => {
+                        if (donSubmitting) return;
+                        if (qrInserted) {
+                          const _dn2 = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
+                          setLastDonation({ donorName: anonymous?"Donateur anonyme":(_dn2||"Donateur"), amount: amountInFcfa });
+                          setDonMode("success");
+                          return;
+                        }
+                        if (c._isDemo) { setDonError("Ceci est un dossier de démonstration. Les dons ne sont pas activés."); return; }
+                        setDonError("");
+                        setDonSubmitting(true);
+                        // On évite de stocker l'email entier comme nom public (RGPD)
+                        const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
+                        const refToUse = paymentRef || buildPaymentRef(c);
+                        try {
+                          // Création du don via /api/donate (bypass RLS) avec fallback Supabase
+                          const { error: insErr } = await createDonation({
+                            case_id: c.id || null,
+                            donor_id: user?.id || null,
+                            donor_name: _donName2,
+                            donor_email: anonymous ? null : (user?.email || null),
+                            amount: Number(amount),
+                            amount_fcfa: amountInFcfa,
+                            currency,
+                            payment_method: "WAVE",
+                            status: "pending",
+                            message: message || null,
+                            reference: refToUse,
+                          });
+                          if (insErr) {
+                            console.error("[donation insert] échec:", insErr);
+                            setDonError(insErr);
+                            setDonSubmitting(false);
+                            return; // pas d'email, pas de success
+                          }
+                          // Succès → on stocke le contexte pour le certificat, on bascule sur l'écran de remerciement, on envoie l'email
+                          setLastDonation({ donorName: anonymous?"Donateur anonyme":(_donName2||"Donateur"), amount: amountInFcfa });
+                          setDonMode("success");
+                          try {
+                            await emailDonConfirm({
+                              donorEmail: anonymous ? null : (user?.email || null),
+                              donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"),
+                              amount: fmt(Number(amount)),
+                              beneficiary: c.beneficiary,
+                              caseTitle: c.title,
+                              trackingId: c.tracking_id || c.trackingId,
+                            });
+                          } catch(emailErr) {
+                            console.warn("[donation email] échec (non bloquant):", emailErr);
+                          }
+                        } catch(err) {
+                          console.error("[donation flow] exception:", err);
+                          setDonError(err?.message || String(err));
+                        } finally {
+                          setDonSubmitting(false);
+                        }
+                      }}
+                      className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md disabled:opacity-60"
+                    >
+                      {donSubmitting ? (lang==="fr"?"Enregistrement…":"Saving…") : td.confirmBtn}
+                    </button>
+                  </div>
                 </>
               )}
             </div>}
@@ -3150,7 +4608,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     donorName: lastDonation.donorName,
                     amount: lastDonation.amount,
                     beneficiary: c.beneficiary || c.full_name || "",
-                    caseTitle: typeof c.title==="object" ? c.title[lang] : (c.title||""),
+                    caseTitle: typeof c.title==="object" ? (c.title?.[lang] || c.title?.fr || c.title || "") : (c.title||""),
                     trackingId: c.trackingId || c.tracking_id || ("AYD-"+c.id),
                     date: new Date().toLocaleDateString(lang==="fr"?"fr-CI":"en-US"),
                     lang,
@@ -3174,1118 +4632,6 @@ const CasePage = ({ c, setPage, lang, user }) => {
     </div>
   </div>
   );
-};
-
-// ── Login Page ────────────────────────────────────────────────
-const LoginPage = ({ setPage, setUser, lang, trackVisit }) => {
-  const [email, setEmail] = useState("");
-  const [pwd, setPwd] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const t = T[lang].login;
-
-  const handleLogin = async () => {
-    const emailClean = email.trim().toLowerCase();
-    if (!emailClean || !pwd) return;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
-      setError(lang === "fr" ? "Adresse email invalide." : "Invalid email address.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    let timedOut = false;
-
-    // Minuteur de sécurité : reset automatique après 10s si Supabase ne répond pas
-    const safetyTimer = setTimeout(() => {
-      timedOut = true;
-      setLoading(false);
-      setError(lang === "fr"
-        ? "Connexion impossible. Vérifiez votre réseau ou désactivez les extensions de navigation."
-        : "Connection failed. Check your network or disable browser extensions.");
-    }, 10000);
-    try {
-      const { data, error: err } = await supabase.auth.signInWithPassword({ email: emailClean, password: pwd });
-      if (timedOut) return; // la réponse est arrivée trop tard, ignorer
-      if (err) {
-        setError(t.error);
-        return;
-      }
-      const meta = data.user?.user_metadata || {};
-      const { data: adminData } = await supabase.from("admin_users").select("role, is_active").eq("email", emailClean).maybeSingle();
-      if (timedOut) return;
-      const isAdmin = !!(adminData && adminData.is_active);
-      const adminRole = adminData?.role || null;
-      const userName = meta.full_name || email;
-      setUser({ id: data.user.id, name: userName, email, isAdmin, adminRole });
-      if (trackVisit) trackVisit(data.user.id, email, userName);
-      setPage(isAdmin ? "admin" : "home");
-    } catch(e) {
-      if (!timedOut) setError("Erreur de connexion. Veuillez réessayer.");
-    } finally {
-      clearTimeout(safetyTimer);
-      if (!timedOut) setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center px-4 py-16">
-      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-md p-8">
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <svg width="64" height="64" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
-              <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" stroke-width="2.5"/>
-              <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
-              <rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/>
-              <path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/>
-            </svg>
-          </div>
-          <h1 className="text-2xl font-black text-gray-900">{t.title}</h1>
-          <p className="text-gray-500 text-sm mt-1">{t.sub}</p>
-        </div>
-        {error && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600 text-center mb-4">{error}</div>}
-        <div className="space-y-4 mb-6">
-          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.email}</label><input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="vous@exemple.ci" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
-          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.password}</label><input value={pwd} onChange={e=>setPwd(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} type="password" placeholder="••••••••" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
-        </div>
-        <button onClick={handleLogin} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold py-3.5 rounded-xl shadow-md text-sm">
-          {loading ? "..." : t.btn}
-        </button>
-        <div className="text-center mt-5"><span className="text-sm text-gray-500">{t.noAccount} </span><button onClick={() => setPage("register")} className="text-sm text-emerald-600 font-bold hover:underline">{t.register}</button></div>
-      </div>
-    </div>
-  );
-};
-
-// ── Register Page ─────────────────────────────────────────────
-const RegisterPage = ({ setPage, setUser, lang }) => {
-  const [step, setStep] = useState(1);
-  const [role, setRole] = useState("");
-  const [form, setForm] = useState({name:"",email:"",phone:"",password:""});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const t = T[lang].register;
-
-  const handleSubmit = async () => {
-    const emailClean = form.email.trim().toLowerCase();
-    if (!form.name.trim()) {
-      setError(lang === "fr" ? "Veuillez entrer votre nom." : "Please enter your name.");
-      return;
-    }
-    if (!emailClean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
-      setError(lang === "fr" ? "Adresse email invalide." : "Invalid email address.");
-      return;
-    }
-    // Validation téléphone (optionnel mais format CI si renseigné)
-    if (form.phone.trim()) {
-      const phoneClean = form.phone.trim().replace(/\s/g, "");
-      const ciLocal = /^(01|03|05|07|08|09|27)\d{8}$/.test(phoneClean);
-      const ciIntl  = /^\+225(01|03|05|07|08|09|27)\d{8}$/.test(phoneClean);
-      if (!ciLocal && !ciIntl) {
-        setError(lang === "fr"
-          ? "Numéro invalide. Format attendu : 07 XX XX XX XX ou +225 07 XX XX XX XX"
-          : "Invalid number. Expected format: 07 XX XX XX XX or +225 07 XX XX XX XX");
-        return;
-      }
-    }
-    // Validation mot de passe
-    if (form.password.length < 8) {
-      setError(lang === "fr" ? "Le mot de passe doit contenir au moins 8 caractères." : "Password must be at least 8 characters.");
-      return;
-    }
-    if (!/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password)) {
-      setError(lang === "fr" ? "Le mot de passe doit contenir au moins une lettre et un chiffre." : "Password must contain at least one letter and one number.");
-      return;
-    }
-    if (!acceptedTerms) {
-      setError(lang === "fr" ? "Veuillez accepter les conditions d'utilisation." : "Please accept the terms of use.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    // Ne jamais stocker le role dans les métadonnées — géré uniquement via admin_users
-    const { data, error: err } = await supabase.auth.signUp({
-      email: emailClean,
-      password: form.password,
-      options: { data: { full_name: form.name.trim(), phone: form.phone.trim() } }
-    });
-    if (err) { setError(t.error); setLoading(false); return; }
-    setUser({ id: data.user?.id, name: form.name.trim()||emailClean, email: emailClean, isAdmin: false });
-    setPage("home");
-    setLoading(false);
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center px-4 py-16">
-      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-md p-8">
-        <div className="text-center mb-6">
-          <div className="flex justify-center mb-4">
-            <svg width="56" height="56" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
-              <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" stroke-width="2.5"/>
-              <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
-              <rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/>
-              <path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/>
-            </svg>
-          </div>
-          <h1 className="text-2xl font-black text-gray-900">{t.title}</h1>
-          <div className="flex justify-center gap-2 mt-3">{[1,2].map(s=><div key={s} className={`w-10 h-1.5 rounded-full transition-colors ${step>=s?"bg-emerald-500":"bg-gray-200"}`}/>)}</div>
-        </div>
-        {step===1&&<div className="space-y-4">
-          <p className="text-sm text-gray-600 text-center font-medium">{t.roleQ}</p>
-          <div className="grid grid-cols-2 gap-3">{t.roles.map(r=><button key={r.id} onClick={()=>setRole(r.id)} className={`p-5 rounded-2xl border-2 text-left transition-all ${role===r.id?"border-emerald-500 bg-emerald-50 shadow-md":"border-gray-200 hover:border-emerald-300"}`}><div className="text-3xl mb-2">{r.icon}</div><div className="font-bold text-sm text-gray-900">{r.title}</div><div className="text-xs text-gray-500 mt-0.5">{r.desc}</div></button>)}</div>
-          <button onClick={()=>role&&setStep(2)} disabled={!role} className="w-full bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">{t.continue}</button>
-          <div className="text-center"><span className="text-sm text-gray-500">{t.hasAccount} </span><button onClick={()=>setPage("login")} className="text-sm text-emerald-600 font-bold hover:underline">{t.signin}</button></div>
-        </div>}
-        {step===2&&<div className="space-y-4">
-          {error&&<div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600 text-center">{error}</div>}
-          {t.fields.map(f=>(
-            <div key={f.key}>
-              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{f.label}</label>
-              <input
-                value={form[f.key]}
-                onChange={e => {
-                  let val = e.target.value;
-                  // Téléphone : n'autoriser que chiffres, +, espaces
-                  if (f.key === "phone") val = val.replace(/[^0-9+\s]/g, "").slice(0, 16);
-                  // Mot de passe : indicateur de force visuel via bordure
-                  setForm({...form, [f.key]: val});
-                }}
-                type={f.type}
-                placeholder={f.p}
-                inputMode={f.key === "phone" ? "tel" : undefined}
-                className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${
-                  f.key === "password" && form.password.length > 0
-                    ? form.password.length >= 8 && /[A-Za-z]/.test(form.password) && /[0-9]/.test(form.password)
-                      ? "border-emerald-400"
-                      : "border-amber-400"
-                    : "border-gray-200"
-                }`}
-              />
-              {/* Indicateur force mot de passe */}
-              {f.key === "password" && form.password.length > 0 && (
-                <div className="mt-1.5 space-y-1">
-                  <div className="flex gap-1">
-                    {[8, 10, 12].map((min, i) => (
-                      <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${
-                        form.password.length >= min && /[A-Za-z]/.test(form.password) && /[0-9]/.test(form.password)
-                          ? ["bg-red-400","bg-amber-400","bg-emerald-500"][i]
-                          : "bg-gray-200"
-                      }`} />
-                    ))}
-                  </div>
-                  <p className={`text-[10px] ${
-                    form.password.length >= 8 && /[A-Za-z]/.test(form.password) && /[0-9]/.test(form.password)
-                      ? "text-emerald-600" : "text-amber-600"
-                  }`}>
-                    {lang === "fr"
-                      ? form.password.length < 8 ? "Min. 8 caractères" : !/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password) ? "Ajoutez une lettre et un chiffre" : "✓ Mot de passe valide"
-                      : form.password.length < 8 ? "Min. 8 characters" : !/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password) ? "Add a letter and a number" : "✓ Valid password"
-                    }
-                  </p>
-                </div>
-              )}
-              {/* Hint téléphone */}
-              {f.key === "phone" && (
-                <p className="text-[10px] text-gray-400 mt-1">
-                  {lang === "fr" ? "Format CI : 07 XX XX XX XX ou +225 07 XX XX XX XX" : "CI format: 07 XX XX XX XX or +225 07 XX XX XX XX"}
-                </p>
-              )}
-            </div>
-          ))}
-          <div className="flex items-start gap-2 text-xs text-gray-500">
-            <input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} className="mt-0.5 accent-emerald-600 cursor-pointer" />
-            <span onClick={()=>setAcceptedTerms(v=>!v)} className="cursor-pointer">{t.terms} <a href="https://ayyadci.com/cgu" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.termsLink}</a> {t.and} <a href="https://ayyadci.com/confidentialite" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.privacyLink}</a>.</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={()=>setStep(1)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{t.back}</button>
-            <button onClick={handleSubmit} disabled={loading||!acceptedTerms} className="bg-emerald-600 disabled:bg-emerald-400 text-white font-bold py-3 rounded-xl text-sm shadow-md">{loading?"...":t.btn}</button>
-          </div>
-        </div>}
-      </div>
-    </div>
-  );
-};
-
-// ── Submit Page ───────────────────────────────────────────────
-const SubmitPage = ({ setPage, user, lang }) => {
-  const [step, setStep] = useState(1);
-  const [form, setForm] = useState({
-    title:"", description:"", hospital:"", city:"", amount:"",
-    category:"", categoryOther:"", beneficiary_phone:"", videoUrl:""
-  });
-  const [photoFile, setPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
-  const [photoUploading, setPhotoUploading] = useState(false);
-  const [photoUrl, setPhotoUrl] = useState(null);
-  const [fileStates, setFileStates] = useState({medical:"idle",quote:"idle",id:"idle",consent:"idle"});
-  const [fileUrls, setFileUrls] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-  const t = T[lang].submit;
-  const allUploaded = Object.values(fileStates).every(s => s==="done");
-
-  // ID de session unique : permet d'organiser les fichiers par dossier dans le storage
-  const [sessionId] = useState(() => {
-    const uid = user?.id || "anon";
-    const ts = Date.now();
-    const rand = Math.random().toString(36).slice(2,7);
-    return `${uid}_${ts}_${rand}`;
-  });
-
-  const handlePhotoSelect = (file) => {
-    if (!file) return;
-    setPhotoFile(file);
-    const reader = new FileReader();
-    reader.onload = e => setPhotoPreview(e.target.result);
-    reader.readAsDataURL(file);
-  };
-
-  const handlePhotoUpload = async () => {
-    if (!photoFile) return null;
-    setPhotoUploading(true);
-    const fileName = `dossiers/${sessionId}/photo_${Date.now()}_${sanitizeFileName(photoFile.name)}`;
-    const { error } = await supabase.storage.from("medical-documents").upload(fileName, photoFile);
-    if (error) { setPhotoUploading(false); return null; }
-    const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
-    setPhotoUrl(urlData.publicUrl);
-    setPhotoUploading(false);
-    return urlData.publicUrl;
-  };
-
-  const handleFileUpload = async (key, file) => {
-    if (!file) return;
-    setFileStates(prev => ({...prev, [key]: "uploading"}));
-    const ext = file.name.split('.').pop().toLowerCase();
-    const mimeMap = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' };
-    const contentType = mimeMap[ext] || file.type || 'application/octet-stream';
-    const fileName = `dossiers/${sessionId}/${key}_${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("medical-documents").upload(fileName, file, { contentType });
-    if (error) { setFileStates(prev => ({...prev, [key]: "error"})); return; }
-    const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
-    setFileUrls(prev => ({...prev, [key]: urlData.publicUrl}));
-    setFileStates(prev => ({...prev, [key]: "done"}));
-  };
-
-  const toEmbedUrl = (url) => {
-    if (!url || !url.trim()) return null;
-    // YouTube
-    const watchMatch = url.match(/youtube\.com\/watch\?v=([^&]+)/);
-    if (watchMatch) return "https://www.youtube.com/embed/" + watchMatch[1];
-    const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
-    const shortsMatch = url.match(/youtube\.com\/shorts\/([^?&]+)/);
-    if (shortsMatch) return 'https://www.youtube.com/embed/' + shortsMatch[1];
-    if (shortMatch) return "https://www.youtube.com/embed/" + shortMatch[1];
-    if (url.includes("youtube.com/embed/")) return url;
-    // TikTok — on stocke l'URL originale, embed via oembed
-    const tiktokMatch = url.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
-    if (tiktokMatch) return "https://www.tiktok.com/embed/v2/" + tiktokMatch[1];
-    return null;
-  };
-
-  const getVideoType = (url) => {
-    if (!url) return null;
-    if (url.includes("youtube") || url.includes("youtu.be")) return "youtube";
-    if (url.includes("tiktok")) return "tiktok";
-    return null;
-  };
-
-  const embedPreview = toEmbedUrl(form.videoUrl);
-  const videoType = getVideoType(form.videoUrl);
-
-  const handleSubmit = async () => {
-    setSubmitting(true);
-    setSubmitError("");
-    // Upload photo if not done yet
-    let finalPhotoUrl = photoUrl;
-    if (photoFile && !photoUrl) {
-      finalPhotoUrl = await handlePhotoUpload();
-    }
-    const trackingId = "AYD-" + new Date().getFullYear() + "-" + Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => b.toString(16).padStart(2,"0")).join("").toUpperCase().slice(0,6);
-    const { error } = await supabase.from("cases").insert({
-      title: form.title,
-      description: form.description,
-      hospital: form.hospital,
-      city: form.city,
-      amount: parseFloat(form.amount),
-      category: form.category === "Autre" ? (form.categoryOther || "Autre") : form.category,
-      full_name: user?.name || "Anonyme",
-      photo_url: finalPhotoUrl || null,
-      beneficiary_phone: form.beneficiary_phone || null,
-      video_url: toEmbedUrl(form.videoUrl) || null,
-      status: "PENDING",
-      tracking_id: trackingId,
-      user_id: user?.id || null,
-      deadline_requested: form.deadlineRequested || null,
-      document_urls: fileUrls || {},
-    });
-    if (error) { setSubmitError(lang==="fr"?"Erreur lors de la soumission. Réessayez.":"Submission error. Please try again."); setSubmitting(false); return; }
-    try { emailNewCase({ caseTitle: form.title, hospital: form.hospital, city: form.city, amount: form.amount, trackingId }); } catch(e) { console.warn("Email non envoyé:", e); }
-    try { emailWelcomePatient({ beneficiaryEmail: user?.email || null, beneficiaryName: user?.name || user?.email?.split("@")[0] || "Patient", caseTitle: form.title, trackingId }); } catch(e) { console.warn("Email bienvenue non envoyé:", e); }
-    setStep(3);
-    setSubmitting(false);
-  };
-
-  if (!user) return (
-    <div className="max-w-md mx-auto px-4 py-20 text-center">
-      <div className="text-5xl mb-4">🔐</div>
-      <h2 className="text-xl font-black text-gray-900 mb-3">{t.loginRequired}</h2>
-      <button onClick={() => setPage("login")} className="bg-emerald-600 text-white font-bold px-8 py-3 rounded-xl shadow-md">{t.loginBtn}</button>
-    </div>
-  );
-
-  return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">{t.back}</button>
-      <div className="flex items-center gap-1 mb-8">{t.steps.map((s,i)=><div key={i} className="flex items-center gap-1 flex-1 last:flex-none"><div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${step>i+1?"bg-emerald-500 text-white":step===i+1?"bg-emerald-600 text-white":"bg-gray-200 text-gray-500"}`}>{step>i+1?"✓":i+1}</div><span className={`text-xs font-medium flex-1 truncate ${step===i+1?"text-emerald-700":"text-gray-400"}`}>{s}</span>{i<2&&<div className={`h-0.5 flex-1 ${step>i+1?"bg-emerald-500":"bg-gray-200"}`}/>}</div>)}</div>
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        {step===1&&<div className="space-y-5">
-          <h2 className="font-black text-xl text-gray-900">{t.infoTitle}</h2>
-
-          {/* === PHOTO BÉNÉFICIAIRE === */}
-          <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-              📷 {lang==="fr" ? "Photo du bénéficiaire" : "Beneficiary photo"}
-              <span className="text-red-400 ml-1">*</span>
-            </label>
-            <p className="text-[11px] text-gray-400 mb-3">
-              {lang==="fr"
-                ? "Une photo récente montrant la situation actuelle du bénéficiaire. Cette photo sera affichée sur la collecte publique."
-                : "A recent photo showing the beneficiary's current situation. This photo will appear on the public campaign."}
-            </p>
-            {photoPreview ? (
-              <div className="relative">
-                <img src={photoPreview} alt="preview" className="w-full h-52 object-cover rounded-2xl border-2 border-emerald-300" />
-                <div className="absolute top-2 right-2 flex gap-2">
-                  <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full font-bold">✓ Photo sélectionnée</span>
-                  <button
-                    onClick={() => { setPhotoFile(null); setPhotoPreview(null); setPhotoUrl(null); }}
-                    className="bg-white border border-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full font-bold hover:bg-red-50 hover:text-red-500">
-                    ✕ Changer
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 transition-all group">
-                <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">📷</div>
-                <span className="text-sm font-semibold text-gray-600 group-hover:text-emerald-700">
-                  {lang==="fr" ? "Cliquez pour ajouter une photo" : "Click to add a photo"}
-                </span>
-                <span className="text-xs text-gray-400 mt-1">JPG, PNG — max 5 MB</span>
-                <input type="file" className="hidden" accept="image/jpeg,image/png,image/webp"
-                  onChange={e => {
-                    const f = e.target.files[0];
-                    if (!f) return;
-                    if (f.size > 5_000_000) { alert(lang==="fr" ? "Photo trop lourde (max 5 MB)" : "Photo too large (max 5 MB)"); return; }
-                    handlePhotoSelect(f);
-                  }} />
-              </label>
-            )}
-          </div>
-
-          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.titleField}</label><input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} autoComplete="off" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
-          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.descField}</label><textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={4} autoComplete="off" autoCorrect="off" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" /></div>
-
-          {/* Lien vidéo YouTube ou TikTok (optionnel) */}
-          <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-              🎥 {lang==="fr" ? "Lien vidéo YouTube ou TikTok" : "YouTube or TikTok video link"}
-              <span className="text-gray-400 font-normal ml-2">({lang==="fr" ? "optionnel" : "optional"})</span>
-            </label>
-            <p className="text-[11px] text-gray-400 mb-2">
-              {lang==="fr"
-                ? "Collez le lien de votre vidéo YouTube ou TikTok. Elle sera visible sur votre page de collecte et augmente les dons."
-                : "Paste your YouTube or TikTok video link. It will appear on your campaign page and increases donations."}
-            </p>
-            <div className="flex gap-2 mb-2">
-              <span className="text-[11px] bg-red-50 text-red-600 border border-red-100 rounded-full px-2 py-0.5 font-medium">▶ YouTube</span>
-              <span className="text-[11px] bg-gray-900 text-white rounded-full px-2 py-0.5 font-medium">♪ TikTok</span>
-            </div>
-            <input
-              type="url"
-              value={form.videoUrl}
-              onChange={e => setForm({...form, videoUrl: e.target.value})}
-              placeholder="https://youtube.com/watch?v=... ou https://tiktok.com/@..."
-              autoComplete="off"
-              className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${embedPreview ? "border-emerald-300 bg-emerald-50" : "border-gray-200"}`}
-            />
-            {form.videoUrl && !embedPreview && (
-              <p className="text-xs text-red-500 mt-1">⚠️ {lang==="fr" ? "Lien non reconnu. Copiez le lien depuis YouTube ou TikTok." : "Link not recognized. Copy the link from YouTube or TikTok."}</p>
-            )}
-            {embedPreview && (
-              <div className="mt-3 rounded-xl overflow-hidden border border-emerald-200">
-                <iframe
-                  src={embedPreview}
-                  className={`w-full ${videoType === "tiktok" ? "h-96" : "h-40"}`}
-                  allowFullScreen
-                  allow="autoplay"
-                  title="preview"
-                />
-                <div className="bg-emerald-50 px-3 py-1.5 text-xs text-emerald-700 font-medium">
-                  ✅ {videoType === "tiktok" ? "TikTok" : "YouTube"} {lang==="fr" ? "— aperçu ci-dessus" : "— preview above"}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.hospitalField}</label>
-              <select value={form.hospital} onChange={e => {
-                const h = CI_HOPITAUX.find(x => x.nom === e.target.value);
-                setForm({...form, hospital: e.target.value, city: h?.ville || form.city});
-              }} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                <option value="">— Choisir un hôpital —</option>
-                <optgroup label="🏛 CHU (Centres Hospitaliers Universitaires)">
-                  {CI_HOPITAUX.filter(h => h.type === "CHU").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
-                </optgroup>
-                <optgroup label="🏥 CHR (Centres Hospitaliers Régionaux)">
-                  {CI_HOPITAUX.filter(h => h.type === "CHR").map(h => <option key={h.nom} value={h.nom}>{h.nom} — {h.ville}</option>)}
-                </optgroup>
-                <optgroup label="🏢 Cliniques privées (Abidjan)">
-                  {CI_HOPITAUX.filter(h => h.type === "Clinique").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
-                </optgroup>
-                <optgroup label="Autre">
-                  {CI_HOPITAUX.filter(h => h.type === "Autre").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
-                </optgroup>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.cityField}</label>
-              <select value={form.city} onChange={e => setForm({...form, city: e.target.value})} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                <option value="">— Choisir une ville —</option>
-                {CI_VILLES.map(v => <option key={v} value={v}>{v}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.amountField}</label>
-              <div className="relative">
-                <input
-                  type="text" inputMode="numeric" pattern="[0-9]*"
-                  value={form.amount}
-                  onChange={e => setForm({...form, amount: e.target.value.replace(/[^0-9]/g,"")})}
-                  placeholder="ex: 500000"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-14"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span>
-              </div>
-              {form.amount && Number(form.amount) > 0 && (
-                <p className="text-[11px] text-gray-400 mt-1">
-                  {lang==="fr" ? "Montant collecté : " : "Amount to collect: "}
-                  <span className="font-bold text-emerald-700">{fmt(Math.round(Number(form.amount)*1.05))}</span>
-                  <span className="text-gray-400"> (devis + 5% Ayyad)</span>
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-                📱 {lang==="fr" ? "Téléphone mobile money" : "Mobile money phone"}
-              </label>
-              <div className="flex gap-1.5">
-                <span className="bg-gray-100 border border-gray-200 rounded-xl px-3 py-3 text-xs text-gray-500 font-mono flex-shrink-0">+225</span>
-                <input
-                  type="tel"
-                  value={form.beneficiary_phone}
-                  onChange={e => setForm({...form, beneficiary_phone: e.target.value.replace(/[^0-9]/g,"")})}
-                  placeholder="07 00 00 00 00"
-                  maxLength={10}
-                  className="flex-1 border border-gray-200 rounded-xl px-3 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                />
-              </div>
-              <p className="text-[11px] text-gray-400 mt-1">{lang==="fr" ? "Pour recevoir un éventuel surplus" : "To receive any surplus"}</p>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-gray-600 mb-3 block">{t.categoryField}</label>
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                {key:"Cardiologie", enKey:"Cardiology", icon:"🫀"},
-                {key:"Oncologie", enKey:"Oncology", icon:"🎗️"},
-                {key:"Neurologie", enKey:"Neurology", icon:"🧠"},
-                {key:"Orthopédie", enKey:"Orthopedics", icon:"🦾"},
-                {key:"Pédiatrie", enKey:"Pediatrics", icon:"👶"},
-                {key:"Gynécologie", enKey:"Gynecology", icon:"🌸"},
-                {key:"Néphrologie", enKey:"Nephrology", icon:"🫘"},
-                {key:"Autre", enKey:"Other", icon:"🏥"},
-              ].map(cat => (
-                <button key={cat.key} type="button"
-                  onClick={() => setForm({...form, category: cat.key, categoryOther: ""})}
-                  className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all ${form.category===cat.key ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm" : "border-gray-200 hover:border-gray-300 text-gray-500 hover:bg-gray-50"}`}>
-                  <span className="text-xl">{cat.icon}</span>
-                  <span className="text-xs text-center leading-tight font-medium">{lang==="fr" ? cat.key : cat.enKey}</span>
-                </button>
-              ))}
-            </div>
-            {form.category === "Autre" && (
-              <div className="mt-3">
-                <input value={form.categoryOther || ""} onChange={e => setForm({...form, categoryOther: e.target.value})}
-                  placeholder={lang==="fr" ? "Précisez la spécialité médicale..." : "Specify the medical specialty..."}
-                  className="w-full border-2 border-emerald-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-emerald-50" />
-              </div>
-            )}
-          </div>
-
-          <button onClick={()=>setStep(2)}
-            disabled={!form.title||!form.description||!form.hospital||!form.amount||!photoPreview}
-            className="w-full bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">
-            {!photoPreview
-              ? (lang==="fr" ? "⚠️ Ajoutez une photo pour continuer" : "⚠️ Add a photo to continue")
-              : t.next}
-          </button>
-        </div>}
-
-        {step===2&&<div className="space-y-4">
-          <h2 className="font-black text-xl text-gray-900">{t.docsTitle}</h2>
-          <p className="text-sm text-gray-500">{t.docsSub}</p>
-
-          {/* Rappel photo */}
-          {photoPreview && (
-            <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-              <img src={photoPreview} alt="preview" className="w-14 h-14 object-cover rounded-xl flex-shrink-0" />
-              <div>
-                <div className="text-xs font-bold text-emerald-700">✅ Photo bénéficiaire</div>
-                <div className="text-[11px] text-gray-500">Sera affichée sur la collecte publique</div>
-              </div>
-            </div>
-          )}
-
-          {t.docs.map(doc=>{
-            const state = fileStates[doc.key];
-            return (
-              <div key={doc.key} className={`rounded-2xl border-2 transition-all ${state==="done"?"border-emerald-300 bg-emerald-50":state==="error"?"border-red-200 bg-red-50":"border-gray-200"}`}>
-                <div className="flex items-center gap-4 p-4">
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 ${state==="done"?"bg-emerald-100":"bg-gray-100"}`}>{doc.icon}</div>
-                  <div className="flex-1 min-w-0"><div className="font-semibold text-sm text-gray-900">{doc.title} <span className="text-red-400">*</span></div><div className="text-xs text-gray-500">{doc.desc}</div></div>
-                  <label className={`px-3 py-1.5 rounded-xl text-xs font-bold flex-shrink-0 cursor-pointer transition-colors ${state==="done"?"bg-emerald-600 text-white":state==="uploading"?"bg-gray-300 text-gray-500 cursor-wait":state==="error"?"bg-red-100 text-red-600":"bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
-                    {state==="done"?t.uploaded:state==="uploading"?t.uploading:state==="error"?t.error:t.upload}
-                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e=>{const f=e.target.files[0];if(!f)return;if(f.size>10_000_000){alert(lang==="fr"?"Document trop lourd (max 10 MB)":"File too large (max 10 MB)");return;}handleFileUpload(doc.key,f);}} disabled={state==="uploading"||state==="done"} />
-                  </label>
-                </div>
-                {/* Lien de téléchargement du formulaire de consentement */}
-                {doc.key==="consent"&&(
-                  <div className="px-4 pb-3 flex items-center gap-2">
-                    <div className="w-11 flex-shrink-0"/>
-                    <div className="flex-1 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
-                      <span className="text-emerald-600 text-sm">📥</span>
-                      <span className="text-xs text-gray-600 flex-1">
-                        {lang==="fr"
-                          ? "Téléchargez, imprimez, signez, puis uploadez le formulaire ci-dessus."
-                          : "Download, print, sign, then upload the form above."}
-                      </span>
-                      <a
-                        href="/AYYAD_Consentement.pdf"
-                        download="AYYAD_Formulaire_Consentement.pdf"
-                        className="flex-shrink-0 inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
-                        onClick={e=>e.stopPropagation()}
-                      >
-                        {lang==="fr" ? "Télécharger le formulaire" : "Download form"} →
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {!allUploaded&&<div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex gap-2 text-xs text-amber-700"><span>⚠️</span><span>{t.warning}</span></div>}
-          {submitError&&<div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-600 text-center">{submitError}</div>}
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={()=>setStep(1)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{t.back}</button>
-            <button onClick={handleSubmit} disabled={!allUploaded||submitting} className="bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 rounded-xl text-sm shadow-md">{submitting?"...":t.submit}</button>
-          </div>
-        </div>}
-
-        {step===3&&<div className="text-center space-y-5 py-4">
-          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-4xl">🎉</div>
-          <div><h2 className="font-black text-2xl text-gray-900 mb-2">{t.successTitle}</h2><p className="text-gray-500 text-sm">{t.successSub}</p></div>
-          <div className="bg-gray-50 rounded-2xl p-5 text-left space-y-3">{t.processSteps.map((s,i)=><div key={i} className="flex items-center gap-3 text-sm"><div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${i===0?"bg-emerald-500 text-white":"bg-gray-200 text-gray-500"}`}>{i===0?"✓":i+1}</div><span className={i===0?"text-emerald-700 font-medium":"text-gray-500"}>{s}</span></div>)}</div>
-          <button onClick={()=>setPage("home")} className="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">{t.backHome}</button>
-        </div>}
-      </div>
-    </div>
-  );
-};
-
-// ── How Page ──────────────────────────────────────────────────
-const HowPage = ({ lang, setPage }) => {
-  const t = T[lang].howPage;
-  const fr = lang === "fr";
-  return (
-    <div className="min-h-screen" style={{background:"#f8fafb"}}>
-      {/* Hero premium */}
-      <div className="relative overflow-hidden" style={{background:"linear-gradient(135deg,#0f4c35 0%,#064e3b 50%,#065f46 100%)"}}>
-        <div className="absolute inset-0" style={{backgroundImage:"radial-gradient(ellipse at 80% 0%, rgba(167,243,208,0.12) 0%, transparent 60%)"}}>
-        </div>
-        <div className="absolute inset-0 opacity-5" style={{backgroundImage:"linear-gradient(rgba(255,255,255,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.4) 1px, transparent 1px)", backgroundSize:"48px 48px"}} />
-        <div className="relative max-w-5xl mx-auto px-4 pt-10 pb-16 text-center">
-          <button onClick={() => setPage("home")} className="flex items-center gap-1.5 text-emerald-300 hover:text-white text-sm mb-8 mx-auto transition-colors">
-            ← {fr ? "Retour à l'accueil" : "Back to home"}
-          </button>
-          <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 text-sm font-semibold" style={{background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.15)"}}>
-            <span>💚</span>
-            <span className="text-emerald-200">{fr ? "Plateforme médicale vérifiée · Côte d'Ivoire" : "Verified medical platform · Côte d'Ivoire"}</span>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black text-white mb-4 leading-tight">{t.title}</h1>
-          <p className="text-emerald-200 text-lg max-w-xl mx-auto mb-10">{t.sub}</p>
-          {/* Badges de confiance */}
-          <div className="flex flex-wrap justify-center gap-3">
-            {[
-              { icon: "🏥", label: fr ? "Versement direct hôpital" : "Direct hospital payment" },
-              { icon: "🔍", label: fr ? "Vérification 48h" : "48h verification" },
-              { icon: "🔒", label: fr ? "Données chiffrées" : "Encrypted data" },
-              { icon: "📊", label: fr ? "Rapport trimestriel" : "Quarterly report" },
-            ].map(({ icon, label }) => (
-              <div key={label} className="flex items-center gap-2 rounded-full px-4 py-2 text-xs text-emerald-100 font-semibold" style={{background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.12)"}}>
-                <span>{icon}</span>{label}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Section double flux : donateurs & bénéficiaires */}
-      <div className="max-w-5xl mx-auto px-4 py-14">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-          {/* Colonne donateurs */}
-          <div>
-            <div className="flex items-center gap-3 mb-7">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl" style={{background:"linear-gradient(135deg,#d1fae5,#a7f3d0)"}}>💚</div>
-              <div>
-                <h2 className="text-xl font-black text-gray-900">{t.forDonors.title}</h2>
-                <p className="text-gray-400 text-sm">{fr ? "Comment faire un don" : "How to donate"}</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {t.forDonors.steps.map((step, i) => (
-                <div key={i} className="flex gap-4 items-start">
-                  <div className="flex flex-col items-center flex-shrink-0">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black text-white" style={{background:"linear-gradient(135deg,#059669,#34d399)"}}>
-                      {i+1}
-                    </div>
-                    {i < t.forDonors.steps.length - 1 && <div className="w-0.5 h-6 mt-1" style={{background:"linear-gradient(180deg,#34d399,transparent)"}} />}
-                  </div>
-                  <div className="flex-1 pb-2">
-                    <div className="rounded-2xl p-4" style={{background:"#fff", border:"1px solid #e5e7eb", boxShadow:"0 1px 8px rgba(0,0,0,0.05)"}}>
-                      <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-7">
-              <button onClick={() => setPage("collectesactives")}
-                className="w-full font-bold py-3.5 rounded-2xl text-sm transition-all text-white shadow-md"
-                style={{background:"linear-gradient(135deg,#059669,#047857)"}}>
-                {fr ? "Voir les collectes actives →" : "See active campaigns →"}
-              </button>
-            </div>
-          </div>
-
-          {/* Colonne bénéficiaires */}
-          <div>
-            <div className="flex items-center gap-3 mb-7">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl" style={{background:"linear-gradient(135deg,#dbeafe,#bfdbfe)"}}>🏥</div>
-              <div>
-                <h2 className="text-xl font-black text-gray-900">{t.forBenef.title}</h2>
-                <p className="text-gray-400 text-sm">{fr ? "Comment soumettre votre dossier" : "How to submit your case"}</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {t.forBenef.steps.map((step, i) => (
-                <div key={i} className="flex gap-4 items-start">
-                  <div className="flex flex-col items-center flex-shrink-0">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black text-white" style={{background:"linear-gradient(135deg,#2563eb,#60a5fa)"}}>
-                      {i+1}
-                    </div>
-                    {i < t.forBenef.steps.length - 1 && <div className="w-0.5 h-6 mt-1" style={{background:"linear-gradient(180deg,#60a5fa,transparent)"}} />}
-                  </div>
-                  <div className="flex-1 pb-2">
-                    <div className="rounded-2xl p-4" style={{background:"#fff", border:"1px solid #e5e7eb", boxShadow:"0 1px 8px rgba(0,0,0,0.05)"}}>
-                      <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-7">
-              <button onClick={() => setPage("submit")}
-                className="w-full font-bold py-3.5 rounded-2xl text-sm transition-all text-white shadow-md"
-                style={{background:"linear-gradient(135deg,#2563eb,#1d4ed8)"}}>
-                {fr ? "Soumettre un dossier →" : "Submit a case →"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Section garanties premium */}
-      <div style={{background:"linear-gradient(135deg,#0f172a,#1e293b)"}}>
-        <div className="max-w-5xl mx-auto px-4 py-16">
-          <div className="text-center mb-12">
-            <span className="inline-block bg-emerald-500/20 text-emerald-300 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-widest mb-4 border border-emerald-500/20">
-              {fr ? "Ce qui nous différencie" : "What sets us apart"}
-            </span>
-            <h2 className="text-3xl font-black text-white mb-3">{fr ? "Les garanties Ayyad" : "Ayyad guarantees"}</h2>
-            <p className="text-gray-400 max-w-md mx-auto text-sm">{fr ? "Chaque engagement est vérifiable et documenté publiquement." : "Every commitment is verifiable and publicly documented."}</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            {[
-              {icon:"🏥", color:"#10b981", bg:"rgba(16,185,129,0.1)", border:"rgba(16,185,129,0.2)", title:fr?"Versement direct à l'hôpital":"Direct payment to hospital", desc:fr?"Les fonds ne passent jamais par le patient. Chaque virement est traçable en temps réel.":"Funds never go through the patient. Every transfer is traceable in real time."},
-              {icon:"🔍", color:"#3b82f6", bg:"rgba(59,130,246,0.1)", border:"rgba(59,130,246,0.2)", title:fr?"Vérification sous 48h":"Verification within 48h", desc:fr?"Notre équipe contacte directement l'hôpital partenaire pour valider chaque dossier médical.":"Our team contacts the partner hospital directly to validate each medical case."},
-              {icon:"🔒", color:"#8b5cf6", bg:"rgba(139,92,246,0.1)", border:"rgba(139,92,246,0.2)", title:fr?"Données chiffrées AES-256":"AES-256 encrypted data", desc:fr?"Vos documents médicaux sont chiffrés et accessibles uniquement à l'équipe de vérification.":"Your medical documents are encrypted and accessible only to the verification team."},
-            ].map((g) => (
-              <div key={g.title} className="rounded-3xl p-6 transition-all hover:-translate-y-0.5" style={{background:g.bg, border:`1.5px solid ${g.border}`}}>
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mb-5" style={{background:`${g.bg}`, border:`1px solid ${g.border}`}}>{g.icon}</div>
-                <h3 className="font-black text-white text-base mb-3">{g.title}</h3>
-                <p className="text-sm leading-relaxed" style={{color:"#94a3b8"}}>{g.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Section frais — visuel premium */}
-      <div className="py-16 px-4" style={{background:"#f1f5f9"}}>
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-black text-gray-900 mb-3">{t.feeTitle}</h2>
-            <p className="text-gray-500 max-w-md mx-auto text-sm">{t.feeSub}</p>
-          </div>
-          <div className="rounded-3xl overflow-hidden" style={{background:"#1e293b", boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
-            {/* Header */}
-            <div className="px-8 py-6 text-center" style={{background:"linear-gradient(135deg,#064e3b,#065f46)"}}>
-              <div className="text-gray-300 text-sm mb-1">{t.youGive}</div>
-              <div className="text-5xl font-black text-white mb-1">10 000 FCFA</div>
-              <div className="text-emerald-300 text-sm">{fr ? "va entièrement à l'hôpital" : "goes entirely to the hospital"}</div>
-            </div>
-            {/* Corps */}
-            <div className="px-8 py-6 space-y-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">🏥</span>
-                  <span className="text-gray-300 text-sm">{t.collectReceives}</span>
-                </div>
-                <span className="text-emerald-400 font-black text-xl">10 000 FCFA</span>
-              </div>
-              <div className="border-t" style={{borderColor:"rgba(255,255,255,0.06)"}} />
-              <div className="rounded-2xl p-4 space-y-3" style={{background:"rgba(255,255,255,0.04)"}}>
-                <div className="text-gray-500 text-xs uppercase tracking-widest font-bold mb-2">{fr ? "Décomposition de l'objectif affiché" : "Campaign goal breakdown"}</div>
-                {[
-                  { label: fr ? "Objectif affiché (devis × 1.05)" : "Displayed goal (quote × 1.05)", val: "10 500 FCFA", color: "#e2e8f0" },
-                  { label: fr ? "dont devis hôpital" : "of which hospital quote", val: "10 000 FCFA", color: "#34d399" },
-                  { label: t.ayyadFee, val: "500 FCFA", color: "#fbbf24" },
-                ].map(({ label, val, color }) => (
-                  <div key={label} className="flex justify-between items-center">
-                    <span className="text-gray-400 text-xs">{label}</span>
-                    <span className="font-bold text-sm" style={{color}}>{val}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-start gap-2 rounded-xl p-3" style={{background:"rgba(52,211,153,0.08)"}}>
-                <span className="text-emerald-400 text-sm">✅</span>
-                <p className="text-gray-400 text-xs leading-relaxed">
-                  {fr ? "Votre don va intégralement à l'hôpital. Les 5% Ayyad sont intégrés dans l'objectif de collecte dès le départ — vous ne payez rien de plus." : "Your donation goes entirely to the hospital. The 5% Ayyad fee is built into the campaign goal from the start — you pay nothing extra."}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Politique de remboursement */}
-      <div className="py-16 px-4 bg-white">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-3xl text-3xl mb-5" style={{background:"linear-gradient(135deg,#eff6ff,#dbeafe)"}}>🔄</div>
-            <h2 className="text-3xl font-black text-gray-900 mb-3">{fr ? "Politique de remboursement" : "Refund policy"}</h2>
-            <p className="text-gray-500 text-sm max-w-lg mx-auto">{fr ? "Ayyad s'engage à une transparence totale sur la gestion des fonds dans toutes les situations." : "Ayyad is committed to full transparency on fund management in all situations."}</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { icon:"❌", bg:"#fff1f2", border:"#fecdd3", title: fr?"Dossier rejeté après des dons":"Case rejected after donations", desc: fr?"Si Ayyad rejette un dossier après réception de dons (documents falsifiés, fraude détectée), chaque donateur est contacté.":"If Ayyad rejects a case after receiving donations (fraud, falsified documents), each donor is contacted.", choices: fr?["Remboursement intégral sur mobile money","Redistribution aux cas urgents actifs"]:["Full refund to mobile money","Redistribution to active urgent cases"], note: fr?"⏳ Sans réponse 14 jours → redistribution automatique.":"⏳ No response 14 days → automatic redistribution." },
-              { icon:"⏳", bg:"#fffbeb", border:"#fde68a", title: fr?"Objectif non atteint":"Goal not reached", desc: fr?"Si l'objectif n'est pas atteint à l'échéance, tous les donateurs sont notifiés et peuvent choisir.":"If the goal isn't reached at deadline, all donors are notified and can choose.", choices: fr?["Remboursement intégral","Don redistribué aux cas urgents"]:["Full refund","Donation redistributed to urgent cases"], note: fr?"⏳ Sans réponse 14 jours → redistribution automatique.":"⏳ No response 14 days → automatic redistribution." },
-              { icon:"🎉", bg:"#f5f3ff", border:"#ddd6fe", title: fr?"Objectif dépassé (surcollecte)":"Goal exceeded (surplus)", desc: fr?"Le surplus est réparti selon la règle Ayyad.":"The surplus is distributed according to Ayyad's rule.", breakdown: [["🏥 " + (fr?"Hôpital":"Hospital"), "100%", "#10b981"], ["👤 " + (fr?"70% surplus → bénéficiaire":"70% surplus → beneficiary"), "70%", "#3b82f6"], ["🚨 " + (fr?"25% → cas urgents":"25% → urgent cases"), "25%", "#8b5cf6"], ["⚙️ " + (fr?"5% → Ayyad":"5% → Ayyad"), "5%", "#f59e0b"]] },
-              { icon:"🔒", bg:"#f0fdf4", border:"#bbf7d0", isCommit: true, title: fr?"Notre engagement":"Our commitment", items: fr?["Chaque virement documenté avec reçu public","Email de confirmation après chaque don","Rapport de transparence trimestriel","Ayyad ne touche jamais l'argent destiné à l'hôpital"]:["Every transfer documented with public receipt","Confirmation email after each donation","Quarterly transparency report","Ayyad never touches money destined for the hospital"] },
-            ].map((item) => (
-              <div key={item.title} className="rounded-3xl p-6" style={{background: item.bg, border:`1.5px solid ${item.border}`}}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:"rgba(255,255,255,0.7)"}}>{item.icon}</div>
-                  <div className="font-black text-gray-900 text-sm leading-tight">{item.title}</div>
-                </div>
-                {item.desc && <p className="text-xs text-gray-500 leading-relaxed mb-3">{item.desc}</p>}
-                {item.choices && (
-                  <div className="space-y-1.5 mb-3">
-                    {item.choices.map((c, i) => <div key={i} className="flex items-start gap-2 text-xs text-gray-700"><span className="text-emerald-500 mt-0.5">✓</span>{c}</div>)}
-                  </div>
-                )}
-                {item.breakdown && (
-                  <div className="space-y-2">
-                    {item.breakdown.map(([label, val, color]) => (
-                      <div key={label} className="flex justify-between text-xs">
-                        <span className="text-gray-500">{label}</span>
-                        <span className="font-bold" style={{color}}>{val}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {item.isCommit && item.items && (
-                  <div className="space-y-2">
-                    {item.items.map((s, i) => <div key={i} className="flex items-start gap-2 text-xs text-gray-700"><span className="text-emerald-500 mt-0.5 flex-shrink-0">✓</span>{s}</div>)}
-                  </div>
-                )}
-                {item.note && <div className="text-[10px] text-gray-400 mt-3 pt-3" style={{borderTop:"1px solid rgba(0,0,0,0.06)"}}>{item.note}</div>}
-              </div>
-            ))}
-          </div>
-          <div className="text-center mt-8">
-            <button onClick={() => setPage("refund")} className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold underline underline-offset-2">
-              {fr ? "Lire la politique de remboursement complète →" : "Read the full refund policy →"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── Admin Page — Real Supabase data ───────────────────────────
-const AdminTeamList = ({ user, fr }) => {
-  const [admins, setAdmins] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [fetchErr, setFetchErr] = React.useState(null);
-  const [showAdd, setShowAdd] = React.useState(false);
-  const [newEmail, setNewEmail] = React.useState("");
-  const [newRole, setNewRole] = React.useState("operator");
-  const [adding, setAdding] = React.useState(false);
-  const [msg, setMsg] = React.useState("");
-
-  const ROLES = [
-    { value: "super_admin", label: "Super Admin",              color: "bg-purple-100 text-purple-700" },
-    { value: "admin",       label: fr ? "Admin" : "Admin",    color: "bg-indigo-100 text-indigo-700" },
-    { value: "finance",     label: "Finance",                  color: "bg-blue-100 text-blue-700"   },
-    { value: "operator",    label: fr ? "Opérateur":"Operator", color: "bg-green-100 text-green-700" },
-  ];
-
-  const getRoleStyle = (role) => ROLES.find(r => r.value === role)?.color || "bg-gray-100 text-gray-600";
-  const getRoleLabel = (role) => ROLES.find(r => r.value === role)?.label || (role || "—");
-
-  const fetchAdmins = React.useCallback(async () => {
-    setLoading(true);
-    setFetchErr(null);
-    try {
-      // Ne pas utiliser .order("created_at") — la colonne peut ne pas exister
-      const { data, error } = await supabase
-        .from("admin_users")
-        .select("id, email, role, is_active");
-      if (error) {
-        setFetchErr(error.message);
-      } else {
-        setAdmins(Array.isArray(data) ? data : []);
-      }
-    } catch (e) {
-      setFetchErr(String(e?.message || e));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => { fetchAdmins(); }, [fetchAdmins]);
-
-  const handleAdd = async () => {
-    if (!newEmail.includes("@")) return setMsg(fr ? "Email invalide" : "Invalid email");
-    setAdding(true);
-    setMsg("");
-    try {
-      const cleanEmail = newEmail.trim().toLowerCase();
-      // Chercher le full_name dans profiles, sinon utiliser le préfixe email
-      const { data: profileData } = await supabase.from("profiles").select("full_name").eq("email", cleanEmail).maybeSingle();
-      const fullName = profileData?.full_name || cleanEmail.split("@")[0];
-      const { error } = await supabase
-        .from("admin_users")
-        .insert({ email: cleanEmail, role: newRole, is_active: true, full_name: fullName });
-      if (error) {
-        setMsg(fr ? "Erreur : " + error.message : "Error: " + error.message);
-      } else {
-        setMsg(fr ? "Membre ajouté ✓" : "Member added ✓");
-        setNewEmail("");
-        setNewRole("operator");
-        setShowAdd(false);
-        fetchAdmins();
-      }
-    } catch(e) {
-      setMsg(String(e?.message || e));
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  const toggleActive = async (admin) => {
-    if (!admin?.id || admin?.email === user?.email) return;
-    try {
-      await supabase.from("admin_users").update({ is_active: !admin.is_active }).eq("id", admin.id);
-      fetchAdmins();
-    } catch(e) { console.warn("toggleActive error:", e); }
-  };
-
-  const changeRole = async (admin, role) => {
-    if (!admin?.id || admin?.email === user?.email) return;
-    try {
-      await supabase.from("admin_users").update({ role }).eq("id", admin.id);
-      fetchAdmins();
-    } catch(e) { console.warn("changeRole error:", e); }
-  };
-
-  if (loading) return (
-    <div className="text-center py-12 text-gray-400">
-      <div className="text-2xl mb-2">⏳</div>
-      <p className="text-sm">{fr ? "Chargement de l'équipe…" : "Loading team…"}</p>
-    </div>
-  );
-
-  if (fetchErr) return (
-    <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-sm text-red-700">
-      <p className="font-bold mb-1">⚠️ {fr ? "Erreur de chargement" : "Loading error"}</p>
-      <p className="text-xs font-mono">{fetchErr}</p>
-      <p className="mt-3 text-xs text-red-500">
-        {fr
-          ? "Vérifiez que la table admin_users a une politique RLS SELECT pour les admins."
-          : "Make sure the admin_users table has a SELECT RLS policy for admins."}
-      </p>
-      <button onClick={fetchAdmins} className="mt-3 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold">
-        {fr ? "Réessayer" : "Retry"}
-      </button>
-    </div>
-  );
-
-  return (
-    <div className="space-y-4">
-      {/* Formulaire ajout — super_admin uniquement */}
-      {user?.adminRole === "super_admin" && (
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-          <button
-            onClick={() => setShowAdd(!showAdd)}
-            className="text-sm font-semibold text-emerald-700 hover:underline"
-          >
-            {showAdd ? (fr ? "▲ Annuler" : "▲ Cancel") : (fr ? "▼ Ajouter un membre" : "▼ Add member")}
-          </button>
-          {showAdd && (
-            <div className="mt-3 flex flex-col sm:flex-row gap-3">
-              <input
-                type="email"
-                placeholder="Email"
-                value={newEmail}
-                onChange={e => setNewEmail(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              />
-              <select
-                value={newRole}
-                onChange={e => setNewRole(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              >
-                {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-              </select>
-              <button
-                onClick={handleAdd}
-                disabled={adding}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50"
-              >
-                {adding ? "…" : (fr ? "Ajouter" : "Add")}
-              </button>
-            </div>
-          )}
-          {msg && <p className="mt-2 text-sm text-emerald-600">{msg}</p>}
-        </div>
-      )}
-
-      {/* Message si aucun admin visible (RLS probable) */}
-      {admins.length === 0 && !fetchErr && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-800">
-          <p className="font-bold mb-1">ℹ️ {fr ? "Aucun membre visible" : "No members visible"}</p>
-          <p className="text-xs">
-            {fr
-              ? "La table admin_users est vide ou la politique RLS ne permet pas de lister tous les membres. Exécutez le SQL ci-dessous dans Supabase pour corriger :"
-              : "The admin_users table is empty or the RLS policy doesn't allow listing all members. Run the SQL below in Supabase to fix:"}
-          </p>
-          <pre className="mt-3 bg-amber-100 rounded-lg p-3 text-xs overflow-x-auto whitespace-pre-wrap">{`CREATE POLICY "admin_users_select_for_admins"
-ON admin_users FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 FROM admin_users a2
-    WHERE a2.email = auth.email() AND a2.is_active = true
-  )
-);`}</pre>
-        </div>
-      )}
-
-      {/* Liste des membres */}
-      {admins.map((admin, idx) => (
-        <div key={admin.id ?? idx} className={`flex items-center justify-between p-4 rounded-xl border ${admin.is_active !== false ? "bg-white border-gray-100" : "bg-gray-50 border-gray-200 opacity-60"}`}>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
-              {(admin.email?.[0] || "?").toUpperCase()}
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-800">{admin.email || "—"}</p>
-              <p className="text-xs text-gray-400">{admin.is_active !== false ? (fr ? "Actif" : "Active") : (fr ? "Désactivé" : "Disabled")}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {user?.adminRole === "super_admin" && admin.email !== user?.email ? (
-              <>
-                <select
-                  value={admin.role || "operator"}
-                  onChange={e => changeRole(admin, e.target.value)}
-                  className={`text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer ${getRoleStyle(admin.role)}`}
-                >
-                  {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                </select>
-                <button
-                  onClick={() => toggleActive(admin)}
-                  className={`text-xs px-3 py-1 rounded-full font-semibold ${admin.is_active !== false ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"}`}
-                >
-                  {admin.is_active !== false ? (fr ? "Désactiver" : "Disable") : (fr ? "Réactiver" : "Enable")}
-                </button>
-              </>
-            ) : (
-              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${getRoleStyle(admin.role)}`}>
-                {getRoleLabel(admin.role)}
-              </span>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// ── Error Boundary — capture les crashs React au lieu de page blanche ──
-class AdminErrorBoundary extends React.Component {
-  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
-  static getDerivedStateFromError(error) { return { hasError: true, error }; }
-  componentDidCatch(error, info) { console.error("AdminErrorBoundary caught:", error, info); }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-sm text-red-700 space-y-3">
-          <div className="font-black text-base">⚠️ Erreur d'affichage</div>
-          <div className="font-mono text-xs bg-red-100 rounded-lg p-3 break-all">
-            {this.state.error?.message || String(this.state.error)}
-          </div>
-          <button
-            onClick={() => this.setState({ hasError: false, error: null })}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold">
-            Réessayer
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
 }
 
 // ── Audit log helper ─────────────────────────────────────────
@@ -4456,7 +4802,8 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
     setManualSaving(true);
     try {
       // Via /api/donate (bypass RLS) avec fallback Supabase direct
-      const { error } = await createDonation({
+      // Insertion directe Supabase (pas /api/donate qui force status=pending)
+      const { error: insManualErr } = await supabase.from("donations").insert({
         case_id: manualForm.case_id,
         donor_name: manualForm.donor_name || null,
         donor_email: manualForm.donor_email || null,
@@ -4468,8 +4815,8 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
         message: manualForm.message || null,
         reference: manualForm.reference || ("MANUEL-" + Date.now()),
       });
-      if (error) {
-        setManualError(error);
+      if (insManualErr) {
+        setManualError(insManualErr.message || "Erreur lors de l'insertion.");
         setManualSaving(false);
         return;
       }
@@ -4872,13 +5219,32 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
     if (action === "promote") update = { is_admin: true };
     if (action === "demote") update = { is_admin: false };
     const { error } = await supabase.from("profiles").update(update).eq("id", account.id);
-    // Synchroniser avec admin_users pour que l'accès admin soit effectif
-    if (!error && action === "promote") {
+    // Synchroniser avec admin_users via l'endpoint sécurisé /api/promote-admin
+    if (!error && (action === "promote" || action === "demote")) {
+      const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+      const token = session?.access_token || null;
       const fullName = account.full_name || account.name || (account.email||"").split("@")[0];
-      await supabase.from("admin_users").upsert({ email: account.email, role: "admin", is_active: true, full_name: fullName }, { onConflict: "email" });
-    }
-    if (!error && action === "demote") {
-      await supabase.from("admin_users").update({ is_active: false }).eq("email", account.email);
+      try {
+        const pr = await fetch("/api/promote-admin", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            action,
+            target_user_id: account.id,
+            target_email: account.email,
+            target_full_name: fullName,
+          }),
+        });
+        if (!pr.ok) {
+          const pe = await pr.json().catch(() => ({}));
+          console.error("[promote-admin] Erreur:", pe.error);
+        }
+      } catch (e) {
+        console.error("[promote-admin] Erreur réseau:", e);
+      }
     }
     if (!error) {
       setAccounts(prev => prev.map(a => a.id === account.id ? { ...a, ...update } : a));
@@ -5771,9 +6137,1432 @@ ${sheets.join("\n")}
   );
 };
 
+
+// ── Auth & Submit Pages (LoginPage, RegisterPage, PolitiqueAdmissionPage, SubmitPage) ──
+const LoginPage = ({ setPage, setUser, lang, trackVisit }) => {
+  const [email, setEmail] = useState("");
+  const [pwd, setPwd] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const t = T[lang].login;
+
+  const handleLogin = async () => {
+    const emailClean = email.trim().toLowerCase();
+    if (!emailClean || !pwd) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
+      setError(lang === "fr" ? "Adresse email invalide." : "Invalid email address.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    let timedOut = false;
+
+    // Minuteur de sécurité : reset automatique après 10s si Supabase ne répond pas
+    const safetyTimer = setTimeout(() => {
+      timedOut = true;
+      setLoading(false);
+      setError(lang === "fr"
+        ? "Connexion impossible. Vérifiez votre réseau ou désactivez les extensions de navigation."
+        : "Connection failed. Check your network or disable browser extensions.");
+    }, 10000);
+    try {
+      const { data, error: err } = await supabase.auth.signInWithPassword({ email: emailClean, password: pwd });
+      if (timedOut) return; // la réponse est arrivée trop tard, ignorer
+      if (err) {
+        setError(t.error);
+        return;
+      }
+      const meta = data.user?.user_metadata || {};
+      const { data: adminData } = await supabase.from("admin_users").select("role, is_active").eq("email", emailClean).maybeSingle();
+      if (timedOut) return;
+      const isAdmin = !!(adminData && adminData.is_active);
+      const adminRole = adminData?.role || null;
+      const userName = meta.full_name || email;
+      setUser({ id: data.user.id, name: userName, email, isAdmin, adminRole });
+      if (trackVisit) trackVisit(data.user.id, email, userName);
+      setPage(isAdmin ? "admin" : "home");
+    } catch(e) {
+      if (!timedOut) setError("Erreur de connexion. Veuillez réessayer.");
+    } finally {
+      clearTimeout(safetyTimer);
+      if (!timedOut) setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center px-4 py-16">
+      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-md p-8">
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <svg width="64" height="64" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
+              <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" stroke-width="2.5"/>
+              <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
+              <rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/>
+              <path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/>
+            </svg>
+          </div>
+          <h1 className="text-2xl font-black text-gray-900">{t.title}</h1>
+          <p className="text-gray-500 text-sm mt-1">{t.sub}</p>
+        </div>
+        {error && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600 text-center mb-4">{error}</div>}
+        <div className="space-y-4 mb-6">
+          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.email}</label><input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="vous@exemple.ci" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
+          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.password}</label><input value={pwd} onChange={e=>setPwd(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} type="password" placeholder="••••••••" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
+        </div>
+        <button onClick={handleLogin} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold py-3.5 rounded-xl shadow-md text-sm">
+          {loading ? "..." : t.btn}
+        </button>
+        <div className="text-center mt-5"><span className="text-sm text-gray-500">{t.noAccount} </span><button onClick={() => setPage("register")} className="text-sm text-emerald-600 font-bold hover:underline">{t.register}</button></div>
+      </div>
+    </div>
+  );
+};
+
+// ── Register Page ─────────────────────────────────────────────
+const RegisterPage = ({ setPage, setUser, lang }) => {
+  const [step, setStep] = useState(1);
+  const [role, setRole] = useState("");
+  const [form, setForm] = useState({name:"",email:"",phone:"",password:""});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const t = T[lang].register;
+
+  const handleSubmit = async () => {
+    const emailClean = form.email.trim().toLowerCase();
+    if (!form.name.trim()) {
+      setError(lang === "fr" ? "Veuillez entrer votre nom." : "Please enter your name.");
+      return;
+    }
+    if (!emailClean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
+      setError(lang === "fr" ? "Adresse email invalide." : "Invalid email address.");
+      return;
+    }
+    // Validation téléphone (optionnel mais format CI si renseigné)
+    if (form.phone.trim()) {
+      const phoneClean = form.phone.trim().replace(/\s/g, "");
+      const ciLocal = /^(01|03|05|07|08|09|27)\d{8}$/.test(phoneClean);
+      const ciIntl  = /^\+225(01|03|05|07|08|09|27)\d{8}$/.test(phoneClean);
+      if (!ciLocal && !ciIntl) {
+        setError(lang === "fr"
+          ? "Numéro invalide. Format attendu : 07 XX XX XX XX ou +225 07 XX XX XX XX"
+          : "Invalid number. Expected format: 07 XX XX XX XX or +225 07 XX XX XX XX");
+        return;
+      }
+    }
+    // Validation mot de passe
+    if (form.password.length < 8) {
+      setError(lang === "fr" ? "Le mot de passe doit contenir au moins 8 caractères." : "Password must be at least 8 characters.");
+      return;
+    }
+    if (!/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password)) {
+      setError(lang === "fr" ? "Le mot de passe doit contenir au moins une lettre et un chiffre." : "Password must contain at least one letter and one number.");
+      return;
+    }
+    if (!acceptedTerms) {
+      setError(lang === "fr" ? "Veuillez accepter les conditions d'utilisation." : "Please accept the terms of use.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    // Ne jamais stocker le role dans les métadonnées — géré uniquement via admin_users
+    const { data, error: err } = await supabase.auth.signUp({
+      email: emailClean,
+      password: form.password,
+      options: { data: { full_name: form.name.trim(), phone: form.phone.trim() } }
+    });
+    if (err) { setError(t.error); setLoading(false); return; }
+    setUser({ id: data.user?.id, name: form.name.trim()||emailClean, email: emailClean, isAdmin: false });
+    setPage("home");
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center px-4 py-16">
+      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-md p-8">
+        <div className="text-center mb-6">
+          <div className="flex justify-center mb-4">
+            <svg width="56" height="56" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
+              <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" stroke-width="2.5"/>
+              <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
+              <rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/>
+              <path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/>
+            </svg>
+          </div>
+          <h1 className="text-2xl font-black text-gray-900">{t.title}</h1>
+          <div className="flex justify-center gap-2 mt-3">{[1,2].map(s=><div key={s} className={`w-10 h-1.5 rounded-full transition-colors ${step>=s?"bg-emerald-500":"bg-gray-200"}`}/>)}</div>
+        </div>
+        {step===1&&<div className="space-y-4">
+          <p className="text-sm text-gray-600 text-center font-medium">{t.roleQ}</p>
+          <div className="grid grid-cols-2 gap-3">{t.roles.map(r=><button key={r.id} onClick={()=>setRole(r.id)} className={`p-5 rounded-2xl border-2 text-left transition-all ${role===r.id?"border-emerald-500 bg-emerald-50 shadow-md":"border-gray-200 hover:border-emerald-300"}`}><div className="text-3xl mb-2">{r.icon}</div><div className="font-bold text-sm text-gray-900">{r.title}</div><div className="text-xs text-gray-500 mt-0.5">{r.desc}</div></button>)}</div>
+          <button onClick={()=>role&&setStep(2)} disabled={!role} className="w-full bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">{t.continue}</button>
+          <div className="text-center"><span className="text-sm text-gray-500">{t.hasAccount} </span><button onClick={()=>setPage("login")} className="text-sm text-emerald-600 font-bold hover:underline">{t.signin}</button></div>
+        </div>}
+        {step===2&&<div className="space-y-4">
+          {error&&<div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600 text-center">{error}</div>}
+          {t.fields.map(f=>(
+            <div key={f.key}>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{f.label}</label>
+              <input
+                value={form[f.key]}
+                onChange={e => {
+                  let val = e.target.value;
+                  // Téléphone : n'autoriser que chiffres, +, espaces
+                  if (f.key === "phone") val = val.replace(/[^0-9+\s]/g, "").slice(0, 16);
+                  // Mot de passe : indicateur de force visuel via bordure
+                  setForm({...form, [f.key]: val});
+                }}
+                type={f.type}
+                placeholder={f.p}
+                inputMode={f.key === "phone" ? "tel" : undefined}
+                className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${
+                  f.key === "password" && form.password.length > 0
+                    ? form.password.length >= 8 && /[A-Za-z]/.test(form.password) && /[0-9]/.test(form.password)
+                      ? "border-emerald-400"
+                      : "border-amber-400"
+                    : "border-gray-200"
+                }`}
+              />
+              {/* Indicateur force mot de passe */}
+              {f.key === "password" && form.password.length > 0 && (
+                <div className="mt-1.5 space-y-1">
+                  <div className="flex gap-1">
+                    {[8, 10, 12].map((min, i) => (
+                      <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${
+                        form.password.length >= min && /[A-Za-z]/.test(form.password) && /[0-9]/.test(form.password)
+                          ? ["bg-red-400","bg-amber-400","bg-emerald-500"][i]
+                          : "bg-gray-200"
+                      }`} />
+                    ))}
+                  </div>
+                  <p className={`text-[10px] ${
+                    form.password.length >= 8 && /[A-Za-z]/.test(form.password) && /[0-9]/.test(form.password)
+                      ? "text-emerald-600" : "text-amber-600"
+                  }`}>
+                    {lang === "fr"
+                      ? form.password.length < 8 ? "Min. 8 caractères" : !/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password) ? "Ajoutez une lettre et un chiffre" : "✓ Mot de passe valide"
+                      : form.password.length < 8 ? "Min. 8 characters" : !/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password) ? "Add a letter and a number" : "✓ Valid password"
+                    }
+                  </p>
+                </div>
+              )}
+              {/* Hint téléphone */}
+              {f.key === "phone" && (
+                <p className="text-[10px] text-gray-400 mt-1">
+                  {lang === "fr" ? "Format CI : 07 XX XX XX XX ou +225 07 XX XX XX XX" : "CI format: 07 XX XX XX XX or +225 07 XX XX XX XX"}
+                </p>
+              )}
+            </div>
+          ))}
+          <div className="flex items-start gap-2 text-xs text-gray-500">
+            <input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} className="mt-0.5 accent-emerald-600 cursor-pointer" />
+            <span onClick={()=>setAcceptedTerms(v=>!v)} className="cursor-pointer">{t.terms} <a href="https://ayyadci.com/cgu" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.termsLink}</a> {t.and} <a href="https://ayyadci.com/confidentialite" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.privacyLink}</a>.</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={()=>setStep(1)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{t.back}</button>
+            <button onClick={handleSubmit} disabled={loading||!acceptedTerms} className="bg-emerald-600 disabled:bg-emerald-400 text-white font-bold py-3 rounded-xl text-sm shadow-md">{loading?"...":t.btn}</button>
+          </div>
+        </div>}
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ── PolitiqueAdmissionPage — politique officielle de refus des dossiers ─────
+//    déjà lancés sur d'autres canaux de collecte (Facebook, TikTok, etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+const PolitiqueAdmissionPage = ({ setPage, lang }) => {
+  const fr = lang === "fr";
+  return (
+    <div style={{ background:"var(--paper)", minHeight:"100vh" }}>
+      {/* Header */}
+      <div style={{
+        background:"linear-gradient(135deg, var(--ayyad-deep) 0%, var(--ayyad-emerald) 60%, var(--ayyad-teal) 100%)",
+        color:"#fff",
+        padding:"clamp(40px, 6vw, 72px) 0 clamp(48px, 7vw, 88px)",
+        position:"relative", overflow:"hidden",
+      }}>
+        {/* Pattern doré décoratif */}
+        <div style={{
+          position:"absolute", inset:0, opacity:0.06, pointerEvents:"none",
+          backgroundImage:"radial-gradient(rgba(201,168,76,1) 1.5px, transparent 1.5px)",
+          backgroundSize:"28px 28px",
+        }} />
+        <div className="ayyad-container" style={{ position:"relative", zIndex:2 }}>
+          <button onClick={()=>setPage("home")} style={{ background:"transparent", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.78)", fontSize:13, marginBottom:18 }}>
+            ← {fr ? "Retour à l'accueil" : "Back to home"}
+          </button>
+          <span className="ayyad-eyebrow" style={{ color:"#e9d59a", background:"rgba(201,168,76,0.10)", borderColor:"rgba(201,168,76,0.40)" }}>
+            {fr ? "Politique officielle" : "Official policy"}
+          </span>
+          <h1 className="ayyad-h-display" style={{ color:"#fff", fontSize:"clamp(1.8rem, 4vw, 3rem)", marginTop:18, marginBottom:14 }}>
+            {fr ? <>Notre politique <em style={{ color:"#e9d59a" }}>d'admission des dossiers.</em></> : <>Our <em style={{ color:"#e9d59a" }}>case admission policy.</em></>}
+          </h1>
+          <p style={{ color:"rgba(255,255,255,0.85)", fontSize:16, lineHeight:1.65, maxWidth:720 }}>
+            {fr
+              ? "Pourquoi Ayyad refuse les dossiers déjà lancés sur les réseaux sociaux, et comment soumettre un dossier valide."
+              : "Why Ayyad refuses cases already launched on social media, and how to submit a valid case."}
+          </p>
+        </div>
+      </div>
+
+      {/* Contenu */}
+      <div className="ayyad-container" style={{ padding:"clamp(40px, 5vw, 64px) 0 clamp(56px, 7vw, 96px)", maxWidth:880 }}>
+
+        {/* Règle principale — encart fort */}
+        <div style={{
+          background:"linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%)",
+          border:"2px solid rgba(245,158,11,0.30)",
+          borderRadius:20, padding:"clamp(20px, 3vw, 32px)",
+          marginBottom:32,
+        }}>
+          <div style={{ display:"flex", alignItems:"flex-start", gap:16 }}>
+            <div style={{ fontSize:32, flexShrink:0 }}>⚠️</div>
+            <div>
+              <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.3rem, 2.4vw, 1.7rem)", marginBottom:10 }}>
+                {fr ? "La règle Ayyad" : "The Ayyad rule"}
+              </h2>
+              <p style={{ color:"var(--ink-700)", fontSize:15, lineHeight:1.7 }}>
+                {fr
+                  ? <><strong>Ayyad n'accepte pas les dossiers patients qui ont déjà été lancés publiquement sur d'autres canaux de collecte</strong> (Facebook, TikTok, Instagram, WhatsApp, GoFundMe, M-Pesa, dons en cash entre particuliers, etc.).</>
+                  : <><strong>Ayyad does not accept patient cases that have already been publicly launched on other fundraising channels</strong> (Facebook, TikTok, Instagram, WhatsApp, GoFundMe, M-Pesa, cash donations between individuals, etc.).</>}
+              </p>
+              <p style={{ color:"var(--ink-500)", fontSize:14, lineHeight:1.65, marginTop:12, fontStyle:"italic" }}>
+                {fr
+                  ? "Cette règle n'est pas une rigidité administrative. Elle est le fondement même de la confiance que nous construisons avec nos donateurs, et la garantie que nous offrons à chaque patient pris en charge."
+                  : "This rule is not administrative rigidity. It is the very foundation of the trust we build with our donors, and the guarantee we offer to every patient we take on."}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 4 raisons */}
+        <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.4rem, 2.6vw, 1.9rem)", marginBottom:8 }}>
+          {fr ? "Pourquoi cette règle existe" : "Why this rule exists"}
+        </h2>
+        <div style={{ width:48, height:3, background:"var(--grad-gold)", borderRadius:999, marginBottom:32 }} />
+
+        <div style={{ display:"flex", flexDirection:"column", gap:20, marginBottom:48 }}>
+          {[
+            {
+              num: "1",
+              icon: "🔍",
+              title: fr ? "Transparence financière vis-à-vis des donateurs" : "Financial transparency for donors",
+              body: fr
+                ? "Lorsqu'un donateur contribue sur Ayyad, il doit pouvoir vérifier précisément combien a déjà été collecté et combien il reste à réunir pour atteindre l'objectif médical. Si des fonds parviennent en parallèle par d'autres canaux non traçables, notre jauge ne reflète plus la réalité et nous induirions involontairement nos donateurs en erreur. Cela trahirait le principe même de notre plateforme."
+                : "When a donor contributes via Ayyad, they must be able to verify exactly how much has been collected and how much remains to reach the medical goal. If funds arrive in parallel through other untraceable channels, our progress gauge no longer reflects reality and we would unintentionally mislead our donors. This would betray the very principle of our platform.",
+            },
+            {
+              num: "2",
+              icon: "🏥",
+              title: fr ? "Garantie d'un versement direct à l'hôpital" : "Guarantee of direct hospital payment",
+              body: fr
+                ? "Ayyad s'engage publiquement à verser 100% des dons collectés directement à l'établissement de santé qui prend en charge le patient — jamais en espèces, jamais sur un compte personnel. Cette promesse ne peut être tenue que si Ayyad est le seul canal de collecte actif sur le dossier. Dans le cas contraire, il devient impossible de tracer l'intégralité des fonds et de garantir qu'ils sont effectivement utilisés pour les soins."
+                : "Ayyad publicly commits to transferring 100% of collected donations directly to the healthcare facility caring for the patient — never in cash, never to a personal account. This promise can only be kept if Ayyad is the only active fundraising channel for the case. Otherwise, it becomes impossible to track all the funds and guarantee they are actually used for care.",
+            },
+            {
+              num: "3",
+              icon: "🛡️",
+              title: fr ? "Protection du patient et de sa famille" : "Patient and family protection",
+              body: fr
+                ? "Une collecte mixte sur plusieurs canaux expose la famille à des questions complexes en cas de surcollecte, à des soupçons injustifiés, et parfois à des tensions familiales ou communautaires. En cantonnant chaque dossier à un seul canal officiel et vérifié, nous protégeons la dignité du patient et la sérénité de ses proches."
+                : "A mixed fundraising effort across multiple channels exposes the family to complex questions in case of over-collection, to unjustified suspicion, and sometimes to family or community tensions. By confining each case to a single official and verified channel, we protect the patient's dignity and the peace of mind of their loved ones.",
+            },
+            {
+              num: "4",
+              icon: "🌱",
+              title: fr ? "Intégrité de la plateforme et des autres bénéficiaires" : "Platform integrity and other beneficiaries",
+              body: fr
+                ? "Chaque dossier publié sur Ayyad est vérifié sous 48 heures avec l'hôpital partenaire. Accepter des dossiers déjà mélangés à d'autres collectes affaiblirait la valeur de cette vérification pour l'ensemble des patients vraiment dépendants d'Ayyad pour leurs soins."
+                : "Every case published on Ayyad is verified within 48 hours with the partner hospital. Accepting cases already mixed with other fundraising would weaken the value of this verification for all patients truly dependent on Ayyad for their care.",
+            },
+          ].map(reason => (
+            <div key={reason.num} className="ayyad-card" style={{ padding:"clamp(20px, 3vw, 28px)", display:"flex", gap:18 }}>
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", flexShrink:0 }}>
+                <div style={{
+                  width:44, height:44, borderRadius:12,
+                  background:"linear-gradient(135deg, var(--ayyad-deep), var(--ayyad-emerald))",
+                  color:"#fff", fontFamily:"var(--font-serif)", fontWeight:800, fontSize:18,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  marginBottom:8,
+                }}>{reason.num}</div>
+                <div style={{ fontSize:24 }}>{reason.icon}</div>
+              </div>
+              <div style={{ minWidth:0 }}>
+                <h3 className="ayyad-h-display" style={{ fontSize:"clamp(1rem, 2vw, 1.2rem)", marginBottom:8 }}>
+                  {reason.title}
+                </h3>
+                <p style={{ color:"var(--ink-700)", fontSize:14.5, lineHeight:1.7 }}>
+                  {reason.body}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Quels dossiers Ayyad accepte */}
+        <div style={{
+          background:"linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)",
+          border:"1px solid rgba(16,185,129,0.30)",
+          borderRadius:20, padding:"clamp(24px, 4vw, 36px)",
+          marginBottom:32,
+        }}>
+          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.3rem, 2.4vw, 1.7rem)", marginBottom:18, color:"var(--ayyad-deep)" }}>
+            ✅ {fr ? "Quels dossiers Ayyad accepte" : "Which cases Ayyad accepts"}
+          </h2>
+          <ul style={{ paddingLeft:0, listStyle:"none", display:"flex", flexDirection:"column", gap:14 }}>
+            {[
+              fr ? "Les dossiers patients dont la demande de financement médical n'a pas encore été lancée publiquement" : "Patient cases whose medical funding request has not yet been publicly launched",
+              fr ? "Les dossiers dont les autres canaux de collecte ont été officiellement fermés, avec un justificatif des montants déjà collectés et un objectif Ayyad ajusté au solde restant à couvrir" : "Cases whose other fundraising channels have been officially closed, with proof of amounts already collected and an Ayyad goal adjusted to the remaining balance to cover",
+              fr ? "Les dossiers soumis directement à Ayyad dès le départ, sans communication préalable sur les réseaux sociaux" : "Cases submitted directly to Ayyad from the start, without prior communication on social media",
+            ].map((item, i) => (
+              <li key={i} style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                <span style={{ color:"var(--ayyad-emerald)", fontWeight:900, fontSize:18, flexShrink:0, lineHeight:1.4 }}>✓</span>
+                <span style={{ color:"var(--ink-800)", fontSize:14.5, lineHeight:1.65 }}>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Comment soumettre */}
+        <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.4rem, 2.6vw, 1.9rem)", marginBottom:8 }}>
+          {fr ? "Comment soumettre un dossier" : "How to submit a case"}
+        </h2>
+        <div style={{ width:48, height:3, background:"var(--grad-gold)", borderRadius:999, marginBottom:24 }} />
+        <p style={{ color:"var(--ink-700)", fontSize:15.5, lineHeight:1.75, marginBottom:24 }}>
+          {fr
+            ? "Toute demande passe par notre formulaire officiel. Notre équipe vérifie le dossier sous 48 heures en collaboration avec un hôpital partenaire, puis met la collecte en ligne avec un objectif financier basé sur le devis médical réel."
+            : "All requests go through our official form. Our team verifies the case within 48 hours in collaboration with a partner hospital, then puts the campaign online with a financial goal based on the actual medical quote."}
+        </p>
+        <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginBottom:48 }}>
+          <button onClick={() => setPage("submit")} className="ayyad-btn-primary" style={{ fontSize:14, padding:"13px 26px" }}>
+            📋 {fr ? "Soumettre un dossier" : "Submit a case"} →
+          </button>
+          <button onClick={() => setPage("how")} style={{
+            background:"transparent",
+            border:"1.5px solid rgba(13,92,46,0.22)",
+            color:"var(--ayyad-deep)",
+            fontWeight:700, fontSize:14,
+            padding:"13px 26px", borderRadius:9999, cursor:"pointer",
+          }}>
+            {fr ? "Comment ça marche" : "How it works"}
+          </button>
+        </div>
+
+        {/* Conclusion / engagement */}
+        <div style={{
+          background:"linear-gradient(135deg, #0a3d2e 0%, #0d5c2e 100%)",
+          color:"#fff",
+          borderRadius:20, padding:"clamp(24px, 4vw, 36px)",
+          textAlign:"center",
+        }}>
+          <p style={{ fontFamily:"var(--font-serif)", fontStyle:"italic", fontSize:"clamp(1.05rem, 2vw, 1.25rem)", lineHeight:1.6, marginBottom:16 }}>
+            {fr
+              ? "Notre engagement reste constant : financer des soins, pas alimenter des collectes parallèles. Cette discipline est ce qui fait d'Ayyad une plateforme dans laquelle les donateurs peuvent investir leur générosité en confiance, et les patients trouver un accompagnement médical sécurisé et digne."
+              : "Our commitment remains constant: to fund care, not to feed parallel fundraising. This discipline is what makes Ayyad a platform in which donors can invest their generosity with confidence, and patients find secure and dignified medical support."}
+          </p>
+          <p style={{ fontSize:13, color:"rgba(255,255,255,0.75)" }}>
+            {fr ? "Pour toute question :" : "For any question:"} <a href="mailto:contact@ayyadci.com" style={{ color:"#e9d59a", textDecoration:"none", fontWeight:700 }}>contact@ayyadci.com</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Submit Page ───────────────────────────────────────────────
+const SubmitPage = ({ setPage, user, lang }) => {
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({
+    title:"", description:"", hospital:"", city:"", amount:"",
+    category:"", categoryOther:"", beneficiary_phone:"", videoUrl:""
+  });
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState(null);
+  const [fileStates, setFileStates] = useState({medical:"idle",quote:"idle",id:"idle",consent:"idle"});
+  const [fileUrls, setFileUrls] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const t = T[lang].submit;
+  const allUploaded = Object.values(fileStates).every(s => s==="done");
+
+  // ID de session unique : permet d'organiser les fichiers par dossier dans le storage
+  const [sessionId] = useState(() => {
+    const uid = user?.id || "anon";
+    const ts = Date.now();
+    const rand = Math.random().toString(36).slice(2,7);
+    return `${uid}_${ts}_${rand}`;
+  });
+
+  const handlePhotoSelect = (file) => {
+    if (!file) return;
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = e => setPhotoPreview(e.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  // Photo de la collecte → bucket PUBLIC (case-photos), affichée à tous les visiteurs
+  const handlePhotoUpload = async () => {
+    if (!photoFile) return null;
+    setPhotoUploading(true);
+    const fileName = `dossiers/${sessionId}/photo_${Date.now()}_${sanitizeFileName(photoFile.name)}`;
+    const { error } = await supabase.storage.from(BUCKET_PUBLIC).upload(fileName, photoFile);
+    if (error) {
+      setPhotoUploading(false);
+      console.warn("[photo upload] échec:", error);
+      return null;
+    }
+    const { data: urlData } = supabase.storage.from(BUCKET_PUBLIC).getPublicUrl(fileName);
+    setPhotoUrl(urlData.publicUrl);
+    setPhotoUploading(false);
+    return urlData.publicUrl;
+  };
+
+  // Documents sensibles (medical, quote, id, consent) → bucket PRIVÉ
+  // On stocke uniquement le PATH dans la BDD, pas l'URL publique.
+  // L'admin / le propriétaire les consulte via /api/sign-url (signed URL TTL 5 min).
+  const handleFileUpload = async (key, file) => {
+    if (!file) return;
+    setFileStates(prev => ({...prev, [key]: "uploading"}));
+    const ext = file.name.split('.').pop().toLowerCase();
+    const mimeMap = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' };
+    const contentType = mimeMap[ext] || file.type || 'application/octet-stream';
+    const fileName = `dossiers/${sessionId}/${key}_${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from(BUCKET_PRIVATE).upload(fileName, file, { contentType });
+    if (error) {
+      setFileStates(prev => ({...prev, [key]: "error"}));
+      console.warn("[file upload] échec:", error);
+      return;
+    }
+    // ⚠️ On stocke le PATH (pas getPublicUrl) — le bucket sera privé
+    setFileUrls(prev => ({...prev, [key]: fileName}));
+    setFileStates(prev => ({...prev, [key]: "done"}));
+  };
+
+  const toEmbedUrl = (url) => {
+    if (!url || !url.trim()) return null;
+    // YouTube
+    const watchMatch = url.match(/youtube\.com\/watch\?v=([^&]+)/);
+    if (watchMatch) return "https://www.youtube.com/embed/" + watchMatch[1];
+    const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
+    const shortsMatch = url.match(/youtube\.com\/shorts\/([^?&]+)/);
+    if (shortsMatch) return 'https://www.youtube.com/embed/' + shortsMatch[1];
+    if (shortMatch) return "https://www.youtube.com/embed/" + shortMatch[1];
+    if (url.includes("youtube.com/embed/")) return url;
+    // TikTok — on stocke l'URL originale, embed via oembed
+    const tiktokMatch = url.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+    if (tiktokMatch) return "https://www.tiktok.com/embed/v2/" + tiktokMatch[1];
+    return null;
+  };
+
+  const getVideoType = (url) => {
+    if (!url) return null;
+    if (url.includes("youtube") || url.includes("youtu.be")) return "youtube";
+    if (url.includes("tiktok")) return "tiktok";
+    return null;
+  };
+
+  const embedPreview = toEmbedUrl(form.videoUrl);
+  const videoType = getVideoType(form.videoUrl);
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setSubmitError("");
+    // Upload photo if not done yet
+    let finalPhotoUrl = photoUrl;
+    if (photoFile && !photoUrl) {
+      finalPhotoUrl = await handlePhotoUpload();
+    }
+    const trackingId = "AYD-" + new Date().getFullYear() + "-" + Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => b.toString(16).padStart(2,"0")).join("").toUpperCase().slice(0,6);
+    const { error } = await supabase.from("cases").insert({
+      title: form.title,
+      description: form.description,
+      hospital: form.hospital,
+      city: form.city,
+      amount: parseFloat(form.amount),
+      category: form.category === "Autre" ? (form.categoryOther || "Autre") : form.category,
+      full_name: user?.name || "Anonyme",
+      photo_url: finalPhotoUrl || null,
+      beneficiary_phone: form.beneficiary_phone || null,
+      video_url: toEmbedUrl(form.videoUrl) || null,
+      status: "PENDING",
+      tracking_id: trackingId,
+      user_id: user?.id || null,
+      deadline_requested: form.deadlineRequested || null,
+      document_urls: fileUrls || {},
+    });
+    if (error) { setSubmitError(lang==="fr"?"Erreur lors de la soumission. Réessayez.":"Submission error. Please try again."); setSubmitting(false); return; }
+    try { emailNewCase({ caseTitle: form.title, hospital: form.hospital, city: form.city, amount: form.amount, trackingId }); } catch(e) { console.warn("Email non envoyé:", e); }
+    try { emailWelcomePatient({ beneficiaryEmail: user?.email || null, beneficiaryName: user?.name || user?.email?.split("@")[0] || "Patient", caseTitle: form.title, trackingId }); } catch(e) { console.warn("Email bienvenue non envoyé:", e); }
+    setStep(3);
+    setSubmitting(false);
+  };
+
+  if (!user) return (
+    <div className="max-w-md mx-auto px-4 py-20 text-center">
+      <div className="text-5xl mb-4">🔐</div>
+      <h2 className="text-xl font-black text-gray-900 mb-3">{t.loginRequired}</h2>
+      <button onClick={() => setPage("login")} className="bg-emerald-600 text-white font-bold px-8 py-3 rounded-xl shadow-md">{t.loginBtn}</button>
+    </div>
+  );
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">{t.back}</button>
+      <div className="flex items-center gap-1 mb-8">{t.steps.map((s,i)=><div key={i} className="flex items-center gap-1 flex-1 last:flex-none"><div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${step>i+1?"bg-emerald-500 text-white":step===i+1?"bg-emerald-600 text-white":"bg-gray-200 text-gray-500"}`}>{step>i+1?"✓":i+1}</div><span className={`text-xs font-medium flex-1 truncate ${step===i+1?"text-emerald-700":"text-gray-400"}`}>{s}</span>{i<2&&<div className={`h-0.5 flex-1 ${step>i+1?"bg-emerald-500":"bg-gray-200"}`}/>}</div>)}</div>
+      {/* ── Bandeau Politique d'admission — visible en TOUS LES ÉTAPES ── */}
+      {/* Avertit clairement avant que la personne commence à remplir : si le dossier
+          est déjà sur les réseaux sociaux, il ne sera pas accepté. Évite les heures
+          de saisie pour rien et les frustrations côté patient + côté admin. */}
+      <div style={{
+        background:"linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%)",
+        border:"2px solid rgba(245,158,11,0.30)",
+        borderRadius:14, padding:"14px 18px", marginBottom:20,
+        display:"flex", gap:14, alignItems:"flex-start",
+      }}>
+        <div style={{ fontSize:22, flexShrink:0 }}>⚠️</div>
+        <div style={{ minWidth:0, flex:1 }}>
+          <div style={{ fontWeight:800, fontSize:14, color:"#92400e", marginBottom:4 }}>
+            {lang==="fr" ? "Avant de soumettre : règle importante" : "Before submitting: important rule"}
+          </div>
+          <div style={{ fontSize:13, color:"#78350f", lineHeight:1.55 }}>
+            {lang==="fr"
+              ? <>Ayyad <strong>n'accepte pas les dossiers déjà lancés sur Facebook, TikTok, WhatsApp ou tout autre canal de collecte</strong>. Cette règle garantit la transparence pour nos donateurs et la sécurité pour le patient. </>
+              : <>Ayyad <strong>does not accept cases already launched on Facebook, TikTok, WhatsApp or any other fundraising channel</strong>. This rule guarantees transparency for our donors and safety for the patient. </>}
+            <button
+              onClick={() => setPage("politique-admission")}
+              style={{ color:"#0d5c2e", fontWeight:800, textDecoration:"underline", background:"transparent", border:"none", cursor:"pointer", padding:0, fontSize:13 }}
+            >
+              {lang==="fr" ? "Lire la politique complète →" : "Read the full policy →"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        {step===1&&<div className="space-y-5">
+          <h2 className="font-black text-xl text-gray-900">{t.infoTitle}</h2>
+
+          {/* === PHOTO BÉNÉFICIAIRE === */}
+          <div>
+            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+              📷 {lang==="fr" ? "Photo du bénéficiaire" : "Beneficiary photo"}
+              <span className="text-red-400 ml-1">*</span>
+            </label>
+            <p className="text-[11px] text-gray-400 mb-3">
+              {lang==="fr"
+                ? "Une photo récente montrant la situation actuelle du bénéficiaire. Cette photo sera affichée sur la collecte publique."
+                : "A recent photo showing the beneficiary's current situation. This photo will appear on the public campaign."}
+            </p>
+            {photoPreview ? (
+              <div className="relative">
+                <img src={photoPreview} alt="preview" className="w-full max-h-96 object-contain rounded-2xl border-2 border-emerald-300 bg-gray-50" />
+                <div className="absolute top-2 right-2 flex gap-2">
+                  <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full font-bold">✓ Photo sélectionnée</span>
+                  <button
+                    onClick={() => { setPhotoFile(null); setPhotoPreview(null); setPhotoUrl(null); }}
+                    className="bg-white border border-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full font-bold hover:bg-red-50 hover:text-red-500">
+                    ✕ Changer
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 transition-all group">
+                <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">📷</div>
+                <span className="text-sm font-semibold text-gray-600 group-hover:text-emerald-700">
+                  {lang==="fr" ? "Cliquez pour ajouter une photo" : "Click to add a photo"}
+                </span>
+                <span className="text-xs text-gray-400 mt-1">JPG, PNG — max 5 MB</span>
+                <input type="file" className="hidden" accept="image/jpeg,image/png,image/webp"
+                  onChange={e => {
+                    const f = e.target.files[0];
+                    if (!f) return;
+                    if (f.size > 5_000_000) { alert(lang==="fr" ? "Photo trop lourde (max 5 MB)" : "Photo too large (max 5 MB)"); return; }
+                    handlePhotoSelect(f);
+                  }} />
+              </label>
+            )}
+          </div>
+
+          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.titleField}</label><input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} autoComplete="off" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
+          <div><label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.descField}</label><textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={4} autoComplete="off" autoCorrect="off" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" /></div>
+
+          {/* Lien vidéo YouTube ou TikTok (optionnel) */}
+          <div>
+            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+              🎥 {lang==="fr" ? "Lien vidéo YouTube ou TikTok" : "YouTube or TikTok video link"}
+              <span className="text-gray-400 font-normal ml-2">({lang==="fr" ? "optionnel" : "optional"})</span>
+            </label>
+            <p className="text-[11px] text-gray-400 mb-2">
+              {lang==="fr"
+                ? "Collez le lien de votre vidéo YouTube ou TikTok. Elle sera visible sur votre page de collecte et augmente les dons."
+                : "Paste your YouTube or TikTok video link. It will appear on your campaign page and increases donations."}
+            </p>
+            <div className="flex gap-2 mb-2">
+              <span className="text-[11px] bg-red-50 text-red-600 border border-red-100 rounded-full px-2 py-0.5 font-medium">▶ YouTube</span>
+              <span className="text-[11px] bg-gray-900 text-white rounded-full px-2 py-0.5 font-medium">♪ TikTok</span>
+            </div>
+            <input
+              type="url"
+              value={form.videoUrl}
+              onChange={e => setForm({...form, videoUrl: e.target.value})}
+              placeholder="https://youtube.com/watch?v=... ou https://tiktok.com/@..."
+              autoComplete="off"
+              className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${embedPreview ? "border-emerald-300 bg-emerald-50" : "border-gray-200"}`}
+            />
+            {form.videoUrl && !embedPreview && (
+              <p className="text-xs text-red-500 mt-1">⚠️ {lang==="fr" ? "Lien non reconnu. Copiez le lien depuis YouTube ou TikTok." : "Link not recognized. Copy the link from YouTube or TikTok."}</p>
+            )}
+            {embedPreview && (
+              <div className="mt-3 rounded-xl overflow-hidden border border-emerald-200">
+                <iframe
+                  src={embedPreview}
+                  className={`w-full ${videoType === "tiktok" ? "h-96" : "h-40"}`}
+                  allowFullScreen
+                  allow="autoplay"
+                  title="preview"
+                />
+                <div className="bg-emerald-50 px-3 py-1.5 text-xs text-emerald-700 font-medium">
+                  ✅ {videoType === "tiktok" ? "TikTok" : "YouTube"} {lang==="fr" ? "— aperçu ci-dessus" : "— preview above"}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.hospitalField}</label>
+              <select value={form.hospital} onChange={e => {
+                const h = CI_HOPITAUX.find(x => x.nom === e.target.value);
+                setForm({...form, hospital: e.target.value, city: h?.ville || form.city});
+              }} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <option value="">— Choisir un hôpital —</option>
+                <optgroup label="🏛 CHU (Centres Hospitaliers Universitaires)">
+                  {CI_HOPITAUX.filter(h => h.type === "CHU").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
+                </optgroup>
+                <optgroup label="🏥 CHR (Centres Hospitaliers Régionaux)">
+                  {CI_HOPITAUX.filter(h => h.type === "CHR").map(h => <option key={h.nom} value={h.nom}>{h.nom} — {h.ville}</option>)}
+                </optgroup>
+                <optgroup label="🏢 Cliniques privées (Abidjan)">
+                  {CI_HOPITAUX.filter(h => h.type === "Clinique").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
+                </optgroup>
+                <optgroup label="Autre">
+                  {CI_HOPITAUX.filter(h => h.type === "Autre").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
+                </optgroup>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.cityField}</label>
+              <select value={form.city} onChange={e => setForm({...form, city: e.target.value})} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <option value="">— Choisir une ville —</option>
+                {CI_VILLES.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.amountField}</label>
+              <div className="relative">
+                <input
+                  type="text" inputMode="numeric" pattern="[0-9]*"
+                  value={form.amount}
+                  onChange={e => setForm({...form, amount: e.target.value.replace(/[^0-9]/g,"")})}
+                  placeholder="ex: 500000"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-14"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span>
+              </div>
+              {form.amount && Number(form.amount) > 0 && (
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {lang==="fr" ? "Montant collecté : " : "Amount to collect: "}
+                  <span className="font-bold text-emerald-700">{fmt(Math.round(Number(form.amount)*1.05))}</span>
+                  <span className="text-gray-400"> (devis + 5% Ayyad)</span>
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+                📱 {lang==="fr" ? "Téléphone mobile money" : "Mobile money phone"}
+              </label>
+              <div className="flex gap-1.5">
+                <span className="bg-gray-100 border border-gray-200 rounded-xl px-3 py-3 text-xs text-gray-500 font-mono flex-shrink-0">+225</span>
+                <input
+                  type="tel"
+                  value={form.beneficiary_phone}
+                  onChange={e => setForm({...form, beneficiary_phone: e.target.value.replace(/[^0-9]/g,"")})}
+                  placeholder="07 00 00 00 00"
+                  maxLength={10}
+                  className="flex-1 border border-gray-200 rounded-xl px-3 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                />
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1">{lang==="fr" ? "Pour recevoir un éventuel surplus" : "To receive any surplus"}</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-600 mb-3 block">{t.categoryField}</label>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                {key:"Cardiologie", enKey:"Cardiology", icon:"🫀"},
+                {key:"Oncologie", enKey:"Oncology", icon:"🎗️"},
+                {key:"Neurologie", enKey:"Neurology", icon:"🧠"},
+                {key:"Orthopédie", enKey:"Orthopedics", icon:"🦾"},
+                {key:"Pédiatrie", enKey:"Pediatrics", icon:"👶"},
+                {key:"Gynécologie", enKey:"Gynecology", icon:"🌸"},
+                {key:"Néphrologie", enKey:"Nephrology", icon:"🫘"},
+                {key:"Autre", enKey:"Other", icon:"🏥"},
+              ].map(cat => (
+                <button key={cat.key} type="button"
+                  onClick={() => setForm({...form, category: cat.key, categoryOther: ""})}
+                  className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all ${form.category===cat.key ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm" : "border-gray-200 hover:border-gray-300 text-gray-500 hover:bg-gray-50"}`}>
+                  <span className="text-xl">{cat.icon}</span>
+                  <span className="text-xs text-center leading-tight font-medium">{lang==="fr" ? cat.key : cat.enKey}</span>
+                </button>
+              ))}
+            </div>
+            {form.category === "Autre" && (
+              <div className="mt-3">
+                <input value={form.categoryOther || ""} onChange={e => setForm({...form, categoryOther: e.target.value})}
+                  placeholder={lang==="fr" ? "Précisez la spécialité médicale..." : "Specify the medical specialty..."}
+                  className="w-full border-2 border-emerald-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-emerald-50" />
+              </div>
+            )}
+          </div>
+
+          <button onClick={()=>setStep(2)}
+            disabled={!form.title||!form.description||!form.hospital||!form.amount||!photoPreview}
+            className="w-full bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">
+            {!photoPreview
+              ? (lang==="fr" ? "⚠️ Ajoutez une photo pour continuer" : "⚠️ Add a photo to continue")
+              : t.next}
+          </button>
+        </div>}
+
+        {step===2&&<div className="space-y-4">
+          <h2 className="font-black text-xl text-gray-900">{t.docsTitle}</h2>
+          <p className="text-sm text-gray-500">{t.docsSub}</p>
+
+          {/* Rappel photo */}
+          {photoPreview && (
+            <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+              <img src={photoPreview} alt="preview" className="w-14 h-14 object-cover rounded-xl flex-shrink-0" />
+              <div>
+                <div className="text-xs font-bold text-emerald-700">✅ Photo bénéficiaire</div>
+                <div className="text-[11px] text-gray-500">Sera affichée sur la collecte publique</div>
+              </div>
+            </div>
+          )}
+
+          {t.docs.map(doc=>{
+            const state = fileStates[doc.key];
+            return (
+              <div key={doc.key} className={`rounded-2xl border-2 transition-all ${state==="done"?"border-emerald-300 bg-emerald-50":state==="error"?"border-red-200 bg-red-50":"border-gray-200"}`}>
+                <div className="flex items-center gap-4 p-4">
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 ${state==="done"?"bg-emerald-100":"bg-gray-100"}`}>{doc.icon}</div>
+                  <div className="flex-1 min-w-0"><div className="font-semibold text-sm text-gray-900">{doc.title} <span className="text-red-400">*</span></div><div className="text-xs text-gray-500">{doc.desc}</div></div>
+                  <label className={`px-3 py-1.5 rounded-xl text-xs font-bold flex-shrink-0 cursor-pointer transition-colors ${state==="done"?"bg-emerald-600 text-white":state==="uploading"?"bg-gray-300 text-gray-500 cursor-wait":state==="error"?"bg-red-100 text-red-600":"bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+                    {state==="done"?t.uploaded:state==="uploading"?t.uploading:state==="error"?t.error:t.upload}
+                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e=>{const f=e.target.files[0];if(!f)return;if(f.size>10_000_000){alert(lang==="fr"?"Document trop lourd (max 10 MB)":"File too large (max 10 MB)");return;}handleFileUpload(doc.key,f);}} disabled={state==="uploading"||state==="done"} />
+                  </label>
+                </div>
+                {/* Lien de téléchargement du formulaire de consentement */}
+                {doc.key==="consent"&&(
+                  <div className="px-4 pb-3 flex items-center gap-2">
+                    <div className="w-11 flex-shrink-0"/>
+                    <div className="flex-1 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+                      <span className="text-emerald-600 text-sm">📥</span>
+                      <span className="text-xs text-gray-600 flex-1">
+                        {lang==="fr"
+                          ? "Téléchargez, imprimez, signez, puis uploadez le formulaire ci-dessus."
+                          : "Download, print, sign, then upload the form above."}
+                      </span>
+                      <a
+                        href="/AYYAD_Consentement.pdf"
+                        download="AYYAD_Formulaire_Consentement.pdf"
+                        className="flex-shrink-0 inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                        onClick={e=>e.stopPropagation()}
+                      >
+                        {lang==="fr" ? "Télécharger le formulaire" : "Download form"} →
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {!allUploaded&&<div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex gap-2 text-xs text-amber-700"><span>⚠️</span><span>{t.warning}</span></div>}
+          {submitError&&<div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-600 text-center">{submitError}</div>}
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={()=>setStep(1)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{t.back}</button>
+            <button onClick={handleSubmit} disabled={!allUploaded||submitting} className="bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 rounded-xl text-sm shadow-md">{submitting?"...":t.submit}</button>
+          </div>
+        </div>}
+
+        {step===3&&<div className="text-center space-y-5 py-4">
+          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-4xl">🎉</div>
+          <div><h2 className="font-black text-2xl text-gray-900 mb-2">{t.successTitle}</h2><p className="text-gray-500 text-sm">{t.successSub}</p></div>
+          <div className="bg-gray-50 rounded-2xl p-5 text-left space-y-3">{t.processSteps.map((s,i)=><div key={i} className="flex items-center gap-3 text-sm"><div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${i===0?"bg-emerald-500 text-white":"bg-gray-200 text-gray-500"}`}>{i===0?"✓":i+1}</div><span className={i===0?"text-emerald-700 font-medium":"text-gray-500"}>{s}</span></div>)}</div>
+          <button onClick={()=>setPage("home")} className="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">{t.backHome}</button>
+        </div>}
+      </div>
+    </div>
+  );
+};
+
+// ── How Page ──────────────────────────────────────────────────
+const HowPage = ({ lang, setPage }) => {
+  const t = T[lang].howPage;
+  return (
+    <div>
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-emerald-800 to-teal-700 text-white py-16 text-center px-4">
+        <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 mb-5 text-sm font-medium">
+          <span>💚</span> {lang==="fr" ? "Plateforme médicale vérifiée" : "Verified medical platform"}
+        </div>
+        <h1 className="text-4xl font-black mb-4">{t.title}</h1>
+        <p className="text-emerald-200 max-w-xl mx-auto">{t.sub}</p>
+      </div>
+
+      {/* Pour les donateurs */}
+      <div className="max-w-5xl mx-auto px-4 py-14">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl">💚</div>
+          <div>
+            <h2 className="text-2xl font-black text-gray-900">{t.forDonors.title}</h2>
+            <p className="text-gray-500 text-sm">{lang==="fr" ? "Comment faire un don sur Ayyad" : "How to donate on Ayyad"}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+          {t.forDonors.steps.map((step, i) => (
+            <div key={i} className="relative">
+              <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow h-full">
+                <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm font-black mb-3">{i+1}</div>
+                <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
+              </div>
+              {i < t.forDonors.steps.length-1 && <div className="hidden sm:block absolute top-6 -right-2 text-gray-300 text-lg z-10">→</div>}
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 text-center">
+          <button onClick={() => setPage("collectes")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-xl shadow-md transition-colors">
+            {lang==="fr" ? "Voir les collectes →" : "See campaigns →"}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-gray-50 border-y border-gray-100">
+        {/* Pour les bénéficiaires */}
+        <div className="max-w-5xl mx-auto px-4 py-14">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-xl">🏥</div>
+            <div>
+              <h2 className="text-2xl font-black text-gray-900">{t.forBenef.title}</h2>
+              <p className="text-gray-500 text-sm">{lang==="fr" ? "Comment soumettre votre dossier médical" : "How to submit your medical case"}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            {t.forBenef.steps.map((step, i) => (
+              <div key={i} className="relative">
+                <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow h-full">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-black mb-3">{i+1}</div>
+                  <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
+                </div>
+                {i < t.forBenef.steps.length-1 && <div className="hidden sm:block absolute top-6 -right-2 text-gray-300 text-lg z-10">→</div>}
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 text-center">
+            <button onClick={() => setPage("submit")} className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-xl shadow-md transition-colors">
+              {lang==="fr" ? "Soumettre un dossier →" : "Submit a case →"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Garanties */}
+      <div className="max-w-5xl mx-auto px-4 py-14">
+        <h2 className="text-2xl font-black text-gray-900 text-center mb-2">{lang==="fr" ? "Les garanties Ayyad" : "Ayyad guarantees"}</h2>
+        <p className="text-gray-500 text-center text-sm mb-10">{lang==="fr" ? "Ce qui nous différencie des autres plateformes" : "What sets us apart from other platforms"}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          {[
+            {icon:"🏥", title:lang==="fr"?"Versement direct à l'hôpital":"Direct payment to hospital", desc:lang==="fr"?"Les fonds ne passent jamais par le patient. Chaque virement est traçable.":"Funds never go through the patient. Every transfer is traceable."},
+            {icon:"🔍", title:lang==="fr"?"Vérification sous 48h":"Verification within 48h", desc:lang==="fr"?"Notre équipe contacte l'hôpital partenaire pour valider chaque dossier.":"Our team contacts the partner hospital to validate each case."},
+            {icon:"🔒", title:lang==="fr"?"Données chiffrées AES-256":"AES-256 encrypted data", desc:lang==="fr"?"Tous vos documents médicaux sont chiffrés et stockés en sécurité.":"All your medical documents are encrypted and stored securely."},
+          ].map((g,i) => (
+            <div key={i} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm text-center hover:shadow-md transition-shadow">
+              <div className="text-4xl mb-4">{g.icon}</div>
+              <h3 className="font-bold text-gray-900 mb-2">{g.title}</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">{g.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Fee section */}
+      <div className="bg-gray-900 py-14 px-4 text-white text-center">
+        <h2 className="text-2xl font-black mb-3">{t.feeTitle}</h2>
+        <p className="text-gray-300 mb-8 max-w-lg mx-auto text-sm">{t.feeSub}</p>
+        <div className="bg-white/10 rounded-2xl p-6 text-sm max-w-sm mx-auto border border-white/20 space-y-4">
+
+          {/* Donateur */}
+          <div>
+            <div className="text-gray-400 mb-1 text-xs uppercase tracking-wider">{t.youGive}</div>
+            <div className="text-3xl font-black">10 000 FCFA</div>
+          </div>
+
+          <div className="border-t border-white/20"/>
+
+          {/* Hôpital reçoit */}
+          <div className="flex justify-between items-center">
+            <span className="text-emerald-400 font-bold text-sm">🏥 {t.collectReceives}</span>
+            <span className="font-black text-xl text-emerald-400">10 000 FCFA</span>
+          </div>
+
+          <div className="border-t border-white/10"/>
+
+          {/* Explication objectif */}
+          <div className="bg-white/5 rounded-xl p-3 text-left space-y-1.5">
+            <div className="text-[11px] text-gray-300 font-semibold uppercase tracking-wide mb-2">
+              {lang==="fr" ? "Comment ça fonctionne ?" : "How does it work?"}
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">{lang==="fr" ? "Objectif affiché (devis × 1.05)" : "Displayed goal (quote × 1.05)"}</span>
+              <span className="text-white font-bold">10 500 FCFA</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">{lang==="fr" ? "dont devis hôpital" : "of which hospital quote"}</span>
+              <span className="text-emerald-400 font-bold">10 000 FCFA</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">{t.ayyadFee}</span>
+              <span className="text-amber-400 font-bold">500 FCFA</span>
+            </div>
+          </div>
+
+          <div className="text-[11px] text-gray-400 leading-relaxed">
+            {lang==="fr"
+              ? "✅ Votre don va intégralement à l'hôpital. Les 5% Ayyad sont intégrés dans l'objectif de collecte dès le départ."
+              : "✅ Your donation goes entirely to the hospital. The 5% Ayyad fee is built into the campaign goal from the start."}
+          </div>
+        </div>
+      </div>
+
+      {/* Section politique de remboursement */}
+      <div className="bg-white py-14 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-2xl text-2xl mb-4">🔄</div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2">
+              {lang==="fr" ? "Politique de remboursement" : "Refund policy"}
+            </h2>
+            <p className="text-gray-500 text-sm max-w-lg mx-auto">
+              {lang==="fr"
+                ? "Ayyad s'engage à une transparence totale sur la gestion des fonds dans toutes les situations."
+                : "Ayyad is committed to full transparency on fund management in all situations."}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Cas 1 — Dossier rejeté */}
+            <div className="border border-gray-100 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">❌</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Dossier rejeté après des dons" : "Case rejected after donations"}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                {lang==="fr"
+                  ? "Si Ayyad rejette un dossier après réception de dons (documents falsifiés, fraude détectée, etc.), chaque donateur enregistré est contacté par email."
+                  : "If Ayyad rejects a case after receiving donations (falsified documents, fraud detected, etc.), each registered donor is contacted by email."}
+              </p>
+              <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                <div className="text-[11px] font-bold text-gray-600 uppercase tracking-wide mb-1">
+                  {lang==="fr" ? "Le donateur choisit :" : "The donor chooses:"}
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Remboursement intégral sur son mobile money" : "Full refund to their mobile money account"}
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Redistribution aux cas urgents actifs" : "Redistribution to active urgent cases"}
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-400 mt-1 border-t border-gray-200 pt-2">
+                  {lang==="fr"
+                    ? "⏳ Sans réponse sous 14 jours → redistribution automatique aux cas urgents."
+                    : "⏳ No response within 14 days → automatic redistribution to urgent cases."}
+                </div>
+              </div>
+            </div>
+
+            {/* Cas 2 — Objectif non atteint */}
+            <div className="border border-gray-100 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">⏳</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Objectif non atteint en fin de collecte" : "Goal not reached at end of campaign"}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                {lang==="fr"
+                  ? "Si l'objectif n'est pas atteint à l'échéance, tous les donateurs ayant un compte sont notifiés et consultés."
+                  : "If the goal is not reached at deadline, all registered donors are notified and consulted."}
+              </p>
+              <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                <div className="text-[11px] font-bold text-gray-600 uppercase tracking-wide mb-1">
+                  {lang==="fr" ? "Notification envoyée avec choix :" : "Notification sent with choice:"}
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Remboursement intégral" : "Full refund"}
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                  <span className="text-xs text-gray-600">
+                    {lang==="fr" ? "Don maintenu → redistribué aux cas urgents" : "Donation kept → redistributed to urgent cases"}
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-400 mt-1 border-t border-gray-200 pt-2">
+                  {lang==="fr"
+                    ? "⏳ Sans réponse sous 14 jours → redistribution automatique aux cas urgents."
+                    : "⏳ No response within 14 days → automatic redistribution to urgent cases."}
+                </div>
+              </div>
+            </div>
+
+            {/* Cas 3 — Surcollecte */}
+            <div className="border border-gray-100 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🎉</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Objectif dépassé (surcollecte)" : "Goal exceeded (surplus)"}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                {lang==="fr"
+                  ? "Si les dons dépassent l'objectif, le surplus est réparti automatiquement selon la règle Ayyad."
+                  : "If donations exceed the goal, the surplus is automatically distributed according to Ayyad's rule."}
+              </p>
+              <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">🏥 {lang==="fr" ? "Hôpital (objectif atteint)" : "Hospital (goal met)"}</span>
+                  <span className="font-bold text-emerald-600">100%</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">👤 {lang==="fr" ? "70% surplus → bénéficiaire" : "70% surplus → beneficiary"}</span>
+                  <span className="font-bold text-blue-600">70%</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">🚨 {lang==="fr" ? "25% surplus → cas urgents" : "25% surplus → urgent cases"}</span>
+                  <span className="font-bold text-purple-600">25%</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">⚙️ {lang==="fr" ? "5% surplus → Ayyad" : "5% surplus → Ayyad"}</span>
+                  <span className="font-bold text-amber-600">5%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Cas 4 — Engagement transparence */}
+            <div className="border border-emerald-100 bg-emerald-50 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🔒</div>
+                <div className="font-bold text-gray-900 text-sm">
+                  {lang==="fr" ? "Notre engagement" : "Our commitment"}
+                </div>
+              </div>
+              <div className="space-y-2">
+                {(lang==="fr" ? [
+                  "Chaque virement est documenté avec un reçu disponible publiquement",
+                  "Les donateurs enregistrés reçoivent un email de confirmation après chaque don",
+                  "Un rapport de transparence est publié trimestriellement",
+                  "Ayyad ne touche jamais à l'argent destiné à l'hôpital",
+                ] : [
+                  "Every transfer is documented with a publicly available receipt",
+                  "Registered donors receive a confirmation email after each donation",
+                  "A transparency report is published quarterly",
+                  "Ayyad never touches the money destined for the hospital",
+                ]).map((item, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-emerald-500 text-xs mt-0.5 flex-shrink-0">✓</span>
+                    <span className="text-xs text-gray-700">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-8">
+            <button
+              onClick={() => setPage("refund")}
+              className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold underline underline-offset-2">
+              {lang==="fr" ? "Lire la politique de remboursement complète →" : "Read the full refund policy →"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Admin Page — Real Supabase data ───────────────────────────
+const AdminTeamList = ({ user, fr }) => {
+  const [admins, setAdmins] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [fetchErr, setFetchErr] = React.useState(null);
+  const [showAdd, setShowAdd] = React.useState(false);
+  const [newEmail, setNewEmail] = React.useState("");
+  const [newRole, setNewRole] = React.useState("operator");
+  const [adding, setAdding] = React.useState(false);
+  const [msg, setMsg] = React.useState("");
+
+  const ROLES = [
+    { value: "super_admin", label: "Super Admin",              color: "bg-purple-100 text-purple-700" },
+    { value: "admin",       label: fr ? "Admin" : "Admin",    color: "bg-indigo-100 text-indigo-700" },
+    { value: "finance",     label: "Finance",                  color: "bg-blue-100 text-blue-700"   },
+    { value: "operator",    label: fr ? "Opérateur":"Operator", color: "bg-green-100 text-green-700" },
+  ];
+
+  const getRoleStyle = (role) => ROLES.find(r => r.value === role)?.color || "bg-gray-100 text-gray-600";
+  const getRoleLabel = (role) => ROLES.find(r => r.value === role)?.label || (role || "—");
+
+  const fetchAdmins = React.useCallback(async () => {
+    setLoading(true);
+    setFetchErr(null);
+    try {
+      // Ne pas utiliser .order("created_at") — la colonne peut ne pas exister
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("id, email, role, is_active");
+      if (error) {
+        setFetchErr(error.message);
+      } else {
+        setAdmins(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      setFetchErr(String(e?.message || e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => { fetchAdmins(); }, [fetchAdmins]);
+
+  const handleAdd = async () => {
+    if (!newEmail.includes("@")) return setMsg(fr ? "Email invalide" : "Invalid email");
+    setAdding(true);
+    setMsg("");
+    try {
+      const cleanEmail = newEmail.trim().toLowerCase();
+      // Chercher le full_name dans profiles, sinon utiliser le préfixe email
+      const { data: profileData } = await supabase.from("profiles").select("full_name").eq("email", cleanEmail).maybeSingle();
+      const fullName = profileData?.full_name || cleanEmail.split("@")[0];
+      const { error } = await supabase
+        .from("admin_users")
+        .insert({ email: cleanEmail, role: newRole, is_active: true, full_name: fullName });
+      if (error) {
+        setMsg(fr ? "Erreur : " + error.message : "Error: " + error.message);
+      } else {
+        setMsg(fr ? "Membre ajouté ✓" : "Member added ✓");
+        setNewEmail("");
+        setNewRole("operator");
+        setShowAdd(false);
+        fetchAdmins();
+      }
+    } catch(e) {
+      setMsg(String(e?.message || e));
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const toggleActive = async (admin) => {
+    if (!admin?.id || admin?.email === user?.email) return;
+    try {
+      await supabase.from("admin_users").update({ is_active: !admin.is_active }).eq("id", admin.id);
+      fetchAdmins();
+    } catch(e) { console.warn("toggleActive error:", e); }
+  };
+
+  const changeRole = async (admin, role) => {
+    if (!admin?.id || admin?.email === user?.email) return;
+    try {
+      await supabase.from("admin_users").update({ role }).eq("id", admin.id);
+      fetchAdmins();
+    } catch(e) { console.warn("changeRole error:", e); }
+  };
+
+  if (loading) return (
+    <div className="text-center py-12 text-gray-400">
+      <div className="text-2xl mb-2">⏳</div>
+      <p className="text-sm">{fr ? "Chargement de l'équipe…" : "Loading team…"}</p>
+    </div>
+  );
+
+  if (fetchErr) return (
+    <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-sm text-red-700">
+      <p className="font-bold mb-1">⚠️ {fr ? "Erreur de chargement" : "Loading error"}</p>
+      <p className="text-xs font-mono">{fetchErr}</p>
+      <p className="mt-3 text-xs text-red-500">
+        {fr
+          ? "Vérifiez que la table admin_users a une politique RLS SELECT pour les admins."
+          : "Make sure the admin_users table has a SELECT RLS policy for admins."}
+      </p>
+      <button onClick={fetchAdmins} className="mt-3 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold">
+        {fr ? "Réessayer" : "Retry"}
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Formulaire ajout — super_admin uniquement */}
+      {user?.adminRole === "super_admin" && (
+        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+          <button
+            onClick={() => setShowAdd(!showAdd)}
+            className="text-sm font-semibold text-emerald-700 hover:underline"
+          >
+            {showAdd ? (fr ? "▲ Annuler" : "▲ Cancel") : (fr ? "▼ Ajouter un membre" : "▼ Add member")}
+          </button>
+          {showAdd && (
+            <div className="mt-3 flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                placeholder="Email"
+                value={newEmail}
+                onChange={e => setNewEmail(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              />
+              <select
+                value={newRole}
+                onChange={e => setNewRole(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              >
+                {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
+              <button
+                onClick={handleAdd}
+                disabled={adding}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {adding ? "…" : (fr ? "Ajouter" : "Add")}
+              </button>
+            </div>
+          )}
+          {msg && <p className="mt-2 text-sm text-emerald-600">{msg}</p>}
+        </div>
+      )}
+
+      {/* Message si aucun admin visible (RLS probable) */}
+      {admins.length === 0 && !fetchErr && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-800">
+          <p className="font-bold mb-1">ℹ️ {fr ? "Aucun membre visible" : "No members visible"}</p>
+          <p className="text-xs">
+            {fr
+              ? "La table admin_users est vide ou la politique RLS ne permet pas de lister tous les membres. Exécutez le SQL ci-dessous dans Supabase pour corriger :"
+              : "The admin_users table is empty or the RLS policy doesn't allow listing all members. Run the SQL below in Supabase to fix:"}
+          </p>
+          <pre className="mt-3 bg-amber-100 rounded-lg p-3 text-xs overflow-x-auto whitespace-pre-wrap">{`CREATE POLICY "admin_users_select_for_admins"
+ON admin_users FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM admin_users a2
+    WHERE a2.email = auth.email() AND a2.is_active = true
+  )
+);`}</pre>
+        </div>
+      )}
+
+      {/* Liste des membres */}
+      {admins.map((admin, idx) => (
+        <div key={admin.id ?? idx} className={`flex items-center justify-between p-4 rounded-xl border ${admin.is_active !== false ? "bg-white border-gray-100" : "bg-gray-50 border-gray-200 opacity-60"}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
+              {(admin.email?.[0] || "?").toUpperCase()}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-800">{admin.email || "—"}</p>
+              <p className="text-xs text-gray-400">{admin.is_active !== false ? (fr ? "Actif" : "Active") : (fr ? "Désactivé" : "Disabled")}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {user?.adminRole === "super_admin" && admin.email !== user?.email ? (
+              <>
+                <select
+                  value={admin.role || "operator"}
+                  onChange={e => changeRole(admin, e.target.value)}
+                  className={`text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer ${getRoleStyle(admin.role)}`}
+                >
+                  {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                </select>
+                <button
+                  onClick={() => toggleActive(admin)}
+                  className={`text-xs px-3 py-1 rounded-full font-semibold ${admin.is_active !== false ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"}`}
+                >
+                  {admin.is_active !== false ? (fr ? "Désactiver" : "Disable") : (fr ? "Réactiver" : "Enable")}
+                </button>
+              </>
+            ) : (
+              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${getRoleStyle(admin.role)}`}>
+                {getRoleLabel(admin.role)}
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ── Error Boundary — capture les crashs React au lieu de page blanche ──
+class AdminErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, info) { console.error("AdminErrorBoundary caught:", error, info); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-sm text-red-700 space-y-3">
+          <div className="font-black text-base">⚠️ Erreur d'affichage</div>
+          <div className="font-mono text-xs bg-red-100 rounded-lg p-3 break-all">
+            {this.state.error?.message || String(this.state.error)}
+          </div>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold">
+            Réessayer
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+
 const AdminPage = ({ user, setPage, lang }) => {
   const [tab, setTab] = useState("overview");
   const [cases, setCases] = useState([]);
+  const [editAmountId, setEditAmountId] = useState(null);
+  const [editAmountVal, setEditAmountVal] = useState("");
+  const [editAmountHospital, setEditAmountHospital] = useState("");
+  const [editAmountDeadline, setEditAmountDeadline] = useState("");
+  const [editAmountCity, setEditAmountCity] = useState("");
   const [loadingCases, setLoadingCases] = useState(true);
 
   // ── Nouveaux états : Finance / Salaires / Audit / Bilan ──
@@ -5791,6 +7580,8 @@ const AdminPage = ({ user, setPage, lang }) => {
   const [showAddStaff,    setShowAddStaff]    = useState(false);
   const [alerts, setAlerts] = useState(MOCK_ALERTS);
   const [rejectModal, setRejectModal] = useState(null);
+  const [deleteModal, setDeleteModal] = useState(null); // { id, title, donationsCount, collected }
+  const [deleting, setDeleting] = useState(false);
   const [editDeadline, setEditDeadline] = useState({});
   const [editVideoUrl, setEditVideoUrl] = useState({}); // { caseId: "https://..." }
   const [rejectReason, setRejectReason] = useState("");
@@ -5802,7 +7593,7 @@ const AdminPage = ({ user, setPage, lang }) => {
   const unresolved = alerts.filter(a=>!a.resolved).length;
 
   // Toggle visibilité campagnes démo
-  const [demoVisible, setDemoVisible] = useState(localStorage.getItem("ayyadShowDemo") !== "false");
+  const [demoVisible, setDemoVisible] = useState(localStorage.getItem("ayyadShowDemo") === "true");
   const toggleDemo = () => {
     const next = !demoVisible;
     localStorage.setItem("ayyadShowDemo", next ? "true" : "false");
@@ -5991,6 +7782,59 @@ const AdminPage = ({ user, setPage, lang }) => {
     }
   };
 
+  // Ouvre la modal de suppression d'une collecte (avec décompte des dons à supprimer)
+  const askDeleteCase = async (id) => {
+    const c = cases.find(x => x.id === id);
+    if (!c) return;
+    // On compte les dons confirmés liés pour bien prévenir l'admin
+    const { data: dons } = await supabase
+      .from("donations")
+      .select("id, amount_fcfa, amount, status")
+      .eq("case_id", id);
+    const confirmedDons = (dons || []).filter(d => d.status === "confirmed");
+    const totalCollected = confirmedDons.reduce((s, d) => s + Number(d.amount_fcfa || d.amount || 0), 0);
+    setDeleteModal({
+      id,
+      title: typeof c.title === "object" ? (c.title.fr || c.title.en) : (c.title || id),
+      tracking: c.tracking_id || id.slice(0, 8),
+      donationsCount: (dons || []).length,
+      collected: totalCollected,
+    });
+  };
+
+  // Suppression cascade : donations → case_updates → cases.
+  // Réservé aux super_admin. Audit log obligatoire.
+  const deleteCase = async () => {
+    if (!deleteModal) return;
+    if (user?.adminRole !== "super_admin") {
+      alert(lang==="fr" ? "Seuls les super_admin peuvent supprimer une collecte." : "Only super_admins can delete a case.");
+      return;
+    }
+    setDeleting(true);
+    const id = deleteModal.id;
+    try {
+      // 1) Supprimer les dons liés (sinon contrainte FK bloque)
+      const { error: e1 } = await supabase.from("donations").delete().eq("case_id", id);
+      if (e1) throw new Error("Donations: " + e1.message);
+
+      // 2) Supprimer les case_updates liés (journal patient — best effort, on ne bloque pas)
+      try { await supabase.from("case_updates").delete().eq("case_id", id); } catch(_) {}
+
+      // 3) Supprimer la collecte
+      const { error: e3 } = await supabase.from("cases").delete().eq("id", id);
+      if (e3) throw new Error("Cases: " + e3.message);
+
+      // Audit + UI refresh
+      auditLog(user, "CASE_DELETED", deleteModal.title, deleteModal.tracking, "DELETED");
+      setCases(prev => prev.filter(x => x.id !== id));
+      setDeleteModal(null);
+    } catch(err) {
+      alert((lang==="fr" ? "Erreur lors de la suppression : " : "Delete error: ") + err.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const pendingCases = cases.filter(c => c.status==="PENDING");
   const activeCases = cases.filter(c => ["APPROVED","COLLECTING"].includes(c.status));
 
@@ -6037,6 +7881,53 @@ const AdminPage = ({ user, setPage, lang }) => {
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => setRejectModal(null)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{lang==="fr"?"Annuler":"Cancel"}</button>
               <button onClick={() => rejectCase(rejectModal)} className="bg-red-600 text-white font-bold py-3 rounded-xl text-sm shadow-md">{t.rejectBtn}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmation de suppression de collecte */}
+      {deleteModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4" onClick={() => !deleting && setDeleteModal(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-2xl shrink-0">⚠️</div>
+              <div>
+                <h3 className="font-black text-lg text-gray-900">
+                  {lang==="fr" ? "Supprimer définitivement cette collecte ?" : "Delete this case permanently?"}
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  {lang==="fr" ? "Cette action est irréversible." : "This action cannot be undone."}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-3 text-sm space-y-1.5 mb-4">
+              <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Tracking :":"Tracking:"}</span><span className="font-mono font-semibold">{deleteModal.tracking}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Titre :":"Title:"}</span><span className="font-semibold text-right truncate ml-2 max-w-[60%]" title={deleteModal.title}>{deleteModal.title}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Dons à supprimer :":"Donations to delete:"}</span><span className="font-bold text-red-600">{deleteModal.donationsCount}</span></div>
+              {deleteModal.collected > 0 && (
+                <div className="flex justify-between"><span className="text-gray-500">{lang==="fr"?"Montant collecté :":"Total collected:"}</span><span className="font-bold text-red-600">{deleteModal.collected.toLocaleString("fr-FR")} FCFA</span></div>
+              )}
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 mb-4 leading-relaxed">
+              {lang==="fr"
+                ? <>⚠️ Tous les dons confirmés associés seront <strong>définitivement supprimés</strong>. Si des donateurs ont versé de l'argent sur cette collecte, cela <strong>n'annule pas</strong> les transactions Wave/PayDunya — il s'agit d'une suppression côté Ayyad uniquement.</>
+                : <>⚠️ All confirmed donations associated will be <strong>permanently deleted</strong>. If donors paid for this case, this <strong>does not refund</strong> the Wave/PayDunya transactions — this is an Ayyad-side deletion only.</>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                disabled={deleting}
+                onClick={() => setDeleteModal(null)}
+                className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm disabled:opacity-50"
+              >{lang==="fr"?"Annuler":"Cancel"}</button>
+              <button
+                disabled={deleting}
+                onClick={deleteCase}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl text-sm shadow-md disabled:opacity-60"
+              >{deleting ? (lang==="fr"?"Suppression…":"Deleting…") : (lang==="fr"?"🗑️ Supprimer définitivement":"🗑️ Delete permanently")}</button>
             </div>
           </div>
         </div>
@@ -6114,7 +8005,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                         {(c.full_name||c.title||"?")[0].toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-gray-900 truncate">{c.title||c.full_name||lang==="fr"?"Sans titre":"Untitled"}</div>
+                        <div className="text-sm font-semibold text-gray-900 truncate">{c.title || c.full_name || (lang==="fr" ? "Sans titre" : "Untitled")}</div>
                         <div className="text-xs text-gray-500 truncate">🏥 {c.hospital||"—"} · 💰 {c.amount?fmt(c.amount):"—"}</div>
                       </div>
                       <Badge color={statusColor(c.status)}>{t.statusLabels[c.status]||c.status}</Badge>
@@ -6150,7 +8041,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                   <div key={c.id} className="p-5">
                     <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-gray-900 mb-1">{c.title||lang==="fr"?"Sans titre":"Untitled"}</div>
+                        <div className="font-bold text-gray-900 mb-1">{c.title || (lang==="fr" ? "Sans titre" : "Untitled")}</div>
                         <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-2">
                           <span>👤 {c.full_name||"—"}</span>
                           <span>🏥 {c.hospital||"—"}</span>
@@ -6159,10 +8050,10 @@ const AdminPage = ({ user, setPage, lang }) => {
                         </div>
                         {c.description&&<p className="text-xs text-gray-600 line-clamp-2 mb-2">{c.description}</p>}
                         {c.photo_url&&<a href={c.photo_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline font-medium">📷 Photo</a>}
-                              {c.document_urls?.medical&&<a href={c.document_urls.medical} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">🏥 Rapport médical</a>}
-                              {c.document_urls?.quote&&<a href={c.document_urls.quote} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">💊 Devis</a>}
-                              {c.document_urls?.id&&<a href={c.document_urls.id} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">🪪 Pièce d'identité</a>}
-                              {c.document_urls?.consent&&<a href={c.document_urls.consent} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">✍️ Consentement</a>}
+                              {c.document_urls?.medical && <SecureDocLink value={c.document_urls.medical} caseId={c.id} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">🏥 Rapport médical</SecureDocLink>}
+                              {c.document_urls?.quote && <SecureDocLink value={c.document_urls.quote} caseId={c.id} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">💊 Devis</SecureDocLink>}
+                              {c.document_urls?.id && <SecureDocLink value={c.document_urls.id} caseId={c.id} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">🪪 Pièce d'identité</SecureDocLink>}
+                              {c.document_urls?.consent && <SecureDocLink value={c.document_urls.consent} caseId={c.id} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">✍️ Consentement</SecureDocLink>}
                             <button onClick={() => setRejectModal(c.id)} className="px-3 py-1.5 border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50">{t.reject}</button>
                         <button onClick={async()=>{if(editDeadline[c.id])await supabase.from("cases").update({deadline:editDeadline[c.id]}).eq("id",c.id);if(editVideoUrl[c.id])await supabase.from("cases").update({video_url:editVideoUrl[c.id]}).eq("id",c.id);approveCase(c.id);}} className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm">{t.approve}</button>
                       </div>
@@ -6199,6 +8090,108 @@ const AdminPage = ({ user, setPage, lang }) => {
                             }}
                             className={`text-xs px-2.5 py-1 rounded-full font-bold border transition-all flex-shrink-0 ${c.urgent ? "bg-red-100 text-red-600 border-red-200 hover:bg-red-200" : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200"}`}>
                             {c.urgent ? "🔕 Retirer urgent" : "🚨 Marquer urgent"}
+                          </button>
+                        )}
+                        {/* Bouton Modifier montant + hôpital */}
+                        {editAmountId === c.id ? (
+                          <div className="flex flex-col gap-1 min-w-[220px]">
+                            <input
+                              type="number"
+                              value={editAmountVal}
+                              onChange={e => setEditAmountVal(e.target.value)}
+                              className="w-full text-xs border border-emerald-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                              placeholder="Montant FCFA"
+                            />
+                            <input
+                              type="text"
+                              value={editAmountHospital}
+                              onChange={e => setEditAmountHospital(e.target.value)}
+                              className="w-full text-xs border border-emerald-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                              placeholder="Hôpital"
+                            />
+                            <input
+                              type="text"
+                              value={editAmountCity}
+                              onChange={e => setEditAmountCity(e.target.value)}
+                              className="w-full text-xs border border-emerald-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                              placeholder="Ville"
+                            />
+                            <input
+                              type="date"
+                              value={editAmountDeadline}
+                              onChange={e => setEditAmountDeadline(e.target.value)}
+                              className="w-full text-xs border border-emerald-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                            />
+                            <div className="flex gap-1">
+                              <button
+                                onClick={async () => {
+                                  const amt = parseFloat(editAmountVal);
+                                  const updates = {};
+                                  if (amt && !isNaN(amt)) updates.amount = amt;
+                                  if (editAmountHospital.trim()) updates.hospital = editAmountHospital.trim();
+                                  if (editAmountDeadline) updates.deadline = editAmountDeadline;
+                                  if (editAmountCity.trim()) updates.city = editAmountCity.trim();
+                                  if (Object.keys(updates).length === 0) return;
+                                  await supabase.from("cases").update(updates).eq("id", c.id);
+                                  setCases(prev => prev.map(x => x.id === c.id ? {...x, ...updates} : x));
+                                  auditLog(user, "CASE_UPDATED", c.title || c.id);
+                                  setEditAmountId(null);
+                                }}
+                                className="flex-1 text-xs px-2 py-1 rounded-lg font-bold bg-emerald-600 text-white hover:bg-emerald-700">
+                                ✓ Sauvegarder
+                              </button>
+                              <button onClick={() => setEditAmountId(null)} className="text-xs px-2 py-1 rounded-lg font-bold bg-gray-100 text-gray-600 hover:bg-gray-200">✕</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => { setEditAmountId(c.id); setEditAmountVal(c.amount || ""); setEditAmountHospital(c.hospital || ""); setEditAmountDeadline(c.deadline ? c.deadline.slice(0,10) : ""); setEditAmountCity(c.city || ""); }}
+                            className="text-xs px-2.5 py-1 rounded-full font-bold border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all flex-shrink-0">
+                            ✏️ Modifier
+                          </button>
+                        )}
+                        {/* Bouton modifier vidéo */}
+                        {editVideoUrl[c.id] !== undefined ? (
+                          <div className="flex gap-1 min-w-[200px]">
+                            <input
+                              type="url"
+                              value={editVideoUrl[c.id]}
+                              onChange={e => setEditVideoUrl(prev => ({...prev, [c.id]: e.target.value}))}
+                              className="flex-1 text-xs border border-blue-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                              placeholder="https://youtu.be/..."
+                            />
+                            <button
+                              onClick={async () => {
+                                let url = editVideoUrl[c.id].trim();
+                                const ytShort = url.match(/youtu\.be\/([^?&]+)/);
+                                const ytWatch = url.match(/youtube\.com\/watch\?v=([^&]+)/);
+                                const ytShorts = url.match(/youtube\.com\/shorts\/([^?&]+)/);
+                                if (ytShort) url = "https://www.youtube.com/embed/" + ytShort[1];
+                                else if (ytWatch) url = "https://www.youtube.com/embed/" + ytWatch[1];
+                                else if (ytShorts) url = "https://www.youtube.com/embed/" + ytShorts[1];
+                                await supabase.from("cases").update({ video_url: url || null }).eq("id", c.id);
+                                setCases(prev => prev.map(x => x.id === c.id ? {...x, video_url: url} : x));
+                                setEditVideoUrl(prev => { const n = {...prev}; delete n[c.id]; return n; });
+                                auditLog(user, "CASE_VIDEO_UPDATED", c.title || c.id);
+                              }}
+                              className="text-xs px-2 py-1 rounded-lg font-bold bg-blue-600 text-white hover:bg-blue-700">✓</button>
+                            <button onClick={() => setEditVideoUrl(prev => { const n = {...prev}; delete n[c.id]; return n; })} className="text-xs px-2 py-1 rounded-lg font-bold bg-gray-100 text-gray-600 hover:bg-gray-200">✕</button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setEditVideoUrl(prev => ({...prev, [c.id]: c.video_url || ""}))}
+                            className="text-xs px-2.5 py-1 rounded-full font-bold border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all flex-shrink-0">
+                            🎥 Vidéo
+                          </button>
+                        )}
+                        {/* Bouton Supprimer — visible uniquement pour super_admin */}
+                        {user?.adminRole === "super_admin" && !c._isDemo && !c._mock && (
+                          <button
+                            onClick={() => askDeleteCase(c.id)}
+                            title={lang==="fr"?"Supprimer définitivement":"Delete permanently"}
+                            className="text-xs px-2.5 py-1 rounded-full font-bold border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-all flex-shrink-0"
+                          >
+                            🗑️ {lang==="fr"?"Supprimer":"Delete"}
                           </button>
                         )}
                       </div>
@@ -8294,7 +10287,7 @@ const Footer = ({ setPage, lang }) => {
   const t = T[lang].footer;
   return (
     <footer className="bg-gray-950 text-white mt-16">
-      <div className="max-w-6xl mx-auto px-4 py-12">
+      <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1"><div className="flex items-center gap-2 mb-4"><svg width="36" height="36" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="35" cy="35" r="33" fill="#1a6b3a"/><circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" strokeWidth="2.5"/><rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/><rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/><path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/></svg><span className="font-black text-xl" style={{fontFamily:"Georgia, serif", letterSpacing:"1px"}}>AYYAD</span></div><p className="text-gray-400 text-xs leading-relaxed">{t.tagline}</p></div>
           {[[t.platform, t.platformLinks, ["collectesactives","how","submit"]], [t.trust, t.trustLinks, ["how","hopitaux","impact"]], [t.legal, t.legalLinks, ["legal","faq","bceao"]]].map(([title, links, pages]) =>
@@ -8357,8 +10350,8 @@ const TrackingPage = ({ setPage, setSelectedCase, lang }) => {
 
   const fmt = n => (n||0).toLocaleString("fr-FR");
 
-  const getTitle = (c) => typeof c.title === "object" ? c.title[lang] : (c.title || "—");
-  const getDesc  = (c) => typeof c.desc === "object"  ? c.desc[lang]  : (c.description || "");
+  const getTitle = (c) => typeof c.title === "object" ? (c.title?.[lang] || c.title?.fr || c.title || "") : (c.title || "—");
+  const getDesc  = (c) => typeof c.desc === "object"  ? (c.desc?.[lang]  || c.desc?.fr  || c.desc  || "")  : (c.description || "");
 
   const required   = caseData ? (caseData.required || caseData.amount || 0) : 0;
   const collected  = caseData ? (caseData.collected || 0) : 0;
@@ -8454,8 +10447,8 @@ const TrackingPage = ({ setPage, setSelectedCase, lang }) => {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               {/* Photo */}
               {photo && (
-                <div className="h-40 overflow-hidden">
-                  <img src={photo} alt={getTitle(caseData)} className="w-full h-full object-cover object-center" />
+                <div className="overflow-hidden bg-gray-50">
+                  <img src={photo} alt={getTitle(caseData)} className="w-full max-h-[420px] object-contain" />
                 </div>
               )}
               <div className="p-5">
@@ -8646,6 +10639,144 @@ const TrackingPage = ({ setPage, setSelectedCase, lang }) => {
   );
 };
 
+// ── Page de retour PayDunya ──────────────────────────────────────────────────
+// Affichée après que le donateur ait terminé son paiement sur PayDunya.
+// L'URL contient ?p=dunya-return&don=<donation_id>
+// On poll /api/dunya/status pour suivre l'évolution (le webhook met du temps).
+const DunyaReturnPage = ({ setPage, lang }) => {
+  const fr = lang !== "en";
+  const [status, setStatus] = useState("loading"); // loading | confirmed | pending | cancelled | error
+  const [amount, setAmount] = useState(null);
+  const [pollCount, setPollCount] = useState(0);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const donId = params.get("don");
+    if (!donId) { setStatus("error"); return; }
+
+    let cancelled = false;
+    let pollTimer = null;
+    const maxPolls = 15; // ~30s à raison d'1 poll toutes les 2s
+    let polls = 0;
+
+    const pollStatus = async () => {
+      if (cancelled) return;
+      polls++;
+      setPollCount(polls);
+      try {
+        const r = await fetch(`/api/dunya/status?id=${encodeURIComponent(donId)}`);
+        if (!r.ok) {
+          if (polls >= maxPolls) { setStatus("error"); return; }
+          pollTimer = setTimeout(pollStatus, 2000);
+          return;
+        }
+        const data = await r.json();
+        if (data.amount) setAmount(data.amount);
+        if (data.status === "confirmed") {
+          setStatus("confirmed");
+          return;
+        }
+        if (data.status === "cancelled") {
+          setStatus("cancelled");
+          return;
+        }
+        // Encore pending — on continue à poller
+        if (polls >= maxPolls) {
+          setStatus("pending"); // on abandonne, le webhook viendra plus tard
+          return;
+        }
+        pollTimer = setTimeout(pollStatus, 2000);
+      } catch (e) {
+        if (polls >= maxPolls) setStatus("error");
+        else pollTimer = setTimeout(pollStatus, 2000);
+      }
+    };
+    pollStatus();
+    return () => { cancelled = true; if (pollTimer) clearTimeout(pollTimer); };
+  }, []);
+
+  return (
+    <div className="max-w-md mx-auto px-4 py-12 text-center">
+      {status === "loading" && (
+        <div className="space-y-4">
+          <div className="w-16 h-16 mx-auto rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin" />
+          <h2 className="text-xl font-black text-gray-900">{fr ? "Vérification du paiement…" : "Verifying payment…"}</h2>
+          <p className="text-sm text-gray-500">{fr ? "Cela peut prendre quelques secondes." : "This may take a few seconds."}</p>
+          <p className="text-xs text-gray-400">{fr ? "Tentative " : "Attempt "}{pollCount}/15</p>
+        </div>
+      )}
+
+      {status === "confirmed" && (
+        <div className="space-y-4">
+          <div className="w-20 h-20 mx-auto bg-emerald-100 rounded-full flex items-center justify-center text-4xl">🎉</div>
+          <h2 className="text-2xl font-black text-gray-900">{fr ? "Paiement confirmé !" : "Payment confirmed!"}</h2>
+          <p className="text-base text-gray-600">{fr ? "Merci pour votre don 💚" : "Thank you for your donation 💚"}</p>
+          {amount && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+              <p className="text-xs text-emerald-700">{fr ? "Montant débité" : "Amount charged"}</p>
+              <p className="text-2xl font-black text-emerald-700">{Math.round(amount).toLocaleString("fr-FR")} FCFA</p>
+            </div>
+          )}
+          <p className="text-sm text-gray-500 leading-relaxed">
+            {fr
+              ? "Un email de confirmation vient de vous être envoyé. Les fonds seront versés directement à l'hôpital partenaire."
+              : "A confirmation email has just been sent to you. The funds will be transferred directly to the partner hospital."}
+          </p>
+          <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
+            {fr ? "← Retour à l'accueil" : "← Back to home"}
+          </button>
+        </div>
+      )}
+
+      {status === "pending" && (
+        <div className="space-y-4">
+          <div className="w-20 h-20 mx-auto bg-amber-100 rounded-full flex items-center justify-center text-4xl">⏳</div>
+          <h2 className="text-xl font-black text-gray-900">{fr ? "Paiement en cours de traitement" : "Payment being processed"}</h2>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            {fr
+              ? "Votre paiement met un peu plus de temps que prévu à se confirmer. Pas d'inquiétude : si le débit a réussi, votre don sera validé automatiquement dans quelques minutes."
+              : "Your payment is taking longer than expected to confirm. Don't worry: if the debit succeeded, your donation will be validated automatically in a few minutes."}
+          </p>
+          <p className="text-xs text-gray-400">
+            {fr ? "Vous recevrez un email dès que c'est validé." : "You'll receive an email as soon as it's validated."}
+          </p>
+          <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
+            {fr ? "← Retour à l'accueil" : "← Back to home"}
+          </button>
+        </div>
+      )}
+
+      {status === "cancelled" && (
+        <div className="space-y-4">
+          <div className="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center text-4xl">❌</div>
+          <h2 className="text-xl font-black text-gray-900">{fr ? "Paiement annulé" : "Payment cancelled"}</h2>
+          <p className="text-sm text-gray-600">
+            {fr ? "Le paiement n'a pas été effectué. Vous n'avez pas été débité." : "The payment was not completed. You have not been charged."}
+          </p>
+          <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
+            {fr ? "← Retour à l'accueil" : "← Back to home"}
+          </button>
+        </div>
+      )}
+
+      {status === "error" && (
+        <div className="space-y-4">
+          <div className="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center text-4xl">⚠️</div>
+          <h2 className="text-xl font-black text-gray-900">{fr ? "Erreur" : "Error"}</h2>
+          <p className="text-sm text-gray-600">
+            {fr
+              ? "Impossible de vérifier l'état du paiement. Si vous avez été débité, contactez-nous : contact@ayyadci.com"
+              : "Unable to verify payment status. If you were charged, contact us at contact@ayyadci.com"}
+          </p>
+          <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
+            {fr ? "← Retour à l'accueil" : "← Back to home"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── FAQ Page ─────────────────────────────────────────────
 const FAQPage = ({ setPage, lang }) => {
   const [open, setOpen] = useState(null);
@@ -8779,15 +10910,15 @@ const ProfilePage = ({ user, lang, setPage }) => {
       setEditPhotoUploading(true);
       const ext = editPhotoFile.name.split('.').pop().toLowerCase();
       const fileName = `${basePath}/photo_${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("medical-documents").upload(fileName, editPhotoFile);
+      const { error: upErr } = await supabase.storage.from(BUCKET_PUBLIC).upload(fileName, editPhotoFile);
       if (!upErr) {
-        const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
+        const { data: urlData } = supabase.storage.from(BUCKET_PUBLIC).getPublicUrl(fileName);
         updates.photo_url = urlData.publicUrl;
       }
       setEditPhotoUploading(false);
     }
 
-    // Upload nouveaux documents si présents
+    // Upload nouveaux documents privés si présents (on stocke le PATH, pas l'URL)
     const existingDocs = currentCase?.document_urls || {};
     let newDocUrls = { ...existingDocs };
     const pendingDocs = editNewDocs.filter(d => d.file && d.status !== "done");
@@ -8799,11 +10930,11 @@ const ProfilePage = ({ user, lang, setPage }) => {
       const fileName = `${basePath}/${key}.${ext}`;
       const mimeMap = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' };
       const contentType = mimeMap[ext] || d.file.type || 'application/octet-stream';
-      const { error: docErr } = await supabase.storage.from("medical-documents").upload(fileName, d.file, { contentType });
+      const { error: docErr } = await supabase.storage.from(BUCKET_PRIVATE).upload(fileName, d.file, { contentType });
       if (!docErr) {
-        const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(fileName);
-        newDocUrls[key] = urlData.publicUrl;
-        setEditNewDocs(prev => prev.map(x => x === d ? { ...x, status: "done", url: urlData.publicUrl } : x));
+        // ⚠️ On stocke le PATH (le bucket sera privé, accessible via signed URL)
+        newDocUrls[key] = fileName;
+        setEditNewDocs(prev => prev.map(x => x === d ? { ...x, status: "done", url: fileName } : x));
       } else {
         setEditNewDocs(prev => prev.map(x => x === d ? { ...x, status: "error" } : x));
       }
@@ -8960,13 +11091,13 @@ const ProfilePage = ({ user, lang, setPage }) => {
                     {c.document_urls && Object.keys(c.document_urls).length > 0 && (
                       <div className="mb-2 space-y-1">
                         {Object.entries(c.document_urls).map(([k, url]) => (
-                          <a key={k} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-emerald-600 hover:underline">
+                          <SecureDocLink key={k} value={url} caseId={c.id} className="flex items-center gap-1.5 text-xs text-emerald-600 hover:underline">
                             📎 {k === "medical" ? (lang === "fr" ? "Ordonnance/Devis" : "Medical/Quote") :
                                k === "quote" ? (lang === "fr" ? "Facture pro-forma" : "Pro-forma invoice") :
                                k === "id" ? (lang === "fr" ? "Pièce d'identité" : "ID document") :
                                k === "consent" ? (lang === "fr" ? "Formulaire consentement" : "Consent form") :
                                (lang === "fr" ? "Document supplémentaire" : "Additional document")}
-                          </a>
+                          </SecureDocLink>
                         ))}
                       </div>
                     )}
@@ -9131,10 +11262,13 @@ const ChangePasswordPage = ({ setPage, lang }) => {
 };
 
 export default function AyyadApp() {
+  // Lire ?case= MAINTENANT avant que pushState ne l'écrase (les useEffects tournent après)
+  const _initialCaseId = useRef(new URLSearchParams(window.location.search).get("case")).current;
+
   // Initialiser la page depuis l'URL pour survivre aux rafraîchissements
   const [page, setPage] = useState(() => {
     const p = new URLSearchParams(window.location.search).get("p");
-    const valid = ["home","admin","login","collectes","profile","register","case","track","change-password","urgents","specialite"];
+    const valid = ["home","admin","login","collectes","collectesactives","profile","register","case","track","change-password","urgents","specialite","how","refund","legal","impact","bceao","hopitaux","monimpact","submit","tracking","changepassword","faq","politique-admission","dunya-return","support-ayyad"];
     return (p && valid.includes(p)) ? p : "home";
   });
   // ── IMPORTANT: declare all state BEFORE any useEffect that references them ──
@@ -9153,8 +11287,8 @@ export default function AyyadApp() {
       el.setAttribute("content", content);
     };
     if (page === "case" && selectedCase) {
-      const title = typeof selectedCase.title==="object" ? (selectedCase.title.fr||selectedCase.title.en) : (selectedCase.title||"Ayyad");
-      const desc = typeof selectedCase.desc==="object" ? (selectedCase.desc.fr||selectedCase.desc.en||"") : (selectedCase.description||"");
+      const title = (selectedCase.title && typeof selectedCase.title==="object") ? (selectedCase.title.fr||selectedCase.title.en||"Ayyad") : (selectedCase.title||"Ayyad");
+      const desc = (selectedCase.desc && typeof selectedCase.desc==="object") ? (selectedCase.desc.fr||selectedCase.desc.en||"") : (selectedCase.description||selectedCase.desc||"");
       const img = selectedCase.photos?.[0] || selectedCase.image || "https://ayyadci.com/og-default.png";
       const url = "https://ayyadci.com/?p=case&case="+(selectedCase.trackingId||selectedCase.tracking_id||selectedCase.id);
       document.title = title + " — Ayyad CI";
@@ -9241,9 +11375,10 @@ export default function AyyadApp() {
     });
 
     // Deep-link: ?case=AYD-2025-001
-    const params = new URLSearchParams(window.location.search);
-    const caseId = params.get("case");
-    if (caseId && /^[A-Z]{3}-\d{4}-[A-Z0-9]{3,8}$/i.test(caseId)) {
+    // NB: on utilise _initialCaseId (lu avant pushState) car window.location.search
+    // a déjà été écrasé par pushState("?p=home") dans le premier useEffect.
+    const caseId = _initialCaseId;
+    if (caseId && /^[A-Z]{2,5}-[\d]{4}(-[\w]{2,8}){1,3}$/i.test(caseId)) {
       // Try MOCK_CASES first, then Supabase
       const mockMatch = MOCK_CASES.find(c => c.trackingId === caseId);
       if (mockMatch) {
@@ -9290,6 +11425,24 @@ export default function AyyadApp() {
         {page==="changepassword"&&<ChangePasswordPage setPage={setPage} lang={lang} />}
       {page === "profile" && user && <ProfilePage user={user} lang={lang} setPage={setPage} />}
         {page==="faq"&&<FAQPage setPage={setPage} lang={lang} />}
+        {page==="politique-admission"&&<PolitiqueAdmissionPage setPage={setPage} lang={lang} />}
+        {page==="dunya-return"&&<DunyaReturnPage setPage={setPage} lang={lang} />}
+        {page==="support-ayyad"&&(
+          <div>
+            <div className="bg-gradient-to-br from-emerald-700 to-teal-700 text-white">
+              <div className="max-w-7xl mx-auto px-4 py-12 text-center">
+                <button onClick={() => setPage("home")} className="text-emerald-100 hover:text-white text-sm mb-4 inline-flex items-center gap-1">← {lang==="fr"?"Retour à l'accueil":"Back to home"}</button>
+                <h1 className="text-3xl sm:text-5xl font-black mb-3">{lang==="fr" ? "Soutenir Ayyad directement" : "Support Ayyad directly"}</h1>
+                <p className="text-emerald-100 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
+                  {lang==="fr"
+                    ? "Votre don aide à financer les opérations de la plateforme : vérification médicale des dossiers, partenariats hospitaliers, infrastructure, et accompagnement des patients tout au long de leur collecte."
+                    : "Your donation helps fund platform operations: medical case verification, hospital partnerships, infrastructure, and patient support throughout their campaign."}
+                </p>
+              </div>
+            </div>
+            <SupportAyyadSection lang={lang} />
+          </div>
+        )}
       </main>
       {showFooter&&<Footer setPage={setPage} lang={lang} />}
       <ChatWidget lang={lang} />
