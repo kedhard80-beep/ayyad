@@ -3651,6 +3651,9 @@ const CasePage = ({ c, setPage, lang, user }) => {
     if (!user && donMode === "logged") setDonMode("choose");
   }, [user]);
 
+  // ── Ref vers le formulaire de don (scroll mobile) ──
+  const donateRef = React.useRef(null);
+
   // ── Journal patient ──
   const [caseUpdates, setCaseUpdates] = useState([]);
   const [newUpdate, setNewUpdate] = useState("");
@@ -4352,7 +4355,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
         </div>
 
         {/* ── COLONNE DROITE — Widget de don ── */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1" ref={donateRef}>
           <div className="sticky top-6">
             {/* Card principale du widget */}
             <div className="bg-white rounded-3xl border border-gray-100 shadow-2xl overflow-hidden">
@@ -11316,16 +11319,10 @@ const DjanaUrgencyTopBar = () => {
 
 const DjanaUrgencyBadges = () => {
   const go = () => { window.location.href = DJANA_CASE_URL; };
-  const Badge = ({ style }) => (
-    <div onClick={go} style={{position:"fixed",right:12,zIndex:99998,cursor:"pointer",background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"#fff",borderRadius:50,padding:"9px 15px",display:"flex",alignItems:"center",gap:7,fontSize:12,fontWeight:800,boxShadow:"0 4px 16px rgba(220,38,38,0.55)",animation:"djana-pulse-badge 2.2s ease-in-out infinite",userSelect:"none",...style}}>
-      <span>🚨</span><span>Djana</span>
-    </div>
-  );
   return (
-    <>
-      <Badge style={{top:"40%",transform:"translateY(-50%)",animationDelay:"0s"}} />
-      <Badge style={{bottom:90,animationDelay:"0.8s"}} />
-    </>
+    <div onClick={go} style={{position:"fixed",bottom:90,right:12,zIndex:99998,cursor:"pointer",background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"#fff",borderRadius:50,padding:"10px 16px",display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:800,boxShadow:"0 4px 16px rgba(220,38,38,0.55)",animation:"djana-pulse-badge 2.2s ease-in-out infinite",userSelect:"none",maxWidth:180,whiteSpace:"nowrap"}}>
+      <span>💝</span><span>Faites un don à Djana</span>
+    </div>
   );
 };
 // ─────────────────────────────────────────────────────────────────────────────
