@@ -11290,6 +11290,45 @@ const ChangePasswordPage = ({ setPage, lang }) => {
   );
 };
 
+
+// ── Djana Urgency Overlay ─────────────────────────────────────────────────────
+const DJANA_CASE_URL = "/?case=AYD-2026-06-001";
+
+const DjanaUrgencyTopBar = () => {
+  const go = () => { window.location.href = DJANA_CASE_URL; };
+  return (
+    <>
+      <div onClick={go} style={{position:"fixed",top:0,left:0,right:0,zIndex:99999,background:"linear-gradient(90deg,#c0130f,#dc2626,#ea580c)",color:"#fff",cursor:"pointer",padding:"0 12px",display:"flex",alignItems:"center",justifyContent:"center",gap:10,height:40,boxShadow:"0 2px 12px rgba(220,38,38,0.5)",userSelect:"none"}}>
+        <span style={{width:8,height:8,background:"#fff",borderRadius:"50%",flexShrink:0,animation:"djana-ping 1.2s ease-in-out infinite"}} />
+        <span style={{fontSize:13,fontWeight:700,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+          🚨 Djana 5 ans · 2ème opération · <strong>6 jours restants</strong>
+        </span>
+        <span style={{background:"rgba(255,255,255,0.22)",border:"1px solid rgba(255,255,255,0.4)",borderRadius:20,padding:"3px 12px",fontSize:12,fontWeight:800,flexShrink:0,whiteSpace:"nowrap"}}>DONNER →</span>
+      </div>
+      <div style={{height:40}} />
+      <style>{`
+        @keyframes djana-ping{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(1.5)}}
+        @keyframes djana-pulse-badge{0%,100%{transform:scale(1);box-shadow:0 4px 16px rgba(220,38,38,0.5)}50%{transform:scale(1.07);box-shadow:0 6px 28px rgba(220,38,38,0.75)}}
+      `}</style>
+    </>
+  );
+};
+
+const DjanaUrgencyBadges = () => {
+  const go = () => { window.location.href = DJANA_CASE_URL; };
+  const Badge = ({ style }) => (
+    <div onClick={go} style={{position:"fixed",right:12,zIndex:99998,cursor:"pointer",background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"#fff",borderRadius:50,padding:"9px 15px",display:"flex",alignItems:"center",gap:7,fontSize:12,fontWeight:800,boxShadow:"0 4px 16px rgba(220,38,38,0.55)",animation:"djana-pulse-badge 2.2s ease-in-out infinite",userSelect:"none",...style}}>
+      <span>🚨</span><span>Djana</span>
+    </div>
+  );
+  return (
+    <>
+      <Badge style={{top:"40%",transform:"translateY(-50%)",animationDelay:"0s"}} />
+      <Badge style={{bottom:90,animationDelay:"0.8s"}} />
+    </>
+  );
+};
+// ─────────────────────────────────────────────────────────────────────────────
 export default function AyyadApp() {
   // ── Animations paiement ──────────────────────────────────────────
   // (injectées ici car App.css n'est pas importé dans le bundle)
@@ -11439,6 +11478,7 @@ export default function AyyadApp() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
+      <DjanaUrgencyTopBar />
       <style>{`
         @keyframes glow-wave {
           0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.8); }
@@ -11500,6 +11540,7 @@ export default function AyyadApp() {
       </main>
       {showFooter&&<Footer setPage={setPage} lang={lang} />}
       <ChatWidget lang={lang} />
+      <DjanaUrgencyBadges />
     </div>
   );
 }
