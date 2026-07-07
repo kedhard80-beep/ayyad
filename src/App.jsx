@@ -425,6 +425,13 @@ const MOCK_ALERTS = [
 // ── Helpers ───────────────────────────────────────────────────
 const fmt = (n) => new Intl.NumberFormat("fr-CI").format(n) + " FCFA";
 const pct = (c, r) => Math.min(100, Math.round((c / r) * 100));
+// Tente de parser un champ JSON (titre/description multilingue)
+function parseMaybeJson(val, fallFr, fallEn) {
+  if (!val) return { fr: fallFr || "", en: fallEn || "" };
+  if (typeof val === "object" && val !== null && !Array.isArray(val)) return val;
+  try { const p = JSON.parse(val); if (p && typeof p === "object" && !Array.isArray(p)) return p; } catch {}
+  return { fr: val, en: val };
+}
 
 // Nettoie un nom de fichier pour un usage sûr dans Supabase Storage
 // Remplace espaces et caractères spéciaux par des underscores, limite la longueur
@@ -2896,8 +2903,8 @@ const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
           };
           const normalized = enriched.map(c => ({
             ...c,
-            title: typeof c.title === "object" ? c.title : { fr: c.title || "Sans titre", en: c.title || "Untitled" },
-            desc: typeof c.desc === "object" ? c.desc : { fr: c.description || "", en: c.description || "" },
+            title: parseMaybeJson(c.title, "Sans titre", "Untitled"),
+            desc: parseMaybeJson(c.description || c.desc, "", ""),
             required: Number(c.required || c.amount || 0),
             collected: Number(c.collected || 0),
             donors: Number(c.donors || 0),
@@ -3002,9 +3009,9 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
   };
   const normalizCase = (c) => ({
     ...c,
-    title: typeof c.title === "object" ? c.title : { fr: c.title || "Sans titre", en: c.title || "Untitled" },
+    title: parseMaybeJson(c.title, "Sans titre", "Untitled"),
     category: typeof c.category === "object" ? c.category : { fr: c.category || "Autre", en: c.category || "Other" },
-    desc: typeof c.desc === "object" ? c.desc : { fr: c.description || "", en: c.description || "" },
+    desc: parseMaybeJson(c.description || c.desc, "", ""),
     required: Number(c.required || c.amount || 0),
     collected: Number(c.collected || 0),
     donors: Number(c.donors || 0),
@@ -3097,9 +3104,9 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
   };
   const normalizCase = (c) => ({
     ...c,
-    title: typeof c.title === "object" ? c.title : { fr: c.title || "Sans titre", en: c.title || "Untitled" },
+    title: parseMaybeJson(c.title, "Sans titre", "Untitled"),
     category: typeof c.category === "object" ? c.category : { fr: c.category || "Autre", en: c.category || "Other" },
-    desc: typeof c.desc === "object" ? c.desc : { fr: c.description || "", en: c.description || "" },
+    desc: parseMaybeJson(c.description || c.desc, "", ""),
     required: Number(c.required || c.amount || 0),
     collected: Number(c.collected || 0),
     donors: Number(c.donors || 0),
@@ -3377,9 +3384,9 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
         };
         const normalized = enriched.map(c => ({
           ...c,
-          title: typeof c.title === "object" ? c.title : { fr: c.title || "Sans titre", en: c.title || "Untitled" },
+          title: parseMaybeJson(c.title, "Sans titre", "Untitled"),
           category: typeof c.category === "object" ? c.category : { fr: c.category || "Autre", en: c.category || "Other" },
-          desc: typeof c.desc === "object" ? c.desc : { fr: c.description || "", en: c.description || "" },
+          desc: parseMaybeJson(c.description || c.desc, "", ""),
           required: Number(c.required || c.amount || 0),
           collected: Number(c.collected || 0),
           donors: Number(c.donors || 0),
