@@ -11421,6 +11421,8 @@ export default function AyyadApp() {
         supabase.from("cases").select("*").eq("tracking_id", caseId).maybeSingle().then(async ({ data }) => {
           if (data) {
             const [enriched] = await enrichCasesWithTotals([data]);
+            enriched.title = parseMaybeJson(enriched.title, "Sans titre", "Untitled");
+            enriched.desc  = parseMaybeJson(enriched.description || enriched.desc, "", "");
             setSelectedCase(enriched);
             setPage("case");
           }
