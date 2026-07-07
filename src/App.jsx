@@ -4356,6 +4356,19 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
         {/* ── COLONNE DROITE — Widget de don ── */}
         <div className="lg:col-span-1" ref={donateRef}>
+          {/* Bouton sticky mobile — position:fixed, visible seulement sur mobile */}
+          {!funded && (
+            <div className="lg:hidden" style={{position:"fixed",bottom:0,left:0,right:0,zIndex:99990,padding:"8px 16px 16px",background:"linear-gradient(to top,rgba(255,255,255,1) 60%,rgba(255,255,255,0))"}}>
+              <button
+                onClick={() => donateRef.current?.scrollIntoView({behavior:"smooth",block:"start"})}
+                style={{width:"100%",background:"linear-gradient(90deg,#059669,#10b981)",color:"#fff",border:"none",borderRadius:14,padding:"14px 0",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 20px rgba(5,150,105,0.4)",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}
+              >
+                <span>🌊</span>
+                <span>{lang==="fr" ? "Voir les moyens de paiement" : "See payment methods"}</span>
+                <span style={{opacity:0.8}}>↓</span>
+              </button>
+            </div>
+          )}
           <div className="sticky top-6">
             {/* Card principale du widget */}
             <div className="bg-white rounded-3xl border border-gray-100 shadow-2xl overflow-hidden">
@@ -4760,11 +4773,6 @@ const StaffRow = ({ m, fr, paid, onPay, onDelete, onUpdate, fmt }) => {
         </button>
       </div>
     </div>
-      {/* ── Bouton sticky mobile paiement ── */}
-      {!funded && (
-        <div className="lg:hidden" style={{position:"fixed",bottom:0,left:0,right:0,zIndex:99990,padding:"8px 16px 16px",background:"linear-gradient(to top,rgba(255,255,255,1) 60%,rgba(255,255,255,0))"}}>
-          <button
-            onClick={() => donateRef.current?.scrollIntoView({behavior:"smooth",block:"start"})}
             style={{width:"100%",background:"linear-gradient(90deg,#059669,#10b981)",color:"#fff",border:"none",borderRadius:14,padding:"14px 0",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 20px rgba(5,150,105,0.4)",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}
           >
             <span>🌊</span>
