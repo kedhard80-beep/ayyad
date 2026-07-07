@@ -3919,7 +3919,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
               disabled={opt.disabled}
               onClick={() => { if (!opt.disabled) setProvider(opt.id); }}
               title={opt.disabled ? (lang==="fr"?"En cours d'activation":"Coming soon") : ""}
-              className={`relative flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${provider===opt.id ? opt.active : opt.inactive}`}
+              className={`relative flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${provider===opt.id ? opt.active : opt.inactive} ${opt.id==="WAVE" ? "pay-pulse-wave" : "pay-pulse-orange"}`}
             >
               <span className="text-base">{opt.emoji}</span>
               <span>{opt.label}</span>
@@ -3935,7 +3935,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             Permet aux donateurs de la diaspora de comprendre tout de suite qu'ils ont une
             option dédiée et de ne pas partir en pensant que c'est uniquement Wave CI local. */}
         <details className="mt-2 group">
-          <summary className="cursor-pointer list-none flex items-center justify-between gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 rounded-xl px-3 py-2.5 transition-colors">
+          <summary className="cursor-pointer list-none flex items-center justify-between gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 rounded-xl px-3 py-2.5 transition-colors pay-pulse-indigo">
             <span className="flex items-center gap-2 text-xs font-bold text-blue-800">
               🌍 {lang==="fr" ? "Vous êtes à l'étranger ?" : "Donating from abroad?"}
             </span>
