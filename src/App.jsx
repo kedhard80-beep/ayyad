@@ -4760,6 +4760,19 @@ const StaffRow = ({ m, fr, paid, onPay, onDelete, onUpdate, fmt }) => {
         </button>
       </div>
     </div>
+      {/* ── Bouton sticky mobile paiement ── */}
+      {!funded && (
+        <div className="lg:hidden" style={{position:"fixed",bottom:0,left:0,right:0,zIndex:99990,padding:"8px 16px 16px",background:"linear-gradient(to top,rgba(255,255,255,1) 60%,rgba(255,255,255,0))"}}>
+          <button
+            onClick={() => donateRef.current?.scrollIntoView({behavior:"smooth",block:"start"})}
+            style={{width:"100%",background:"linear-gradient(90deg,#059669,#10b981)",color:"#fff",border:"none",borderRadius:14,padding:"14px 0",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 20px rgba(5,150,105,0.4)",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}
+          >
+            <span>🌊</span>
+            <span>{lang==="fr" ? "Voir les moyens de paiement" : "See payment methods"}</span>
+            <span style={{opacity:0.8}}>↓</span>
+          </button>
+        </div>
+      )}
   );
 };
 
@@ -11297,14 +11310,14 @@ const ChangePasswordPage = ({ setPage, lang }) => {
 // ── Djana Urgency Overlay ─────────────────────────────────────────────────────
 const DJANA_CASE_URL = "/?case=AYD-2026-06-001";
 
-const DjanaUrgencyTopBar = () => {
-  const go = () => { window.location.href = DJANA_CASE_URL; };
+const DjanaUrgencyTopBar = ({ lang }) => {
+  const go = () => { sessionStorage.setItem('ayyadLang',lang); window.location.href = DJANA_CASE_URL; };
   return (
     <>
       <div onClick={go} style={{position:"fixed",top:0,left:0,right:0,zIndex:99999,background:"linear-gradient(90deg,#c0130f,#dc2626,#ea580c)",color:"#fff",cursor:"pointer",padding:"0 12px",display:"flex",alignItems:"center",justifyContent:"center",gap:10,height:40,boxShadow:"0 2px 12px rgba(220,38,38,0.5)",userSelect:"none"}}>
         <span style={{width:8,height:8,background:"#fff",borderRadius:"50%",flexShrink:0,animation:"djana-ping 1.2s ease-in-out infinite"}} />
         <span style={{fontSize:13,fontWeight:700,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-          🚨 Djana 5 ans · 2ème opération · <strong>6 jours restants</strong>
+          🚨 {lang==="fr" ? "Djana 5 ans · 2ème opération · " : "Djana 5 yo · 2nd surgery · "}<strong>{lang==="fr" ? "6 jours restants" : "6 days left"}</strong>
         </span>
         <span style={{background:"rgba(255,255,255,0.22)",border:"1px solid rgba(255,255,255,0.4)",borderRadius:20,padding:"3px 12px",fontSize:12,fontWeight:800,flexShrink:0,whiteSpace:"nowrap"}}>DONNER →</span>
       </div>
@@ -11318,7 +11331,7 @@ const DjanaUrgencyTopBar = () => {
 };
 
 const DjanaUrgencyBadges = ({ lang }) => {
-  const go = () => { window.location.href = DJANA_CASE_URL; };
+  const go = () => { sessionStorage.setItem('ayyadLang',lang); window.location.href = DJANA_CASE_URL; };
   return (
     <div onClick={go} style={{position:"fixed",bottom:"42%",right:12,zIndex:99998,cursor:"pointer",background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"#fff",borderRadius:50,padding:"10px 16px",display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:800,boxShadow:"0 4px 16px rgba(220,38,38,0.55)",animation:"djana-pulse-badge 2.2s ease-in-out infinite",userSelect:"none",maxWidth:200,whiteSpace:"nowrap"}}>
       <span>💝</span>
@@ -11342,7 +11355,7 @@ export default function AyyadApp() {
     return (p && valid.includes(p)) ? p : "home";
   });
   // ── IMPORTANT: declare all state BEFORE any useEffect that references them ──
-  const [lang, setLang] = useState("fr");
+  const [lang, setLang] = useState(sessionStorage.getItem("ayyadLang") || "fr");
   const [user, setUser] = useState(null);
   const [selectedCase, setSelectedCase] = useState(null);
   const [specialite, setSpecialite] = useState("");
@@ -11476,7 +11489,7 @@ export default function AyyadApp() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      <DjanaUrgencyTopBar />
+      <DjanaUrgencyTopBar lang={lang} />
       <style>{`
         @keyframes glow-wave {
           0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.8); }
