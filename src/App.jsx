@@ -3911,7 +3911,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
         <div className="grid grid-cols-2 gap-2">
           {[
             { id:"WAVE", emoji:"🌊", label:"Wave CI", active:"bg-blue-600 text-white border-blue-600", inactive:"bg-white text-gray-700 border-gray-200 hover:border-blue-400", disabled:false },
-            { id:"CARD", emoji:"💳", label:lang==="fr"?"Carte / Mobile Money":"Card / Mobile Money", active:"bg-gray-800 text-white border-gray-800", inactive:"bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed", disabled:true },
+            { id:"CARD", emoji:"📱", label:"Mobile Money", active:"bg-orange-600 text-white border-orange-600", inactive:"bg-white text-gray-700 border-gray-200 hover:border-orange-400", disabled:false },
           ].map(opt => (
             <button
               key={opt.id}
@@ -4464,29 +4464,54 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 );
               })()}
 
-              {/* ── Carte bancaire — Bientôt disponible ── */}
+              {/* ── Mobile Money — Numéros de dépôt ── */}
               {provider === "CARD" && (
-                <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 text-center space-y-3">
-                  <div className="text-4xl">🏗️</div>
-                  <div className="font-black text-amber-800">
-                    {lang==="fr" ? "Paiement par carte bancaire — Bientôt disponible" : "Card payment — Coming soon"}
+                <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-5 space-y-4">
+                  <div className="text-center">
+                    <div className="text-2xl mb-1">📱</div>
+                    <div className="font-black text-orange-900 text-sm">
+                      {lang==="fr" ? "Envoyez votre don par Mobile Money" : "Send your donation via Mobile Money"}
+                    </div>
+                    <div className="text-xs text-orange-700 mt-1">
+                      {lang==="fr"
+                        ? `Envoyez exactement ${Math.round(Number(amount)).toLocaleString("fr-FR")} FCFA au numéro correspondant à votre opérateur :`
+                        : `Send exactly ${Math.round(Number(amount)).toLocaleString("fr-FR")} FCFA to the number for your operator:`}
+                    </div>
                   </div>
-                  <p className="text-sm text-amber-700 leading-relaxed">
-                    {lang==="fr"
-                      ? "Nous travaillons à l'intégration des cartes Visa et Mastercard. En attendant, vous pouvez utiliser Wave CI (sans frais)."
-                      : "We're working on Visa and Mastercard integration. In the meantime, you can use Wave CI (no fees)."}
-                  </p>
-                  <button
-                    onClick={() => setProvider("WAVE")}
-                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm"
-                  >
-                    🌊 {lang==="fr" ? "Utiliser Wave CI à la place" : "Use Wave CI instead"}
-                  </button>
+                  <div className="space-y-2">
+                    {[
+                      { emoji:"🌊", label:"Wave CI",       num:"+225 07 48 05 61 28" },
+                      { emoji:"🟠", label:"Orange Money",  num:"+225 07 48 05 61 28" },
+                      { emoji:"🟡", label:"MTN MoMo",      num:"+225 05 01 85 59 91" },
+                    ].map(op => (
+                      <div key={op.label} className="flex items-center justify-between bg-white border border-orange-200 rounded-xl px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{op.emoji}</span>
+                          <div>
+                            <div className="text-[11px] font-bold text-gray-700">{op.label}</div>
+                            <div className="font-mono text-sm font-black text-gray-900">{op.num}</div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => navigator.clipboard.writeText(op.num.replace(/\s/g,""))}
+                          className="text-[10px] font-bold text-orange-600 border border-orange-300 rounded-lg px-2 py-1 hover:bg-orange-50"
+                        >
+                          {lang==="fr" ? "Copier" : "Copy"}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-[11px] text-orange-700 bg-orange-100 rounded-xl px-3 py-2 leading-relaxed">
+                    💡 {lang==="fr"
+                      ? "Après l'envoi, cliquez sur « Confirmer » ci-dessous pour enregistrer votre don."
+                      : "After sending, click 'Confirm' below to record your donation."}
+                  </div>
                 </div>
               )}
 
-              {/* Boutons Modifier / Confirmer (Wave uniquement — carte a son propre bouton) */}
-              {provider !== "CARD" && (
+              {/* Boutons Modifier / Confirmer (Wave et Mobile Money) */}
+              {true && (
                 <>
                   {donError && (
                     <div className="bg-red-50 border-2 border-red-200 rounded-xl p-3 text-xs text-red-700">
@@ -4502,13 +4527,13 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         <div className="text-3xl">📲</div>
                         <div className="font-black text-gray-800 text-sm leading-snug">
                           {lang==="fr"
-                            ? `Avez-vous bien envoyé ${Math.round(Number(amount)).toLocaleString("fr-FR")} FCFA via Wave CI ?`
-                            : `Have you sent ${Math.round(Number(amount)).toLocaleString("fr-FR")} FCFA via Wave CI?`}
+                            ? `Avez-vous bien envoyé ${Math.round(Number(amount)).toLocaleString("fr-FR")} FCFA via ${provider === "CARD" ? "Mobile Money" : "Wave CI"} ?`
+                            : `Have you sent ${Math.round(Number(amount)).toLocaleString("fr-FR")} FCFA via ${provider === "CARD" ? "Mobile Money" : "Wave CI"}?`}
                         </div>
                         <div className="text-xs text-gray-500">
                           {lang==="fr"
-                            ? "Vérifiez votre historique Wave avant de confirmer."
-                            : "Check your Wave history before confirming."}
+                            ? `Vérifiez votre historique ${provider === "CARD" ? "Mobile Money" : "Wave"} avant de confirmer.`
+                            : `Check your ${provider === "CARD" ? "Mobile Money" : "Wave"} history before confirming.`}
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
@@ -4537,7 +4562,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                                 amount: Number(amount),
                                 amount_fcfa: amountInFcfa,
                                 currency,
-                                payment_method: "WAVE",
+                                payment_method: provider === "CARD" ? "MOBILE_MONEY" : "WAVE",
                                 status: "pending",
                                 message: message || null,
                                 reference: refToUse,
