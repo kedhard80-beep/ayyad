@@ -11291,6 +11291,10 @@ const ChangePasswordPage = ({ setPage, lang }) => {
 };
 
 export default function AyyadApp() {
+  // ── Animations paiement ──────────────────────────────────────────
+  // (injectées ici car App.css n'est pas importé dans le bundle)
+  // ─────────────────────────────────────────────────────────────────
+
   // Lire ?case= MAINTENANT avant que pushState ne l'écrase (les useEffects tournent après)
   const _initialCaseId = useRef(new URLSearchParams(window.location.search).get("case")).current;
 
@@ -11431,6 +11435,23 @@ export default function AyyadApp() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
+      <style>{`
+        @keyframes glow-wave {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.8); }
+          50%       { box-shadow: 0 0 0 9px rgba(59,130,246,0); }
+        }
+        @keyframes glow-orange {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(234,88,12,0.8); }
+          50%       { box-shadow: 0 0 0 9px rgba(234,88,12,0); }
+        }
+        @keyframes glow-indigo {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.8); }
+          50%       { box-shadow: 0 0 0 9px rgba(99,102,241,0); }
+        }
+        .pay-pulse-wave   { animation: glow-wave   1.6s ease-in-out infinite; }
+        .pay-pulse-orange { animation: glow-orange  1.6s ease-in-out infinite 0.5s; }
+        .pay-pulse-indigo { animation: glow-indigo  1.6s ease-in-out infinite 1.0s; }
+      `}</style>
       <Navbar page={page} setPage={setPage} user={user} setUser={setUser} lang={lang} setLang={setLang} />
       <main>
         {page==="home"&&<HomePage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} />}
