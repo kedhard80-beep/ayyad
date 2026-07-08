@@ -2450,7 +2450,7 @@ const useCountUp = (target, duration = 1600, enabled = true) => {
 
 const AnimatedNumber = ({ value, suffix = "", visible }) => {
   const n = useCountUp(value, 1800, visible);
-  return <span>{n.toLocaleString("fr-CI")}{suffix}</span>;
+  return <span style={{display:"inline-block",whiteSpace:"nowrap",fontVariantNumeric:"tabular-nums"}}>{n.toLocaleString("fr-CI")}{suffix}</span>;
 };
 
 const ImpactSection = ({ lang, heroStats, setPage }) => {
@@ -2525,7 +2525,7 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
                 display:"flex", alignItems:"center", justifyContent:"center",
                 fontSize:22, marginBottom:12,
               }}>{k.icon}</div>
-              <div className="ayyad-counter" style={{ marginBottom: 4, fontSize:"clamp(1.4rem, 4vw, 2.6rem)", wordBreak:"break-word", overflowWrap:"break-word" }}>
+              <div className="ayyad-counter" style={{ marginBottom: 4, fontSize:"clamp(1.4rem, 4vw, 2.6rem)", minHeight:"2.2em", display:"flex", alignItems:"center", overflow:"hidden" }}>
                 <AnimatedNumber value={k.v} suffix={k.suffix} visible={visible} />
               </div>
               <div style={{ color:"var(--ink-500)", fontSize:11, fontWeight:700, letterSpacing:0.6, textTransform:"uppercase" }}>
