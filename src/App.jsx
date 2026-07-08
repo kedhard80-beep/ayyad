@@ -4357,7 +4357,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
         </div>
 
         {/* ── COLONNE DROITE — Widget de don ── */}
-        <div className="lg:col-span-1" ref={donateRef}>
+        <div className="lg:col-span-1 order-first lg:order-none" ref={donateRef}>
           {/* ── BLOC REDIRECTION DON ── */}
           <div
             onClick={() => setPage("donate")}
