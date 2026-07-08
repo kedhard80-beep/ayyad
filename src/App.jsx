@@ -11383,12 +11383,10 @@ const DonatePage = ({ c, lang, user, setPage }) => {
                   const insertData = {
                     case_id: caseData?.id || null,
                     amount: amt,
-                    amount_fcfa: amt,
                     donor_name: donAnon ? null : (donName.trim() || null),
                     message: donMsg.trim() || null,
                     payment_method: donMethod,
                     status: "pending",
-                    source: "donate_page",
                   };
                   const { error } = await supabase.from("donations").insert(insertData);
                   if (error) throw error;
