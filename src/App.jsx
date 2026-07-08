@@ -11082,14 +11082,15 @@ const DjanaUrgencyBadges = ({ lang }) => {
 };
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── Page de don dédiée — ?p=donate&case=CASEID ───────────────────────────────
+// ── DonatePage v4 — zones CI / international séparées ──────────────────────
 const DonatePage = ({ c, lang, user, setPage }) => {
   const fr = lang === "fr";
   const urlCaseId = new URLSearchParams(window.location.search).get("case");
   const [caseData, setCaseData] = React.useState(c || null);
   const [loadingCase, setLoadingCase] = React.useState(!c && !!urlCaseId);
-  const [copiedOM, setCopiedOM] = React.useState(false);
-  const [copiedMTN, setCopiedMTN] = React.useState(false);
+  const [cpWave, setCpWave] = React.useState(false);
+  const [cpOM,   setCpOM]   = React.useState(false);
+  const [cpMTN,  setCpMTN]  = React.useState(false);
 
   React.useEffect(() => {
     if (c) { setCaseData(c); setLoadingCase(false); return; }
@@ -11109,30 +11110,62 @@ const DonatePage = ({ c, lang, user, setPage }) => {
     : "";
   const handleBack = () => { if (window.history.length > 1) window.history.back(); else setPage("home"); };
   const fmtN = n => (n || 0).toLocaleString("fr-FR");
-  const copyNum = (num, setCopied) => {
-    navigator.clipboard.writeText(num).catch(()=>{}).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); });
+  const copy = (txt, set) => {
+    navigator.clipboard.writeText(txt).catch(()=>{}).then(() => { set(true); setTimeout(() => set(false), 2500); });
   };
 
-  const QR_MTN = "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAADVklEQVR4nO3dsY0bMRBAUctwgS7BpbmE63AdOGZAYD5I6d6LdXurxQeDAZd6Pc/zA6b9PH0DfCZhkRAWCWGREBYJYZEQFglhkRAWCWGREBYJYZEQFglhkRAWiV+7f/D6/Te4jXnP15+tz099r1P/t7b7vaxYJIRFQlgkhEVCWCSERUJYJLbnWCu7c44pu3Og1edX939qzvQuz3PFikVCWCSERUJYJIRFQlgkhEVibI61cmqf0+51du9z9zpT93/b81yxYpEQFglhkRAWCWGREBYJYZHI51ifqp5XvTsrFglhkRAWCWGREBYJYZEQFolvN8eamj+trmO+9Z8Vi4SwSAiLhLBICIuEsEgIi8TYHOtdfndv6pz3+nysd3meK1YsEsIiISwSwiIhLBLCIiEsEq/neU7fwxW8DzjLikVCWCSERUJYJIRFQlgkhEViez/WbfuZbps/nfq9wqn9XlP3acUiISwSwiIhLBLCIiEsEsIisb0f67b33er39U69P1hfZ+o5rFixSAiLhLBICIuEsEgIi4SwSAydjzVq7rJ7ndv2aU1d57b9alYsEsIiISwSwiIhLBLCIiEsEmPnY932Pt3U3OjUfqZd9ffdZcUiISwSwiIhLBLCIiEsEsIicex8rF237TdaOfWe49Tnp56nFYuEsEgIi4SwSAiLhLBICIvEt/u9wtv2Ua2cOsfLHIurCYuEsEgIi4SwSAiLhLBICItEf65w16l50kp8/m7sfVcO3ZtlxSIhLBLCIiEsEsIiISwSwiIhLBLfbo41NU/aVc+fVpzzzkcRFglhkRAWCWGREBYJYZHI51inzs1aqd8TPPU7g7uc885bEhYJYZEQFglhkRAWCWGRGJtjvcvvGNb3WZ/Pfurzu6xYJIRFQlgkhEVCWCSERUJYJF7P85y+Bz6QFYuEsEgIi4SwSAiLhLBICIuEsEgIi4SwSAiLhLBICIuEsEgIi8Q/FlwbqkA0pQoAAAAASUVORK5CYII=";
-  const QR_OM  = "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAADVElEQVR4nO3dQYpbMRBAQTvktDlQruucQBBBP6Q/rlp7xt/moUUjye/P5/OCab9OPwA/k7BICIuEsEgIi4SwSAiLhLBICIuEsEgIi4SwSAiLhLBICIvE7+2/+PMOHiPwd2if2erzrv7/1Otvs/l9WrFICIuEsEgIi4SwSAiLhLBI7M+xVqbmRrt250C7c6ZTn+sp3+eCFYuEsEgIi4SwSAiLhLBICIvE3BxrZWq/0dRc5+n7om77PhesWCSERUJYJIRFQlgkhEVCWCT6OdZPdWq/1ENYsUgIi4SwSAiLhLBICIuEsEh83xxrdz/T1P6tL5t7WbFICIuEsEgIi4SwSAiLhLBI9HOs2+Y3u89z27zqtu9zwYpFQlgkhEVCWCSERUJYJIRFYm6O9fT7pXbnQ1O/V7jylO9zwYpFQlgkhEVCWCSERUJYJIRF4v35PGN/T25q/sTr9bJiEREWCWGREBYJYZEQFglhkdifY+3Oe257fa1+nnq/19BzWrFICIuEsEgIi4SwSAiLhLBIzO3Hesq8aup9V+rPu+vQPfVWLBLCIiEsEsIiISwSwiIhLBL9Pe/1/OYp8636fS/br2bFIiEsEsIiISwSwiIhLBLCIjF3rvCUU/uodj3lXnjnCrmZsEgIi4SwSAiLhLBICItEf65w16l50kp8/m7sfVcO3ZtlxSIhLBLCIiEsEsIiISwSwiIhLBL7c6zbzhWurOY09bytvt9r9/X1/rYFKxYJYZEQFglhkRAWCWGREBaJufux6vnQym3Ps/L0e7acK+QGwiIhLBLCIiEsEsIiISwS536vcNdT7p267fcHD+2fs2KREBYJYZEQFglhkRAWCWGR6OdYt5nan1TPk247n7jJikVCWCSERUJYJIRFQlgkhEXi++ZYp84hTs23dv/PofmWFYuEsEgIi4SwSAiLhLBICItEP8e67Z6q+rze1FxqV/2cm6xYJIRFQlgkhEVCWCSERUJYJObmWE/5HcN6P9bUucX6feP7tKxYJIRFQlgkhEVCWCSERUJYJPZ/rxD+gxWLhLBICIuEsEgIi4SwSAiLhLBICIuEsEgIi4SwSAiLhLBICIvEPyQ00k68+srLAAAAAElFTkSuQmCC";
-  const qrHint = fr
-    ? "Si vous êtes sur ordinateur avec un smartphone Android, scannez le QR code — sinon composez le numéro ci-dessous dans votre app."
-    : "On a computer with an Android phone? Scan the QR code — otherwise dial the number below in your app.";
+  const QR_MTN_IMG  = "iVBORw0KGgoAAAANSUhEUgAAAYYAAAGGAQAAAABX+xtIAAACy0lEQVR4nO2cTY6jMBBGXw1IWRKpD9BHITeYI/XV4Ci5gVlGMvpm4R9getNpTTJpq7xAJORJtor6XFW2Y+K+tv66EwAnnHDCCSeeT6yW23k1WHqYz+QLAHP5wTN75cRjCUmSJoD5PcIYsvXNzgCDJCk+uVdOPJSYsxMDixnQ5dguWZ/VsvVffBxOfKH1h0+dbAxvEZa3aAwBZvubeM1xOPFdYjUYbtmnx6uZpiH+91458W+J7OdjkvJOzNaJ+XdAEHuDk8hSvz6tV048nkhR+aX4ObAa8xk0DTeDxczM+if3yonHEDlk39o0RBhLGC+F7vg8vuY4nLijSYpI4fDdBDCGLudvoyL5FXCb/3wi2ZxREqNitXSn5OLpTpGapL/mOJy4o22KfrA02buTAJTg3W3eErH02EdYzS7DzWCQchX2PSJdT6pZ22uPw4kvNElSVvRByuYeIpqGUo9Nsh7cz9sgSgyXLjrIeiqwd+mN8Pm8GaLkagE2Py86XtK07YHbvAFiF8MlgVe9TEXgU0DPEF3bmyDKfK5ICd5hWzzd6u1ek2mKWA2Wk+wjTdsRTUuPmeVSezL87HsmGiGyn1PycyhJ+laHSx9d21shcsg+sW2WqZbWUeA9hmuEOObnufBWjFzm+G3Kd5s3QNQ1lpqGk3WcMVBj+ZzJuc1bIHY1mdSqkXNFjlyg83W1ZojdfJ4ce+fnqrIeqCrvNv/xxL7EWh07PwjsBKDsnnCb/3jiuE9mK8LUAnvYpMBt3g6xnWOhCjxoWszsAvsTLU/slROPIg5Lap8ztIPAu583RdRzLJqWkxivPcx5oytm1m9b5l56HE58g7CPQDqllu4ukPI35vPq9fYmiE9nlxhuJpa3yHzGxAJiWa3+N8FrjsOJO9phPldZXjnso9h2Qvt83gKxL8GVlbOy/7mWXXMg57XXNgjz/5NxwgknnGiO+AMIltKgPVPdtQAAAABJRU5ErkJggg==";
+  const QR_OM_IMG   = "iVBORw0KGgoAAAANSUhEUgAAAV4AAAFeAQAAAADlUEq3AAACN0lEQVR4nO2bQcrbMBBG31SGLh3oAXoU+ej2UXqAgrMMWHxdSLKttIX8aZMKOrMwUfQWHwwznpHGJh629OlxFhx22GGH/xc4WbFL+dMmktlEMpa693oZDj8FI2lDkqR5lIhrEBCkedzQPEoV2TrR7PAv4KVEGSxfb0bUzYAgcoRe3iTD4Y/Dw91agGyxIINhe5cMh/8abBPJYLyZ5n8ow+GHrcRgzG1hGuB6AQgiKplqKn2xDIefhnMlUyyXLu3jzHWi2eHGdG8ruQL9edc92CNcu4k1CMYN4hpUllCX7sF+4Rxl5Bdf9ZtmgvJDa9lwD3YKlxicgXMMqvzKSG3rO9HscGMnb8W1vvhmyhLG+m50D/YJ1yya6849d5ZjNIiqG+7BPuHTuWhOoDljrkFEbZTM6pVMv/DpUPvIndIKUEPSPdgz3HR8K8BYkmrOrPIs2jl86iaO66S8sV8seQz2DO8xeFwS7g0+h3+9Fu0aTgbXzzKzcs5tU61fbCLZHpcdaXZ4t/bkk9wF7p3hUdh4DHYK793E0Q+SryVKN3FGOtHscGP3MchYIq8G4uYe7Bpu7wfbSSfYLwm9m+gWbmfVau7MZ2m1H9w7w040O3y2Un0uEwiCDECLBcF1IC+5Di+W4fDTcDurlgbKmFoyMX4fxPXLMbDWiWaHfw8H5VHRKIn4bYDlUtvDN8pw+APWzqoBEGSLhQ1GYVGgxV4tw+Gn4ftZtfqoB93Rz0U7h82/H3TYYYcd/gP4ByZfTpmD97sOAAAAAElFTkSuQmCC";
+  const QR_WAVE_IMG = "iVBORw0KGgoAAAANSUhEUgAAAYYAAAGGAQAAAABX+xtIAAAC1UlEQVR4nO2cTY6jMBCFX40tZencIEeBG8yRRnMzOEoO0JJZRgK9WZR/ID2LsADRVtWiOwQ+yVa57KpnEyH22fJrJwAYYYQRRhhxLgGSc/4cZgBwRBfL3ejIYf3wNfthxF6CJNW1HMIMIJAcAglgEb3MY+PK/TDiE/P6b+wBaog//Uxg8eji4nOGt3ggfJ3WKiOOJPzmavFAeAnHHiCmO4Awbx+5aD+M+Ny2DnUEJg9BiPiPu09rlREnEB2p07j0AMgIYBQPjHcAgKN+d26rjDiE0EgWvQiL5/iYPcbfX54IXznOJzm3VUYcSXjojK62QNIwcBQE6Cd0a7Humv0wYoeRnMFBHe+YCvJAoouO6DgjX1p93gaRfE7OQMcZybUROg7qn/LwNfthxA5LcR5mZLnNUYWZlNflmb9LY+Oa/TBih3FlMbtbHY+cwddZ3nzeDCFyXwTj4yXA5IsG7yh9fXS68dxWGXEMUZZy5go8cJW5Ve9DMzyL859PvOftWOkv796n+bwpIrxEU/YBi2B8zCCfIsB0o/STiMj9/FYZcQShORwQUvKuW+dl/1yDHaFM/xbnbRCLcAAgfyJywZandU3p9LtJ5MxWGXEUkeK8iy6FswY2gHcJbrAcrhEi5+0xZW7pdExI5fq6NI/m8zaItfZa9HYUMS45vt41n/98omivLHGewj4t6rHGvulwbRBFe616ezkLG7bnImF7LG0QpVariRyZt1xcWdQB20tthtjqcNis7HkCUDOft0SsNs0ATDeScRERSUejNqL7hfthxIe2iuT6HgtqSoe0npve3gxRajWWkxI5fUtV23pYmM8bIkYRQTrfftOkTfrwEjICIuLrkn/pfhjxidUy7furaigCnbMzkA0T3VPSYfYuOvLv4yX6YsP4oMV5E8R2PWeWXfVePj2RQ9zivAniPW9P2XkEqk6zmvTN5w0QYr8nY4QRRhjRHPEPj8+qPWpEy8UAAAAASUVORK5CYII=";
+  const MTN_LINK    = "https://appbiz.momo.africa/momo/request-momo/2250501855991";
+  const WAVE_LINK   = "https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/";
+
+  // Petit badge pays
+  const T = ({f,n}) => (
+    <span style={{display:"inline-flex",alignItems:"center",gap:3,background:"rgba(0,0,0,0.07)",borderRadius:20,padding:"2px 6px",fontSize:10,fontWeight:700,color:"#374151",whiteSpace:"nowrap"}}>{f} {n}</span>
+  );
+  // Numéro + bouton copier
+  const NumRow = ({num,display,cp,set}) => (
+    <div style={{display:"flex",alignItems:"center",gap:8,background:"#fff",border:"1px solid #BFDBFE",borderRadius:8,padding:"8px 10px"}}>
+      <span style={{fontFamily:"monospace",fontWeight:800,fontSize:12,color:"#1E40AF",flex:1}}>{display}</span>
+      <button onClick={()=>copy(num,set)} style={{background:"#2563EB",color:"#fff",border:"none",borderRadius:6,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
+        {cp?"✓":(fr?"Copier":"Copy")}
+      </button>
+    </div>
+  );
+  // Zone CI (fond ambré)
+  const CI = ({children}) => (
+    <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:12,padding:"12px",display:"flex",flexDirection:"column",gap:8}}>
+      <div style={{fontSize:10,fontWeight:800,color:"#92400E",letterSpacing:"0.08em"}}>🇨🇮 {fr?"DEPUIS LA CÔTE D'IVOIRE":"FROM CÔTE D'IVOIRE"}</div>
+      {children}
+    </div>
+  );
+  // Zone internationale (fond bleu)
+  const Intl = ({pays,children}) => (
+    <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:12,padding:"12px",display:"flex",flexDirection:"column",gap:8}}>
+      <div style={{fontSize:10,fontWeight:800,color:"#1E3A8A",letterSpacing:"0.08em"}}>🌍 {fr?"DEPUIS L'ÉTRANGER":"FROM ABROAD"}</div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:3}}>{pays}</div>
+      {children}
+    </div>
+  );
+  const card = (accent) => ({background:"#fff",borderRadius:18,boxShadow:"0 2px 8px rgba(0,0,0,0.07),0 8px 24px rgba(0,0,0,0.04)",border:"1px solid rgba(0,0,0,0.06)",borderTop:"4px solid "+accent,display:"flex",flexDirection:"column",gap:12,padding:"20px"});
 
   return (
-    <div style={{minHeight:"100vh",background:"#f9fafb",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+
+      <style>{`.donate-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}@media(max-width:900px){.donate-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:580px){.donate-grid{grid-template-columns:1fr}}`}</style>
 
       {/* ── En-tête ── */}
-      <div style={{background:"linear-gradient(135deg,#059669,#0d9488)",color:"#fff",padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+      <div style={{background:"linear-gradient(135deg,#059669,#0d9488)",color:"#fff",padding:"14px 20px",display:"flex",alignItems:"center",gap:12}}>
         <button onClick={handleBack} style={{background:"rgba(255,255,255,0.2)",border:"none",color:"#fff",width:38,height:38,borderRadius:"50%",fontSize:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>←</button>
-        <span style={{fontWeight:900,fontSize:17,flex:1}}>{fr ? "💝 Faire un don" : "💝 Make a donation"}</span>
+        <span style={{fontWeight:900,fontSize:17,flex:1}}>{fr?"💝 Faire un don":"💝 Make a donation"}</span>
         <span style={{fontSize:22}}>🏥</span>
       </div>
 
       {/* ── Info patient ── */}
-      {loadingCase && <div style={{padding:32,textAlign:"center",color:"#9ca3af",fontSize:14}}>{fr?"Chargement…":"Loading…"}</div>}
-      {caseData && !loadingCase && (
-        <div style={{padding:"14px 16px",borderBottom:"1px solid #e5e7eb",background:"#fff"}}>
+      {loadingCase&&<div style={{padding:32,textAlign:"center",color:"#9ca3af",fontSize:14}}>{fr?"Chargement…":"Loading…"}</div>}
+      {caseData&&!loadingCase&&(
+        <div style={{padding:"14px 20px",borderBottom:"1px solid #e5e7eb",background:"#fff"}}>
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
             <div style={{width:46,height:46,borderRadius:"50%",background:"linear-gradient(135deg,#d1fae5,#6ee7b7)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>🏥</div>
             <div style={{flex:1,minWidth:0}}>
@@ -11144,120 +11177,146 @@ const DonatePage = ({ c, lang, user, setPage }) => {
             <span style={{fontWeight:800,color:"#059669"}}>{fmtN(collected)} FCFA {fr?"collectés":"raised"}</span>
             <span style={{color:"#9ca3af"}}>{fmtN(required)} FCFA</span>
           </div>
-          <div style={{height:7,background:"#e5e7eb",borderRadius:8,overflow:"hidden"}}>
-            <div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,#059669,#10b981)",borderRadius:8}} />
+          <div style={{height:6,background:"#e5e7eb",borderRadius:8,overflow:"hidden"}}>
+            <div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,#059669,#10b981)",borderRadius:8}}/>
           </div>
           <div style={{fontSize:11,color:"#9ca3af",marginTop:3}}>{pct}% {fr?"atteint":"reached"}</div>
         </div>
       )}
 
-      {/* ── Moyens de paiement ── */}
-      <div style={{flex:1,padding:"18px 16px",display:"flex",flexDirection:"column",gap:14}}>
-        <div style={{fontSize:11,fontWeight:800,color:"#9ca3af",textTransform:"uppercase",letterSpacing:"0.08em"}}>
+      {/* ── Grille paiements ── */}
+      <div style={{maxWidth:1000,margin:"0 auto",padding:"24px 16px"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:20}}>
           {fr?"Choisissez votre moyen de paiement":"Choose your payment method"}
         </div>
 
-        {/* 1 — Wave CI */}
-        <a href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/" target="_blank" rel="noopener noreferrer"
-          style={{display:"flex",alignItems:"center",gap:14,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",color:"#fff",borderRadius:16,padding:"18px 18px",boxShadow:"0 6px 22px rgba(37,99,235,0.35)",textDecoration:"none"}}>
-          <div style={{width:48,height:48,borderRadius:12,background:"rgba(255,255,255,0.18)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>🌊</div>
-          <div style={{flex:1}}>
-            <div style={{fontWeight:900,fontSize:18,marginBottom:2}}>Wave CI</div>
-            <div style={{fontSize:12,opacity:0.88}}>{fr?"Paiement instantané · Zéro frais":"Instant · Zero fees"}</div>
-          </div>
-          <span style={{fontSize:22,opacity:0.8}}>→</span>
-        </a>
+        <div className="donate-grid">
 
-        {/* 2 — Orange Money */}
-        <div style={{background:"#fff",border:"2px solid #f97316",borderRadius:16,overflow:"hidden"}}>
-          <div style={{display:"flex",alignItems:"center",gap:14,padding:"16px 18px"}}>
-            <div style={{width:48,height:48,borderRadius:12,background:"linear-gradient(135deg,#fed7aa,#fb923c)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>🟠</div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontWeight:900,fontSize:16,color:"#111",marginBottom:2}}>Orange Money</div>
-              <div style={{fontFamily:"'Courier New',monospace",fontSize:15,fontWeight:800,color:"#ea580c"}}>+225 07 48 05 61 28</div>
-              <div style={{fontSize:11,color:"#9ca3af",marginTop:1}}>{fr?"Nom : AYYAD SOLIDARITE":"Name: AYYAD SOLIDARITE"}</div>
+          {/* ── 1. WAVE CI ── */}
+          <div style={card("#FFCC00")}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:26}}>🌊</span>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:900,fontSize:15,color:"#111"}}>Wave CI</div>
+                <div style={{fontSize:11,color:"#6b7280"}}>{fr?"Zéro frais · Instantané":"Zero fees · Instant"}</div>
+              </div>
+              <span style={{background:"#FEFCE8",color:"#854D0E",fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:20,border:"1px solid #FDE68A"}}>⚡ RAPIDE</span>
             </div>
-            <button onClick={() => copyNum("+2250748056128", setCopiedOM)}
-              style={{background:copiedOM?"#d1fae5":"#fff7ed",border:"1.5px solid "+(copiedOM?"#059669":"#f97316"),color:copiedOM?"#059669":"#ea580c",padding:"7px 12px",borderRadius:10,fontSize:12,fontWeight:800,cursor:"pointer",flexShrink:0}}>
-              {copiedOM?(fr?"✓ Copié":"✓ Copied"):(fr?"Copier":"Copy")}
-            </button>
+            <CI>
+              <div style={{textAlign:"center"}}>
+                <img src={"data:image/png;base64,"+QR_WAVE_IMG} alt="QR Wave" style={{width:120,height:120,borderRadius:8,border:"1px solid #FDE68A"}}/>
+              </div>
+              <a href={WAVE_LINK} target="_blank" rel="noopener noreferrer" style={{display:"block",textAlign:"center",background:"linear-gradient(135deg,#FFCC00,#F59E0B)",color:"#1c1917",borderRadius:10,padding:"10px",fontWeight:900,fontSize:13,textDecoration:"none"}}>
+                📱 {fr?"Touchez ici (smartphone)":"Tap here (smartphone)"}
+              </a>
+              <div style={{fontSize:10,textAlign:"center",color:"#92400E"}}>{fr?"Ou scannez depuis votre app Wave":"Or scan from your Wave app"}</div>
+            </CI>
+            <Intl pays={[<T f="🇸🇳" n="Sénégal"/>,<T f="🇲🇱" n="Mali"/>,<T f="🇧🇫" n="Burkina Faso"/>,<T f="🇳🇪" n="Niger"/>,<T f="🇬🇲" n="Gambie"/>,<T f="🇺🇬" n="Ouganda"/>,<T f="🇨🇲" n="Cameroun"/>]}>
+              <div style={{fontSize:11,color:"#1E3A8A"}}>{fr?"Ouvrez Wave → entrez ce numéro CI :":"Open Wave → enter this CI number:"}</div>
+              <NumRow num="+2250748056128" display="+225 07 48 05 61 28" cp={cpWave} set={setCpWave}/>
+            </Intl>
           </div>
-          <div style={{borderTop:"1px solid #ffedd5",padding:"12px 18px",background:"#fff7ed"}}>
-            <div style={{fontSize:11,color:"#9a3412",marginBottom:10,lineHeight:1.5}}>{qrHint}</div>
-            <img src={"data:image/png;base64," + QR_OM} alt="QR Orange Money" style={{width:130,height:130,display:"block",margin:"0 auto",borderRadius:8,border:"2px solid #f97316"}} />
+
+          {/* ── 2. ORANGE MONEY ── */}
+          <div style={card("#FF6200")}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:26}}>🟠</span>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:900,fontSize:15,color:"#111"}}>Orange Money</div>
+                <div style={{fontSize:11,color:"#6b7280"}}>Mobile Money</div>
+              </div>
+            </div>
+            <CI>
+              <div style={{textAlign:"center"}}>
+                <img src={"data:image/png;base64,"+QR_OM_IMG} alt="QR OM" style={{width:120,height:120,borderRadius:8,border:"1px solid #FDE68A"}}/>
+              </div>
+              <div style={{fontSize:10,textAlign:"center",color:"#92400E"}}>{fr?"Scannez depuis votre app OM ou composez :":"Scan from OM app or dial:"}</div>
+              <NumRow num="+2250748056128" display="+225 07 48 05 61 28" cp={cpOM} set={setCpOM}/>
+            </CI>
+            <Intl pays={[<T f="🇫🇷" n="France"/>,<T f="🇧🇪" n="Belgique"/>,<T f="🇬🇧" n="UK"/>,<T f="🇩🇪" n="Allemagne"/>,<T f="🇮🇹" n="Italie"/>,<T f="🇨🇦" n="Canada"/>,<T f="🇺🇸" n="USA"/>,<T f="🇸🇦" n="Arabie S."/>,<T f="🇦🇪" n="Émirats"/>,<T f="🇨🇲" n="Cameroun"/>,<T f="🇲🇱" n="Mali"/>,<T f="🇸🇳" n="Sénégal"/>,<T f="🇧🇫" n="Burkina"/>,<T f="🇬🇳" n="Guinée"/>]}>
+              <div style={{fontSize:11,color:"#1E3A8A"}}>{fr?"App Orange Money / orangemoney.com → vers CI :":"Orange Money app / orangemoney.com → to CI:"}</div>
+              <NumRow num="+2250748056128" display="+225 07 48 05 61 28" cp={cpOM} set={setCpOM}/>
+            </Intl>
           </div>
+
+          {/* ── 3. MTN MOMO ── */}
+          <div style={card("#FFC429")}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:26}}>📡</span>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:900,fontSize:15,color:"#111"}}>MTN MoMo</div>
+                <div style={{fontSize:11,color:"#6b7280"}}>Mobile Money</div>
+              </div>
+            </div>
+            <CI>
+              <div style={{textAlign:"center"}}>
+                <img src={"data:image/png;base64,"+QR_MTN_IMG} alt="QR MTN" style={{width:120,height:120,borderRadius:8,border:"1px solid #FDE68A"}}/>
+              </div>
+              <a href={MTN_LINK} target="_blank" rel="noopener noreferrer" style={{display:"block",textAlign:"center",background:"linear-gradient(135deg,#FFC429,#D97706)",color:"#1c1917",borderRadius:10,padding:"10px",fontWeight:900,fontSize:13,textDecoration:"none"}}>
+                📱 {fr?"Touchez ici (smartphone)":"Tap here (smartphone)"}
+              </a>
+              <div style={{fontSize:10,textAlign:"center",color:"#92400E"}}>{fr?"Ou scannez depuis votre app MTN":"Or scan from your MTN app"}</div>
+            </CI>
+            <Intl pays={[<T f="🇧🇯" n="Bénin"/>,<T f="🇨🇲" n="Cameroun"/>,<T f="🇨🇬" n="Congo"/>,<T f="🇬🇦" n="Gabon"/>,<T f="🇬🇭" n="Ghana"/>,<T f="🇬🇳" n="Guinée"/>,<T f="🇬🇼" n="Guinée-Bissau"/>,<T f="🇱🇷" n="Liberia"/>,<T f="🇳🇪" n="Niger"/>,<T f="🇳🇬" n="Nigeria"/>,<T f="🇲🇬" n="Madagascar"/>,<T f="🇲🇼" n="Malawi"/>,<T f="🇲🇿" n="Mozambique"/>,<T f="🇺🇬" n="Ouganda"/>,<T f="🇷🇼" n="Rwanda"/>,<T f="🇿🇲" n="Zambie"/>]}>
+              <div style={{fontSize:11,color:"#1E3A8A"}}>{fr?"App MTN → Transfert international → CI :":"MTN app → Intl transfer → CI:"}</div>
+              <NumRow num="+2250501855991" display="+225 05 01 85 59 91" cp={cpMTN} set={setCpMTN}/>
+            </Intl>
+          </div>
+
+          {/* ── 4. SENDWAVE ── */}
+          <div style={card("#7C3AED")}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:26}}>✈️</span>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:900,fontSize:15,color:"#111"}}>Sendwave</div>
+                <div style={{fontSize:11,color:"#6b7280"}}>{fr?"Diaspora — Europe · Amérique":"Diaspora — Europe · Americas"}</div>
+              </div>
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+              <T f="🇫🇷" n="France"/><T f="🇧🇪" n="Belgique"/><T f="🇨🇭" n="Suisse"/><T f="🇨🇦" n="Canada"/><T f="🇺🇸" n="USA"/><T f="🇬🇧" n="UK"/>
+            </div>
+            <div style={{background:"#F5F3FF",border:"1px solid #DDD6FE",borderRadius:12,padding:"14px",fontSize:12,color:"#4C1D95",lineHeight:1.8}}>
+              <div><strong>1.</strong> {fr?"Téléchargez Sendwave (iOS / Android)":"Download Sendwave (iOS / Android)"}</div>
+              <div><strong>2.</strong> {fr?"Envoyez en EUR, USD, GBP, CAD…":"Send in EUR, USD, GBP, CAD…"}</div>
+              <div><strong>3.</strong> {fr?"Numéro Wave AYYAD CI :":"AYYAD CI Wave number:"}</div>
+            </div>
+            <NumRow num="+2250748056128" display="+225 07 48 05 61 28" cp={cpWave} set={setCpWave}/>
+            <div style={{display:"flex",gap:6}}>
+              <a href="https://apps.apple.com/app/id673498499" target="_blank" rel="noopener noreferrer" style={{flex:1,textAlign:"center",background:"#1C1917",color:"#fff",borderRadius:8,padding:"8px",fontSize:11,fontWeight:700,textDecoration:"none"}}>🍎 iOS</a>
+              <a href="https://play.google.com/store/apps/details?id=com.sendwave.SendwaveApp" target="_blank" rel="noopener noreferrer" style={{flex:1,textAlign:"center",background:"#059669",color:"#fff",borderRadius:8,padding:"8px",fontSize:11,fontWeight:700,textDecoration:"none"}}>🤖 Android</a>
+              <a href="https://sendwave.com" target="_blank" rel="noopener noreferrer" style={{flex:1,textAlign:"center",background:"#7C3AED",color:"#fff",borderRadius:8,padding:"8px",fontSize:11,fontWeight:700,textDecoration:"none"}}>🌐 Web</a>
+            </div>
+          </div>
+
+          {/* ── 5. CARTE BANCAIRE ── */}
+          <div style={{...card("#CBD5E1"),opacity:0.75}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:26}}>💳</span>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:900,fontSize:15,color:"#6b7280"}}>{fr?"Carte bancaire":"Bank card"}</div>
+                <div style={{fontSize:11,color:"#9ca3af"}}>Visa · Mastercard</div>
+              </div>
+              <span style={{background:"#f1f5f9",color:"#9ca3af",fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:20,border:"1px solid #e2e8f0"}}>{fr?"BIENTÔT":"SOON"}</span>
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:4}}><T f="🌍" n={fr?"International":"International"}/></div>
+            <div style={{textAlign:"center",padding:"20px 0",color:"#9ca3af",fontSize:13}}>{fr?"Paiement par carte bientôt disponible":"Card payment coming soon"}</div>
+          </div>
+
         </div>
 
-        {/* 3 — MTN MoMo */}
-        <div style={{background:"#fff",border:"2px solid #eab308",borderRadius:16,overflow:"hidden"}}>
-          <div style={{display:"flex",alignItems:"center",gap:14,padding:"16px 18px"}}>
-            <div style={{width:48,height:48,borderRadius:12,background:"linear-gradient(135deg,#fef08a,#facc15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>💛</div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontWeight:900,fontSize:16,color:"#111",marginBottom:2}}>MTN MoMo</div>
-              <div style={{fontFamily:"'Courier New',monospace",fontSize:15,fontWeight:800,color:"#ca8a04"}}>+225 05 01 85 59 91</div>
-              <div style={{fontSize:11,color:"#9ca3af",marginTop:1}}>{fr?"Nom : AYYAD SOLIDARITE":"Name: AYYAD SOLIDARITE"}</div>
-            </div>
-            <button onClick={() => copyNum("+2250501855991", setCopiedMTN)}
-              style={{background:copiedMTN?"#d1fae5":"#fefce8",border:"1.5px solid "+(copiedMTN?"#059669":"#eab308"),color:copiedMTN?"#059669":"#ca8a04",padding:"7px 12px",borderRadius:10,fontSize:12,fontWeight:800,cursor:"pointer",flexShrink:0}}>
-              {copiedMTN?(fr?"✓ Copié":"✓ Copied"):(fr?"Copier":"Copy")}
-            </button>
-          </div>
-          <div style={{borderTop:"1px solid #fef9c3",padding:"12px 18px",background:"#fefce8"}}>
-            <div style={{fontSize:11,color:"#713f12",marginBottom:10,lineHeight:1.5}}>{qrHint}</div>
-            <img src={"data:image/png;base64," + QR_MTN} alt="QR MTN MoMo" style={{width:130,height:130,display:"block",margin:"0 auto",borderRadius:8,border:"2px solid #eab308"}} />
+        {/* ── Sécurité ── */}
+        <div style={{display:"flex",alignItems:"flex-start",gap:12,background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:14,padding:"14px 18px",marginTop:24}}>
+          <span style={{fontSize:20,flexShrink:0}}>🔒</span>
+          <div style={{fontSize:12,color:"#166534",lineHeight:1.6}}>
+            <strong>{fr?"Fonds sécurisés":"Secure funds"}</strong> — {fr?"Les dons sont versés directement à l'hôpital partenaire, jamais en espèces.":"Donations go directly to the partner hospital, never in cash."}
           </div>
         </div>
-
-        {/* 4 — Sendwave */}
-        <details style={{background:"#fff",border:"2px solid #e0e7ff",borderRadius:16,overflow:"hidden"}}>
-          <summary style={{display:"flex",alignItems:"center",gap:14,padding:"16px 18px",cursor:"pointer",listStyle:"none"}}>
-            <div style={{width:48,height:48,borderRadius:12,background:"linear-gradient(135deg,#c7d2fe,#818cf8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>🌍</div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:900,fontSize:15,color:"#1e1b4b",marginBottom:2}}>{fr?"Vous êtes à l'étranger ?":"Donating from abroad?"}</div>
-              <div style={{fontSize:12,color:"#6366f1"}}>Sendwave — France, Canada, USA, UK…</div>
-            </div>
-            <span style={{color:"#a5b4fc",fontSize:13}}>▼</span>
-          </summary>
-          <div style={{borderTop:"1px solid #e0e7ff",padding:"14px 18px",background:"#f5f3ff"}}>
-            <p style={{fontSize:13,color:"#312e81",lineHeight:1.6,marginBottom:10}}>
-              {fr?"Utilisez l'app Sendwave (gratuite) depuis l'Europe ou l'Amérique du Nord. L'argent arrive en FCFA sur le compte AYYAD."
-                :"Use the free Sendwave app from Europe or North America. Funds arrive as FCFA in the AYYAD account."}
-            </p>
-            <ol style={{fontSize:13,color:"#3730a3",paddingLeft:20,lineHeight:1.9,marginBottom:12}}>
-              <li>{fr?"Téléchargez Sendwave (App Store / Play Store)":"Download Sendwave (App Store / Play Store)"}</li>
-              <li>{fr?"Envoyez au : +225 07 48 05 61 28 (Wave AYYAD)":"Send to: +225 07 48 05 61 28 (AYYAD Wave)"}</li>
-              <li>{fr?"Entrez le montant en EUR / USD / GBP / CAD":"Enter amount in EUR / USD / GBP / CAD"}</li>
-            </ol>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-              <a href="https://apps.apple.com/app/sendwave-send-money/id1238118264" target="_blank" rel="noopener noreferrer" style={{background:"#4f46e5",color:"#fff",padding:"7px 14px",borderRadius:8,fontSize:12,fontWeight:700,textDecoration:"none"}}>iOS</a>
-              <a href="https://play.google.com/store/apps/details?id=com.wave" target="_blank" rel="noopener noreferrer" style={{background:"#4f46e5",color:"#fff",padding:"7px 14px",borderRadius:8,fontSize:12,fontWeight:700,textDecoration:"none"}}>Android</a>
-              <a href="https://www.sendwave.com" target="_blank" rel="noopener noreferrer" style={{border:"2px solid #6366f1",color:"#4f46e5",padding:"7px 14px",borderRadius:8,fontSize:12,fontWeight:700,textDecoration:"none"}}>sendwave.com</a>
-            </div>
-          </div>
-        </details>
-
-        {/* 5 — Carte bancaire */}
-        <div style={{background:"#f9fafb",border:"2px dashed #d1d5db",borderRadius:16,padding:"16px 18px",opacity:0.75}}>
-          <div style={{display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:48,height:48,borderRadius:12,background:"#e5e7eb",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>💳</div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:900,fontSize:16,color:"#374151",marginBottom:2}}>{fr?"Carte bancaire":"Bank card"}</div>
-              <div style={{fontSize:12,color:"#9ca3af"}}>{fr?"Pas encore disponible":"Not yet available"}</div>
-            </div>
-            <span style={{background:"#f3f4f6",color:"#9ca3af",padding:"5px 10px",borderRadius:20,fontSize:11,fontWeight:800}}>Soon</span>
-          </div>
+        <div style={{textAlign:"center",marginTop:16}}>
+          <button onClick={handleBack} style={{fontSize:13,color:"#059669",background:"none",border:"none",cursor:"pointer",textDecoration:"underline"}}>
+            {fr?"← Retour au dossier patient":"← Back to patient case"}
+          </button>
         </div>
-
       </div>
-
-      {/* ── Footer ── */}
-      <div style={{padding:"14px 16px",borderTop:"1px solid #e5e7eb",textAlign:"center",background:"#fff"}}>
-        <div style={{fontSize:12,color:"#9ca3af",marginBottom:8}}>🔒 {fr?"Paiement sécurisé · AYYAD CI":"Secure payment · AYYAD CI"}</div>
-        <button onClick={handleBack} style={{fontSize:13,color:"#059669",background:"none",border:"none",cursor:"pointer",textDecoration:"underline"}}>
-          {fr?"← Voir le dossier complet":"← View full case"}
-        </button>
-      </div>
-
     </div>
   );
 };
