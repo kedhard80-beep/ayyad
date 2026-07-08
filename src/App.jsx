@@ -11072,12 +11072,38 @@ const DjanaUrgencyTopBar = () => {
 };
 
 const DjanaUrgencyBadges = ({ lang }) => {
-  const go = () => { window.location.href = DJANA_CASE_URL; };
+  const go = () => { sessionStorage.setItem('ayyadLang', lang); window.location.href = DJANA_CASE_URL; };
   return (
-    <div onClick={go} style={{position:"fixed",bottom:"42%",right:16,zIndex:99998,cursor:"pointer",background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"#fff",borderRadius:50,padding:"10px 16px",display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:800,boxShadow:"0 4px 16px rgba(220,38,38,0.55)",willChange:"transform",transform:"translateZ(0)",animation:"djana-pulse-badge 2.2s ease-in-out infinite",userSelect:"none",maxWidth:200,whiteSpace:"nowrap"}}>
-      <span>💝</span>
-      <span>{lang==="fr" ? "Faites un don à Djana" : "Donate for Djana"}</span>
-    </div>
+    <>
+      <style>{`
+        @keyframes djana-pulse-badge {
+          0%,100%{box-shadow:0 4px 16px rgba(220,38,38,0.55),0 0 0 0 rgba(220,38,38,0.4)}
+          50%{box-shadow:0 4px 20px rgba(220,38,38,0.75),0 0 0 8px rgba(220,38,38,0)}
+        }
+        .djana-badge-wrap {
+          position:fixed;bottom:8px;right:16px;z-index:99998;
+          display:flex;align-items:center;gap:8px;
+          background:linear-gradient(135deg,#dc2626,#b91c1c);
+          color:#fff;cursor:pointer;user-select:none;
+          border-radius:50px;padding:10px 16px;
+          font-size:12px;font-weight:800;white-space:nowrap;
+          animation:djana-pulse-badge 2.2s ease-in-out infinite;
+          will-change:transform;transform:translateZ(0);
+          box-shadow:0 4px 16px rgba(220,38,38,0.55);
+        }
+        @media(max-width:640px){
+          .djana-badge-wrap{
+            bottom:0;right:0;left:0;border-radius:0;
+            padding:14px 20px;font-size:14px;
+            justify-content:center;
+          }
+        }
+      `}</style>
+      <div className="djana-badge-wrap" onClick={go}>
+        <span>💝</span>
+        <span>{(lang||"fr")==="fr" ? "Faites un don à Djana" : "Donate for Djana"}</span>
+      </div>
+    </>
   );
 };
 // ─────────────────────────────────────────────────────────────────────────────
@@ -11139,7 +11165,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
   // Numéro + bouton copier
   const NumRow = ({num,display,cp,set}) => (
     <div style={{display:"flex",alignItems:"center",gap:8,background:"#fff",border:"1px solid #BFDBFE",borderRadius:8,padding:"10px 14px"}}>
-      <span style={{fontFamily:"monospace",fontWeight:800,fontSize:12,color:"#1E40AF",flex:1}}>{display}</span>
+      <span style={{fontFamily:"monospace",fontWeight:800,fontSize:12,color:"#1E40AF",flex:1,whiteSpace:"nowrap",overflowX:"auto"}}>{display}</span>
       <button onClick={()=>copy(num,set)} style={{background:"#2563EB",color:"#fff",border:"none",borderRadius:6,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
         {cp?"✓":(fr?"Copier":"Copy")}
       </button>
@@ -11361,7 +11387,6 @@ const DonatePage = ({ c, lang, user, setPage }) => {
                     donor_name: donAnon ? null : (donName.trim() || null),
                     message: donMsg.trim() || null,
                     payment_method: donMethod,
-                    is_anonymous: donAnon,
                     status: "pending",
                     source: "donate_page",
                   };
