@@ -11188,7 +11188,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
       )}
 
       {/* ── Grille paiements ── */}
-      <div style={{maxWidth:1040,margin:"0 auto",padding:"32px 20px"}}>
+      <div style={{padding:"32px 24px"}}>
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:20}}>
           {fr?"Choisissez votre moyen de paiement":"Choose your payment method"}
         </div>
