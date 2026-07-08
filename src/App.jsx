@@ -4356,322 +4356,34 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
         {/* ── COLONNE DROITE — Widget de don ── */}
         <div className="lg:col-span-1" ref={donateRef}>
-          {/* ── BOUTON PAGE DE DON DÉDIÉE ── */}
-          {!funded && (
-            <a
-              href={`?p=donate&case=${c.trackingId||c.tracking_id||""}`}
-              onClick={e => { e.preventDefault(); const cid = c.trackingId||c.tracking_id||""; window.history.pushState({},"","?p=donate&case="+cid); setPage("donate"); }}
-              className="flex items-center justify-center gap-3 w-full text-white font-black text-base py-4 px-5 rounded-2xl mb-4 shadow-lg transition-all active:scale-[0.98]"
-              style={{background:"linear-gradient(135deg,#059669,#0d9488)",textDecoration:"none",boxShadow:"0 6px 22px rgba(5,150,105,0.4)"}}
-            >
-              <span style={{fontSize:22}}>💝</span>
-              <span>{lang==="fr" ? "Faites votre don ici" : "Donate here"}</span>
-              <span style={{fontSize:20,opacity:0.8}}>→</span>
-            </a>
-          )}
-
-          <div className="sticky top-6">
-            {/* Card principale du widget */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-2xl overflow-hidden">
-              {/* Header coloré */}
-              <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-5">
-                <div className="text-white font-black text-lg">{lang==="fr"?"Soutenir ce patient":"Support this patient"}</div>
-                <div className="text-emerald-100 text-xs mt-0.5">{lang==="fr"?"100% sécurisé · Zéro frais":"100% secure · Zero fees"}</div>
+          {/* ── BLOC REDIRECTION DON ── */}
+          <a
+            href={`?p=donate&case=${c.trackingId||c.tracking_id||""}`}
+            onClick={e => {
+              e.preventDefault();
+              window.location.href = "?p=donate&case=" + (c.trackingId||c.tracking_id||"");
+            }}
+            style={{
+              display:"flex", alignItems:"center", gap:16,
+              background:"linear-gradient(135deg,#059669,#0d9488)",
+              color:"#fff", borderRadius:20, padding:"28px 22px",
+              boxShadow:"0 8px 32px rgba(5,150,105,0.45)",
+              textDecoration:"none", cursor:"pointer"
+            }}
+          >
+            <span style={{fontSize:48}}>💝</span>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:900,fontSize:22,marginBottom:5}}>
+                {lang==="fr" ? "Faites votre don ici" : "Donate here"}
               </div>
-              {/* Corps du widget */}
-              <div className="p-6">
-
-            {/* ÉTAPE 1 — Choisir le mode de don */}
-            {donMode==="choose" && !funded && (
-              <>
-                {goalReached && (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-4 text-center">
-                    <div className="text-4xl mb-1">🎉</div>
-                    <div className="text-xs font-black text-emerald-700">Objectif atteint !</div>
-                    <div className="text-[11px] text-emerald-600 mt-0.5">
-                      La collecte reste ouverte jusqu'à demain.<br/>
-                      Tout don supplémentaire soutient directement le bénéficiaire.
-                    </div>
-                  </div>
-                )}
-                <ChooseWidget />
-              </>
-            )}
-
-            {/* Collecte terminée (FUNDED) */}
-            {funded && (
-              <div className="text-center py-4">
-                <div className="text-4xl mb-3">✅</div>
-                <h3 className="font-black text-gray-900 text-lg">{td.btnFunded}</h3>
-                <p className="text-sm text-gray-500 mt-2">{lang==="fr" ? "Merci à tous les donateurs !" : "Thank you to all donors!"}</p>
-              </div>
-            )}
-
-            {/* ÉTAPE 2 — Formulaire de don (anonyme ou connecté) */}
-            {(donMode==="anonymous" || donMode==="logged") && !funded && donateFormJSX(currency, amount, setAmount, presets, amountInFcfa)}
-
-            {/* ÉTAPE 3 — Confirmation */}
-            {donMode==="confirm" && <div className="space-y-5">
-              <div className="text-center"><div className="text-4xl mb-2">💚</div><h3 className="font-black text-lg text-gray-900">{td.confirm}</h3><p className="text-sm text-gray-500">{td.verifyDon}</p></div>
-              <div className="bg-gray-50 rounded-2xl p-4 space-y-3 text-sm">
-                {[[td.debited,fmt(Number(amount))],[td.beneficiary,c.beneficiary],[td.via,provider==="WAVE"?"🌊 Wave":"💳 "+(lang==="fr"?"Carte":"Card")],[td.anonymity, anonymous ? "👤"+(lang==="fr"?"Anonyme":"Anonymous") : "👤 "+(lang==="fr"?"Avec compte":"With account")]].map(([k,v],i) => (
-                  <div key={i} className="flex justify-between items-center"><span className="text-gray-500">{k}</span><span className={`font-semibold ${k===td.anonymity?"text-emerald-600":""}`}>{v}</span></div>
-                ))}
-              </div>
-              {message&&<div className="bg-emerald-50 rounded-xl p-3 text-sm text-emerald-700 italic border border-emerald-100">"{message}"</div>}
-
-              {/* ── QR Code Wave CI (compte marchand statique) ── */}
-              {provider === "WAVE" && (() => {
-                const waveRef = paymentRef || buildPaymentRef(c);
-                const amountTxt = Math.round(Number(amount)).toLocaleString("fr-FR");
-                return (
-                  <div className="flex flex-col items-center gap-3 bg-blue-50 border border-blue-100 rounded-2xl p-5">
-                    <div className="text-sm font-black text-blue-800">📱 {lang==="fr" ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
-                    {/*
-                      Le QR est cliquable : sur mobile, ça ouvre directement l'app Wave
-                      sur la page de paiement du marchand AYYAD SANTE.
-                      Sur desktop, le clic n'a pas d'effet utile (la page web s'ouvre)
-                      mais on garde le scan classique avec l'app mobile.
-                    */}
-                    <a
-                      href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => {
-                        // On marque que le QR a été touché (pour éviter double-insert côté Confirmer)
-                        // Mais on n'insère PAS le don ici — on attend la confirmation "Oui, j'ai payé"
-                        // pour éviter les faux "En attente" quand l'utilisateur abandonne sur Wave.
-                        if (qrInserted) return;
-                        setQrInserted(true);
-                      }}
-                      className="relative block group"
-                      title={lang==="fr"?"Toucher pour payer (mobile)":"Tap to pay (mobile)"}
-                    >
-                      <img
-                        src="/wave_qr.png"
-                        alt="QR Code Wave Ayyad"
-                        width={200}
-                        height={200}
-                        className="rounded-xl border-2 border-blue-200 bg-white shadow-sm p-2 group-hover:border-blue-400 group-active:scale-95 transition-all"
-                      />
-                    </a>
-                    {/* Hint mobile — visible sur tous les écrans, mais surtout utile aux mobiles */}
-                    <div className="text-[11px] font-semibold text-blue-600 text-center bg-blue-100/60 px-3 py-1.5 rounded-full">
-                      👆 {lang==="fr" ? "Touchez le QR si vous êtes sur téléphone" : "Tap the QR if you're on mobile"}
-                    </div>
-                    {/* Montant à envoyer */}
-                    <div className="w-full bg-white rounded-xl p-3 border border-blue-200">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500">{lang==="fr"?"Montant à envoyer :":"Amount to send:"}</span>
-                        <span className="font-mono font-black text-blue-700 text-base">{amountTxt} FCFA</span>
-                      </div>
-                    </div>
-                    {/* Instructions de paiement — concises, sans champ "référence" inutile */}
-                    <div className="text-xs text-blue-700 text-center leading-relaxed">
-                      {lang==="fr"
-                        ? <>Ouvrez <strong>Wave CI</strong> → <strong>Scanner</strong> → saisissez <strong>{amountTxt} FCFA</strong> → validez</>
-                        : <>Open <strong>Wave CI</strong> → <strong>Scan</strong> → enter <strong>{amountTxt} FCFA</strong> → confirm</>}
-                    </div>
-                    <div className="text-[11px] text-gray-500 text-center bg-white/60 px-3 py-2 rounded leading-relaxed">
-                      {lang==="fr"
-                        ? <>💡 Pas besoin d'ajouter de référence dans Wave — votre don est <strong>déjà rattaché à cette collecte</strong> automatiquement. Cliquez sur <strong>Confirmer</strong> ci-dessous après avoir effectué le paiement.</>
-                        : <>💡 No need to add a reference in Wave — your donation is <strong>already linked to this campaign</strong> automatically. Click <strong>Confirm</strong> below after completing payment.</>}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* ── Mobile Money — Numéros de dépôt ── */}
-              {provider === "CARD" && (
-                <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-5 space-y-4">
-                  <div className="text-center">
-                    <div className="text-2xl mb-1">📱</div>
-                    <div className="font-black text-orange-900 text-sm">
-                      {lang==="fr" ? "Envoyez votre don par Mobile Money" : "Send your donation via Mobile Money"}
-                    </div>
-                    <div className="text-xs text-orange-700 mt-1">
-                      {lang==="fr"
-                        ? `Envoyez exactement ${Math.round(Number(amount)).toLocaleString("fr-FR")} FCFA au numéro correspondant à votre opérateur :`
-                        : `Send exactly ${Math.round(Number(amount)).toLocaleString("fr-FR")} FCFA to the number for your operator:`}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    {[
-                      { emoji:"🌊", label:"Wave CI",       num:"+225 07 48 05 61 28" },
-                      { emoji:"🟠", label:"Orange Money",  num:"+225 07 48 05 61 28" },
-                      { emoji:"🟡", label:"MTN MoMo",      num:"+225 05 01 85 59 91" },
-                    ].map(op => (
-                      <div key={op.label} className="flex items-center justify-between bg-white border border-orange-200 rounded-xl px-3 py-2.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{op.emoji}</span>
-                          <div>
-                            <div className="text-[11px] font-bold text-gray-700">{op.label}</div>
-                            <div className="font-mono text-sm font-black text-gray-900">{op.num}</div>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => navigator.clipboard.writeText(op.num.replace(/\s/g,""))}
-                          className="text-[10px] font-bold text-orange-600 border border-orange-300 rounded-lg px-2 py-1 hover:bg-orange-50"
-                        >
-                          {lang==="fr" ? "Copier" : "Copy"}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="text-[11px] text-orange-700 bg-orange-100 rounded-xl px-3 py-2 leading-relaxed">
-                    💡 {lang==="fr"
-                      ? "Après l'envoi, cliquez sur « Confirmer » ci-dessous pour enregistrer votre don."
-                      : "After sending, click 'Confirm' below to record your donation."}
-                  </div>
-                </div>
-              )}
-
-              {/* Boutons Modifier / Confirmer (Wave et Mobile Money) */}
-              {true && (
-                <>
-                  {donError && (
-                    <div className="bg-red-50 border-2 border-red-200 rounded-xl p-3 text-xs text-red-700">
-                      <div className="font-bold mb-1">⚠️ {lang==="fr"?"Erreur lors de l'enregistrement du don":"Error recording donation"}</div>
-                      <div className="break-words">{donError}</div>
-                      <div className="mt-1 text-[11px] text-red-500">{lang==="fr"?"Aucun email n'a été envoyé. Réessayez ou contactez le support.":"No email was sent. Please retry or contact support."}</div>
-                    </div>
-                  )}
-                  {/* ── Confirmation intermédiaire : "Avez-vous bien payé ?" ── */}
-                  {showPayConfirm ? (
-                    <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 space-y-3">
-                      <div className="text-center space-y-1">
-                        <div className="text-3xl">📲</div>
-                        <div className="font-black text-gray-800 text-sm leading-snug">
-                          {lang==="fr"
-                            ? `Avez-vous bien envoyé ${Math.round(Number(amount)).toLocaleString("fr-FR")} FCFA via ${provider === "CARD" ? "Mobile Money" : "Wave CI"} ?`
-                            : `Have you sent ${Math.round(Number(amount)).toLocaleString("fr-FR")} FCFA via ${provider === "CARD" ? "Mobile Money" : "Wave CI"}?`}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {lang==="fr"
-                            ? `Vérifiez votre historique ${provider === "CARD" ? "Mobile Money" : "Wave"} avant de confirmer.`
-                            : `Check your ${provider === "CARD" ? "Mobile Money" : "Wave"} history before confirming.`}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          disabled={donSubmitting}
-                          onClick={() => { setShowPayConfirm(false); setDonError(""); }}
-                          className="border-2 border-gray-300 text-gray-600 font-semibold py-3 rounded-xl text-sm disabled:opacity-50"
-                        >
-                          {lang==="fr" ? "❌ Non, pas encore" : "❌ Not yet"}
-                        </button>
-                        <button
-                          disabled={donSubmitting}
-                          onClick={async () => {
-                            if (donSubmitting) return;
-                            if (c._isDemo) { setDonError("Ceci est un dossier de démonstration. Les dons ne sont pas activés."); setShowPayConfirm(false); return; }
-                            setDonError("");
-                            setDonSubmitting(true);
-                            const _donName2 = anonymous ? null : (user?.user_metadata?.name || user?.email?.split("@")[0] || null);
-                            const refToUse = paymentRef || buildPaymentRef(c);
-                            try {
-                              const { error: insErr } = await createDonation({
-                                case_id: c.id || null,
-                                donor_id: user?.id || null,
-                                donor_name: _donName2,
-                                donor_email: anonymous ? null : (user?.email || null),
-                                amount: Number(amount),
-                                amount_fcfa: amountInFcfa,
-                                currency,
-                                payment_method: provider === "CARD" ? "MOBILE_MONEY" : "WAVE",
-                                status: "pending",
-                                message: message || null,
-                                reference: refToUse,
-                              });
-                              if (insErr) {
-                                console.error("[donation insert] échec:", insErr);
-                                setDonError(insErr);
-                                setDonSubmitting(false);
-                                setShowPayConfirm(false);
-                                return;
-                              }
-                              setLastDonation({ donorName: anonymous?"Donateur anonyme":(_donName2||"Donateur"), amount: amountInFcfa });
-                              setDonMode("success");
-                              setShowPayConfirm(false);
-                              try {
-                                await emailDonConfirm({
-                                  donorEmail: anonymous ? null : (user?.email || null),
-                                  donorName: anonymous ? "Donateur anonyme" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Donateur"),
-                                  amount: fmt(Number(amount)),
-                                  beneficiary: c.beneficiary,
-                                  caseTitle: c.title,
-                                  trackingId: c.tracking_id || c.trackingId,
-                                });
-                              } catch(emailErr) {
-                                console.warn("[donation email] échec (non bloquant):", emailErr);
-                              }
-                            } catch(err) {
-                              console.error("[donation flow] exception:", err);
-                              setDonError(err?.message || String(err));
-                              setShowPayConfirm(false);
-                            } finally {
-                              setDonSubmitting(false);
-                            }
-                          }}
-                          className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md disabled:opacity-60"
-                        >
-                          {donSubmitting ? (lang==="fr"?"Enregistrement…":"Saving…") : (lang==="fr" ? "✅ Oui, j'ai payé" : "✅ Yes, I paid")}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        disabled={donSubmitting}
-                        onClick={() => { setDonError(""); setShowPayConfirm(false); setDonMode(anonymous?"anonymous":"logged"); }}
-                        className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm disabled:opacity-50"
-                      >{td.modify}</button>
-                      <button
-                        disabled={donSubmitting}
-                        onClick={() => { setDonError(""); setShowPayConfirm(true); }}
-                        className="bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm shadow-md disabled:opacity-60"
-                      >
-                        {td.confirmBtn}
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>}
-
-            {/* ÉTAPE 4 — Succès */}
-            {donMode==="success" && <div className="text-center space-y-4 py-2">
-              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-3xl">🎉</div>
-              <h3 className="font-black text-xl text-gray-900">{td.thanks}</h3>
-              <p className="text-sm text-gray-600">{td.thanksSub}</p>
-              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-4 text-sm text-emerald-800 border border-emerald-100">
-                <p className="font-semibold mb-1">{td.impact}</p><p>{td.impactSub} {c.beneficiary} {td.impactEnd}</p>
-              </div>
-              {lastDonation && (
-                <button
-                  onClick={() => printDonationCertificate({
-                    donorName: lastDonation.donorName,
-                    amount: lastDonation.amount,
-                    beneficiary: c.beneficiary || c.full_name || "",
-                    caseTitle: typeof c.title==="object" ? (c.title?.[lang] || c.title?.fr || c.title || "") : (c.title||""),
-                    trackingId: c.trackingId || c.tracking_id || ("AYD-"+c.id),
-                    date: new Date().toLocaleDateString(lang==="fr"?"fr-CI":"en-US"),
-                    lang,
-                  })}
-                  className="w-full bg-amber-50 border border-amber-200 text-amber-700 font-bold py-2.5 rounded-xl text-sm hover:bg-amber-100 flex items-center justify-center gap-2">
-                  📜 {lang==="fr"?"Télécharger mon certificat de don":"Download my donation certificate"}
-                </button>
-              )}
-              <div className="flex gap-2">
-                <button onClick={() => { setDonMode("choose"); setAmount(""); setMessage(""); setLastDonation(null); }} className="flex-1 border border-emerald-200 text-emerald-700 font-semibold py-2.5 rounded-xl text-sm hover:bg-emerald-50">{td.again}</button>
-                <div className="flex-1"><ShareButton c={c} lang={lang} /></div>
-              </div>
-            </div>}
-
+              <div style={{fontSize:13,opacity:0.88}}>
+                {lang==="fr"
+                  ? "Wave · Orange Money · MTN · Carte bancaire"
+                  : "Wave · Orange Money · MTN · Bank card"}
               </div>
             </div>
-          </div>
+            <span style={{fontSize:28,opacity:0.75}}>→</span>
+          </a>
         </div>
 
       </div>
@@ -11342,12 +11054,14 @@ const DjanaUrgencyBadges = ({ lang }) => {
 };
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── Page de don dédiée — ?p=donate&case=CASEID ──────────────────────────────
+// ── Page de don dédiée — ?p=donate&case=CASEID ───────────────────────────────
 const DonatePage = ({ c, lang, user, setPage }) => {
   const fr = lang === "fr";
   const urlCaseId = new URLSearchParams(window.location.search).get("case");
   const [caseData, setCaseData] = React.useState(c || null);
   const [loadingCase, setLoadingCase] = React.useState(!c && !!urlCaseId);
+  const [copiedOM, setCopiedOM] = React.useState(false);
+  const [copiedMTN, setCopiedMTN] = React.useState(false);
 
   React.useEffect(() => {
     if (c) { setCaseData(c); setLoadingCase(false); return; }
@@ -11361,79 +11075,130 @@ const DonatePage = ({ c, lang, user, setPage }) => {
   const collected = caseData?.collected || 0;
   const required  = caseData?.required  || 1145000;
   const pct = Math.min(100, Math.round((collected / required) * 100));
-  const patientName = caseData?.beneficiary || (fr ? "Patient" : "Patient");
+  const patientName = caseData?.beneficiary || "Patient";
   const caseTitle = caseData?.title
     ? (typeof caseData.title === "object" ? (caseData.title[lang] || caseData.title.fr || "") : caseData.title)
     : "";
-  const caseImg = caseData?.image || "🏥";
   const handleBack = () => { if (window.history.length > 1) window.history.back(); else setPage("home"); };
   const fmtN = n => (n || 0).toLocaleString("fr-FR");
+  const copyNum = (num, setCopied) => {
+    navigator.clipboard.writeText(num).catch(()=>{}).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); });
+  };
+
+  const QR_MTN = "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAADVklEQVR4nO3dsY0bMRBAUctwgS7BpbmE63AdOGZAYD5I6d6LdXurxQeDAZd6Pc/zA6b9PH0DfCZhkRAWCWGREBYJYZEQFglhkRAWCWGREBYJYZEQFglhkRAWiV+7f/D6/Te4jXnP15+tz099r1P/t7b7vaxYJIRFQlgkhEVCWCSERUJYJLbnWCu7c44pu3Og1edX939qzvQuz3PFikVCWCSERUJYJIRFQlgkhEVibI61cmqf0+51du9z9zpT93/b81yxYpEQFglhkRAWCWGREBYJYZHI51ifqp5XvTsrFglhkRAWCWGREBYJYZEQFolvN8eamj+trmO+9Z8Vi4SwSAiLhLBICIuEsEgIi8TYHOtdfndv6pz3+nysd3meK1YsEsIiISwSwiIhLBLCIiEsEq/neU7fwxW8DzjLikVCWCSERUJYJIRFQlgkhEViez/WbfuZbps/nfq9wqn9XlP3acUiISwSwiIhLBLCIiEsEsIisb0f67b33er39U69P1hfZ+o5rFixSAiLhLBICIuEsEgIi4SwSAydjzVq7rJ7ndv2aU1d57b9alYsEsIiISwSwiIhLBLCIiEsEmPnY932Pt3U3OjUfqZd9ffdZcUiISwSwiIhLBLCIiEsEsIicex8rF237TdaOfWe49Tnp56nFYuEsEgIi4SwSAiLhLBICIvEt/u9wtv2Ua2cOsfLHIurCYuEsEgIi4SwSAiLhLBICItEf65w16l50kp8/m7sfVcO3ZtlxSIhLBLCIiEsEsIiISwSwiIhLBLfbo41NU/aVc+fVpzzzkcRFglhkRAWCWGREBYJYZHI51inzs1aqd8TPPU7g7uc885bEhYJYZEQFglhkRAWCWGRGJtjvcvvGNb3WZ/Pfurzu6xYJIRFQlgkhEVCWCSERUJYJF7P85y+Bz6QFYuEsEgIi4SwSAiLhLBICIuEsEgIi4SwSAiLhLBICIuEsEgIi8Q/FlwbqkA0pQoAAAAASUVORK5CYII=";
+  const QR_OM  = "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAADVElEQVR4nO3dQYpbMRBAQTvktDlQruucQBBBP6Q/rlp7xt/moUUjye/P5/OCab9OPwA/k7BICIuEsEgIi4SwSAiLhLBICIuEsEgIi4SwSAiLhLBICIvE7+2/+PMOHiPwd2if2erzrv7/1Otvs/l9WrFICIuEsEgIi4SwSAiLhLBI7M+xVqbmRrt250C7c6ZTn+sp3+eCFYuEsEgIi4SwSAiLhLBICIvE3BxrZWq/0dRc5+n7om77PhesWCSERUJYJIRFQlgkhEVCWCT6OdZPdWq/1ENYsUgIi4SwSAiLhLBICIuEsEh83xxrdz/T1P6tL5t7WbFICIuEsEgIi4SwSAiLhLBI9HOs2+Y3u89z27zqtu9zwYpFQlgkhEVCWCSERUJYJIRFYm6O9fT7pXbnQ1O/V7jylO9zwYpFQlgkhEVCWCSERUJYJIRF4v35PGN/T25q/sTr9bJiEREWCWGREBYJYZEQFglhkdifY+3Oe257fa1+nnq/19BzWrFICIuEsEgIi4SwSAiLhLBIzO3Hesq8aup9V+rPu+vQPfVWLBLCIiEsEsIiISwSwiIhLBL9Pe/1/OYp8636fS/br2bFIiEsEsIiISwSwiIhLBLCIjF3rvCUU/uodj3lXnjnCrmZsEgIi4SwSAiLhLBICItEf65w16l50kp8/m7sfVcO3ZtlxSIhLBLCIiEsEsIiISwSwiIhLBL7c6zbzhWurOY09bytvt9r9/X1/rYFKxYJYZEQFglhkRAWCWGREBaJufux6vnQym3Ps/L0e7acK+QGwiIhLBLCIiEsEsIiISwS536vcNdT7p267fcHD+2fs2KREBYJYZEQFglhkRAWCWGR6OdYt5nan1TPk247n7jJikVCWCSERUJYJIRFQlgkhEXi++ZYp84hTs23dv/PofmWFYuEsEgIi4SwSAiLhLBICItEP8e67Z6q+rze1FxqV/2cm6xYJIRFQlgkhEVCWCSERUJYJObmWE/5HcN6P9bUucX6feP7tKxYJIRFQlgkhEVCWCSERUJYJPZ/rxD+gxWLhLBICIuEsEgIi4SwSAiLhLBICIuEsEgIi4SwSAiLhLBICIvEPyQ00k68+srLAAAAAElFTkSuQmCC";
+  const qrHint = fr
+    ? "Si vous êtes sur ordinateur avec un smartphone Android, scannez le QR code — sinon composez le numéro ci-dessous dans votre app."
+    : "On a computer with an Android phone? Scan the QR code — otherwise dial the number below in your app.";
 
   return (
-    <div style={{minHeight:"100vh",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#f9fafb",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+
+      {/* ── En-tête ── */}
       <div style={{background:"linear-gradient(135deg,#059669,#0d9488)",color:"#fff",padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
         <button onClick={handleBack} style={{background:"rgba(255,255,255,0.2)",border:"none",color:"#fff",width:38,height:38,borderRadius:"50%",fontSize:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>←</button>
         <span style={{fontWeight:900,fontSize:17,flex:1}}>{fr ? "💝 Faire un don" : "💝 Make a donation"}</span>
         <span style={{fontSize:22}}>🏥</span>
       </div>
-      {loadingCase && <div style={{padding:32,textAlign:"center",color:"#9ca3af",fontSize:14}}>{fr ? "Chargement…" : "Loading…"}</div>}
+
+      {/* ── Info patient ── */}
+      {loadingCase && <div style={{padding:32,textAlign:"center",color:"#9ca3af",fontSize:14}}>{fr?"Chargement…":"Loading…"}</div>}
       {caseData && !loadingCase && (
-        <div style={{padding:"16px",borderBottom:"1px solid #f0f0f0",background:"#f8fffc"}}>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-            <div style={{width:54,height:54,borderRadius:"50%",background:"linear-gradient(135deg,#d1fae5,#6ee7b7)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>
-              {typeof caseImg === "string" && caseImg.length <= 4 ? caseImg : "🏥"}
-            </div>
+        <div style={{padding:"14px 16px",borderBottom:"1px solid #e5e7eb",background:"#fff"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+            <div style={{width:46,height:46,borderRadius:"50%",background:"linear-gradient(135deg,#d1fae5,#6ee7b7)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>🏥</div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontWeight:900,fontSize:16,color:"#111",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{patientName}</div>
+              <div style={{fontWeight:900,fontSize:15,color:"#111",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{patientName}</div>
               <div style={{fontSize:12,color:"#666",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{caseTitle}</div>
             </div>
           </div>
-          <div>
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:5}}>
-              <span style={{fontWeight:800,color:"#059669"}}>{fmtN(collected)} FCFA {fr ? "collectés" : "raised"}</span>
-              <span style={{color:"#888"}}>{fmtN(required)} FCFA</span>
-            </div>
-            <div style={{height:8,background:"#e5e7eb",borderRadius:8,overflow:"hidden"}}>
-              <div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,#059669,#10b981)",borderRadius:8,transition:"width 0.8s ease"}} />
-            </div>
-            <div style={{fontSize:11,color:"#9ca3af",marginTop:4}}>{pct}% {fr ? "atteint" : "reached"}</div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}>
+            <span style={{fontWeight:800,color:"#059669"}}>{fmtN(collected)} FCFA {fr?"collectés":"raised"}</span>
+            <span style={{color:"#9ca3af"}}>{fmtN(required)} FCFA</span>
           </div>
+          <div style={{height:7,background:"#e5e7eb",borderRadius:8,overflow:"hidden"}}>
+            <div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,#059669,#10b981)",borderRadius:8}} />
+          </div>
+          <div style={{fontSize:11,color:"#9ca3af",marginTop:3}}>{pct}% {fr?"atteint":"reached"}</div>
         </div>
       )}
-      {!caseData && !loadingCase && (
-        <div style={{padding:32,textAlign:"center"}}><div style={{fontSize:40,marginBottom:12}}>🏥</div><div style={{fontWeight:700,color:"#374151"}}>AYYAD CI</div></div>
-      )}
-      <div style={{flex:1,padding:"20px 16px",display:"flex",flexDirection:"column",gap:14}}>
+
+      {/* ── Moyens de paiement ── */}
+      <div style={{flex:1,padding:"18px 16px",display:"flex",flexDirection:"column",gap:14}}>
         <div style={{fontSize:11,fontWeight:800,color:"#9ca3af",textTransform:"uppercase",letterSpacing:"0.08em"}}>
-          {fr ? "Choisissez votre moyen de paiement" : "Choose your payment method"}
+          {fr?"Choisissez votre moyen de paiement":"Choose your payment method"}
         </div>
+
+        {/* 1 — Wave CI */}
         <a href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/" target="_blank" rel="noopener noreferrer"
-          style={{display:"flex",alignItems:"center",gap:16,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",color:"#fff",borderRadius:18,padding:"20px 22px",boxShadow:"0 8px 28px rgba(37,99,235,0.4)",textDecoration:"none"}}>
-          <span style={{fontSize:38}}>🌊</span>
+          style={{display:"flex",alignItems:"center",gap:14,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",color:"#fff",borderRadius:16,padding:"18px 18px",boxShadow:"0 6px 22px rgba(37,99,235,0.35)",textDecoration:"none"}}>
+          <div style={{width:48,height:48,borderRadius:12,background:"rgba(255,255,255,0.18)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>🌊</div>
           <div style={{flex:1}}>
-            <div style={{fontWeight:900,fontSize:20,marginBottom:3}}>Wave CI</div>
-            <div style={{fontSize:13,color:"rgba(255,255,255,0.85)"}}>{fr ? "Paiement instantané · Zéro frais" : "Instant payment · Zero fees"}</div>
+            <div style={{fontWeight:900,fontSize:18,marginBottom:2}}>Wave CI</div>
+            <div style={{fontSize:12,opacity:0.88}}>{fr?"Paiement instantané · Zéro frais":"Instant · Zero fees"}</div>
           </div>
-          <span style={{fontSize:26,opacity:0.75}}>→</span>
+          <span style={{fontSize:22,opacity:0.8}}>→</span>
         </a>
-        <details style={{border:"2px solid #e0e7ff",borderRadius:18,overflow:"hidden"}}>
-          <summary style={{display:"flex",alignItems:"center",gap:14,padding:"16px 18px",cursor:"pointer",listStyle:"none"}}>
-            <span style={{fontSize:32}}>🌍</span>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:900,fontSize:15,color:"#1e1b4b"}}>{fr ? "Vous êtes à l'étranger ?" : "Donating from abroad?"}</div>
-              <div style={{fontSize:12,color:"#6366f1",marginTop:2}}>Sendwave — France, Canada, USA, UK…</div>
+
+        {/* 2 — Orange Money */}
+        <div style={{background:"#fff",border:"2px solid #f97316",borderRadius:16,overflow:"hidden"}}>
+          <div style={{display:"flex",alignItems:"center",gap:14,padding:"16px 18px"}}>
+            <div style={{width:48,height:48,borderRadius:12,background:"linear-gradient(135deg,#fed7aa,#fb923c)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>🟠</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:900,fontSize:16,color:"#111",marginBottom:2}}>Orange Money</div>
+              <div style={{fontFamily:"'Courier New',monospace",fontSize:15,fontWeight:800,color:"#ea580c"}}>+225 07 48 05 61 28</div>
+              <div style={{fontSize:11,color:"#9ca3af",marginTop:1}}>{fr?"Nom : AYYAD SOLIDARITE":"Name: AYYAD SOLIDARITE"}</div>
             </div>
-            <span style={{color:"#a5b4fc",fontSize:14}}>▼</span>
+            <button onClick={() => copyNum("+2250748056128", setCopiedOM)}
+              style={{background:copiedOM?"#d1fae5":"#fff7ed",border:"1.5px solid "+(copiedOM?"#059669":"#f97316"),color:copiedOM?"#059669":"#ea580c",padding:"7px 12px",borderRadius:10,fontSize:12,fontWeight:800,cursor:"pointer",flexShrink:0}}>
+              {copiedOM?(fr?"✓ Copié":"✓ Copied"):(fr?"Copier":"Copy")}
+            </button>
+          </div>
+          <div style={{borderTop:"1px solid #ffedd5",padding:"12px 18px",background:"#fff7ed"}}>
+            <div style={{fontSize:11,color:"#9a3412",marginBottom:10,lineHeight:1.5}}>{qrHint}</div>
+            <img src={"data:image/png;base64," + QR_OM} alt="QR Orange Money" style={{width:130,height:130,display:"block",margin:"0 auto",borderRadius:8,border:"2px solid #f97316"}} />
+          </div>
+        </div>
+
+        {/* 3 — MTN MoMo */}
+        <div style={{background:"#fff",border:"2px solid #eab308",borderRadius:16,overflow:"hidden"}}>
+          <div style={{display:"flex",alignItems:"center",gap:14,padding:"16px 18px"}}>
+            <div style={{width:48,height:48,borderRadius:12,background:"linear-gradient(135deg,#fef08a,#facc15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>💛</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:900,fontSize:16,color:"#111",marginBottom:2}}>MTN MoMo</div>
+              <div style={{fontFamily:"'Courier New',monospace",fontSize:15,fontWeight:800,color:"#ca8a04"}}>+225 05 01 85 59 91</div>
+              <div style={{fontSize:11,color:"#9ca3af",marginTop:1}}>{fr?"Nom : AYYAD SOLIDARITE":"Name: AYYAD SOLIDARITE"}</div>
+            </div>
+            <button onClick={() => copyNum("+2250501855991", setCopiedMTN)}
+              style={{background:copiedMTN?"#d1fae5":"#fefce8",border:"1.5px solid "+(copiedMTN?"#059669":"#eab308"),color:copiedMTN?"#059669":"#ca8a04",padding:"7px 12px",borderRadius:10,fontSize:12,fontWeight:800,cursor:"pointer",flexShrink:0}}>
+              {copiedMTN?(fr?"✓ Copié":"✓ Copied"):(fr?"Copier":"Copy")}
+            </button>
+          </div>
+          <div style={{borderTop:"1px solid #fef9c3",padding:"12px 18px",background:"#fefce8"}}>
+            <div style={{fontSize:11,color:"#713f12",marginBottom:10,lineHeight:1.5}}>{qrHint}</div>
+            <img src={"data:image/png;base64," + QR_MTN} alt="QR MTN MoMo" style={{width:130,height:130,display:"block",margin:"0 auto",borderRadius:8,border:"2px solid #eab308"}} />
+          </div>
+        </div>
+
+        {/* 4 — Sendwave */}
+        <details style={{background:"#fff",border:"2px solid #e0e7ff",borderRadius:16,overflow:"hidden"}}>
+          <summary style={{display:"flex",alignItems:"center",gap:14,padding:"16px 18px",cursor:"pointer",listStyle:"none"}}>
+            <div style={{width:48,height:48,borderRadius:12,background:"linear-gradient(135deg,#c7d2fe,#818cf8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>🌍</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:900,fontSize:15,color:"#1e1b4b",marginBottom:2}}>{fr?"Vous êtes à l'étranger ?":"Donating from abroad?"}</div>
+              <div style={{fontSize:12,color:"#6366f1"}}>Sendwave — France, Canada, USA, UK…</div>
+            </div>
+            <span style={{color:"#a5b4fc",fontSize:13}}>▼</span>
           </summary>
           <div style={{borderTop:"1px solid #e0e7ff",padding:"14px 18px",background:"#f5f3ff"}}>
-            <p style={{fontSize:13,color:"#312e81",lineHeight:1.6,marginBottom:12}}>
-              {fr ? "Utilisez l'app Sendwave (gratuite) depuis l'Europe ou l'Amérique du Nord. L'argent arrive en FCFA sur le compte AYYAD."
-                : "Use the Sendwave app (free) from Europe or North America. Funds arrive as FCFA in the AYYAD account."}
+            <p style={{fontSize:13,color:"#312e81",lineHeight:1.6,marginBottom:10}}>
+              {fr?"Utilisez l'app Sendwave (gratuite) depuis l'Europe ou l'Amérique du Nord. L'argent arrive en FCFA sur le compte AYYAD."
+                :"Use the free Sendwave app from Europe or North America. Funds arrive as FCFA in the AYYAD account."}
             </p>
-            <ol style={{fontSize:13,color:"#3730a3",paddingLeft:20,lineHeight:1.8,marginBottom:10}}>
-              <li>{fr ? "Téléchargez Sendwave (App Store / Play Store)" : "Download Sendwave (App Store / Play Store)"}</li>
-              <li>{fr ? "Envoyez au : +225 07 48 05 61 28 (Wave AYYAD)" : "Send to: +225 07 48 05 61 28 (AYYAD Wave)"}</li>
-              <li>{fr ? "Entrez le montant en EUR/USD/GBP/CAD" : "Enter amount in EUR/USD/GBP/CAD"}</li>
+            <ol style={{fontSize:13,color:"#3730a3",paddingLeft:20,lineHeight:1.9,marginBottom:12}}>
+              <li>{fr?"Téléchargez Sendwave (App Store / Play Store)":"Download Sendwave (App Store / Play Store)"}</li>
+              <li>{fr?"Envoyez au : +225 07 48 05 61 28 (Wave AYYAD)":"Send to: +225 07 48 05 61 28 (AYYAD Wave)"}</li>
+              <li>{fr?"Entrez le montant en EUR / USD / GBP / CAD":"Enter amount in EUR / USD / GBP / CAD"}</li>
             </ol>
             <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
               <a href="https://apps.apple.com/app/sendwave-send-money/id1238118264" target="_blank" rel="noopener noreferrer" style={{background:"#4f46e5",color:"#fff",padding:"7px 14px",borderRadius:8,fontSize:12,fontWeight:700,textDecoration:"none"}}>iOS</a>
@@ -11442,15 +11207,29 @@ const DonatePage = ({ c, lang, user, setPage }) => {
             </div>
           </div>
         </details>
-      </div>
-      <div style={{padding:"16px",borderTop:"1px solid #f0f0f0",textAlign:"center"}}>
-        <div style={{fontSize:12,color:"#9ca3af",marginBottom:10}}>
-          {fr ? "🔒 Paiement sécurisé · AYYAD CI" : "🔒 Secure payment · AYYAD CI"}
+
+        {/* 5 — Carte bancaire */}
+        <div style={{background:"#f9fafb",border:"2px dashed #d1d5db",borderRadius:16,padding:"16px 18px",opacity:0.75}}>
+          <div style={{display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:48,height:48,borderRadius:12,background:"#e5e7eb",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>💳</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:900,fontSize:16,color:"#374151",marginBottom:2}}>{fr?"Carte bancaire":"Bank card"}</div>
+              <div style={{fontSize:12,color:"#9ca3af"}}>{fr?"Pas encore disponible":"Not yet available"}</div>
+            </div>
+            <span style={{background:"#f3f4f6",color:"#9ca3af",padding:"5px 10px",borderRadius:20,fontSize:11,fontWeight:800}}>Soon</span>
+          </div>
         </div>
+
+      </div>
+
+      {/* ── Footer ── */}
+      <div style={{padding:"14px 16px",borderTop:"1px solid #e5e7eb",textAlign:"center",background:"#fff"}}>
+        <div style={{fontSize:12,color:"#9ca3af",marginBottom:8}}>🔒 {fr?"Paiement sécurisé · AYYAD CI":"Secure payment · AYYAD CI"}</div>
         <button onClick={handleBack} style={{fontSize:13,color:"#059669",background:"none",border:"none",cursor:"pointer",textDecoration:"underline"}}>
-          {fr ? "← Voir le dossier complet" : "← View full case"}
+          {fr?"← Voir le dossier complet":"← View full case"}
         </button>
       </div>
+
     </div>
   );
 };
