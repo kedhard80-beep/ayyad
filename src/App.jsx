@@ -4360,10 +4360,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
         <div className="lg:col-span-1" ref={donateRef}>
           {/* ── BLOC REDIRECTION DON ── */}
           <div
-            onClick={() => {
-              const cid = c.trackingId||c.tracking_id||"";
-              window.location.href = window.location.origin + window.location.pathname + "?p=donate&case=" + cid;
-            }}
+            onClick={() => setPage("donate")}
             style={{
               display:"flex", alignItems:"center", gap:18,
               background:"linear-gradient(135deg,#059669,#0d9488)",
