@@ -4356,6 +4356,25 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
         {/* ── COLONNE DROITE — Widget de don ── */}
         <div className="lg:col-span-1" ref={donateRef}>
+          {/* ── BOUTON PAGE DE DON DÉDIÉE ── */}
+          {!funded && (
+            <a
+              href={`?p=donate&case=${c.trackingId||c.tracking_id||""}`}
+              onClick={e => {
+                e.preventDefault();
+                const cid = c.trackingId || c.tracking_id || "";
+                window.history.pushState({}, "", "?p=donate&case=" + cid);
+                setPage("donate");
+              }}
+              className="flex items-center justify-center gap-3 w-full text-white font-black text-base py-4 px-5 rounded-2xl mb-4 shadow-lg transition-all active:scale-[0.98]"
+              style={{ background:"linear-gradient(135deg,#059669,#0d9488)", textDecoration:"none", boxShadow:"0 6px 22px rgba(5,150,105,0.4)" }}
+            >
+              <span style={{fontSize:22}}>💝</span>
+              <span>{lang==="fr" ? "Faites votre don ici" : "Donate here"}</span>
+              <span style={{fontSize:20, opacity:0.8}}>→</span>
+            </a>
+          )}
+
           {/* Bouton sticky mobile — position:fixed, visible seulement sur mobile */}
           {!funded && (
             <div className="lg:hidden" style={{position:"fixed",bottom:0,left:0,right:0,zIndex:99990,padding:"8px 16px 16px",background:"linear-gradient(to top,rgba(255,255,255,1) 60%,rgba(255,255,255,0))"}}>
@@ -11348,6 +11367,166 @@ const DjanaUrgencyBadges = ({ lang }) => {
   );
 };
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ── Page de don dédiée — URL shareable : ?p=donate&case=CASEID ──────────────
+const DonatePage = ({ c, lang, user, setPage }) => {
+  const fr = lang === "fr";
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlCaseId = urlParams.get("case");
+
+  const [caseData, setCaseData] = React.useState(c || null);
+  const [loadingCase, setLoadingCase] = React.useState(!c && !!urlCaseId);
+
+  React.useEffect(() => {
+    if (c) { setCaseData(c); setLoadingCase(false); return; }
+    if (!urlCaseId) { setLoadingCase(false); return; }
+    const mock = (typeof MOCK_CASES !== "undefined" ? MOCK_CASES : [])
+      .find(m => m.trackingId === urlCaseId);
+    if (mock) { setCaseData(mock); setLoadingCase(false); return; }
+    supabase.from("cases").select("*").eq("tracking_id", urlCaseId).maybeSingle()
+      .then(({ data }) => { if (data) setCaseData(data); setLoadingCase(false); });
+  }, [c, urlCaseId]);
+
+  const collected = caseData?.collected || 0;
+  const required  = caseData?.required  || 1145000;
+  const pct = Math.min(100, Math.round((collected / required) * 100));
+  const patientName = caseData?.beneficiary || (fr ? "Patient" : "Patient");
+  const caseTitle = caseData?.title
+    ? (typeof caseData.title === "object" ? (caseData.title[lang] || caseData.title.fr || "") : caseData.title)
+    : "";
+  const caseImage = caseData?.image || "🏥";
+
+  const handleBack = () => {
+    if (window.history.length > 1) window.history.back();
+    else setPage("home");
+  };
+
+  const fmtNum = n => (n || 0).toLocaleString("fr-FR");
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#fff", maxWidth:520, margin:"0 auto", display:"flex", flexDirection:"column", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+
+      {/* Header */}
+      <div style={{ background:"linear-gradient(135deg,#059669,#0d9488)", color:"#fff", padding:"14px 16px", display:"flex", alignItems:"center", gap:12 }}>
+        <button onClick={handleBack} style={{ background:"rgba(255,255,255,0.2)", border:"none", color:"#fff", width:38, height:38, borderRadius:"50%", fontSize:20, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>←</button>
+        <span style={{ fontWeight:900, fontSize:17, flex:1 }}>
+          {fr ? "💝 Faire un don" : "💝 Make a donation"}
+        </span>
+        <span style={{ fontSize:22 }}>🏥</span>
+      </div>
+
+      {loadingCase && (
+        <div style={{ padding:32, textAlign:"center", color:"#9ca3af", fontSize:14 }}>
+          {fr ? "Chargement…" : "Loading…"}
+        </div>
+      )}
+
+      {caseData && !loadingCase && (
+        <div style={{ padding:"16px", borderBottom:"1px solid #f0f0f0", background:"#f8fffc" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
+            <div style={{ width:54, height:54, borderRadius:"50%", background:"linear-gradient(135deg,#d1fae5,#6ee7b7)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, flexShrink:0 }}>
+              {typeof caseImage === "string" && caseImage.length <= 4 ? caseImage : "🏥"}
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontWeight:900, fontSize:16, color:"#111", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{patientName}</div>
+              <div style={{ fontSize:12, color:"#666", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{caseTitle}</div>
+            </div>
+          </div>
+          <div>
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:5 }}>
+              <span style={{ fontWeight:800, color:"#059669" }}>{fmtNum(collected)} FCFA {fr ? "collectés" : "raised"}</span>
+              <span style={{ color:"#888" }}>{fmtNum(required)} FCFA</span>
+            </div>
+            <div style={{ height:8, background:"#e5e7eb", borderRadius:8, overflow:"hidden" }}>
+              <div style={{ height:"100%", width:pct+"%", background:"linear-gradient(90deg,#059669,#10b981)", borderRadius:8, transition:"width 0.8s ease" }} />
+            </div>
+            <div style={{ fontSize:11, color:"#9ca3af", marginTop:4 }}>{pct}% {fr ? "atteint" : "reached"}</div>
+          </div>
+        </div>
+      )}
+
+      {!caseData && !loadingCase && (
+        <div style={{ padding:32, textAlign:"center" }}>
+          <div style={{ fontSize:40, marginBottom:12 }}>🏥</div>
+          <div style={{ fontWeight:700, color:"#374151" }}>AYYAD CI</div>
+        </div>
+      )}
+
+      {/* Moyens de paiement */}
+      <div style={{ flex:1, padding:"20px 16px", display:"flex", flexDirection:"column", gap:14 }}>
+        <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af", textTransform:"uppercase", letterSpacing:"0.08em" }}>
+          {fr ? "Choisissez votre moyen de paiement" : "Choose your payment method"}
+        </div>
+
+        {/* WAVE CI */}
+        <a
+          href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ display:"flex", alignItems:"center", gap:16, background:"linear-gradient(135deg,#2563eb,#1d4ed8)", color:"#fff", borderRadius:18, padding:"20px 22px", boxShadow:"0 8px 28px rgba(37,99,235,0.4)", textDecoration:"none" }}
+        >
+          <span style={{ fontSize:38 }}>🌊</span>
+          <div style={{ flex:1 }}>
+            <div style={{ fontWeight:900, fontSize:20, marginBottom:3 }}>Wave CI</div>
+            <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)" }}>
+              {fr ? "Paiement instantané · Zéro frais" : "Instant payment · Zero fees"}
+            </div>
+          </div>
+          <span style={{ fontSize:26, opacity:0.75 }}>→</span>
+        </a>
+
+        {/* Sendwave diaspora */}
+        <details style={{ border:"2px solid #e0e7ff", borderRadius:18, overflow:"hidden" }}>
+          <summary style={{ display:"flex", alignItems:"center", gap:14, padding:"16px 18px", cursor:"pointer", listStyle:"none", WebkitAppearance:"none" }}>
+            <span style={{ fontSize:32 }}>🌍</span>
+            <div style={{ flex:1 }}>
+              <div style={{ fontWeight:900, fontSize:15, color:"#1e1b4b" }}>
+                {fr ? "Vous êtes à l'étranger ?" : "Donating from abroad?"}
+              </div>
+              <div style={{ fontSize:12, color:"#6366f1", marginTop:2 }}>
+                Sendwave — France, Canada, USA, UK, Belgique…
+              </div>
+            </div>
+            <span style={{ color:"#a5b4fc", fontSize:14 }}>▼</span>
+          </summary>
+          <div style={{ borderTop:"1px solid #e0e7ff", padding:"14px 18px", background:"#f5f3ff" }}>
+            <p style={{ fontSize:13, color:"#312e81", lineHeight:1.6, marginBottom:12 }}>
+              {fr
+                ? <><strong>Sendwave</strong> (app gratuite) vous permet d'envoyer depuis l'Europe ou l'Amérique du Nord. L'argent arrive en FCFA sur le compte AYYAD.</>
+                : <><strong>Sendwave</strong> (free app) lets you send from Europe or North America. Funds arrive as FCFA in the AYYAD account.</>}
+            </p>
+            <ol style={{ fontSize:13, color:"#3730a3", paddingLeft:20, lineHeight:1.8, marginBottom:10 }}>
+              <li>{fr ? "Téléchargez Sendwave (App Store / Play Store)" : "Download Sendwave (App Store / Play Store)"}</li>
+              <li>{fr ? <><strong>Envoyez au : +225 07 48 05 61 28</strong> (Wave AYYAD)</> : <><strong>Send to: +225 07 48 05 61 28</strong> (AYYAD Wave)</>}</li>
+              <li>{fr ? "Entrez le montant en EUR/USD/GBP/CAD" : "Enter amount in EUR/USD/GBP/CAD"}</li>
+            </ol>
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+              <a href="https://apps.apple.com/app/sendwave-send-money/id1238118264" target="_blank" rel="noopener noreferrer" style={{ background:"#4f46e5", color:"#fff", padding:"7px 14px", borderRadius:8, fontSize:12, fontWeight:700, textDecoration:"none" }}>🍎 iOS</a>
+              <a href="https://play.google.com/store/apps/details?id=com.wave" target="_blank" rel="noopener noreferrer" style={{ background:"#4f46e5", color:"#fff", padding:"7px 14px", borderRadius:8, fontSize:12, fontWeight:700, textDecoration:"none" }}>🤖 Android</a>
+              <a href="https://www.sendwave.com" target="_blank" rel="noopener noreferrer" style={{ border:"2px solid #6366f1", color:"#4f46e5", padding:"7px 14px", borderRadius:8, fontSize:12, fontWeight:700, textDecoration:"none" }}>🌐 sendwave.com</a>
+            </div>
+            <p style={{ fontSize:11, color:"#6366f1", marginTop:10, fontStyle:"italic" }}>
+              💡 {fr
+                ? "Sendwave appartient à Wave — l'argent arrive sur le même compte AYYAD que les dons Wave locaux."
+                : "Sendwave is owned by Wave — funds go to the same AYYAD account as local Wave donations."}
+            </p>
+          </div>
+        </details>
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding:"16px", borderTop:"1px solid #f0f0f0", textAlign:"center" }}>
+        <div style={{ fontSize:12, color:"#9ca3af", marginBottom:10 }}>
+          🔒 {fr ? "Paiement sécurisé · Géré par AYYAD CI" : "Secure payment · Managed by AYYAD CI"}
+        </div>
+        <button onClick={handleBack} style={{ fontSize:13, color:"#059669", background:"none", border:"none", cursor:"pointer", textDecoration:"underline" }}>
+          {fr ? "← Voir le dossier complet" : "← View full case"}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function AyyadApp() {
   // ── Animations paiement ──────────────────────────────────────────
   // (injectées ici car App.css n'est pas importé dans le bundle)
@@ -11359,7 +11538,7 @@ export default function AyyadApp() {
   // Initialiser la page depuis l'URL pour survivre aux rafraîchissements
   const [page, setPage] = useState(() => {
     const p = new URLSearchParams(window.location.search).get("p");
-    const valid = ["home","admin","login","collectes","collectesactives","profile","register","case","track","change-password","urgents","specialite","how","refund","legal","impact","bceao","hopitaux","monimpact","submit","tracking","changepassword","faq","politique-admission","dunya-return","support-ayyad"];
+    const valid = ["home","admin","login","collectes","collectesactives","profile","register","case","track","change-password","urgents","specialite","how","refund","legal","impact","bceao","hopitaux","monimpact","submit","tracking","changepassword","faq","politique-admission","dunya-return","support-ayyad","donate"];
     return (p && valid.includes(p)) ? p : "home";
   });
   // ── IMPORTANT: declare all state BEFORE any useEffect that references them ──
@@ -11522,6 +11701,7 @@ export default function AyyadApp() {
         {page==="collectesactives"&&<CollectesActivesPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} setSpecialite={setSpecialite} />}
         {page==="specialite"&&<SpecialitePage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} specialite={specialite} />}
         {page==="case"&&selectedCase&&<CasePage c={selectedCase} setPage={setPage} lang={lang} user={user} />}
+        {page==="donate"&&<DonatePage c={selectedCase||null} lang={lang} user={user} setPage={setPage} />}
         {page==="how"&&<HowPage lang={lang} setPage={setPage} />}
         {page==="refund"&&<RefundPage lang={lang} setPage={setPage} />}
         {page==="legal"&&<LegalPage lang={lang} setPage={setPage} />}
