@@ -4357,33 +4357,35 @@ const CasePage = ({ c, setPage, lang, user }) => {
         {/* ── COLONNE DROITE — Widget de don ── */}
         <div className="lg:col-span-1" ref={donateRef}>
           {/* ── BLOC REDIRECTION DON ── */}
-          <a
-            href={`?p=donate&case=${c.trackingId||c.tracking_id||""}`}
-            onClick={e => {
-              e.preventDefault();
-              window.location.href = "?p=donate&case=" + (c.trackingId||c.tracking_id||"");
+          <div
+            onClick={() => {
+              const cid = c.trackingId||c.tracking_id||"";
+              window.location.href = window.location.origin + window.location.pathname + "?p=donate&case=" + cid;
             }}
             style={{
               display:"flex", alignItems:"center", gap:16,
               background:"linear-gradient(135deg,#059669,#0d9488)",
-              color:"#fff", borderRadius:20, padding:"28px 22px",
+              color:"#fff", borderRadius:20, padding:"40px 24px",
               boxShadow:"0 8px 32px rgba(5,150,105,0.45)",
-              textDecoration:"none", cursor:"pointer"
+              cursor:"pointer", minHeight:180,
+              userSelect:"none", WebkitTapHighlightColor:"transparent"
             }}
           >
-            <span style={{fontSize:48}}>💝</span>
+            <span style={{fontSize:56, lineHeight:1}}>💝</span>
             <div style={{flex:1}}>
-              <div style={{fontWeight:900,fontSize:22,marginBottom:5}}>
+              <div style={{fontWeight:900,fontSize:24,marginBottom:8,lineHeight:1.2}}>
                 {lang==="fr" ? "Faites votre don ici" : "Donate here"}
               </div>
-              <div style={{fontSize:13,opacity:0.88}}>
+              <div style={{fontSize:14,opacity:0.9,lineHeight:1.5}}>
                 {lang==="fr"
-                  ? "Wave · Orange Money · MTN · Carte bancaire"
-                  : "Wave · Orange Money · MTN · Bank card"}
+                  ? "Wave · Orange Money · MTN
+Carte bancaire"
+                  : "Wave · Orange Money · MTN
+Bank card"}
               </div>
             </div>
-            <span style={{fontSize:28,opacity:0.75}}>→</span>
-          </a>
+            <span style={{fontSize:32,opacity:0.75}}>→</span>
+          </div>
         </div>
 
       </div>
