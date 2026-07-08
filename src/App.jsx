@@ -4121,9 +4121,10 @@ const CasePage = ({ c, setPage, lang, user }) => {
               <p className="text-gray-600 leading-relaxed text-base">{(c.desc?.[lang]  || c.desc?.fr  || c.desc  || "")}</p>
             </div>
 
-            {/* Derniers donateurs */}
+            <div className="lg:hidden">
+{/* Derniers donateurs */}
             {recentDonations.length > 0 && (
-              <div className="lg:hidden" className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
                   <h2 className="font-black text-gray-900">{lang==="fr"?"Derniers donateurs":"Recent donors"}</h2>
                   <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
@@ -4148,6 +4149,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
               </div>
             </div>
           )}
+</div>
             {/* Garantie */}
             <div className="flex gap-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-3xl p-5">
               <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">🔒</div>
@@ -4384,7 +4386,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             <span style={{fontSize:34,opacity:0.7}}>→</span>
           </div>
           {/* ── DONORS_SECTION_MOVED ── */}
-          <div className="hidden lg:block mt-4">
+          <div className="hidden lg:block mt-6 space-y-4">
 {/* Derniers donateurs */}
             {recentDonations.length > 0 && (
               <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
@@ -4411,6 +4413,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 ))}
               </div>
             </div>
+          )}
           </div>
         </div>
 
