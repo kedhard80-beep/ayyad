@@ -1031,7 +1031,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
               const hasPhoto = c.photos && c.photos[0];
               return (
                 <div key={c.id} style={{minWidth:"100%", boxSizing:"border-box"}}>
-                  <button onClick={() => { setSelectedCase(c); setPage("case"); try{sessionStorage.setItem("ayyad_case",JSON.stringify(c));}catch(e){} }}
+                  <button onClick={() => { setSelectedCase(c); setPage("case"); }}
                     className="w-full text-left group relative block"
                     style={{background:"#fff", borderRadius:"20px", overflow:"hidden"}}>
 
@@ -2937,7 +2937,7 @@ const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
             <div>{lang==="fr" ? "Aucun cas urgent pour l'instant." : "No urgent cases right now."}</div>
           </div>
         ) : urgents.map(c => (
-          <div key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); try{sessionStorage.setItem("ayyad_case",JSON.stringify(c));}catch(e){} }}
+          <div key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); }}
             className="bg-white rounded-2xl border-2 border-red-200 shadow-sm p-6 cursor-pointer hover:border-red-400 hover:shadow-md transition-all">
             <div className="flex items-start gap-4">
               <div className="text-4xl overflow-hidden">{c.image && (c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-full object-cover rounded-t-2xl" /> : c.image)}</div>
@@ -3051,7 +3051,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
             {cases.map(c => {
               const percent = Math.min(100, Math.round((c.collected / c.required) * 100));
               return (
-                <button key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); try{sessionStorage.setItem("ayyad_case",JSON.stringify(c));}catch(e){} }}
+                <button key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); }}
                   className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-300 overflow-hidden text-left transition-all group">
                   <div className="h-28 bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center text-6xl relative">
                     {c.image && c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-full object-cover rounded-t-xl" /> : <span className="text-5xl">{CAT_ICONS[c.category?.fr] || CAT_ICONS[c.category] || "🏥"}</span>}
@@ -3554,7 +3554,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
                 gridTemplateColumns:"repeat(auto-fill, minmax(min(280px, 100%), 1fr))",
                 gap: 16,
               }}>
-                {visible.map(c => <CaseCard key={c.id} c={c} lang={lang} t={t} onClick={() => { setSelectedCase(c); setPage("case"); try{sessionStorage.setItem("ayyad_case",JSON.stringify(c));}catch(e){} }} />)}
+                {visible.map(c => <CaseCard key={c.id} c={c} lang={lang} t={t} onClick={() => { setSelectedCase(c); setPage("case"); }} />)}
               </div>
               {/* Bouton "Voir toutes les campagnes" — uniquement si plus de 10 dossiers */}
               {remaining > 0 && (
@@ -11211,7 +11211,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
                   <img src={"data:image/png;base64,"+QR_WAVE_IMG} alt="QR Wave" style={{width:130,height:130,borderRadius:8,border:"1px solid #93C5FD",cursor:"pointer"}}/>
                 </a>
               </div>
-              <div style={{fontSize:10,textAlign:"center",color:"#1E3A8A",marginTop:4}}>{fr?"👆 Touchez le QR code (smartphone)":"👆 Tap the QR code (smartphone)"}</div>
+              <div style={{fontSize:10,textAlign:"center",color:"#1E3A8A",marginTop:4}}>{fr?"👉 Touchez ce QR code pour donner (si vous êtes sur téléphone)":"👉 Tap this QR code to donate (if on mobile)"}</div>
             </CI>
             <Intl pays={[<T f="🇸🇳" n="Sénégal"/>,<T f="🇲🇱" n="Mali"/>,<T f="🇧🇫" n="Burkina Faso"/>,<T f="🇳🇪" n="Niger"/>,<T f="🇬🇲" n="Gambie"/>,<T f="🇺🇬" n="Ouganda"/>,<T f="🇨🇲" n="Cameroun"/>]}>
               <div style={{fontSize:11,color:"#1E3A8A"}}>{fr?"Ouvrez Wave → entrez ce numéro CI :":"Open Wave → enter this CI number:"}</div>
@@ -11256,7 +11256,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
                   <img src={"data:image/png;base64,"+QR_MTN_IMG} alt="QR MTN" style={{width:120,height:120,borderRadius:8,border:"1px solid #FDE68A",cursor:"pointer"}}/>
                 </a>
               </div>
-              <div style={{fontSize:10,textAlign:"center",color:"#92400E",marginTop:4}}>{fr?"👆 Touchez le QR code (smartphone)":"👆 Tap the QR code (smartphone)"}</div>
+              <div style={{fontSize:10,textAlign:"center",color:"#92400E",marginTop:4}}>{fr?"👉 Touchez ce QR code pour donner (si vous êtes sur téléphone)":"👉 Tap this QR code to donate (if on mobile)"}</div>
             </CI>
             <Intl pays={[<T f="🇧🇯" n="Bénin"/>,<T f="🇨🇲" n="Cameroun"/>,<T f="🇨🇬" n="Congo"/>,<T f="🇬🇦" n="Gabon"/>,<T f="🇬🇭" n="Ghana"/>,<T f="🇬🇳" n="Guinée"/>,<T f="🇬🇼" n="Guinée-Bissau"/>,<T f="🇱🇷" n="Liberia"/>,<T f="🇳🇪" n="Niger"/>,<T f="🇳🇬" n="Nigeria"/>,<T f="🇲🇬" n="Madagascar"/>,<T f="🇲🇼" n="Malawi"/>,<T f="🇲🇿" n="Mozambique"/>,<T f="🇺🇬" n="Ouganda"/>,<T f="🇷🇼" n="Rwanda"/>,<T f="🇿🇲" n="Zambie"/>]} clr={{bg:"#FFFBEB",bd:"#FDE68A",tx:"#92400E"}}>
               <div style={{fontSize:11,color:"#92400E"}}>{fr?"App MTN → Transfert international → CI :":"MTN app → Intl transfer → CI:"}</div>
@@ -11321,6 +11321,10 @@ const DonatePage = ({ c, lang, user, setPage }) => {
     </div>
   );
 };
+
+// Restauration dossier au refresh
+let _ayyad_case_fb = null;
+try { _ayyad_case_fb = JSON.parse(sessionStorage.getItem('ayyad_case') || 'null'); } catch(e) {}
 
 export default function AyyadApp() {
   // ── Animations paiement ──────────────────────────────────────────
@@ -11495,7 +11499,7 @@ export default function AyyadApp() {
         {page==="collectes"&&<CollectesPage setPage={setPage} lang={lang} />}
         {page==="collectesactives"&&<CollectesActivesPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} setSpecialite={setSpecialite} />}
         {page==="specialite"&&<SpecialitePage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} specialite={specialite} />}
-        {page==="case"&&(()=>{/*PATCH_I*/const _c=selectedCase||(()=>{try{return JSON.parse(sessionStorage.getItem("ayyad_case"));}catch(e){return null;}})();return _c&&<CasePage c={_c} setPage={setPage} lang={lang} user={user}/>;})()}
+        {page==="case"&&(selectedCase||_ayyad_case_fb)&&<CasePage c={selectedCase||_ayyad_case_fb} setPage={setPage} lang={lang} user={user} />}
         {page==="donate"&&<DonatePage c={selectedCase||null} lang={lang} user={user} setPage={setPage} />}
         {page==="how"&&<HowPage lang={lang} setPage={setPage} />}
         {page==="refund"&&<RefundPage lang={lang} setPage={setPage} />}
