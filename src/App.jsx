@@ -11154,9 +11154,9 @@ const DonatePage = ({ c, lang, user, setPage }) => {
   const card = (accent) => ({background:"#fff",borderRadius:18,boxShadow:"0 2px 8px rgba(0,0,0,0.07),0 8px 24px rgba(0,0,0,0.04)",border:"1px solid rgba(0,0,0,0.06)",borderTop:"4px solid "+accent,display:"flex",flexDirection:"column",gap:16,padding:"24px"});
 
   return (
-    <div style={{minHeight:"100vh",background:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",overflowX:"hidden",width:"100%"}}>
 
-      <style>{`.donate-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}@media(max-width:1200px){.donate-grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:900px){.donate-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:580px){.donate-grid{grid-template-columns:1fr}}`}</style>
+      <style>{`.donate-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;width:100%;box-sizing:border-box}@media(max-width:1200px){.donate-grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:900px){.donate-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:580px){.donate-grid{grid-template-columns:1fr}}`}</style>
 
       {/* ── En-tête ── */}
       <div style={{background:"linear-gradient(135deg,#059669,#0d9488)",color:"#fff",padding:"14px 20px",display:"flex",alignItems:"center",gap:12}}>
@@ -11169,7 +11169,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
       {loadingCase&&<div style={{padding:32,textAlign:"center",color:"#9ca3af",fontSize:14}}>{fr?"Chargement…":"Loading…"}</div>}
       {caseData&&!loadingCase&&(
         <div style={{padding:"14px 20px",borderBottom:"1px solid #e5e7eb",background:"#fff"}}>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10,flexWrap:"wrap"}}>
             <div style={{width:46,height:46,borderRadius:"50%",background:"linear-gradient(135deg,#d1fae5,#6ee7b7)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>🏥</div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontWeight:900,fontSize:15,color:"#111",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{patientName}</div>
@@ -11188,7 +11188,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
       )}
 
       {/* ── Grille paiements ── */}
-      <div style={{padding:"32px 24px"}}>
+      <div style={{padding:"16px",overflowX:"hidden",boxSizing:"border-box"}}>
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:20}}>
           {fr?"Choisissez votre moyen de paiement":"Choose your payment method"}
         </div>
@@ -11197,7 +11197,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
 
           {/* ── 1. WAVE CI ── */}
           <div style={card("#2563EB")}>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
               <img src={"data:image/jpeg;base64,"+LOGO_WAVE} alt="Wave" style={{height:38,maxWidth:90,objectFit:"contain",borderRadius:6,flexShrink:0}}/>
               <div style={{flex:1}}>
                 <div style={{fontWeight:900,fontSize:15,color:"#111"}}>Wave CI</div>
@@ -11221,7 +11221,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
 
           {/* ── 2. ORANGE MONEY ── */}
           <div style={card("#FF6200")}>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
               <img src={"data:image/jpeg;base64,"+LOGO_OM} alt="Orange Money" style={{height:38,maxWidth:120,objectFit:"contain",borderRadius:6,flexShrink:0}}/>
               <div style={{flex:1}}>
                 <div style={{fontWeight:900,fontSize:15,color:"#111"}}>Orange Money</div>
@@ -11243,7 +11243,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
 
           {/* ── 3. MTN MOMO ── */}
           <div style={card("#FFC429")}>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
               <img src={"data:image/jpeg;base64,"+LOGO_MTN} alt="MTN MoMo" style={{height:38,maxWidth:90,objectFit:"contain",borderRadius:6,flexShrink:0}}/>
               <div style={{flex:1}}>
                 <div style={{fontWeight:900,fontSize:15,color:"#111"}}>MTN MoMo</div>
@@ -11266,7 +11266,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
 
           {/* ── 4. SENDWAVE ── */}
           <div style={card("#7C3AED")}>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
               <span style={{fontSize:26}}>✈️</span>
               <div style={{flex:1}}>
                 <div style={{fontWeight:900,fontSize:15,color:"#111"}}>Sendwave</div>
@@ -11291,7 +11291,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
 
           {/* ── 5. CARTE BANCAIRE ── */}
           <div style={{...card("#CBD5E1"),opacity:0.75}}>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
               <span style={{fontSize:26}}>💳</span>
               <div style={{flex:1}}>
                 <div style={{fontWeight:900,fontSize:15,color:"#6b7280"}}>{fr?"Carte bancaire":"Bank card"}</div>
