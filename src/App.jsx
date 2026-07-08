@@ -4123,7 +4123,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
             {/* Derniers donateurs */}
             {recentDonations.length > 0 && (
-              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="lg:hidden" className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
                   <h2 className="font-black text-gray-900">{lang==="fr"?"Derniers donateurs":"Recent donors"}</h2>
                   <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
@@ -4363,28 +4363,54 @@ const CasePage = ({ c, setPage, lang, user }) => {
               window.location.href = window.location.origin + window.location.pathname + "?p=donate&case=" + cid;
             }}
             style={{
-              display:"flex", alignItems:"center", gap:16,
+              display:"flex", alignItems:"center", gap:18,
               background:"linear-gradient(135deg,#059669,#0d9488)",
-              color:"#fff", borderRadius:20, padding:"40px 24px",
+              color:"#fff", borderRadius:20, padding:"44px 26px",
               boxShadow:"0 8px 32px rgba(5,150,105,0.45)",
-              cursor:"pointer", minHeight:180,
-              userSelect:"none", WebkitTapHighlightColor:"transparent"
+              cursor:"pointer", minHeight:220,
+              userSelect:"none", WebkitTapHighlightColor:"transparent",
+              transition:"opacity 0.15s"
             }}
           >
-            <span style={{fontSize:56, lineHeight:1}}>💝</span>
+            <span style={{fontSize:60, lineHeight:1, flexShrink:0}}>💝</span>
             <div style={{flex:1}}>
-              <div style={{fontWeight:900,fontSize:24,marginBottom:8,lineHeight:1.2}}>
+              <div style={{fontWeight:900,fontSize:26,marginBottom:8,lineHeight:1.2}}>
                 {lang==="fr" ? "Faites votre don ici" : "Donate here"}
               </div>
-              <div style={{fontSize:14,opacity:0.9,lineHeight:1.5}}>
-                {lang==="fr"
-                  ? "Wave · Orange Money · MTN
-Carte bancaire"
-                  : "Wave · Orange Money · MTN
-Bank card"}
+              <div style={{fontSize:14,opacity:0.9,lineHeight:1.6}}>
+                Wave · Orange Money<br/>MTN · {lang==="fr" ? "Carte bancaire" : "Bank card"}
               </div>
             </div>
-            <span style={{fontSize:32,opacity:0.75}}>→</span>
+            <span style={{fontSize:34,opacity:0.7}}>→</span>
+          </div>
+          {/* ── DONORS_SECTION_MOVED ── */}
+          <div className="hidden lg:block mt-4">
+{/* Derniers donateurs */}
+            {recentDonations.length > 0 && (
+              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                  <h2 className="font-black text-gray-900">{lang==="fr"?"Derniers donateurs":"Recent donors"}</h2>
+                  <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>Live
+                  </span>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {recentDonations.map((d,i) => (
+                    <div key={d.id||i} className="flex items-center gap-4 px-6 py-4">
+                      <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center text-lg flex-shrink-0">
+                        {!d.donor_name ? "🕵️" : "💚"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-gray-900 text-sm">{publicDonorName(d.donor_name, lang)}</div>
+                        <div className="text-xs text-gray-400">{new Date(d.created_at).toLocaleDateString(lang==="fr"?"fr-CI":"en-US")}</div>
+                      </div>
+                      <div className="text-base font-black text-emerald-600 flex-shrink-0">
+                        {((d.amount_fcfa||d.amount||0)).toLocaleString("fr-CI")} <span className="text-xs font-semibold text-gray-400">FCFA</span>
+                      </div>
+                    </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
