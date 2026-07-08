@@ -11074,7 +11074,7 @@ const DjanaUrgencyTopBar = () => {
 const DjanaUrgencyBadges = ({ lang }) => {
   const go = () => { window.location.href = DJANA_CASE_URL; };
   return (
-    <div onClick={go} style={{position:"fixed",bottom:"42%",right:12,zIndex:99998,cursor:"pointer",background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"#fff",borderRadius:50,padding:"10px 16px",display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:800,boxShadow:"0 4px 16px rgba(220,38,38,0.55)",animation:"djana-pulse-badge 2.2s ease-in-out infinite",userSelect:"none",maxWidth:200,whiteSpace:"nowrap"}}>
+    <div onClick={go} style={{position:"fixed",bottom:"42%",right:16,zIndex:99998,cursor:"pointer",background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"#fff",borderRadius:50,padding:"10px 16px",display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:800,boxShadow:"0 4px 16px rgba(220,38,38,0.55)",willChange:"transform",transform:"translateZ(0)",animation:"djana-pulse-badge 2.2s ease-in-out infinite",userSelect:"none",maxWidth:200,whiteSpace:"nowrap"}}>
       <span>💝</span>
       <span>{lang==="fr" ? "Faites un don à Djana" : "Donate for Djana"}</span>
     </div>
