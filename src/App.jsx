@@ -11126,7 +11126,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
   );
   // Numéro + bouton copier
   const NumRow = ({num,display,cp,set}) => (
-    <div style={{display:"flex",alignItems:"center",gap:8,background:"#fff",border:"1px solid #BFDBFE",borderRadius:8,padding:"8px 10px"}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,background:"#fff",border:"1px solid #BFDBFE",borderRadius:8,padding:"10px 14px"}}>
       <span style={{fontFamily:"monospace",fontWeight:800,fontSize:12,color:"#1E40AF",flex:1}}>{display}</span>
       <button onClick={()=>copy(num,set)} style={{background:"#2563EB",color:"#fff",border:"none",borderRadius:6,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
         {cp?"✓":(fr?"Copier":"Copy")}
@@ -11135,25 +11135,25 @@ const DonatePage = ({ c, lang, user, setPage }) => {
   );
   // Zone CI (fond ambré)
   const CI = ({children}) => (
-    <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:12,padding:"12px",display:"flex",flexDirection:"column",gap:8}}>
+    <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:12,padding:"16px",display:"flex",flexDirection:"column",gap:10}}>
       <div style={{fontSize:10,fontWeight:800,color:"#92400E",letterSpacing:"0.08em"}}>🇨🇮 {fr?"DEPUIS LA CÔTE D'IVOIRE":"FROM CÔTE D'IVOIRE"}</div>
       {children}
     </div>
   );
   // Zone internationale (fond bleu)
   const Intl = ({pays,children}) => (
-    <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:12,padding:"12px",display:"flex",flexDirection:"column",gap:8}}>
+    <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:12,padding:"16px",display:"flex",flexDirection:"column",gap:10}}>
       <div style={{fontSize:10,fontWeight:800,color:"#1E3A8A",letterSpacing:"0.08em"}}>🌍 {fr?"DEPUIS L'ÉTRANGER":"FROM ABROAD"}</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:3}}>{pays}</div>
       {children}
     </div>
   );
-  const card = (accent) => ({background:"#fff",borderRadius:18,boxShadow:"0 2px 8px rgba(0,0,0,0.07),0 8px 24px rgba(0,0,0,0.04)",border:"1px solid rgba(0,0,0,0.06)",borderTop:"4px solid "+accent,display:"flex",flexDirection:"column",gap:12,padding:"20px"});
+  const card = (accent) => ({background:"#fff",borderRadius:18,boxShadow:"0 2px 8px rgba(0,0,0,0.07),0 8px 24px rgba(0,0,0,0.04)",border:"1px solid rgba(0,0,0,0.06)",borderTop:"4px solid "+accent,display:"flex",flexDirection:"column",gap:16,padding:"24px"});
 
   return (
     <div style={{minHeight:"100vh",background:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
 
-      <style>{`.donate-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}@media(max-width:900px){.donate-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:580px){.donate-grid{grid-template-columns:1fr}}`}</style>
+      <style>{`.donate-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}@media(max-width:900px){.donate-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:580px){.donate-grid{grid-template-columns:1fr}}`}</style>
 
       {/* ── En-tête ── */}
       <div style={{background:"linear-gradient(135deg,#059669,#0d9488)",color:"#fff",padding:"14px 20px",display:"flex",alignItems:"center",gap:12}}>
@@ -11185,7 +11185,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
       )}
 
       {/* ── Grille paiements ── */}
-      <div style={{maxWidth:1000,margin:"0 auto",padding:"24px 16px"}}>
+      <div style={{maxWidth:1040,margin:"0 auto",padding:"32px 20px"}}>
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:20}}>
           {fr?"Choisissez votre moyen de paiement":"Choose your payment method"}
         </div>
@@ -11204,7 +11204,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
             </div>
             <CI>
               <div style={{textAlign:"center"}}>
-                <img src={"data:image/png;base64,"+QR_WAVE_IMG} alt="QR Wave" style={{width:120,height:120,borderRadius:8,border:"1px solid #FDE68A"}}/>
+                <img src={"data:image/png;base64,"+QR_WAVE_IMG} alt="QR Wave" style={{width:130,height:130,borderRadius:8,border:"1px solid #FDE68A"}}/>
               </div>
               <a href={WAVE_LINK} target="_blank" rel="noopener noreferrer" style={{display:"block",textAlign:"center",background:"linear-gradient(135deg,#FFCC00,#F59E0B)",color:"#1c1917",borderRadius:10,padding:"10px",fontWeight:900,fontSize:13,textDecoration:"none"}}>
                 📱 {fr?"Touchez ici (smartphone)":"Tap here (smartphone)"}
