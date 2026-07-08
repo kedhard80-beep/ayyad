@@ -11091,6 +11091,15 @@ const DonatePage = ({ c, lang, user, setPage }) => {
   const [cpWave, setCpWave] = React.useState(false);
   const [cpOM,   setCpOM]   = React.useState(false);
   const [cpMTN,  setCpMTN]  = React.useState(false);
+  // ── Confirmation don ──
+  const [donAmount, setDonAmount] = React.useState("");
+  const [donMethod, setDonMethod] = React.useState("WAVE");
+  const [donName,   setDonName]   = React.useState("");
+  const [donAnon,   setDonAnon]   = React.useState(false);
+  const [donMsg,    setDonMsg]    = React.useState("");
+  const [donSubmitting, setDonSubmitting] = React.useState(false);
+  const [donSuccess,    setDonSuccess]    = React.useState(false);
+  const [donError,      setDonError]      = React.useState("");
 
   React.useEffect(() => {
     if (c) { setCaseData(c); setLoadingCase(false); return; }
@@ -11305,6 +11314,75 @@ const DonatePage = ({ c, lang, user, setPage }) => {
 
         </div>
 
+        {/* ── Confirmation don ── */}
+        {!donSuccess ? (
+          <div style={{marginTop:24,background:"#F0FDF4",border:"2px solid #059669",borderRadius:16,padding:"20px 18px"}}>
+            <div style={{fontWeight:900,fontSize:16,color:"#065f46",marginBottom:4}}>
+              ✅ {fr?"Vous avez payé ?":"Did you pay?"}
+            </div>
+            <div style={{fontSize:12,color:"#047857",marginBottom:14}}>
+              {fr?"Confirmez votre don pour que la jauge de collecte se mette à jour.":"Confirm your donation so the fundraising progress updates."}
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <input type="number" placeholder={fr?"Montant versé (FCFA) *":"Amount paid (FCFA) *"} value={donAmount}
+                onChange={e=>setDonAmount(e.target.value)} min="1"
+                style={{border:"1px solid #a7f3d0",borderRadius:10,padding:"10px 14px",fontSize:14,outline:"none",WebkitAppearance:"none"}}
+              />
+              <select value={donMethod} onChange={e=>setDonMethod(e.target.value)}
+                style={{border:"1px solid #a7f3d0",borderRadius:10,padding:"10px 14px",fontSize:14,outline:"none",background:"#fff"}}>
+                <option value="WAVE">🌊 Wave CI</option>
+                <option value="ORANGE_MONEY">🟠 Orange Money</option>
+                <option value="MTN_MOMO">🟡 MTN MoMo</option>
+                <option value="SENDWAVE">✈️ Sendwave</option>
+                <option value="CARD">💳 Carte bancaire</option>
+              </select>
+              <input type="text" placeholder={fr?"Votre prénom (optionnel)":"Your first name (optional)"} value={donName}
+                onChange={e=>setDonName(e.target.value)}
+                style={{border:"1px solid #a7f3d0",borderRadius:10,padding:"10px 14px",fontSize:14,outline:"none"}}
+              />
+              <textarea placeholder={fr?"Message (optionnel)":"Message (optional)"} value={donMsg}
+                onChange={e=>setDonMsg(e.target.value)} rows={2}
+                style={{border:"1px solid #a7f3d0",borderRadius:10,padding:"10px 14px",fontSize:13,outline:"none",resize:"none"}}
+              />
+              <label style={{display:"flex",alignItems:"center",gap:8,fontSize:13,color:"#065f46",cursor:"pointer"}}>
+                <input type="checkbox" checked={donAnon} onChange={e=>setDonAnon(e.target.checked)} />
+                {fr?"Don anonyme":"Anonymous donation"}
+              </label>
+              {donError && <div style={{color:"#dc2626",fontSize:12,fontWeight:700}}>{donError}</div>}
+              <button disabled={donSubmitting||!donAmount} onClick={async()=>{
+                const amt = Number(donAmount);
+                if (!amt || amt < 1) { setDonError(fr?"Montant invalide":"Invalid amount"); return; }
+                setDonSubmitting(true); setDonError("");
+                try {
+                  const insertData = {
+                    case_id: caseData?.id || null,
+                    amount: amt,
+                    amount_fcfa: amt,
+                    donor_name: donAnon ? null : (donName.trim() || null),
+                    message: donMsg.trim() || null,
+                    payment_method: donMethod,
+                    is_anonymous: donAnon,
+                    status: "pending",
+                    source: "donate_page",
+                  };
+                  const { error } = await supabase.from("donations").insert(insertData);
+                  if (error) throw error;
+                  setDonSuccess(true);
+                } catch(e) {
+                  setDonError((fr?"Erreur : ":"Error: ") + (e.message || (fr?"réessayez":"retry")));
+                } finally { setDonSubmitting(false); }
+              }} style={{background:donSubmitting||!donAmount?"#9ca3af":"linear-gradient(135deg,#059669,#047857)",color:"#fff",border:"none",borderRadius:12,padding:"14px",fontSize:15,fontWeight:800,cursor:donSubmitting||!donAmount?"not-allowed":"pointer",boxShadow:donSubmitting||!donAmount?"none":"0 4px 12px rgba(5,150,105,0.35)"}}>
+                {donSubmitting?(fr?"Enregistrement...":"Recording..."):(fr?"✓ Confirmer mon don":"✓ Confirm my donation")}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{marginTop:24,background:"#F0FDF4",border:"2px solid #059669",borderRadius:16,padding:"28px 18px",textAlign:"center"}}>
+            <div style={{fontSize:44,marginBottom:8}}>🎉</div>
+            <div style={{fontWeight:900,fontSize:18,color:"#065f46",marginBottom:6}}>{fr?"Merci infiniment !":"Thank you so much!"}</div>
+            <div style={{fontSize:13,color:"#047857",lineHeight:1.6}}>{fr?"Votre don a été enregistré. L'équipe Ayyad le validera et mettra à jour la jauge sous 24h.":"Your donation has been recorded. The Ayyad team will validate it and update the progress within 24h."}</div>
+          </div>
+        )}
         {/* ── Sécurité ── */}
         <div style={{display:"flex",alignItems:"flex-start",gap:12,background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:14,padding:"14px 18px",marginTop:24}}>
           <span style={{fontSize:20,flexShrink:0}}>🔒</span>
