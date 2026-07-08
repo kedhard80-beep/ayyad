@@ -1031,7 +1031,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
               const hasPhoto = c.photos && c.photos[0];
               return (
                 <div key={c.id} style={{minWidth:"100%", boxSizing:"border-box"}}>
-                  <button onClick={() => { setSelectedCase(c); setPage("case"); }}
+                  <button onClick={() => { setSelectedCase(c); setPage("case"); try{sessionStorage.setItem("ayyad_case",JSON.stringify(c));}catch(e){} }}
                     className="w-full text-left group relative block"
                     style={{background:"#fff", borderRadius:"20px", overflow:"hidden"}}>
 
@@ -2937,7 +2937,7 @@ const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
             <div>{lang==="fr" ? "Aucun cas urgent pour l'instant." : "No urgent cases right now."}</div>
           </div>
         ) : urgents.map(c => (
-          <div key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); }}
+          <div key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); try{sessionStorage.setItem("ayyad_case",JSON.stringify(c));}catch(e){} }}
             className="bg-white rounded-2xl border-2 border-red-200 shadow-sm p-6 cursor-pointer hover:border-red-400 hover:shadow-md transition-all">
             <div className="flex items-start gap-4">
               <div className="text-4xl overflow-hidden">{c.image && (c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-full object-cover rounded-t-2xl" /> : c.image)}</div>
@@ -3051,7 +3051,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
             {cases.map(c => {
               const percent = Math.min(100, Math.round((c.collected / c.required) * 100));
               return (
-                <button key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); }}
+                <button key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); try{sessionStorage.setItem("ayyad_case",JSON.stringify(c));}catch(e){} }}
                   className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-300 overflow-hidden text-left transition-all group">
                   <div className="h-28 bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center text-6xl relative">
                     {c.image && c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-full object-cover rounded-t-xl" /> : <span className="text-5xl">{CAT_ICONS[c.category?.fr] || CAT_ICONS[c.category] || "🏥"}</span>}
@@ -3554,7 +3554,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
                 gridTemplateColumns:"repeat(auto-fill, minmax(min(280px, 100%), 1fr))",
                 gap: 16,
               }}>
-                {visible.map(c => <CaseCard key={c.id} c={c} lang={lang} t={t} onClick={() => { setSelectedCase(c); setPage("case"); }} />)}
+                {visible.map(c => <CaseCard key={c.id} c={c} lang={lang} t={t} onClick={() => { setSelectedCase(c); setPage("case"); try{sessionStorage.setItem("ayyad_case",JSON.stringify(c));}catch(e){} }} />)}
               </div>
               {/* Bouton "Voir toutes les campagnes" — uniquement si plus de 10 dossiers */}
               {remaining > 0 && (
@@ -11495,7 +11495,7 @@ export default function AyyadApp() {
         {page==="collectes"&&<CollectesPage setPage={setPage} lang={lang} />}
         {page==="collectesactives"&&<CollectesActivesPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} setSpecialite={setSpecialite} />}
         {page==="specialite"&&<SpecialitePage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} specialite={specialite} />}
-        {page==="case"&&selectedCase&&<CasePage c={selectedCase} setPage={setPage} lang={lang} user={user} />}
+        {page==="case"&&(()=>{/*PATCH_I*/const _c=selectedCase||(()=>{try{return JSON.parse(sessionStorage.getItem("ayyad_case"));}catch(e){return null;}})();return _c&&<CasePage c={_c} setPage={setPage} lang={lang} user={user}/>;})()}
         {page==="donate"&&<DonatePage c={selectedCase||null} lang={lang} user={user} setPage={setPage} />}
         {page==="how"&&<HowPage lang={lang} setPage={setPage} />}
         {page==="refund"&&<RefundPage lang={lang} setPage={setPage} />}
