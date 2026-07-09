@@ -493,59 +493,15 @@ const LangToggle = ({ lang, setLang }) => (
   </div>
 );
 
-// ── Premium TopBar — fine bande institutionnelle au-dessus de la navbar ──────
-// Affiche les contacts, les réseaux sociaux et le toggle de langue. Style sombre
-// élégant, hauteur fine (32-36px), masquée sur mobile pour gagner de la place.
-const PremiumTopBar = ({ lang, setLang }) => {
-  const fr = lang === "fr";
-  return (
-    <div className="hidden md:block" style={{
-      background: "linear-gradient(90deg, #0a3d2e 0%, #0d5c2e 50%, #0f4f3c 100%)",
-      borderBottom: "1px solid rgba(201,168,76,0.18)",
-      color: "rgba(255,255,255,0.85)",
-      fontSize: 12,
-      letterSpacing: 0.2,
-    }}>
-      <div className="ayyad-container" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", height:36 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:24 }}>
-          <a href="mailto:contact@ayyadci.com" style={{ display:"inline-flex", alignItems:"center", gap:6, color:"inherit", textDecoration:"none", transition:"color .2s" }} onMouseEnter={e=>e.currentTarget.style.color="#e9d59a"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.85)"}>
-            <span style={{ color:"#e9d59a" }}>✉</span> contact@ayyadci.com
-          </a>
-          <span style={{ display:"inline-flex", alignItems:"center", gap:6, color:"rgba(255,255,255,0.78)" }}>
-            <span style={{ color:"#e9d59a" }}>💬</span>
-            {fr ? "Une question ? Utilisez le chat en bas à droite" : "Got a question? Use the chat at the bottom right"}
-          </span>
-          <span style={{ display:"inline-flex", alignItems:"center", gap:6, color:"rgba(255,255,255,0.6)" }}>
-            <span style={{ width:6, height:6, borderRadius:"50%", background:"#34d399", boxShadow:"0 0 0 3px rgba(52,211,153,0.18)", display:"inline-block" }} />
-            {fr ? "Plateforme opérationnelle" : "Platform live"}
-          </span>
-        </div>
-        <div style={{ display:"flex", alignItems:"center", gap:18 }}>
-          <span style={{ color:"rgba(255,255,255,0.55)", fontSize:11 }}>
-            {fr ? "Côte d'Ivoire 🇨🇮 · BCEAO conforme" : "Côte d'Ivoire 🇨🇮 · BCEAO compliant"}
-          </span>
-          <div style={{ width:1, height:14, background:"rgba(255,255,255,0.18)" }} />
-          <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-            <button onClick={()=>setLang("fr")} style={{ background:"transparent", border:"none", cursor:"pointer", color: lang==="fr"?"#e9d59a":"rgba(255,255,255,0.65)", fontWeight: lang==="fr"?700:500, fontSize:11, letterSpacing:1 }}>FR</button>
-            <span style={{ color:"rgba(255,255,255,0.3)" }}>|</span>
-            <button onClick={()=>setLang("en")} style={{ background:"transparent", border:"none", cursor:"pointer", color: lang==="en"?"#e9d59a":"rgba(255,255,255,0.65)", fontWeight: lang==="en"?700:500, fontSize:11, letterSpacing:1 }}>EN</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── Navbar premium — sticky avec shadow progressive au scroll ────────────────
+// ── Navbar avec dropdowns — logo gauche, navigation condensée ─────────────────
 const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
-  const t = T[lang].nav;
   const fr = lang === "fr";
-  const [dropdownOpen, setDropdownOpen] = useState(null);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 16);
+    const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -558,223 +514,201 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
   };
 
   const AyyadLogo = () => (
-    <svg width="44" height="44" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="40" height="40" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
       <circle cx="35" cy="35" r="33" fill="#0d5c2e"/>
       <circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" strokeWidth="2.5"/>
       <rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/>
       <rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/>
-      <path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/>
     </svg>
   );
 
-  // Liens de navigation principaux (parcours donateur)
-  const navLinks = [
-    { key: "home",             label: fr ? "Accueil"           : "Home"          },
-    { key: "collectesactives", label: fr ? "Campagnes"         : "Campaigns"     },
-    { key: "urgents",          label: fr ? "Cas urgents"       : "Urgent cases"  },
-    { key: "how",              label: fr ? "Comment ça marche" : "How it works"  },
-    { key: "support-ayyad",    label: fr ? "Soutenir Ayyad"    : "Support Ayyad" },
+  const closeDrop = () => setActiveDropdown(null);
+
+  const soutienirItems = [
+    { icon:"🚨", label: fr?"Cas urgents":"Urgent cases", sub: fr?"Interventions critiques <72h":"Critical <72h", page:"urgents" },
+    { icon:"💚", label: fr?"Collectes actives":"Active campaigns", sub: fr?"Tous les dossiers vérifiés":"All verified cases", page:"collectesactives" },
+    { icon:"🔍", label: fr?"Suivre une collecte":"Track a campaign", sub: fr?"Entrez votre ID de suivi":"Enter tracking ID", page:"tracking" },
+  ];
+  const soumettreItems = [
+    { icon:"📋", label: fr?"Soumettre un dossier":"Submit a case", sub: fr?"Lancez votre collecte en 48h":"Launch in 48h", page:"submit" },
+    { icon:"❓", label: fr?"Comment ça marche":"How it works", sub: fr?"Processus transparent":"Transparent process", page:"how" },
+  ];
+  const aproposItems = [
+    { icon:"🌍", label: fr?"Notre mission":"Our mission", sub: fr?"Solidarité médicale africaine":"African medical solidarity", page:"home" },
+    { icon:"💰", label: fr?"Transparence":"Transparency", sub: fr?"Chaque virement est audité":"Every transfer audited", page:"how" },
+    { icon:"🤝", label: fr?"Soutenir Ayyad":"Support Ayyad", sub: fr?"Aidez la plateforme":"Help the platform", page:"support-ayyad" },
   ];
 
-  return (
-    <>
-      <PremiumTopBar lang={lang} setLang={setLang} />
-      <nav
-        className="sticky top-0 z-50"
-        onClick={() => { setDropdownOpen(null); setMobileOpen(false); }}
+  const DropMenu = ({ items }) => (
+    <div style={{
+      position:"absolute", top:"calc(100% + 8px)", left:0,
+      background:"#fff", borderRadius:16,
+      border:"1px solid rgba(10,31,26,0.08)",
+      boxShadow:"0 16px 48px rgba(10,31,26,0.12)",
+      padding:"8px", minWidth:256, zIndex:200,
+    }}>
+      {items.map((item, i) => (
+        <button key={i}
+          onClick={()=>{ setPage(item.page); closeDrop(); setMobileOpen(false); }}
+          style={{
+            display:"flex", alignItems:"center", gap:12, width:"100%",
+            background:"transparent", border:"none", cursor:"pointer",
+            padding:"10px 12px", borderRadius:10, textAlign:"left",
+          }}
+          onMouseEnter={e=>e.currentTarget.style.background="rgba(13,92,46,0.06)"}
+          onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+        >
+          <span style={{ fontSize:18, width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(13,92,46,0.06)", borderRadius:8, flexShrink:0 }}>{item.icon}</span>
+          <div>
+            <div style={{ fontSize:13, fontWeight:700, color:"var(--ayyad-deep)", lineHeight:1.2 }}>{item.label}</div>
+            <div style={{ fontSize:11, color:"var(--ink-400)", marginTop:2 }}>{item.sub}</div>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+
+  const NavDrop = ({ label, dropKey, items }) => (
+    <div style={{ position:"relative" }} onMouseLeave={closeDrop}>
+      <button
+        onMouseEnter={()=>setActiveDropdown(dropKey)}
+        onClick={()=>setActiveDropdown(v => v===dropKey ? null : dropKey)}
         style={{
-          background: scrolled ? "rgba(255,255,255,0.92)" : "#ffffff",
-          backdropFilter: scrolled ? "saturate(180%) blur(12px)" : "none",
-          borderBottom: scrolled ? "1px solid rgba(10,31,26,0.06)" : "1px solid rgba(10,31,26,0.04)",
-          boxShadow: scrolled ? "0 6px 20px rgba(10,31,26,0.06)" : "none",
-          transition: "background .25s ease, box-shadow .25s ease, border-color .25s ease",
+          display:"inline-flex", alignItems:"center", gap:5,
+          background:"transparent", border:"none", cursor:"pointer",
+          padding:"8px 12px", borderRadius:8, fontSize:14, fontWeight:500,
+          color: activeDropdown===dropKey ? "var(--ayyad-deep)" : "var(--ink-700)",
+          transition:"color .15s", whiteSpace:"nowrap",
         }}
+        onMouseEnter={(e)=>{ e.currentTarget.style.color="var(--ayyad-deep)"; setActiveDropdown(dropKey); }}
+        onMouseLeave={(e)=>{ e.currentTarget.style.color=activeDropdown===dropKey?"var(--ayyad-deep)":"var(--ink-700)"; }}
       >
-        <div className="ayyad-container" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", height: 72, gap: 16 }}>
-          {/* Logo */}
-          <button onClick={() => setPage("home")} style={{ display:"flex", alignItems:"center", gap:12, background:"transparent", border:"none", cursor:"pointer", padding:0 }}>
-            <AyyadLogo />
-            <div style={{ textAlign:"left" }} className="hidden sm:block">
-              <div style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:22, color:"var(--ayyad-deep)", letterSpacing:1.5, lineHeight:1 }}>AYYAD</div>
-              <div style={{ fontSize:10, color:"var(--ayyad-gold-deep)", letterSpacing:1.6, fontWeight:700, marginTop:3, textTransform:"uppercase" }}>
-                {fr ? "Solidarité médicale" : "Medical solidarity"}
-              </div>
+        {label}
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"
+          style={{ transition:"transform .2s", transform: activeDropdown===dropKey?"rotate(180deg)":"rotate(0)" }}>
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {activeDropdown === dropKey && <DropMenu items={items} />}
+    </div>
+  );
+
+  return (
+    <nav
+      className="sticky top-0 z-50"
+      onClick={closeDrop}
+      style={{
+        background: scrolled ? "rgba(255,255,255,0.96)" : "#ffffff",
+        backdropFilter: scrolled ? "saturate(180%) blur(12px)" : "none",
+        borderBottom: "1px solid rgba(10,31,26,0.07)",
+        boxShadow: scrolled ? "0 4px 20px rgba(10,31,26,0.07)" : "none",
+        transition:"background .25s, box-shadow .25s",
+      }}
+    >
+      <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 clamp(16px,3vw,40px)", display:"flex", alignItems:"center", height:68, gap:8 }}>
+
+        {/* Logo — gauche, identité AYYAD */}
+        <button onClick={()=>{ setPage("home"); closeDrop(); }}
+          style={{ display:"flex", alignItems:"center", gap:10, background:"transparent", border:"none", cursor:"pointer", padding:"4px 8px", borderRadius:10, flexShrink:0, marginRight:8 }}
+        >
+          <AyyadLogo />
+          <div style={{ textAlign:"left" }} className="hidden sm:block">
+            <div style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:20, color:"var(--ayyad-deep)", letterSpacing:1.5, lineHeight:1 }}>AYYAD</div>
+            <div style={{ fontSize:9, color:"var(--ayyad-gold-deep)", letterSpacing:1.4, fontWeight:700, marginTop:2, textTransform:"uppercase" }}>
+              {fr?"Solidarité médicale":"Medical solidarity"}
             </div>
-          </button>
-
-          {/* Liens desktop */}
-          <div className="hidden lg:flex" style={{ alignItems:"center", gap:4 }}>
-            {navLinks.map(l => (
-              <button
-                key={l.key}
-                onClick={() => setPage(l.key)}
-                className={`ayyad-link ${page===l.key ? "is-active" : ""}`}
-                style={{
-                  background:"transparent", border:"none", cursor:"pointer",
-                  padding:"10px 14px",
-                  fontSize:14, fontWeight: page===l.key?700:500,
-                  color: page===l.key ? "var(--ayyad-deep)" : "var(--ink-700)",
-                  borderRadius: 10,
-                  transition: "color .2s",
-                }}
-                onMouseEnter={e => { if(page!==l.key) e.currentTarget.style.color="var(--ayyad-deep)"; }}
-                onMouseLeave={e => { if(page!==l.key) e.currentTarget.style.color="var(--ink-700)"; }}
-              >
-                {l.label}
-              </button>
-            ))}
-            {user?.isAdmin && (
-              <button onClick={() => setPage("admin")} className={`ayyad-link ${page==="admin"?"is-active":""}`} style={{
-                background:"transparent", border:"none", cursor:"pointer",
-                padding:"10px 14px", fontSize:14, fontWeight:600,
-                color: page==="admin" ? "var(--ayyad-gold-deep)" : "var(--ink-500)",
-              }}>
-                ⚙ {t.admin}
-              </button>
-            )}
           </div>
+        </button>
 
-          {/* Right side actions
-              IMPORTANT — flex-shrink:0 sur chaque élément pour éviter le clipping
-              du bouton "Faire un don" qui a overflow:hidden (animation de brillance).
-              Sans flex-shrink:0, quand la navbar manque de place, les boutons se
-              compressent et le texte est tronqué (ex: "Faire un d..."). */}
-          <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
-            {/* "Soumettre un dossier" — visible à partir de lg (1024px+) au lieu de md (768px+)
-                pour libérer de la place sur les écrans moyens. Reste accessible via le menu burger sur mobile/tablette */}
-            <button
-              onClick={() => setPage("submit")}
-              className="hidden lg:inline-flex"
-              style={{
-                alignItems:"center", gap:6,
-                background:"transparent",
-                border:"1.5px solid rgba(13,92,46,0.22)",
-                color:"var(--ayyad-deep)",
-                fontWeight:700, fontSize:13,
-                padding:"9px 16px",
-                borderRadius:9999,
-                cursor:"pointer",
-                transition:"all .2s",
-                whiteSpace:"nowrap",
-                flexShrink:0,
-              }}
-              onMouseEnter={e=>{ e.currentTarget.style.background="rgba(13,92,46,0.06)"; e.currentTarget.style.borderColor="rgba(13,92,46,0.4)"; }}
-              onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="rgba(13,92,46,0.22)"; }}
-            >
-              {fr ? "Soumettre un dossier" : "Submit a case"}
-            </button>
-
-            {/* CTA primary — flex-shrink:0 obligatoire car .ayyad-btn-primary a overflow:hidden */}
-            <button
-              onClick={() => setPage("collectesactives")}
-              className="ayyad-btn-primary"
-              style={{ fontSize:13, padding:"9px 16px", whiteSpace:"nowrap", flexShrink:0 }}
-            >
-              💚 <span className="hidden sm:inline">{fr ? "Faire un don" : "Donate"}</span><span className="sm:hidden">{fr ? "Don" : "Give"}</span>
-            </button>
-
-            {user ? (
-              <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-                <button
-                  onClick={() => setPage("profile")}
-                  style={{
-                    width:36, height:36, borderRadius:"50%",
-                    background:"linear-gradient(135deg, #0d5c2e, #10b981)",
-                    color:"#fff", fontWeight:800, fontSize:13,
-                    border:"2px solid #fff", boxShadow:"0 2px 8px rgba(13,92,46,0.25)",
-                    cursor:"pointer",
-                    flexShrink:0,
-                  }}
-                  title={user.name || user.email}
-                >
-                  {(user.name||user.email||"U")[0].toUpperCase()}
-                </button>
-                <div className="hidden xl:flex" style={{ flexDirection:"column", lineHeight:1.1, minWidth:0 }}>
-                  <span style={{ fontSize:12, fontWeight:600, color:"var(--ink-900)", maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.name||user.email}</span>
-                  <button onClick={handleLogout} style={{ fontSize:10, color:"var(--ink-400)", background:"transparent", border:"none", cursor:"pointer", textAlign:"left", padding:0 }}>{t.logout}</button>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => setPage("login")}
-                className="hidden sm:inline-flex"
-                style={{
-                  background:"transparent", border:"none", cursor:"pointer",
-                  fontSize:13, fontWeight:600, color:"var(--ink-700)",
-                  padding:"8px 12px",
-                  flexShrink:0,
-                }}
-              >
-                {t.login}
-              </button>
-            )}
-
-            {/* Burger mobile/tablette — visible jusqu'à lg (1024px-) pour donner accès à Soumettre */}
-            <button
-              className="lg:hidden"
-              onClick={(e)=>{ e.stopPropagation(); setMobileOpen(o=>!o); }}
-              aria-label="Menu"
-              style={{
-                background:"transparent", border:"1px solid rgba(10,31,26,0.12)",
-                padding:8, borderRadius:10, cursor:"pointer",
-                color:"var(--ayyad-deep)",
-                flexShrink:0,
-              }}
-            >
-              {mobileOpen ? "✕" : "☰"}
-            </button>
-          </div>
+        {/* Navigation dropdowns — desktop */}
+        <div className="hidden lg:flex" style={{ alignItems:"center", gap:0, flex:1 }} onClick={e=>e.stopPropagation()}>
+          <NavDrop label={fr?"Soutenir ▾":"Support ▾"} dropKey="soutenir" items={soutienirItems} />
+          <NavDrop label={fr?"Soumettre ▾":"Submit ▾"} dropKey="soumettre" items={soumettreItems} />
+          <NavDrop label={fr?"À propos ▾":"About ▾"} dropKey="apropos" items={aproposItems} />
         </div>
 
-        {/* Menu mobile drawer */}
-        {mobileOpen && (
-          <div className="lg:hidden" onClick={e=>e.stopPropagation()} style={{
-            background:"#fff", borderTop:"1px solid rgba(10,31,26,0.06)",
-            boxShadow:"0 12px 32px rgba(10,31,26,0.10)",
-            padding:"16px 24px 24px",
-          }}>
-            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-              {navLinks.map(l => (
-                <button
-                  key={l.key}
-                  onClick={() => { setPage(l.key); setMobileOpen(false); }}
-                  style={{
-                    background: page===l.key ? "rgba(13,92,46,0.06)" : "transparent",
-                    border:"none", cursor:"pointer", textAlign:"left",
-                    padding:"12px 14px", borderRadius:10,
-                    fontSize:15, fontWeight:600,
-                    color: page===l.key ? "var(--ayyad-deep)" : "var(--ink-700)",
-                  }}
-                >
-                  {l.label}
-                </button>
-              ))}
-              {/* Soumettre un dossier — accessible aussi via le menu burger pour
-                  les écrans md/lg qui n'affichent plus le bouton en haut */}
-              <button
-                onClick={() => { setPage("submit"); setMobileOpen(false); }}
-                style={{
-                  marginTop:8, background:"transparent",
-                  border:"1.5px solid rgba(13,92,46,0.22)",
-                  borderRadius:10, padding:"12px 14px",
-                  color:"var(--ayyad-deep)", fontWeight:700, fontSize:14,
-                  cursor:"pointer", textAlign:"left",
-                }}
-              >
-                📋 {fr ? "Soumettre un dossier" : "Submit a case"}
-              </button>
-              <div style={{ display:"flex", gap:8, marginTop:12 }}>
-                <button onClick={()=>setLang("fr")} style={{ flex:1, padding:"8px 12px", borderRadius:8, border:"1px solid rgba(10,31,26,0.12)", background: lang==="fr"?"var(--ayyad-deep)":"#fff", color: lang==="fr"?"#fff":"var(--ink-700)", fontWeight:700, fontSize:12, cursor:"pointer" }}>🇫🇷 FR</button>
-                <button onClick={()=>setLang("en")} style={{ flex:1, padding:"8px 12px", borderRadius:8, border:"1px solid rgba(10,31,26,0.12)", background: lang==="en"?"var(--ayyad-deep)":"#fff", color: lang==="en"?"#fff":"var(--ink-700)", fontWeight:700, fontSize:12, cursor:"pointer" }}>🇬🇧 EN</button>
-              </div>
-              {user?.isAdmin && (
-                <button onClick={()=>{ setPage("admin"); setMobileOpen(false); }} style={{ marginTop:8, background:"rgba(201,168,76,0.10)", border:"1px solid rgba(201,168,76,0.30)", borderRadius:10, padding:"12px 14px", color:"var(--ayyad-gold-deep)", fontWeight:700, fontSize:13, cursor:"pointer", textAlign:"left" }}>⚙ {t.admin}</button>
-              )}
-            </div>
+        {/* Droite — langue + login + CTA */}
+        <div className="hidden lg:flex" style={{ alignItems:"center", gap:6, marginLeft:"auto", flexShrink:0 }} onClick={e=>e.stopPropagation()}>
+          <div style={{ display:"flex", gap:2, alignItems:"center" }}>
+            <button onClick={()=>setLang("fr")} style={{ background:"transparent", border:"none", cursor:"pointer", fontSize:12, fontWeight:lang==="fr"?700:400, color:lang==="fr"?"var(--ayyad-deep)":"var(--ink-400)", padding:"4px 6px" }}>FR</button>
+            <span style={{ color:"rgba(10,31,26,0.2)", fontSize:12 }}>|</span>
+            <button onClick={()=>setLang("en")} style={{ background:"transparent", border:"none", cursor:"pointer", fontSize:12, fontWeight:lang==="en"?700:400, color:lang==="en"?"var(--ayyad-deep)":"var(--ink-400)", padding:"4px 6px" }}>EN</button>
           </div>
-        )}
-      </nav>
-    </>
+          <div style={{ width:1, height:18, background:"rgba(10,31,26,0.1)" }} />
+          {user ? (
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <button onClick={()=>setPage("profile")}
+                style={{ width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#0d5c2e,#10b981)", color:"#fff", fontWeight:800, fontSize:13, border:"2px solid #fff", boxShadow:"0 2px 8px rgba(13,92,46,0.25)", cursor:"pointer", flexShrink:0 }}
+                title={user.name||user.email}
+              >{(user.name||user.email||"U")[0].toUpperCase()}</button>
+              <button onClick={handleLogout} style={{ background:"transparent", border:"none", cursor:"pointer", fontSize:12, color:"var(--ink-400)", padding:"4px 8px", whiteSpace:"nowrap" }}>{fr?"Déconnexion":"Logout"}</button>
+            </div>
+          ) : (
+            <button onClick={()=>setPage("login")}
+              style={{ background:"transparent", border:"none", cursor:"pointer", fontSize:13, fontWeight:600, color:"var(--ink-700)", padding:"8px 10px", whiteSpace:"nowrap" }}
+            >{fr?"Se connecter":"Log in"}</button>
+          )}
+          <button onClick={()=>setPage("collectesactives")}
+            className="ayyad-btn-primary"
+            style={{ fontSize:13, padding:"9px 18px", whiteSpace:"nowrap", flexShrink:0 }}
+          >💚 {fr?"Faire un don":"Donate"}</button>
+          {user?.isAdmin && (
+            <button onClick={()=>setPage("admin")} style={{ background:"rgba(201,168,76,0.10)", border:"1px solid rgba(201,168,76,0.30)", borderRadius:8, padding:"7px 12px", fontSize:12, fontWeight:700, color:"var(--ayyad-gold-deep)", cursor:"pointer" }}>⚙</button>
+          )}
+        </div>
+
+        {/* Mobile — CTA + burger */}
+        <div className="flex lg:hidden" style={{ marginLeft:"auto", alignItems:"center", gap:8 }}>
+          <button onClick={()=>setPage("collectesactives")} className="ayyad-btn-primary" style={{ fontSize:12, padding:"7px 14px", flexShrink:0 }}>
+            💚 {fr?"Don":"Give"}
+          </button>
+          <button onClick={e=>{ e.stopPropagation(); setMobileOpen(o=>!o); }}
+            style={{ background:"transparent", border:"1px solid rgba(10,31,26,0.12)", padding:"8px 10px", borderRadius:10, cursor:"pointer", color:"var(--ayyad-deep)", fontSize:16, flexShrink:0 }}
+          >{mobileOpen?"✕":"☰"}</button>
+        </div>
+      </div>
+
+      {/* Drawer mobile */}
+      {mobileOpen && (
+        <div className="lg:hidden" onClick={e=>e.stopPropagation()}
+          style={{ background:"#fff", borderTop:"1px solid rgba(10,31,26,0.06)", boxShadow:"0 12px 32px rgba(10,31,26,0.10)", padding:"16px 20px 24px" }}
+        >
+          {[
+            { icon:"🚨", label:fr?"Cas urgents":"Urgent cases", page:"urgents" },
+            { icon:"💚", label:fr?"Collectes actives":"Active campaigns", page:"collectesactives" },
+            { icon:"📋", label:fr?"Soumettre un dossier":"Submit a case", page:"submit" },
+            { icon:"❓", label:fr?"Comment ça marche":"How it works", page:"how" },
+            { icon:"🤝", label:fr?"Soutenir Ayyad":"Support Ayyad", page:"support-ayyad" },
+            { icon:"🔍", label:fr?"Suivre une collecte":"Track campaign", page:"tracking" },
+          ].map(l=>(
+            <button key={l.page} onClick={()=>{ setPage(l.page); setMobileOpen(false); }}
+              style={{ display:"flex", alignItems:"center", gap:10, width:"100%", background:"transparent", border:"none", cursor:"pointer", textAlign:"left", padding:"11px 10px", borderRadius:10, fontSize:14, fontWeight:600, color:"var(--ink-700)" }}
+              onMouseEnter={e=>e.currentTarget.style.background="rgba(13,92,46,0.06)"}
+              onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+            >{l.icon} {l.label}</button>
+          ))}
+          {user?.isAdmin && (
+            <button onClick={()=>{ setPage("admin"); setMobileOpen(false); }}
+              style={{ display:"flex", alignItems:"center", gap:10, width:"100%", marginTop:8, background:"rgba(201,168,76,0.10)", border:"1px solid rgba(201,168,76,0.30)", borderRadius:10, padding:"11px 10px", fontSize:13, fontWeight:700, color:"var(--ayyad-gold-deep)", cursor:"pointer", textAlign:"left" }}
+            >⚙ Admin</button>
+          )}
+          <div style={{ display:"flex", gap:8, marginTop:12 }}>
+            <button onClick={()=>setLang("fr")} style={{ flex:1, padding:"8px", borderRadius:8, border:"1px solid rgba(10,31,26,0.12)", background:lang==="fr"?"var(--ayyad-deep)":"#fff", color:lang==="fr"?"#fff":"var(--ink-700)", fontWeight:700, fontSize:12, cursor:"pointer" }}>🇫🇷 FR</button>
+            <button onClick={()=>setLang("en")} style={{ flex:1, padding:"8px", borderRadius:8, border:"1px solid rgba(10,31,26,0.12)", background:lang==="en"?"var(--ayyad-deep)":"#fff", color:lang==="en"?"#fff":"var(--ink-700)", fontWeight:700, fontSize:12, cursor:"pointer" }}>🇬🇧 EN</button>
+          </div>
+          {!user && (
+            <button onClick={()=>{ setPage("login"); setMobileOpen(false); }}
+              style={{ width:"100%", marginTop:8, background:"transparent", border:"1px solid rgba(10,31,26,0.15)", borderRadius:10, padding:"10px", fontSize:13, fontWeight:600, color:"var(--ayyad-deep)", cursor:"pointer" }}
+            >{fr?"Se connecter":"Log in"}</button>
+          )}
+          {user && (
+            <button onClick={()=>{ handleLogout(); setMobileOpen(false); }}
+              style={{ width:"100%", marginTop:8, background:"transparent", border:"1px solid rgba(10,31,26,0.12)", borderRadius:10, padding:"10px", fontSize:13, color:"var(--ink-500)", cursor:"pointer" }}
+            >{fr?"Déconnexion":"Logout"}</button>
+          )}
+        </div>
+      )}
+    </nav>
   );
 };
 
@@ -1183,7 +1117,7 @@ const MediaSection = ({ c, lang, t }) => {
       {photos.length > 0 && (
         <div>
           <div className="relative overflow-hidden" style={{height:"220px"}}>
-            <img src={photos[activePhoto]} alt={"Photo "+c.beneficiary} className="w-full h-full object-contain bg-gray-900" />
+            <img src={photos[activePhoto]} alt={"Photo "+(c.beneficiary||c.full_name||"")} className="w-full h-full object-contain bg-gray-900" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             <div className="absolute bottom-3 left-3 text-white text-xs font-semibold bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
               📍 {c.hospital} · {c.city}
@@ -2342,7 +2276,7 @@ const PartnersBanner = ({ lang }) => {
       <div className="ayyad-container">
         <div style={{ textAlign:"center", maxWidth: 720, margin:"0 auto 20px" }}>
           <span className="ayyad-eyebrow" style={{ color:"var(--ayyad-amber)", background:"rgba(245,158,11,0.10)", borderColor:"rgba(245,158,11,0.30)" }}>
-            {fr ? "⚠ Partenariats en cours de validation" : "⚠ Partnerships being validated"}
+            {fr ? "🏥 Établissements partenaires" : "🏥 Partner establishments"}
           </span>
           <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.6rem, 3vw, 2.4rem)", marginTop: 12, marginBottom: 10 }}>
             {fr ? <>Nos <em>établissements partenaires.</em></> : <>Our <em>partner facilities.</em></>}
@@ -2396,11 +2330,11 @@ const PartnersBanner = ({ lang }) => {
                   marginLeft:"auto",
                   fontSize:10, fontWeight:700, letterSpacing:0.5,
                   padding:"4px 10px", borderRadius:9999,
-                  background:"rgba(245,158,11,0.10)", color:"var(--ayyad-amber)",
-                  border:"1px solid rgba(245,158,11,0.25)",
+                  background:"rgba(13,92,46,0.10)", color:"var(--ayyad-deep)",
+                  border:"1px solid rgba(13,92,46,0.20)",
                   whiteSpace:"nowrap",
                   textTransform:"uppercase",
-                }}>{fr ? "En cours" : "Pending"}</span>
+                }}>{fr ? "✓ Partenaire" : "✓ Partner"}</span>
               </div>
             ))}
           </div>
@@ -2414,8 +2348,8 @@ const PartnersBanner = ({ lang }) => {
       <div className="ayyad-container">
         <p style={{ textAlign:"center", fontSize:12, color:"var(--ink-400)", marginTop: 24, fontStyle:"italic", maxWidth: 720, margin:"24px auto 0" }}>
           {fr
-            ? "Les partenariats officiels sont en cours de finalisation administrative. Aucune affirmation de partenariat finalisé n'est faite."
-            : "Official partnerships are being formalised. No claim of finalised partnership is made."}
+            ? "Ces établissements accueillent les patients AYYAD. Les fonds sont versés directement à l'hôpital concerné, jamais en espèces."
+            : "These institutions welcome AYYAD patients. Funds are transferred directly to the hospital, never in cash."}
         </p>
       </div>
     </section>
@@ -2431,7 +2365,7 @@ const PartnersBanner = ({ lang }) => {
 const useCountUp = (target, duration = 1600, enabled = true) => {
   const [value, setValue] = useState(0);
   useEffect(() => {
-    if (!enabled || !target) return;
+    if (!enabled) return;
     const num = Number(String(target).replace(/[^\d.]/g, "")) || 0;
     if (num === 0) { setValue(0); return; }
     const start = performance.now();
