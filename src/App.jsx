@@ -3626,6 +3626,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
     {id:"OM",label:"Orange Money",emoji:"🟠"},
     {id:"MTN",label:"MTN MoMo",emoji:"🟡"},
     {id:"SENDWAVE",label:"Sendwave",emoji:"💸"},
+    {id:"VB",label:fr?"Virement bancaire":"Bank Transfer",emoji:"🏦",soon:true},
   ];
 
   return (
@@ -3669,12 +3670,17 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             <p style={{fontSize:12,fontWeight:700,color:"#374151",margin:"0 0 10px"}}>{fr?"Payer via":"Pay via"}</p>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
               {PROVIDERS.map(m=>(
-                <button key={m.id} onClick={()=>setProvider(m.id)}
-                  style={{display:"flex",alignItems:"center",gap:8,padding:"11px 12px",borderRadius:12,fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s",
-                    background:provider===m.id?"#f0fdf4":"#f9fafb",
-                    border:provider===m.id?"2px solid #047857":"2px solid #e5e7eb",
-                    color:provider===m.id?"#047857":"#374151"}}>
-                  <span style={{fontSize:18}}>{m.emoji}</span><span>{m.label}</span>
+                <button key={m.id} onClick={()=>!m.soon&&setProvider(m.id)}
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"11px 12px",borderRadius:12,fontWeight:700,fontSize:12,transition:"all .15s",
+                    cursor:m.soon?"default":"pointer",
+                    opacity:m.soon?0.55:1,
+                    background:provider===m.id&&!m.soon?"#f0fdf4":"#f9fafb",
+                    border:provider===m.id&&!m.soon?"2px solid #047857":"2px solid #e5e7eb",
+                    color:provider===m.id&&!m.soon?"#047857":"#374151",
+                    gridColumn:m.id==="VB"?"1 / -1":"auto"}}>
+                  <span style={{fontSize:18}}>{m.emoji}</span>
+                  <span style={{flex:1,textAlign:"left"}}>{m.label}</span>
+                  {m.soon&&<span style={{fontSize:10,background:"#fef3c7",color:"#92400e",padding:"2px 6px",borderRadius:20,fontWeight:800}}>{fr?"Bientôt":"Soon"}</span>}
                 </button>
               ))}
             </div>
@@ -3727,8 +3733,27 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             )}
             {(provider==="OM"||provider==="MTN")&&(
               <div style={{background:"#fff7ed",borderRadius:12,padding:"14px",marginBottom:14,fontSize:12,color:"#c2410c",lineHeight:1.7}}>
-                {fr?<>Contactez-nous via le chat (en bas à droite) pour le numéro {provider==="OM"?"Orange Money":"MTN MoMo"}.</>
-                  :<>Contact us via chat (bottom right) for the {provider==="OM"?"Orange Money":"MTN MoMo"} number.</>}
+                <div style={{fontWeight:700,marginBottom:8}}>{fr?`Paiement ${provider==="OM"?"Orange Money":"MTN MoMo"} :`:`${provider==="OM"?"Orange Money":"MTN MoMo"} payment:`}</div>
+                {fr?<>Contactez-nous sur WhatsApp pour recevoir le numéro {provider==="OM"?"Orange Money":"MTN MoMo"} et les instructions :</>:<>Contact us on WhatsApp to get the {provider==="OM"?"Orange Money":"MTN MoMo"} number and instructions:</>}
+                <a href="https://wa.me/2250748056128" target="_blank" rel="noreferrer"
+                  style={{display:"flex",alignItems:"center",gap:8,marginTop:10,background:"#25D366",color:"#fff",borderRadius:10,padding:"10px 14px",textDecoration:"none",fontWeight:800,fontSize:13}}>
+                  <span style={{fontSize:18}}>📱</span> WhatsApp → +225 07 48 05 61 28
+                </a>
+              </div>
+            )}
+            {provider==="VB"&&(
+              <div style={{background:"#f0f9ff",borderRadius:12,padding:"14px",marginBottom:14,fontSize:12,color:"#0369a1",lineHeight:1.8}}>
+                <div style={{fontWeight:800,fontSize:13,marginBottom:6}}>🏦 {fr?"Virement bancaire":"Bank Transfer"}</div>
+                <div style={{background:"#e0f2fe",borderRadius:8,padding:"10px 12px",marginBottom:8,fontFamily:"monospace",fontSize:11,lineHeight:2}}>
+                  {fr?"Banque":"Bank"} : <strong>SGBCI (Société Générale CI)</strong><br/>
+                  {fr?"Titulaire":"Account holder"} : <strong>AYYAD SARLU</strong><br/>
+                  IBAN : <strong style={{letterSpacing:"0.5px"}}>CI93 CI01 0310 0000 0000 0123 456</strong><br/>
+                  BIC : <strong>SGCICIAB</strong>
+                </div>
+                <div style={{background:"#fef3c7",borderRadius:8,padding:"8px 10px",fontSize:11,color:"#92400e",fontWeight:700}}>
+                  ⚠️ {fr?"Mentionnez la référence en objet du virement :":"Add this reference to your transfer subject:"}
+                  <span style={{display:"block",fontFamily:"monospace",marginTop:2,color:"#111"}}>{payRef}</span>
+                </div>
               </div>
             )}
 
@@ -3736,10 +3761,18 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
               {fr?"Référence":"Ref"} : <strong style={{color:"#374151",fontFamily:"monospace"}}>{payRef}</strong>
             </div>
 
+            {provider!=="VB"&&(
             <button onClick={confirmPayment} disabled={submitting}
               style={{width:"100%",padding:"14px",borderRadius:14,border:"2px solid #059669",background:"#fff",color:"#047857",fontWeight:800,fontSize:14,cursor:submitting?"wait":"pointer",marginBottom:8}}>
               {submitting?"⏳ ...":`✅ ${fr?"J'ai effectué le paiement":"I've completed the payment"}`}
             </button>
+            )}
+            {provider==="VB"&&(
+            <button onClick={()=>setStep("success")}
+              style={{width:"100%",padding:"14px",borderRadius:14,border:"2px solid #0369a1",background:"#fff",color:"#0369a1",fontWeight:800,fontSize:14,cursor:"pointer",marginBottom:8}}>
+              ✅ {fr?"J'ai effectué le virement":"I've completed the transfer"}
+            </button>
+            )}
             <p style={{textAlign:"center",fontSize:11,color:"#9ca3af",margin:0}}>
               {fr?"Votre don sera vérifié par l'équipe Ayyad":"Your donation will be verified by the Ayyad team"}
             </p>
