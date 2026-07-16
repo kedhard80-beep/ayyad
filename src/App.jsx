@@ -3335,7 +3335,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
     });
   }, []);
 
-  const catMap = lang==="fr" ? ["Tous","Cardiologie","Oncologie","Néphrologie","Orthopédie"] : ["All","Cardiology","Oncology","Nephrology","Orthopedics"];
+  const catMap = lang==="fr" ? ["Tous","Cardiologie","Oncologie","Pédiatrie","Néphrologie","Orthopédie"] : ["All","Cardiology","Oncology","Pediatrics","Nephrology","Orthopedics"];
   const allCases = dbCases.length > 0 ? [...dbCases, ...getDisplayCases().filter(c => c.status !== "FUNDED")] : getDisplayCases();
   // Helper: extracts string from title/category whether stored as string or {fr,en} object
   const gs = (val) => typeof val === "object" && val !== null ? (val[lang] || val.fr || val.en || "") : (val || "");
@@ -3450,9 +3450,16 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 
             {/* Filtres + recherche */}
             <div style={{ display:"flex", gap:14, flexWrap:"wrap", alignItems:"center", justifyContent:"space-between" }}>
-              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+              <style>{`
+                @media(max-width:768px){
+                  .ayyad-cats{display:grid!important;grid-template-columns:repeat(3,1fr)!important;}
+                  .ayyad-cats button{flex-direction:column!important;padding:10px 6px!important;font-size:11px!important;border-radius:12px!important;gap:4px!important;}
+                }
+              `}</style>
+              <div className="ayyad-cats" style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                 {catMap.map((c,i) => {
                   const active = (filter==="all"&&i===0)||filter===c;
+                  const _ico = {"Tous":"✨","All":"✨","Cardiologie":"🫀","Cardiology":"🫀","Oncologie":"🎗️","Oncology":"🎗️","Pédiatrie":"👶","Pediatrics":"👶","Néphrologie":"🫘","Nephrology":"🫘","Orthopédie":"🦴","Orthopedics":"🦴"}[c]||"🏥";
                   return (
                     <button key={c} onClick={() => setFilter(i===0?"all":c)} style={{
                       padding:"8px 18px", borderRadius: 9999,
@@ -3463,7 +3470,8 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
                       cursor:"pointer",
                       boxShadow: active ? "0 4px 14px rgba(13,92,46,0.24)" : "0 1px 2px rgba(10,31,26,0.04)",
                       transition:"all .2s",
-                    }}>{c}</button>
+                      display:"flex",alignItems:"center",gap:6,
+                    }}><span style={{fontSize:16}}>{_ico}</span>{c}</button>
                   );
                 })}
               </div>
@@ -11158,11 +11166,10 @@ const DjanaUrgencyBadges = ({ lang }) => {
           will-change:transform;transform:translateZ(0);
           box-shadow:0 4px 16px rgba(220,38,38,0.55);
         }
-        @media(max-width:640px){
+        @media(max-width:768px){
           .djana-badge-wrap{
-            bottom:0;right:0;left:0;border-radius:0;
-            padding:14px 20px;font-size:14px;
-            justify-content:center;
+            bottom:76px;right:12px;
+            font-size:11px;padding:8px 12px;
           }
         }
       `}</style>
@@ -11487,7 +11494,7 @@ export default function AyyadApp() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      <DjanaUrgencyTopBar />
+      <div className="hidden md:block"><DjanaUrgencyTopBar />{/* PATCH U — cachée mobile */}</div>
       <style>{`
         @keyframes glow-wave {
           0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.8); }
