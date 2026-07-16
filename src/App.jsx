@@ -3931,8 +3931,49 @@ const CasePage = ({ c, setPage, lang, user }) => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-24 lg:pb-0">
       <Confetti active={showConfetti} />
+
+      {/* ── STICKY BAR MOBILE GoFundMe ── */}
+      <div className="lg:hidden" style={{
+        position:"fixed",bottom:0,left:0,right:0,zIndex:9999,
+        background:"#fff",borderTop:"1.5px solid #E5E7EB",
+        padding:"10px 14px calc(10px + env(safe-area-inset-bottom,0px))",
+        display:"flex",alignItems:"center",gap:8,
+        boxShadow:"0 -4px 24px rgba(0,0,0,0.11)"
+      }}>
+        {(()=>{
+          const _sp = Math.round(Math.min(100,((liveCollected||0)/((c.required||c.amount||1)))*100));
+          const _sd = Math.round(_sp*113.1/100);
+          return (<>
+            <div style={{position:"relative",width:44,height:44,flexShrink:0}}>
+              <svg width="44" height="44" viewBox="0 0 44 44" style={{overflow:"visible"}}>
+                <circle cx="22" cy="22" r="18" fill="none" stroke="#E5E7EB" strokeWidth="4"/>
+                <circle cx="22" cy="22" r="18" fill="none" stroke="#059669" strokeWidth="4"
+                  strokeDasharray={_sd+" 113.1"} strokeLinecap="round"
+                  style={{transform:"rotate(-90deg)",transformOrigin:"22px 22px"}}/>
+              </svg>
+              <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:900,color:"#059669"}}>{_sp}%</div>
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:800,fontSize:12,color:"#111827",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                {(liveCollected||0).toLocaleString("fr-FR")} <span style={{color:"#6B7280",fontWeight:600,fontSize:10}}>FCFA</span>
+              </div>
+              <div style={{fontSize:10,color:"#6B7280",whiteSpace:"nowrap"}}>{liveDonors||0} {lang==="fr"?"dons":"donors"}</div>
+            </div>
+            <button
+              onClick={()=>{try{if(navigator.share){navigator.share({title:(c.title?.[lang]||"AYYAD"),url:window.location.href})}else{navigator.clipboard.writeText(window.location.href)}}catch(e){}}}
+              style={{flexShrink:0,padding:"9px 11px",borderRadius:50,border:"2px solid #E5E7EB",background:"#fff",fontSize:11,fontWeight:700,color:"#374151",cursor:"pointer",whiteSpace:"nowrap"}}>
+              📤 {lang==="fr"?"Partager":"Share"}
+            </button>
+            <button
+              onClick={()=>{ if(c) c.__quickAmount = parseInt(amount)||1000; setPage("donate"); }}
+              style={{flexShrink:0,padding:"11px 16px",borderRadius:50,border:"none",background:"#059669",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 3px 12px rgba(5,150,105,0.4)"}}>
+              💚 {lang==="fr"?"Faire un don":"Donate"}
+            </button>
+          </>);
+        })()}
+      </div>
 
       {/* ── HERO ── */}
       <div className="relative w-full overflow-hidden bg-gray-900" style={{minHeight:"400px",maxHeight:"680px",height:"60vw"}}>
@@ -3970,6 +4011,62 @@ const CasePage = ({ c, setPage, lang, user }) => {
           </div>
         </div>
       </div>
+
+      {/* ── MOBILE GOFUNDME STRIP ── */}
+      {(()=>{
+        const _mp = Math.round(Math.min(100,((liveCollected||0)/((c.required||c.amount||1)))*100));
+        const _mc = 138.2;
+        const _md = Math.round(_mp*_mc/100);
+        const _ld = recentDonations[0];
+        const _tick = _ld
+          ? ((_ld.donor_name&&_ld.donor_name!=="null"&&_ld.donor_name!==null?_ld.donor_name:(lang==="fr"?"Anonyme":"Anonymous"))+" · "+((_ld.amount_fcfa||_ld.amount||0)).toLocaleString("fr-CI")+" FCFA")
+          : (lang==="fr"?"Soyez le premier à donner 💚":"Be the first to give 💚");
+        return (
+          <div className="lg:hidden" style={{background:"#fff",borderBottom:"1px solid #F3F4F6",padding:"16px 16px 14px"}}>
+            {/* Ligne 1 : cercle + stats */}
+            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
+              <div style={{position:"relative",width:60,height:60,flexShrink:0}}>
+                <svg width="60" height="60" viewBox="0 0 60 60">
+                  <circle cx="30" cy="30" r="22" fill="none" stroke="#F3F4F6" strokeWidth="5"/>
+                  <circle cx="30" cy="30" r="22" fill="none" stroke="#059669" strokeWidth="5"
+                    strokeDasharray={_md+" "+_mc} strokeLinecap="round"
+                    style={{transform:"rotate(-90deg)",transformOrigin:"30px 30px",transition:"stroke-dasharray 0.8s"}}/>
+                </svg>
+                <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"#059669"}}>{_mp}%</div>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:900,fontSize:20,color:"#111827",lineHeight:1.1}}>
+                  {(liveCollected||0).toLocaleString("fr-FR")} <span style={{fontSize:13,fontWeight:600,color:"#6B7280"}}>FCFA</span>
+                </div>
+                <div style={{fontSize:12,color:"#6B7280",margin:"3px 0 4px"}}>
+                  {lang==="fr"?"collectés sur":"raised of"} {(c.required||c.amount||0).toLocaleString("fr-FR")} FCFA
+                </div>
+                <div style={{fontSize:11,color:"#059669",display:"flex",alignItems:"center",gap:5}}>
+                  <span style={{display:"inline-block",width:7,height:7,borderRadius:"50%",background:"#059669",animation:"pulse 1.5s infinite"}}/>
+                  <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"100%"}}>{_tick}</span>
+                </div>
+              </div>
+              <div style={{textAlign:"center",flexShrink:0,background:"#F0FDF4",borderRadius:12,padding:"8px 12px"}}>
+                <div style={{fontWeight:900,fontSize:18,color:"#059669"}}>{liveDonors||0}</div>
+                <div style={{fontSize:10,color:"#6B7280",fontWeight:600}}>{lang==="fr"?"dons":"donors"}</div>
+              </div>
+            </div>
+            {/* Ligne 2 : boutons */}
+            <div style={{display:"grid",gridTemplateColumns:"3fr 2fr",gap:10}}>
+              <button
+                onClick={()=>{ if(c) c.__quickAmount = parseInt(amount)||1000; setPage("donate"); }}
+                style={{padding:"14px 0",borderRadius:50,border:"none",background:"#059669",color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",boxShadow:"0 4px 14px rgba(5,150,105,0.38)"}}>
+                💚 {lang==="fr"?"Faire un don":"Donate now"}
+              </button>
+              <button
+                onClick={()=>{try{if(navigator.share){navigator.share({title:(c.title?.[lang]||"AYYAD"),url:window.location.href})}else{navigator.clipboard.writeText(window.location.href)}}catch(e){}}}
+                style={{padding:"14px 0",borderRadius:50,border:"2px solid #E5E7EB",background:"#fff",color:"#374151",fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                📤 {lang==="fr"?"Partager":"Share"}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── CONTENU PRINCIPAL ── */}
       <div className="max-w-6xl mx-auto px-4 py-8">
