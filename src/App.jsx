@@ -3943,6 +3943,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [caseUpdates, setCaseUpdates] = useState([]);
   const [newUpdate, setNewUpdate] = useState("");
   const [postingUpdate, setPostingUpdate] = useState(false);
+  const [newUpdatePhoto, setNewUpdatePhoto] = useState(null); // PATCH X — journal photos
+  const [uploadingUpdatePhoto, setUploadingUpdatePhoto] = useState(false); // PATCH X
 
   useEffect(() => {
     if (!c.id || c._isDemo) return;
@@ -3953,19 +3955,33 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const postUpdate = async () => {
     if (!newUpdate.trim() || !c.id) return;
     setPostingUpdate(true);
+    let photo_url = null;
+    if (newUpdatePhoto) {
+      setUploadingUpdatePhoto(true);
+      const ext = newUpdatePhoto.name.split(".").pop();
+      const path = `case-updates/${c.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("case-photos").upload(path, newUpdatePhoto, { upsert: true });
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from("case-photos").getPublicUrl(path);
+        photo_url = urlData?.publicUrl || null;
+      }
+      setUploadingUpdatePhoto(false);
+    }
     const { data, error } = await supabase.from("case_updates").insert({
       case_id: c.id,
       author_name: user?.name || user?.email || "Équipe Ayyad",
       author_role: user?.isAdmin ? "admin" : "patient",
       content: newUpdate.trim(),
+      photo_url,
       created_at: new Date().toISOString(),
     }).select().single();
     if (!error && data) {
       setCaseUpdates(prev => [data, ...prev]);
       setNewUpdate("");
+      setNewUpdatePhoto(null);
     }
     setPostingUpdate(false);
-  };
+  }; // PATCH X — journal photos
 
   // ── Realtime : suivi live des dons & progression ──
   const [liveCollected, setLiveCollected] = useState(c.collected || 0);
@@ -3973,6 +3989,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [recentDonations, setRecentDonations] = useState([]);
   const [showConfetti, setShowConfetti] = useState(false);
   const [lastDonation, setLastDonation] = useState(null); // pour le certificat
+  const [toast, setToast] = useState(null); // PATCH Y — notification temps réel
 
   useEffect(() => {
     // Chargement initial des derniers dons + resync du compteur
@@ -4009,6 +4026,11 @@ const CasePage = ({ c, setPage, lang, user }) => {
             setLiveCollected(prev => prev + (d.amount_fcfa || d.amount || 0));
             setLiveDonors(prev => prev + 1);
             setRecentDonations(prev => [d,...prev].slice(0,5));
+          // PATCH Y — toast notification
+          const _dn = d.donor_name||(lang==="fr"?"Un donateur":"A donor");
+          const _da = (d.amount_fcfa||d.amount)?Number(d.amount_fcfa||d.amount).toLocaleString("fr-CI")+" FCFA":"";
+          setToast(lang==="fr"?`🎉 ${_dn} vient de donner${_da?" "+_da:""} 💚`:`🎉 ${_dn} just donated${_da?" "+_da:""} 💚`);
+          setTimeout(()=>setToast(null),5000);
           }
         })
       .on("postgres_changes",{event:"UPDATE",schema:"public",table:"donations",filter:`case_id=eq.${c.id}`},
@@ -4285,6 +4307,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-24 lg:pb-0">
       <Confetti active={showConfetti} />
       {showModal&&<DonateModal c={c} lang={lang} user={user} setPage={setPage} onClose={()=>setShowModal(false)} />}
+      <ToastNotif msg={toast} />{/* PATCH Y */}
 
       {/* ── STICKY BAR MOBILE GoFundMe ── */}
       <div className="lg:hidden" style={{
@@ -4594,10 +4617,17 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       rows={3}
                       className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
                     />
-                    <button onClick={postUpdate} disabled={postingUpdate||!newUpdate.trim()}
-                      className="mt-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all">
-                      {postingUpdate?(lang==="fr"?"Envoi...":"Sending..."):(lang==="fr"?"Publier la mise à jour":"Publish update")}
-                    </button>
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <button onClick={postUpdate} disabled={postingUpdate||uploadingUpdatePhoto||!newUpdate.trim()}
+                        className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all">
+                        {(postingUpdate||uploadingUpdatePhoto)?(lang==="fr"?"Envoi...":"Sending..."):(lang==="fr"?"Publier la mise à jour":"Publish update")}
+                      </button>
+                      <label className="cursor-pointer flex items-center gap-1 text-xs text-gray-500 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-xl transition-all">
+                        📷 {newUpdatePhoto ? newUpdatePhoto.name.substring(0,18)+"…" : (lang==="fr"?"Ajouter une photo":"Add photo")}
+                        <input type="file" accept="image/*" className="hidden" onChange={e=>setNewUpdatePhoto(e.target.files[0]||null)} />
+                      </label>
+                      {newUpdatePhoto && <button onClick={()=>setNewUpdatePhoto(null)} className="text-xs text-red-400 hover:text-red-600">✕</button>}
+                    </div>
                   </div>
                 )}
                 {/* Liste des mises à jour */}
@@ -4617,6 +4647,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                             <span className="text-xs text-gray-400">{new Date(upd.created_at).toLocaleDateString(lang==="fr"?"fr-CI":"en-US")}</span>
                           </div>
                           <p className="text-sm text-gray-700 mt-1 leading-relaxed">{upd.content}</p>
+                          {upd.photo_url&&<img src={upd.photo_url} alt="" onClick={()=>window.open(upd.photo_url,"_blank")} className="mt-2 rounded-xl max-w-full object-cover" style={{maxHeight:200,cursor:"pointer"}} />}
                         </div>
                       </div>
                     ))}
@@ -11497,8 +11528,42 @@ const DjanaUrgencyTopBar = () => {
   );
 };
 
+const ToastNotif = ({ msg }) => {
+  if (!msg) return null;
+  return (
+    <div style={{position:"fixed",bottom:96,left:"50%",transform:"translateX(-50%)",
+      zIndex:100001,background:"linear-gradient(135deg,#047857,#059669)",color:"#fff",
+      borderRadius:20,padding:"12px 20px",fontSize:13,fontWeight:700,
+      boxShadow:"0 8px 32px rgba(4,120,87,0.4)",
+      display:"flex",alignItems:"center",gap:10,whiteSpace:"nowrap",
+      animation:"toast-slide 0.4s cubic-bezier(.4,0,.2,1)"}}>
+      <style>{`@keyframes toast-slide{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`}</style>
+      <span>🎉</span><span>{msg}</span>
+    </div>
+  );
+};
 const DjanaUrgencyBadges = ({ lang }) => {
   const go = () => { sessionStorage.setItem('ayyadLang', lang); window.location.href = DJANA_CASE_URL; };
+  const MOB = [
+    {bottom:'76px',right:'12px'},{bottom:'76px',left:'12px'},
+    {top:'70px',right:'12px'},{top:'70px',left:'12px'},
+  ];
+  const DSK = [
+    {bottom:'24px',right:'16px'},{bottom:'24px',left:'16px'},
+    {top:'80px',right:'16px'},{top:'80px',left:'16px'},
+    {top:'45%',right:'16px'},{top:'45%',left:'16px'},
+  ];
+  const [pos, setPos] = useState({bottom:'76px',right:'12px'});
+  const [vis, setVis] = useState(true);
+  useEffect(()=>{
+    const roam = ()=>{
+      const arr = window.innerWidth<=768 ? MOB : DSK;
+      setVis(false);
+      setTimeout(()=>{ setPos(arr[Math.floor(Math.random()*arr.length)]); setVis(true); }, 600);
+    };
+    const t = setInterval(roam, 60000);
+    return ()=>clearInterval(t);
+  },[]);
   return (
     <>
       <style>{`
@@ -11506,8 +11571,8 @@ const DjanaUrgencyBadges = ({ lang }) => {
           0%,100%{box-shadow:0 4px 16px rgba(220,38,38,0.55),0 0 0 0 rgba(220,38,38,0.4)}
           50%{box-shadow:0 4px 20px rgba(220,38,38,0.75),0 0 0 8px rgba(220,38,38,0)}
         }
-        .djana-badge-wrap {
-          position:fixed;bottom:8px;right:16px;z-index:99998;
+        .djana-badge-wrap{
+          position:fixed;z-index:99998;
           display:flex;align-items:center;gap:8px;
           background:linear-gradient(135deg,#dc2626,#b91c1c);
           color:#fff;cursor:pointer;user-select:none;
@@ -11516,17 +11581,15 @@ const DjanaUrgencyBadges = ({ lang }) => {
           animation:djana-pulse-badge 2.2s ease-in-out infinite;
           will-change:transform;transform:translateZ(0);
           box-shadow:0 4px 16px rgba(220,38,38,0.55);
+          transition:opacity 0.5s ease;
         }
-        @media(max-width:768px){
-          .djana-badge-wrap{
-            bottom:76px;right:12px;
-            font-size:11px;padding:8px 12px;
-          }
-        }
+        @media(max-width:768px){.djana-badge-wrap{font-size:11px;padding:8px 12px;}}
       `}</style>
-      <div className="djana-badge-wrap" onClick={go}>
+      <div className="djana-badge-wrap"
+        style={{...pos, opacity:vis?1:0, pointerEvents:vis?'auto':'none'}}
+        onClick={go}>
         <span>💝</span>
-        <span>{(lang||"fr")==="fr" ? "Faites un don à Djana" : "Donate for Djana"}</span>
+        <span>{(lang||'fr')==='fr' ? 'Faites un don à Djana' : 'Donate for Djana'}</span>
       </div>
     </>
   );
