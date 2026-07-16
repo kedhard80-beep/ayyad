@@ -3586,6 +3586,188 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 };
 
 // ── Case Detail + Donation Widget ─────────────────────────────
+
+// ─── DonateModal — bottom sheet GoFundMe style ───────────────────────────────
+const DonateModal = ({ c, lang, user, setPage, onClose }) => {
+  const WAVE_LINK = "https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/";
+  const fr = lang === "fr";
+  const [preset, setPreset] = useState(1000);
+  const [custom, setCustom] = useState("");
+  const [provider, setProvider] = useState("WAVE");
+  const [step, setStep] = useState("choose");
+  const [donorName, setDonorName] = useState(user?.name || "");
+  const [anon, setAnon] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [payRef] = useState(() => "AYD-" + Date.now().toString(36).toUpperCase().slice(-5) + "-" + Math.random().toString(36).substr(2,4).toUpperCase());
+
+  const finalAmt = custom ? (parseInt(custom)||0) : preset;
+  const caseTitle = c.title?.[lang] || c.title?.fr || c.title || "";
+
+  const confirmPayment = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      if (c.id && !c._isDemo) {
+        await supabase.from("donations").insert({
+          case_id: c.id,
+          donor_name: anon ? null : (donorName.trim()||null),
+          amount_fcfa: finalAmt, amount: finalAmt,
+          provider, status: "pending", reference: payRef,
+          created_at: new Date().toISOString(),
+        });
+      }
+    } catch(e) { /* silencieux */ }
+    setStep("success");
+    setSubmitting(false);
+  };
+
+  const PROVIDERS = [
+    {id:"WAVE",label:"Wave CI",emoji:"〰️"},
+    {id:"OM",label:"Orange Money",emoji:"🟠"},
+    {id:"MTN",label:"MTN MoMo",emoji:"🟡"},
+    {id:"SENDWAVE",label:"Sendwave",emoji:"💸"},
+  ];
+
+  return (
+    <>
+      <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:19998,backdropFilter:"blur(2px)"}} />
+      <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:19999,background:"#fff",borderRadius:"24px 24px 0 0",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 -12px 48px rgba(0,0,0,0.2)",paddingBottom:"env(safe-area-inset-bottom,16px)"}}>
+
+        {/* Handle */}
+        <div style={{display:"flex",justifyContent:"center",padding:"14px 0 0"}}>
+          <div style={{width:44,height:4,borderRadius:2,background:"#d1d5db"}} />
+        </div>
+
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 20px 14px",borderBottom:"1px solid #f3f4f6"}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:10,fontWeight:800,color:"#059669",textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:2}}>💚 {fr?"Faire un don":"Donate"}</div>
+            <div style={{fontWeight:700,fontSize:13,color:"#111827",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{caseTitle}</div>
+          </div>
+          <button onClick={onClose} style={{background:"#f3f4f6",border:"none",borderRadius:"50%",width:34,height:34,fontSize:16,cursor:"pointer",flexShrink:0}}>✕</button>
+        </div>
+
+        {/* ── ÉTAPE 1 : Choisir ── */}
+        {step==="choose"&&(
+          <div style={{padding:"20px"}}>
+            <p style={{fontSize:12,fontWeight:700,color:"#374151",margin:"0 0 10px"}}>{fr?"Montant (FCFA)":"Amount (FCFA)"}</p>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:10}}>
+              {[500,1000,2000,5000].map(p=>(
+                <button key={p} onClick={()=>{setPreset(p);setCustom("");}}
+                  style={{padding:"12px 4px",borderRadius:12,fontWeight:800,fontSize:13,cursor:"pointer",transition:"all .15s",
+                    background:preset===p&&!custom?"linear-gradient(135deg,#047857,#059669)":"#f9fafb",
+                    color:preset===p&&!custom?"#fff":"#374151",
+                    border:preset===p&&!custom?"2px solid #047857":"2px solid #e5e7eb"}}>
+                  {p>=1000?(p/1000)+"k":p}
+                </button>
+              ))}
+            </div>
+            <input type="number" min="500" placeholder={fr?"Autre montant (min. 500 FCFA)":"Other amount (min. 500 FCFA)"}
+              value={custom} onChange={e=>{setCustom(e.target.value);setPreset(0);}}
+              style={{width:"100%",border:"2px solid",borderColor:custom?"#047857":"#e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,fontWeight:600,outline:"none",boxSizing:"border-box",marginBottom:18}} />
+
+            <p style={{fontSize:12,fontWeight:700,color:"#374151",margin:"0 0 10px"}}>{fr?"Payer via":"Pay via"}</p>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+              {PROVIDERS.map(m=>(
+                <button key={m.id} onClick={()=>setProvider(m.id)}
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"11px 12px",borderRadius:12,fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s",
+                    background:provider===m.id?"#f0fdf4":"#f9fafb",
+                    border:provider===m.id?"2px solid #047857":"2px solid #e5e7eb",
+                    color:provider===m.id?"#047857":"#374151"}}>
+                  <span style={{fontSize:18}}>{m.emoji}</span><span>{m.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {!anon&&(<input type="text" placeholder={fr?"Votre prénom (optionnel)":"Your name (optional)"}
+              value={donorName} onChange={e=>setDonorName(e.target.value)}
+              style={{width:"100%",border:"2px solid #e5e7eb",borderRadius:12,padding:"10px 14px",fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:8}} />)}
+            <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#6b7280",marginBottom:18,cursor:"pointer"}}>
+              <input type="checkbox" checked={anon} onChange={e=>setAnon(e.target.checked)} style={{width:16,height:16}} />
+              {fr?"Donner anonymement":"Donate anonymously"}
+            </label>
+
+            <button disabled={finalAmt<500} onClick={()=>setStep("pay")}
+              style={{width:"100%",padding:"16px",borderRadius:16,border:"none",fontWeight:900,fontSize:17,cursor:finalAmt>=500?"pointer":"not-allowed",marginBottom:10,
+                background:finalAmt>=500?"linear-gradient(135deg,#047857,#059669)":"#e5e7eb",
+                color:finalAmt>=500?"#fff":"#9ca3af",
+                boxShadow:finalAmt>=500?"0 6px 24px rgba(4,120,87,0.35)":"none"}}>
+              💚 {finalAmt>=500?(fr?`Donner ${finalAmt>=1000?(finalAmt/1000).toFixed(finalAmt%1000?1:0)+"k":finalAmt} FCFA`:`Donate ${finalAmt} FCFA`):(fr?"Entrez un montant":"Enter an amount")}
+            </button>
+            <p style={{textAlign:"center",fontSize:11,color:"#9ca3af",margin:0}}>🔒 {fr?"Fonds versés directement à l'hôpital · 0% frais":"Funds sent directly to hospital · 0% fees"}</p>
+          </div>
+        )}
+
+        {/* ── ÉTAPE 2 : Payer ── */}
+        {step==="pay"&&(
+          <div style={{padding:"20px"}}>
+            <button onClick={()=>setStep("choose")} style={{background:"none",border:"none",color:"#059669",fontWeight:700,fontSize:13,cursor:"pointer",padding:"0 0 16px",display:"block"}}>
+              ← {fr?"Modifier":"Change"}
+            </button>
+            <div style={{background:"#f0fdf4",borderRadius:16,padding:"18px",marginBottom:18,textAlign:"center"}}>
+              <div style={{fontWeight:900,fontSize:34,color:"#047857",lineHeight:1}}>{finalAmt.toLocaleString("fr-CI")}</div>
+              <div style={{fontSize:13,color:"#059669",marginTop:4,fontWeight:600}}>FCFA · {PROVIDERS.find(p=>p.id===provider)?.label}</div>
+            </div>
+
+            {provider==="WAVE"&&(<>
+              <a href={WAVE_LINK} target="_blank" rel="noreferrer"
+                style={{display:"block",textAlign:"center",background:"#0055ff",color:"#fff",fontWeight:900,fontSize:15,padding:"15px",borderRadius:14,textDecoration:"none",marginBottom:14}}>
+                📱 {fr?"Ouvrir Wave CI":"Open Wave CI"}
+              </a>
+              <div style={{background:"#eff6ff",borderRadius:12,padding:"12px 14px",marginBottom:14,fontSize:12,color:"#1d4ed8",lineHeight:1.7}}>
+                {fr?<>1. Ouvrez Wave CI &nbsp;→&nbsp; <strong>"Payer"</strong><br/>2. Entrez exactement <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Validez et revenez ici</>
+                  :<>1. Open Wave CI &nbsp;→&nbsp; <strong>"Pay"</strong><br/>2. Enter exactly <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Confirm and come back here</>}
+              </div>
+            </>)}
+            {provider==="SENDWAVE"&&(
+              <div style={{background:"#f0f4ff",borderRadius:12,padding:"14px",marginBottom:14,fontSize:12,color:"#4338ca",lineHeight:1.7}}>
+                {fr?<>Envoyez <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> sur Sendwave au :</>:<>Send <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> on Sendwave to:</>}
+                <div style={{fontWeight:900,fontSize:20,color:"#312e81",margin:"6px 0"}}>+225 07 48 05 61 28</div>
+              </div>
+            )}
+            {(provider==="OM"||provider==="MTN")&&(
+              <div style={{background:"#fff7ed",borderRadius:12,padding:"14px",marginBottom:14,fontSize:12,color:"#c2410c",lineHeight:1.7}}>
+                {fr?<>Contactez-nous via le chat (en bas à droite) pour le numéro {provider==="OM"?"Orange Money":"MTN MoMo"}.</>
+                  :<>Contact us via chat (bottom right) for the {provider==="OM"?"Orange Money":"MTN MoMo"} number.</>}
+              </div>
+            )}
+
+            <div style={{background:"#f9fafb",borderRadius:12,padding:"10px 12px",marginBottom:14,fontSize:11,color:"#9ca3af"}}>
+              {fr?"Référence":"Ref"} : <strong style={{color:"#374151",fontFamily:"monospace"}}>{payRef}</strong>
+            </div>
+
+            <button onClick={confirmPayment} disabled={submitting}
+              style={{width:"100%",padding:"14px",borderRadius:14,border:"2px solid #059669",background:"#fff",color:"#047857",fontWeight:800,fontSize:14,cursor:submitting?"wait":"pointer",marginBottom:8}}>
+              {submitting?"⏳ ...":`✅ ${fr?"J'ai effectué le paiement":"I've completed the payment"}`}
+            </button>
+            <p style={{textAlign:"center",fontSize:11,color:"#9ca3af",margin:0}}>
+              {fr?"Votre don sera vérifié par l'équipe Ayyad":"Your donation will be verified by the Ayyad team"}
+            </p>
+          </div>
+        )}
+
+        {/* ── ÉTAPE 3 : Succès ── */}
+        {step==="success"&&(
+          <div style={{padding:"40px 20px",textAlign:"center"}}>
+            <div style={{fontSize:72,marginBottom:16}}>🎉</div>
+            <div style={{fontWeight:900,fontSize:22,color:"#047857",marginBottom:10}}>
+              {fr?"Merci pour votre générosité !":"Thank you for your generosity!"}
+            </div>
+            <p style={{fontSize:14,color:"#6b7280",lineHeight:1.6,marginBottom:28}}>
+              {fr?"Votre paiement va être vérifié sous 24h et le montant crédité au dossier. Vous faites une vraie différence.":"Your payment will be verified within 24h and credited to this campaign. You're making a real difference."}
+            </p>
+            <button onClick={onClose}
+              style={{background:"linear-gradient(135deg,#047857,#059669)",color:"#fff",border:"none",borderRadius:14,padding:"15px 32px",fontWeight:800,fontSize:16,cursor:"pointer",boxShadow:"0 4px 20px rgba(4,120,87,0.3)"}}>
+              ← {fr?"Retour au dossier":"Back to campaign"}
+            </button>
+          </div>
+        )}
+
+      </div>
+    </>
+  );
+};
+// ─────────────────────────────────────────────────────────────────────────────
 const CasePage = ({ c, setPage, lang, user }) => {
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("FCFA");
@@ -3609,6 +3791,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
   // États pour l'enregistrement du don (évite l'insert silencieux + double-clic)
   const [donSubmitting, setDonSubmitting] = useState(false);
   const [qrInserted, setQrInserted] = useState(false);
+  const [showModal, setShowModal] = useState(false); // PATCH V — overlay don
       const [donError, setDonError] = useState("");
   const [showPayConfirm, setShowPayConfirm] = useState(false);
 
@@ -3966,6 +4149,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-24 lg:pb-0">
       <Confetti active={showConfetti} />
+      {showModal&&<DonateModal c={c} lang={lang} user={user} setPage={setPage} onClose={()=>setShowModal(false)} />}
 
       {/* ── STICKY BAR MOBILE GoFundMe ── */}
       <div className="lg:hidden" style={{
@@ -4000,7 +4184,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
               📤 {lang==="fr"?"Partager":"Share"}
             </button>
             <button
-              onClick={()=>{ if(c) c.__quickAmount = parseInt(amount)||1000; setPage("donate"); }}
+              onClick={() => setShowModal(true)}
               style={{flexShrink:0,padding:"11px 16px",borderRadius:50,border:"none",background:"#059669",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 3px 12px rgba(5,150,105,0.4)"}}>
               💚 {lang==="fr"?"Faire un don":"Donate"}
             </button>
@@ -4087,7 +4271,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             {/* Ligne 2 : boutons */}
             <div style={{display:"grid",gridTemplateColumns:"3fr 2fr",gap:10}}>
               <button
-                onClick={()=>{ if(c) c.__quickAmount = parseInt(amount)||1000; setPage("donate"); }}
+                onClick={() => setShowModal(true)}
                 style={{padding:"14px 0",borderRadius:50,border:"none",background:"#059669",color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",boxShadow:"0 4px 14px rgba(5,150,105,0.38)"}}>
                 💚 {lang==="fr"?"Faire un don":"Donate now"}
               </button>
@@ -4445,7 +4629,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 placeholder={lang==="fr"?"Autre montant (FCFA)":"Custom amount (FCFA)"}
                 style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:9,border:"1.5px solid #E5E7EB",fontSize:13,fontWeight:600,marginBottom:10,outline:"none"}} />
               <button
-                onClick={()=>{ if(c) c.__quickAmount = parseInt(amount)||1000; setPage("donate"); }}
+                onClick={() => setShowModal(true)}
                 disabled={!amount||parseInt(amount)<1}
                 style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:(!amount||parseInt(amount)<1)?"#9CA3AF":"#059669",color:"#fff",fontWeight:800,fontSize:15,cursor:(!amount||parseInt(amount)<1)?"not-allowed":"pointer",boxShadow:(!amount||parseInt(amount)<1)?"none":"0 4px 14px rgba(5,150,105,0.32)",transition:"all 0.2s"}}>
                 💚 {lang==="fr"?"Faire un don":"Donate"}
