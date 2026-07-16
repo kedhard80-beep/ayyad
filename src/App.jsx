@@ -3604,6 +3604,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   const [donorName, setDonorName] = useState(user?.name || "");
   const [anon, setAnon] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [intlOpen, setIntlOpen] = useState(false);
   const [payRef] = useState(() => "AYD-" + Date.now().toString(36).toUpperCase().slice(-5) + "-" + Math.random().toString(36).substr(2,4).toUpperCase());
 
   const finalAmt = custom ? (parseInt(custom)||0) : preset;
@@ -3672,67 +3673,90 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
 
             <p style={{fontSize:12,fontWeight:700,color:"#374151",margin:"0 0 8px"}}>{fr?"Payer via":"Pay via"}</p>
 
+            {/* ── Grille 2×2 : Wave / OM / MTN / Depuis l'étranger ── */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+              {/* Wave CI */}
+              <button onClick={()=>setProvider("WAVE")}
+                style={{display:"flex",alignItems:"center",gap:10,padding:"13px 12px",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .15s",
+                  background:provider==="WAVE"?"#f0fdf4":"#f9fafb",
+                  border:provider==="WAVE"?"2px solid #047857":"2px solid #e5e7eb",
+                  color:provider==="WAVE"?"#047857":"#374151"}}>
+                <span style={{fontSize:22}}>〰️</span><span>Wave CI</span>
+              </button>
+              {/* Orange Money */}
+              <button onClick={()=>setProvider("OM")}
+                style={{display:"flex",alignItems:"center",gap:10,padding:"13px 12px",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .15s",
+                  background:provider==="OM"?"#f0fdf4":"#f9fafb",
+                  border:provider==="OM"?"2px solid #047857":"2px solid #e5e7eb",
+                  color:provider==="OM"?"#047857":"#374151"}}>
+                <span style={{fontSize:22}}>🟠</span><span>Orange Money</span>
+              </button>
+              {/* MTN MoMo */}
+              <button onClick={()=>setProvider("MTN")}
+                style={{display:"flex",alignItems:"center",gap:10,padding:"13px 12px",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .15s",
+                  background:provider==="MTN"?"#f0fdf4":"#f9fafb",
+                  border:provider==="MTN"?"2px solid #047857":"2px solid #e5e7eb",
+                  color:provider==="MTN"?"#047857":"#374151"}}>
+                <span style={{fontSize:22}}>🟡</span><span>MTN MoMo</span>
+              </button>
+              {/* Depuis l'étranger — ouvre le sous-overlay */}
+              <button onClick={()=>setIntlOpen(true)}
+                style={{display:"flex",alignItems:"center",gap:10,padding:"13px 12px",borderRadius:14,fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s",
+                  background:(provider==="SENDWAVE"||provider==="TAPTAP")?"#eff6ff":"#f0f9ff",
+                  border:(provider==="SENDWAVE"||provider==="TAPTAP")?"2px solid #3b82f6":"2px solid #bfdbfe",
+                  color:(provider==="SENDWAVE"||provider==="TAPTAP")?"#1d4ed8":"#3b82f6"}}>
+                <span style={{fontSize:20}}>🌍</span>
+                <span style={{flex:1,lineHeight:1.3}}>
+                  {(provider==="SENDWAVE"||provider==="TAPTAP")
+                    ? ALL_PROVIDERS.find(p=>p.id===provider)?.label
+                    : (fr?"Depuis l'étranger":"From abroad")}
+                </span>
+                <span style={{fontSize:12}}>›</span>
+              </button>
+            </div>
+
+            {/* ── Bientôt : Virement + Carte ── */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-
-              {/* ── Wave CI + Orange Money ── */}
-              {CI_PROVIDERS.filter(m=>m.id!=="MTN").map(m=>(
-                <button key={m.id} onClick={()=>setProvider(m.id)}
-                  style={{display:"flex",alignItems:"center",gap:10,padding:"13px 12px",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .15s",
-                    background:provider===m.id?"#f0fdf4":"#f9fafb",
-                    border:provider===m.id?"2px solid #047857":"2px solid #e5e7eb",
-                    color:provider===m.id?"#047857":"#374151"}}>
-                  <span style={{fontSize:22}}>{m.emoji}</span><span>{m.label}</span>
-                </button>
-              ))}
-
-              {/* ── MTN MoMo seul pleine largeur ── */}
-              {CI_PROVIDERS.filter(m=>m.id==="MTN").map(m=>(
-                <button key={m.id} onClick={()=>setProvider(m.id)}
-                  style={{display:"flex",alignItems:"center",gap:10,padding:"13px 12px",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .15s",gridColumn:"1 / -1",
-                    background:provider===m.id?"#f0fdf4":"#f9fafb",
-                    border:provider===m.id?"2px solid #047857":"2px solid #e5e7eb",
-                    color:provider===m.id?"#047857":"#374151"}}>
-                  <span style={{fontSize:22}}>{m.emoji}</span><span>{m.label}</span>
-                </button>
-              ))}
-
-              {/* ── Séparateur Diaspora ── */}
-              <div style={{gridColumn:"1 / -1",display:"flex",alignItems:"center",gap:6,margin:"2px 0"}}>
-                <div style={{flex:1,height:1,background:"#e5e7eb"}} />
-                <span style={{fontSize:10,fontWeight:800,color:"#6b7280",whiteSpace:"nowrap"}}>🌍 {fr?"Depuis l'étranger":"From abroad"}</span>
-                <div style={{flex:1,height:1,background:"#e5e7eb"}} />
-              </div>
-
-              {/* ── Sendwave + TapTap Send ── */}
-              {INT_PROVIDERS.map(m=>(
-                <button key={m.id} onClick={()=>setProvider(m.id)}
-                  style={{display:"flex",alignItems:"center",gap:10,padding:"13px 12px",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .15s",
-                    background:provider===m.id?"#f0fdf4":"#f9fafb",
-                    border:provider===m.id?"2px solid #047857":"2px solid #e5e7eb",
-                    color:provider===m.id?"#047857":"#374151"}}>
-                  <span style={{fontSize:22}}>{m.emoji}</span><span>{m.label}</span>
-                </button>
-              ))}
-
-              {/* ── Séparateur Bientôt ── */}
-              <div style={{gridColumn:"1 / -1",display:"flex",alignItems:"center",gap:6,margin:"2px 0"}}>
-                <div style={{flex:1,height:1,background:"#e5e7eb"}} />
-                <span style={{fontSize:10,fontWeight:800,color:"#9ca3af",whiteSpace:"nowrap"}}>{fr?"Bientôt disponible":"Coming soon"}</span>
-                <div style={{flex:1,height:1,background:"#e5e7eb"}} />
-              </div>
-
-              {/* ── Virement + Carte côte à côte ── */}
               {SOON_PROVIDERS.map(m=>(
                 <div key={m.id}
-                  style={{display:"flex",alignItems:"center",gap:10,padding:"12px 12px",borderRadius:14,fontWeight:700,fontSize:12,opacity:0.5,
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"11px 10px",borderRadius:14,fontWeight:700,fontSize:11,opacity:0.5,
                     background:"#f9fafb",border:"2px dashed #e5e7eb",color:"#6b7280"}}>
-                  <span style={{fontSize:20}}>{m.emoji}</span>
-                  <span style={{flex:1}}>{m.label}</span>
+                  <span style={{fontSize:18}}>{m.emoji}</span>
+                  <span style={{flex:1,lineHeight:1.3}}>{m.label}</span>
                   <span style={{fontSize:9,background:"#fef3c7",color:"#92400e",padding:"2px 5px",borderRadius:20,fontWeight:800,flexShrink:0}}>{fr?"Bientôt":"Soon"}</span>
                 </div>
               ))}
-
             </div>
+
+            {/* ── Sous-overlay "Depuis l'étranger" ── */}
+            {intlOpen&&(
+              <>
+                <div onClick={()=>setIntlOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",zIndex:20000}} />
+                <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:20001,background:"#fff",borderRadius:"20px 20px 0 0",padding:"20px",boxShadow:"0 -8px 32px rgba(0,0,0,0.18)"}}>
+                  <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
+                    <div style={{width:36,height:4,borderRadius:2,background:"#d1d5db"}} />
+                  </div>
+                  <div style={{fontWeight:800,fontSize:15,color:"#1e3a5f",marginBottom:4}}>🌍 {fr?"Depuis l'étranger":"From abroad"}</div>
+                  <div style={{fontSize:12,color:"#6b7280",marginBottom:16}}>{fr?"Choisissez votre appli de transfert international :":"Choose your international transfer app:"}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:8}}>
+                    {INT_PROVIDERS.map(m=>(
+                      <button key={m.id} onClick={()=>{setProvider(m.id);setIntlOpen(false);}}
+                        style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,padding:"18px 10px",borderRadius:16,fontWeight:800,fontSize:13,cursor:"pointer",transition:"all .15s",
+                          background:provider===m.id?"#eff6ff":"#f9fafb",
+                          border:provider===m.id?"2px solid #3b82f6":"2px solid #e5e7eb",
+                          color:provider===m.id?"#1d4ed8":"#374151"}}>
+                        <span style={{fontSize:32}}>{m.emoji}</span>
+                        <span>{m.label}</span>
+                        <span style={{fontSize:10,color:"#9ca3af",fontWeight:600}}>{m.id==="SENDWAVE"?"sendwave.com":"taptapsend.com"}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={()=>setIntlOpen(false)} style={{width:"100%",padding:"12px",background:"#f3f4f6",border:"none",borderRadius:12,fontWeight:700,fontSize:13,color:"#6b7280",cursor:"pointer"}}>
+                    {fr?"Annuler":"Cancel"}
+                  </button>
+                </div>
+              </>
+            )}
 
             {!anon&&(<input type="text" placeholder={fr?"Votre prénom (optionnel)":"Your name (optional)"}
               value={donorName} onChange={e=>setDonorName(e.target.value)}
@@ -3761,7 +3785,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             </button>
             <div style={{background:"#f0fdf4",borderRadius:16,padding:"18px",marginBottom:18,textAlign:"center"}}>
               <div style={{fontWeight:900,fontSize:34,color:"#047857",lineHeight:1}}>{finalAmt.toLocaleString("fr-CI")}</div>
-              <div style={{fontSize:13,color:"#059669",marginTop:4,fontWeight:600}}>FCFA · {PROVIDERS.find(p=>p.id===provider)?.label}</div>
+              <div style={{fontSize:13,color:"#059669",marginTop:4,fontWeight:600}}>FCFA · {ALL_PROVIDERS.find(p=>p.id===provider)?.label}</div>
             </div>
 
             {provider==="WAVE"&&(<>
