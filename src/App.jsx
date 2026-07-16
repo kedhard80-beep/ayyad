@@ -4297,9 +4297,9 @@ const CasePage = ({ c, setPage, lang, user }) => {
             <div style={{background:"#fff",borderRadius:16,padding:"18px 16px",boxShadow:"0 2px 16px rgba(0,0,0,0.09)",marginBottom:12}}>
               <div style={{marginBottom:14}}>
                 <div style={{fontWeight:900,fontSize:20,color:"#111827"}}>{(liveCollected||0).toLocaleString("fr-FR")} <span style={{fontSize:13,fontWeight:600,color:"#6B7280"}}>FCFA</span></div>
-                <div style={{fontSize:12,color:"#6B7280",margin:"2px 0 8px"}}>{lang==="fr"?"collectés sur":"of"} {(c.goal||0).toLocaleString("fr-FR")} FCFA</div>
+                <div style={{fontSize:12,color:"#6B7280",margin:"2px 0 8px"}}>{lang==="fr"?"collectés sur":"of"} {(c.amount||0).toLocaleString("fr-FR")} FCFA</div>
                 <div style={{height:5,borderRadius:99,background:"#E5E7EB"}}>
-                  <div style={{height:"100%",borderRadius:99,background:"#059669",transition:"width 0.5s",width:Math.min(100,Math.round(((liveCollected||0)/(c.goal||1))*100))+"%"}} />
+                  <div style={{height:"100%",borderRadius:99,background:"#059669",transition:"width 0.5s",width:Math.min(100,Math.round(((liveCollected||0)/(c.amount||1))*100))+"%"}} />
                 </div>
                 <div style={{fontSize:11,color:"#6B7280",marginTop:5}}>{liveDonors||0} {lang==="fr"?"donateurs":"donors"}</div>
               </div>
@@ -11174,11 +11174,15 @@ const DonatePage = ({ c, lang, user, setPage }) => {
                     </div>
                   )}
                   {m.id==="SENDWAVE"&&(
-                    <div>
-                      <p style={{margin:"0 0 10px",fontSize:13,color:"#374151",lineHeight:1.6}}>
-                        {fr?"Depuis la diaspora, utilisez Sendwave pour envoyer en Côte d'Ivoire. L'app s'ouvrira après confirmation.":"From the diaspora, use Sendwave to send to Côte d'Ivoire. The app will open after confirmation."}
+                    <div> {/* PATCH Q */}
+                      <p style={{margin:"0 0 8px",fontSize:13,color:"#374151",lineHeight:1.6}}>
+                        {fr?"Envoyez ":"Send "}<strong>{amountFmt}</strong>{fr?" sur Sendwave au numéro Wave CI AYYAD :":" on Sendwave to AYYAD's Wave CI number:"}
                       </p>
-                      <div style={{fontSize:12,color:"#7C3AED",fontWeight:600}}>🌐 sendwave.com</div>
+                      <div style={{background:"#7C3AED18",borderRadius:8,padding:"10px 14px",fontWeight:800,fontSize:18,color:"#7C3AED",letterSpacing:2,textAlign:"center",marginBottom:8}}>+225 07 48 05 61 28</div>
+                      <p style={{margin:"0 0 10px",fontSize:11,color:"#6B7280"}}>{fr?"Réf. : AYYAD-"+(c?.id||"").slice(0,6).toUpperCase():"Ref.: AYYAD-"+(c?.id||"").slice(0,6).toUpperCase()}</p>
+                      <a href="https://www.sendwave.com" target="_blank" rel="noopener noreferrer" style={{display:"block",textAlign:"center",background:"#7C3AED",color:"#fff",borderRadius:8,padding:"10px",fontWeight:700,fontSize:13,textDecoration:"none"}}>
+                        🌐 {fr?"Ouvrir Sendwave":"Open Sendwave"}
+                      </a>
                     </div>
                   )}
                 </div>
