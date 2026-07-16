@@ -3344,7 +3344,32 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
   return (
     <div onClick={() => setHeroMenu(false)}>
       {/* Hero slider plein écran premium — storytelling 4 slides + KPIs live */}
-      <HeroSlider lang={lang} setPage={setPage} t={t} heroStats={heroStats} />
+      {/* ── Mobile hero premium GoFundMe ── */}
+      <div className="lg:hidden" style={{background:"linear-gradient(160deg,#064e3b 0%,#047857 55%,#0f766e 100%)",color:"#fff",padding:"28px 16px 24px"}}>
+        <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.12)",borderRadius:99,padding:"4px 14px",fontSize:11,fontWeight:700,marginBottom:16,letterSpacing:"0.5px",textTransform:"uppercase"}}>
+          <span style={{width:6,height:6,background:"#6ee7b7",borderRadius:"50%",display:"inline-block"}}/>
+          {lang==="fr" ? "100% vérifié · 0% frais" : "100% verified · 0% fees"}
+        </div>
+        <h1 style={{fontSize:28,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,textAlign:"left"}}>
+          {lang==="fr" ? "Financer la santé" : "Fund healthcare"}<br/>
+          <span style={{color:"#a7f3d0"}}>{lang==="fr" ? "c'est sauver une vie." : "means saving a life."}</span>
+        </h1>
+        <p style={{fontSize:13,color:"rgba(255,255,255,0.82)",margin:"0 0 18px",lineHeight:1.55,textAlign:"left"}}>
+          {lang==="fr" ? "Chaque don va directement à l'hôpital partenaire. Zéro intermédiaire." : "Every donation goes directly to the partner hospital. Zero intermediary."}
+        </p>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:1,marginBottom:20,background:"rgba(0,0,0,0.18)",borderRadius:14,overflow:"hidden"}}>
+          {[{v:heroStats.collected||"0",l:lang==="fr"?"FCFA collectés":"FCFA raised"},{v:heroStats.patients||"0",l:lang==="fr"?"Patients aidés":"Patients helped"},{v:heroStats.hospitals||"18",l:lang==="fr"?"Hôpitaux":"Hospitals"}].map((s,i)=>(
+            <div key={i} style={{textAlign:"center",padding:"10px 4px",background:"rgba(255,255,255,0.06)"}}>
+              <div style={{fontWeight:900,fontSize:18,lineHeight:1}}>{s.v}</div>
+              <div style={{fontSize:9,color:"rgba(255,255,255,0.65)",textTransform:"uppercase",letterSpacing:"0.4px",marginTop:3}}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+        <button onClick={()=>{const el=document.getElementById('collectes');if(el)el.scrollIntoView({behavior:'smooth'});else setPage('collectesactives');}} style={{background:"#fff",color:"#047857",fontWeight:900,fontSize:17,padding:"16px",borderRadius:16,border:"none",cursor:"pointer",width:"100%",boxShadow:"0 6px 24px rgba(0,0,0,0.22)",marginBottom:10,letterSpacing:"-0.2px"}}>💚 {lang==="fr" ? "Soutenir un patient" : "Support a patient"}</button>
+        <button onClick={()=>setPage('submit')} style={{background:"rgba(255,255,255,0.10)",border:"1.5px solid rgba(255,255,255,0.25)",color:"#fff",fontWeight:600,fontSize:14,padding:"12px",borderRadius:12,cursor:"pointer",width:"100%"}}>{lang==="fr" ? "Soumettre un dossier médical →" : "Submit a medical case →"}</button>
+        <p style={{fontSize:11,color:"rgba(255,255,255,0.5)",textAlign:"center",margin:"12px 0 0",letterSpacing:"0.2px"}}>🔒 {lang==="fr" ? "Fonds versés directement à l'hôpital · Aucuns frais" : "Funds sent directly to hospital · No fees"}</p>
+      </div>
+      <div className="hidden lg:block"><HeroSlider lang={lang} setPage={setPage} t={t} heroStats={heroStats} /></div>
       {/* Ancienne section gradient supprimée — son contenu a été intégré dans HeroSlider */}
       <div className="hidden">
         <div className="max-w-7xl mx-auto px-4 py-16 sm:py-20 text-center">
@@ -3395,7 +3420,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       <DonationTicker lang={lang} />
 
       {/* ── Section Notre Vision — émotionnelle, place juste apres le hero ── */}
-      <VisionSection lang={lang} setPage={setPage} />
+      <div className="hidden lg:block"><VisionSection lang={lang} setPage={setPage} /></div>
 
       {/* ── Section Impact (compteurs animés + confiance financière) ── */}
       <div className="hidden lg:block"><Reveal><ImpactSection lang={lang} heroStats={heroStats} setPage={setPage} /></Reveal></div>
