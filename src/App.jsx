@@ -3808,7 +3808,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                 </a>
                 <div style={{fontSize:11,color:"#9a3412",textAlign:"center"}}>
                   {fr?"Ouvrez l'app Orange Money → Envoyer de l'argent → entrez ce numéro":"Open Orange Money app → Send money → enter this number"}
-                  <br/>{fr?"Ou composez ":"Or dial "}<strong>*144#</strong>
+                  <br/>{fr?"Ou composez ":"Or dial "}<strong>#144#</strong>
                 </div>
               </div>
             )}
@@ -3926,6 +3926,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [donSubmitting, setDonSubmitting] = useState(false);
   const [qrInserted, setQrInserted] = useState(false);
   const [showModal, setShowModal] = useState(false); // PATCH V — overlay don
+  const [descExpanded, setDescExpanded] = useState(false); // PATCH W
       const [donError, setDonError] = useState("");
   const [showPayConfirm, setShowPayConfirm] = useState(false);
 
@@ -4427,7 +4428,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
           <div className="lg:col-span-2 space-y-6">
 
             {/* Progression — card premium */}
-            <div className="relative bg-white rounded-3xl overflow-hidden shadow-lg border border-gray-100">
+            <div className="relative bg-white rounded-3xl overflow-hidden shadow-lg border border-gray-100 hidden lg:block">
               {/* Bande colorée */}
               <div className="h-1.5 w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-600" />
               <div className="p-6 md:p-8">
@@ -4497,10 +4498,42 @@ const CasePage = ({ c, setPage, lang, user }) => {
               </div>
             </div>
 
+            {/* ── PATCH W — trust strip mobile ── */}
+            <div className="lg:hidden bg-white border border-gray-100 rounded-2xl shadow-sm" style={{padding:"14px 16px"}}>
+              <div style={{display:"flex",justifyContent:"space-around",alignItems:"center"}}>
+                <div style={{textAlign:"center"}}>
+                  <div style={{fontSize:22}}>🔒</div>
+                  <div style={{fontSize:11,fontWeight:800,color:"#047857",marginTop:2}}>{lang==="fr"?"0% frais":"0% fees"}</div>
+                  <div style={{fontSize:10,color:"#9ca3af"}}>{lang==="fr"?"sur votre don":"on your gift"}</div>
+                </div>
+                <div style={{width:1,height:38,background:"#e5e7eb"}} />
+                <div style={{textAlign:"center"}}>
+                  <div style={{fontSize:22}}>✅</div>
+                  <div style={{fontSize:11,fontWeight:800,color:"#047857",marginTop:2}}>{lang==="fr"?"Vérifié":"Verified"}</div>
+                  <div style={{fontSize:10,color:"#9ca3af"}}>{lang==="fr"?"par Ayyad":"by Ayyad"}</div>
+                </div>
+                <div style={{width:1,height:38,background:"#e5e7eb"}} />
+                <div style={{textAlign:"center"}}>
+                  <div style={{fontSize:22}}>🏥</div>
+                  <div style={{fontSize:11,fontWeight:800,color:"#047857",marginTop:2}}>{lang==="fr"?"Direct hôpital":"To hospital"}</div>
+                  <div style={{fontSize:10,color:"#9ca3af"}}>{lang==="fr"?"fonds sécurisés":"secured funds"}</div>
+                </div>
+              </div>
+            </div>
+
             {/* Description */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8">
               <h2 className="text-lg font-black text-gray-900 mb-4">{lang==="fr"?"L'histoire de ce patient":"This patient's story"}</h2>
-              <p className="text-gray-600 leading-relaxed text-base">{(c.desc?.[lang]  || c.desc?.fr  || c.desc  || "")}</p>
+              {/* Mobile : collapsible — PATCH W.3 */}
+              <div style={{position:"relative",overflow:"hidden",maxHeight:descExpanded?"none":"88px"}} className="lg:!max-h-none">
+                <p className="text-gray-600 leading-relaxed text-base">{(c.desc?.[lang]  || c.desc?.fr  || c.desc  || "")}</p>
+                {!descExpanded&&(
+                  <div className="absolute bottom-0 left-0 right-0 lg:hidden" style={{height:36,background:"linear-gradient(to top,#fff,transparent)"}} />
+                )}
+              </div>
+              <button onClick={()=>setDescExpanded(v=>!v)} className="lg:hidden mt-2" style={{color:"#059669",fontWeight:700,fontSize:13,border:"none",background:"none",cursor:"pointer",padding:0}}>
+                {descExpanded?(lang==="fr"?"↑ Réduire":"↑ Show less"):(lang==="fr"?"Lire la suite →":"Read more →")}
+              </button>
             </div>
 
             <div className="lg:hidden">
