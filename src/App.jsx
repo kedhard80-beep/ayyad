@@ -11212,6 +11212,10 @@ const DonatePage = ({ c, lang, user, setPage }) => {
   );
 };
 
+// Restauration dossier au refresh
+let _ayyad_case_fb = null;
+try { _ayyad_case_fb = JSON.parse(sessionStorage.getItem('ayyad_case') || 'null'); } catch(e) {}
+
 export default function AyyadApp() {
   // ── Animations paiement ──────────────────────────────────────────
   // (injectées ici car App.css n'est pas importé dans le bundle)
