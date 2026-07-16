@@ -3636,7 +3636,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   return (
     <>
       <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:19998,backdropFilter:"blur(2px)"}} />
-      <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:19999,background:"#fff",borderRadius:"24px 24px 0 0",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 -12px 48px rgba(0,0,0,0.2)",paddingBottom:"env(safe-area-inset-bottom,16px)"}}>
+      <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:19999,background:"#fff",borderRadius:"24px 24px 0 0",maxHeight:"92vh",overflowY:"auto",overflowX:"hidden",boxShadow:"0 -12px 48px rgba(0,0,0,0.2)",paddingBottom:"env(safe-area-inset-bottom,16px)",width:"100%",boxSizing:"border-box"}}>
 
         {/* Handle */}
         <div style={{display:"flex",justifyContent:"center",padding:"14px 0 0"}}>
@@ -3654,7 +3654,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
 
         {/* ── ÉTAPE 1 : Choisir ── */}
         {step==="choose"&&(
-          <div style={{padding:"20px"}}>
+          <div style={{padding:"20px",boxSizing:"border-box",width:"100%"}}>
             <p style={{fontSize:12,fontWeight:700,color:"#374151",margin:"0 0 10px"}}>{fr?"Montant (FCFA)":"Amount (FCFA)"}</p>
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:10}}>
               {[500,1000,2000,5000].map(p=>(
@@ -3779,7 +3779,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
 
         {/* ── ÉTAPE 2 : Payer ── */}
         {step==="pay"&&(
-          <div style={{padding:"20px"}}>
+          <div style={{padding:"20px",boxSizing:"border-box",width:"100%"}}>
             <button onClick={()=>setStep("choose")} style={{background:"none",border:"none",color:"#059669",fontWeight:700,fontSize:13,cursor:"pointer",padding:"0 0 16px",display:"block"}}>
               ← {fr?"Modifier":"Change"}
             </button>
