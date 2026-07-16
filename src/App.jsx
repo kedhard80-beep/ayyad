@@ -3589,7 +3589,13 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 
 // ─── DonateModal — bottom sheet GoFundMe style ───────────────────────────────
 const DonateModal = ({ c, lang, user, setPage, onClose }) => {
-  const WAVE_LINK = "https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/";
+  const WAVE_LINK  = "https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/";
+  const SW_TEL = "+2250748056128";   // Sendwave + TapTap
+  const SW_NUM = "+225 07 48 05 61 28";
+  const OM_TEL = "+2250748056128";   // Orange Money
+  const OM_NUM = "+225 07 48 05 61 28";
+  const MTN_TEL= "+2250501855991";   // MTN MoMo
+  const MTN_NUM= "+225 05 01 85 59 91";
   const fr = lang === "fr";
   const [preset, setPreset] = useState(1000);
   const [custom, setCustom] = useState("");
@@ -3621,13 +3627,10 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
     setSubmitting(false);
   };
 
-  const PROVIDERS = [
-    {id:"WAVE",label:"Wave CI",emoji:"〰️"},
-    {id:"OM",label:"Orange Money",emoji:"🟠"},
-    {id:"MTN",label:"MTN MoMo",emoji:"🟡"},
-    {id:"SENDWAVE",label:"Sendwave",emoji:"💸"},
-    {id:"VB",label:fr?"Virement bancaire":"Bank Transfer",emoji:"🏦",soon:true},
-  ];
+  const CI_PROVIDERS  = [{id:"WAVE",label:"Wave CI",emoji:"〰️"},{id:"OM",label:"Orange Money",emoji:"🟠"},{id:"MTN",label:"MTN MoMo",emoji:"🟡"}];
+  const INT_PROVIDERS = [{id:"SENDWAVE",label:"Sendwave",emoji:"💸"},{id:"TAPTAP",label:"TapTap Send",emoji:"✈️"}];
+  const SOON_PROVIDERS= [{id:"VB",label:fr?"Virement bancaire":"Bank Transfer",emoji:"🏦",soon:true},{id:"CB",label:fr?"Carte bancaire":"Credit Card",emoji:"💳",soon:true}];
+  const ALL_PROVIDERS = [...CI_PROVIDERS,...INT_PROVIDERS,...SOON_PROVIDERS];
 
   return (
     <>
@@ -3667,22 +3670,68 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
               value={custom} onChange={e=>{setCustom(e.target.value);setPreset(0);}}
               style={{width:"100%",border:"2px solid",borderColor:custom?"#047857":"#e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,fontWeight:600,outline:"none",boxSizing:"border-box",marginBottom:18}} />
 
-            <p style={{fontSize:12,fontWeight:700,color:"#374151",margin:"0 0 10px"}}>{fr?"Payer via":"Pay via"}</p>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
-              {PROVIDERS.map(m=>(
-                <button key={m.id} onClick={()=>!m.soon&&setProvider(m.id)}
-                  style={{display:"flex",alignItems:"center",gap:8,padding:"11px 12px",borderRadius:12,fontWeight:700,fontSize:12,transition:"all .15s",
-                    cursor:m.soon?"default":"pointer",
-                    opacity:m.soon?0.55:1,
-                    background:provider===m.id&&!m.soon?"#f0fdf4":"#f9fafb",
-                    border:provider===m.id&&!m.soon?"2px solid #047857":"2px solid #e5e7eb",
-                    color:provider===m.id&&!m.soon?"#047857":"#374151",
-                    gridColumn:m.id==="VB"?"1 / -1":"auto"}}>
-                  <span style={{fontSize:18}}>{m.emoji}</span>
-                  <span style={{flex:1,textAlign:"left"}}>{m.label}</span>
-                  {m.soon&&<span style={{fontSize:10,background:"#fef3c7",color:"#92400e",padding:"2px 6px",borderRadius:20,fontWeight:800}}>{fr?"Bientôt":"Soon"}</span>}
+            <p style={{fontSize:12,fontWeight:700,color:"#374151",margin:"0 0 8px"}}>{fr?"Payer via":"Pay via"}</p>
+
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+
+              {/* ── Wave CI + Orange Money ── */}
+              {CI_PROVIDERS.filter(m=>m.id!=="MTN").map(m=>(
+                <button key={m.id} onClick={()=>setProvider(m.id)}
+                  style={{display:"flex",alignItems:"center",gap:10,padding:"13px 12px",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .15s",
+                    background:provider===m.id?"#f0fdf4":"#f9fafb",
+                    border:provider===m.id?"2px solid #047857":"2px solid #e5e7eb",
+                    color:provider===m.id?"#047857":"#374151"}}>
+                  <span style={{fontSize:22}}>{m.emoji}</span><span>{m.label}</span>
                 </button>
               ))}
+
+              {/* ── MTN MoMo seul pleine largeur ── */}
+              {CI_PROVIDERS.filter(m=>m.id==="MTN").map(m=>(
+                <button key={m.id} onClick={()=>setProvider(m.id)}
+                  style={{display:"flex",alignItems:"center",gap:10,padding:"13px 12px",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .15s",gridColumn:"1 / -1",
+                    background:provider===m.id?"#f0fdf4":"#f9fafb",
+                    border:provider===m.id?"2px solid #047857":"2px solid #e5e7eb",
+                    color:provider===m.id?"#047857":"#374151"}}>
+                  <span style={{fontSize:22}}>{m.emoji}</span><span>{m.label}</span>
+                </button>
+              ))}
+
+              {/* ── Séparateur Diaspora ── */}
+              <div style={{gridColumn:"1 / -1",display:"flex",alignItems:"center",gap:6,margin:"2px 0"}}>
+                <div style={{flex:1,height:1,background:"#e5e7eb"}} />
+                <span style={{fontSize:10,fontWeight:800,color:"#6b7280",whiteSpace:"nowrap"}}>🌍 {fr?"Depuis l'étranger":"From abroad"}</span>
+                <div style={{flex:1,height:1,background:"#e5e7eb"}} />
+              </div>
+
+              {/* ── Sendwave + TapTap Send ── */}
+              {INT_PROVIDERS.map(m=>(
+                <button key={m.id} onClick={()=>setProvider(m.id)}
+                  style={{display:"flex",alignItems:"center",gap:10,padding:"13px 12px",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .15s",
+                    background:provider===m.id?"#f0fdf4":"#f9fafb",
+                    border:provider===m.id?"2px solid #047857":"2px solid #e5e7eb",
+                    color:provider===m.id?"#047857":"#374151"}}>
+                  <span style={{fontSize:22}}>{m.emoji}</span><span>{m.label}</span>
+                </button>
+              ))}
+
+              {/* ── Séparateur Bientôt ── */}
+              <div style={{gridColumn:"1 / -1",display:"flex",alignItems:"center",gap:6,margin:"2px 0"}}>
+                <div style={{flex:1,height:1,background:"#e5e7eb"}} />
+                <span style={{fontSize:10,fontWeight:800,color:"#9ca3af",whiteSpace:"nowrap"}}>{fr?"Bientôt disponible":"Coming soon"}</span>
+                <div style={{flex:1,height:1,background:"#e5e7eb"}} />
+              </div>
+
+              {/* ── Virement + Carte côte à côte ── */}
+              {SOON_PROVIDERS.map(m=>(
+                <div key={m.id}
+                  style={{display:"flex",alignItems:"center",gap:10,padding:"12px 12px",borderRadius:14,fontWeight:700,fontSize:12,opacity:0.5,
+                    background:"#f9fafb",border:"2px dashed #e5e7eb",color:"#6b7280"}}>
+                  <span style={{fontSize:20}}>{m.emoji}</span>
+                  <span style={{flex:1}}>{m.label}</span>
+                  <span style={{fontSize:9,background:"#fef3c7",color:"#92400e",padding:"2px 5px",borderRadius:20,fontWeight:800,flexShrink:0}}>{fr?"Bientôt":"Soon"}</span>
+                </div>
+              ))}
+
             </div>
 
             {!anon&&(<input type="text" placeholder={fr?"Votre prénom (optionnel)":"Your name (optional)"}
@@ -3725,20 +3774,48 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                   :<>1. Open Wave CI &nbsp;→&nbsp; <strong>"Pay"</strong><br/>2. Enter exactly <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Confirm and come back here</>}
               </div>
             </>)}
-            {provider==="SENDWAVE"&&(
-              <div style={{background:"#f0f4ff",borderRadius:12,padding:"14px",marginBottom:14,fontSize:12,color:"#4338ca",lineHeight:1.7}}>
-                {fr?<>Envoyez <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> sur Sendwave au :</>:<>Send <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> on Sendwave to:</>}
-                <div style={{fontWeight:900,fontSize:20,color:"#312e81",margin:"6px 0"}}>+225 07 48 05 61 28</div>
+            {provider==="OM"&&(
+              <div style={{background:"#fff7ed",borderRadius:14,padding:"16px",marginBottom:14,lineHeight:1.7}}>
+                <div style={{fontSize:12,color:"#c2410c",marginBottom:10}}>
+                  {fr?<>Envoyez <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> par Orange Money au :</>:<>Send <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> via Orange Money to:</>}
+                </div>
+                <a href={"tel:"+OM_TEL} style={{display:"block",textAlign:"center",background:"#ea580c",color:"#fff",fontWeight:900,fontSize:18,padding:"13px",borderRadius:12,textDecoration:"none",marginBottom:10,letterSpacing:"0.5px"}}>
+                  📞 {OM_NUM}
+                </a>
+                <div style={{fontSize:11,color:"#9a3412",textAlign:"center"}}>
+                  {fr?"Ouvrez l'app Orange Money → Envoyer de l'argent → entrez ce numéro":"Open Orange Money app → Send money → enter this number"}
+                  <br/>{fr?"Ou composez ":"Or dial "}<strong>*144#</strong>
+                </div>
               </div>
             )}
-            {(provider==="OM"||provider==="MTN")&&(
-              <div style={{background:"#fff7ed",borderRadius:12,padding:"14px",marginBottom:14,fontSize:12,color:"#c2410c",lineHeight:1.7}}>
-                <div style={{fontWeight:700,marginBottom:8}}>{fr?`Paiement ${provider==="OM"?"Orange Money":"MTN MoMo"} :`:`${provider==="OM"?"Orange Money":"MTN MoMo"} payment:`}</div>
-                {fr?<>Contactez-nous sur WhatsApp pour recevoir le numéro {provider==="OM"?"Orange Money":"MTN MoMo"} et les instructions :</>:<>Contact us on WhatsApp to get the {provider==="OM"?"Orange Money":"MTN MoMo"} number and instructions:</>}
-                <a href="https://wa.me/2250748056128" target="_blank" rel="noreferrer"
-                  style={{display:"flex",alignItems:"center",gap:8,marginTop:10,background:"#25D366",color:"#fff",borderRadius:10,padding:"10px 14px",textDecoration:"none",fontWeight:800,fontSize:13}}>
-                  <span style={{fontSize:18}}>📱</span> WhatsApp → +225 07 48 05 61 28
+            {provider==="MTN"&&(
+              <div style={{background:"#fefce8",borderRadius:14,padding:"16px",marginBottom:14,lineHeight:1.7}}>
+                <div style={{fontSize:12,color:"#854d0e",marginBottom:10}}>
+                  {fr?<>Envoyez <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> par MTN MoMo au :</>:<>Send <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> via MTN MoMo to:</>}
+                </div>
+                <a href={"tel:"+MTN_TEL} style={{display:"block",textAlign:"center",background:"#ca8a04",color:"#fff",fontWeight:900,fontSize:18,padding:"13px",borderRadius:12,textDecoration:"none",marginBottom:10,letterSpacing:"0.5px"}}>
+                  📞 {MTN_NUM}
                 </a>
+                <div style={{fontSize:11,color:"#713f12",textAlign:"center"}}>
+                  {fr?"Ouvrez l'app MTN MoMo → Envoyer de l'argent → entrez ce numéro":"Open MTN MoMo app → Send money → enter this number"}
+                  <br/>{fr?"Ou composez ":"Or dial "}<strong>*133#</strong>
+                  <br/>{fr?"Ou Paiement marchand → choisir AYYAD":"Or Merchant payment → select AYYAD"}
+                </div>
+              </div>
+            )}
+            {(provider==="SENDWAVE"||provider==="TAPTAP")&&(
+              <div style={{background:"#f0f4ff",borderRadius:14,padding:"16px",marginBottom:14,fontSize:12,color:"#4338ca",lineHeight:1.8}}>
+                <div style={{fontWeight:800,fontSize:13,marginBottom:10,color:"#312e81"}}>
+                  {provider==="SENDWAVE"?"💸 Sendwave":"✈️ TapTap Send"} — {fr?"envoi depuis l'étranger":"send from abroad"}
+                </div>
+                {fr?<>Envoyez <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> à :</>:<>Send <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> to:</>}
+                <div style={{background:"#e0e7ff",borderRadius:10,padding:"10px 14px",margin:"8px 0",fontFamily:"monospace",fontSize:13,lineHeight:2.2}}>
+                  {fr?"Nom":"Name"} : <strong style={{fontSize:15}}>AyyadCI</strong><br/>
+                  {fr?"Numéro":"Number"} : <strong style={{fontSize:15}}>{SW_NUM}</strong>
+                </div>
+                <div style={{fontSize:11,color:"#6366f1"}}>
+                  {fr?"Pays destinataire : Côte d'Ivoire 🇨🇮":"Destination country: Côte d'Ivoire 🇨🇮"}
+                </div>
               </div>
             )}
             {provider==="VB"&&(
