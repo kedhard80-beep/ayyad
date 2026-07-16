@@ -3398,10 +3398,10 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       <VisionSection lang={lang} setPage={setPage} />
 
       {/* ── Section Impact (compteurs animés + confiance financière) ── */}
-      <Reveal><ImpactSection lang={lang} heroStats={heroStats} setPage={setPage} /></Reveal>
+      <div className="hidden lg:block"><Reveal><ImpactSection lang={lang} heroStats={heroStats} setPage={setPage} /></Reveal></div>
 
       {/* Urgent Cases Banner — interventions critiques sous 72h */}
-      <Reveal><UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} /></Reveal>
+      <div className="hidden lg:block"><Reveal><UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} /></Reveal></div>
 
       {/* ── Section Campagnes — design premium éditorial ── */}
       {/* La section utilise un conteneur plus large (1600px) pour permettre 4-5
