@@ -12062,7 +12062,8 @@ export default function AyyadApp() {
         {page==="collectes"&&<CollectesPage setPage={setPage} lang={lang} />}
         {page==="collectesactives"&&<CollectesActivesPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} setSpecialite={setSpecialite} />}
         {page==="specialite"&&<SpecialitePage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} specialite={specialite} />}
-        {page==="case"&&(selectedCase||_ayyad_case_fb)&&<CasePage c={selectedCase||_ayyad_case_fb} setPage={setPage} lang={lang} user={user} />}
+        {page==="case"&&(selectedCase||((_ayyad_case_fb)&&!_initialCaseId))&&<CasePage c={selectedCase||_ayyad_case_fb} setPage={setPage} lang={lang} user={user} />}
+        {page==="case"&&!selectedCase&&_initialCaseId&&<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center"><div className="text-4xl mb-4 animate-spin">⏳</div><p className="text-gray-500 font-semibold">Chargement du dossier…</p></div></div>}
         {page==="donate"&&<DonatePage c={selectedCase||null} lang={lang} user={user} setPage={setPage} />}
         {page==="how"&&<HowPage lang={lang} setPage={setPage} />}
         {page==="refund"&&<RefundPage lang={lang} setPage={setPage} />}
