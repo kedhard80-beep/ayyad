@@ -1078,7 +1078,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
 };
 
 // ── MediaSection — Photos + Vidéo patient ────────────────────
-const MediaSection = ({ c, lang, t }) => {
+const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
   const [activePhoto, setActivePhoto] = useState(0);
   const [revealedPhotos, setRevealedPhotos] = useState(new Set()); // photos flouttées par défaut
   const photos = c.photos || [];
@@ -1098,7 +1098,26 @@ const MediaSection = ({ c, lang, t }) => {
   if (!hasMedia) return (
     <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 text-center">
       <div className="text-3xl mb-2">📸</div>
-      <div className="text-sm text-gray-400">{lang==="fr" ? "Aucun média disponible pour ce dossier." : "No media available for this case."}</div>
+      <div className="text-sm text-gray-400 mb-3">{lang==="fr" ? "Aucun média disponible pour ce dossier." : "No media available for this case."}</div>
+      {canEdit && (
+        <label className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-4 py-2 rounded-xl cursor-pointer transition-colors shadow">
+          <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+            const files = Array.from(e.target.files || []);
+            if (!files.length || !c.id) return;
+            let current = [...(c.photos || [])];
+            for (const file of files) {
+              const path = \`cases/\${c.id}/photos/\${Date.now()}_\${sanitizeFileName(file.name)}\`;
+              const { error } = await supabase.storage.from("case-photos").upload(path, file);
+              if (error) continue;
+              const { data: urlD } = supabase.storage.from("case-photos").getPublicUrl(path);
+              current = [...new Set([...current, urlD.publicUrl])];
+            }
+            await supabase.from("cases").update({ photos: current, photo_url: current[0] || null }).eq("id", c.id);
+            if (onPhotosChange) onPhotosChange(current);
+          }} />
+          📷 {lang==="fr" ? "Ajouter des photos" : "Add photos"}
+        </label>
+      )}
     </div>
   );
   return (
@@ -1108,9 +1127,28 @@ const MediaSection = ({ c, lang, t }) => {
           <span className="text-xl">📸</span>
           <span className="font-bold text-gray-900">{lang==="fr" ? "Photos & vidéo du patient" : "Patient photos & video"}</span>
         </div>
-        <div className="flex gap-1 text-xs font-semibold text-gray-600">
+        <div className="flex gap-1 text-xs font-semibold text-gray-600 items-center">
           {photos.length > 0 && <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">📷 {photos.length}</span>}
           {videoUrls.length > 0 && <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full">🎥 {videoUrls.length}</span>}
+          {canEdit && (
+            <label className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg cursor-pointer transition-colors text-xs font-bold shadow-sm ml-1">
+              <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                const files = Array.from(e.target.files || []);
+                if (!files.length || !c.id) return;
+                let current = [...(c.photos || [])];
+                for (const file of files) {
+                  const path = \`cases/\${c.id}/photos/\${Date.now()}_\${sanitizeFileName(file.name)}\`;
+                  const { error } = await supabase.storage.from("case-photos").upload(path, file);
+                  if (error) continue;
+                  const { data: urlD } = supabase.storage.from("case-photos").getPublicUrl(path);
+                  current = [...new Set([...current, urlD.publicUrl])];
+                }
+                await supabase.from("cases").update({ photos: current, photo_url: current[0] || null }).eq("id", c.id);
+                if (onPhotosChange) onPhotosChange(current);
+              }} />
+              📷+ {lang==="fr" ? "Ajouter" : "Add"}
+            </label>
+          )}
         </div>
       </div>
       {/* Galerie photos */}
@@ -4606,7 +4644,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             </div>
 
             {/* Médias — Photos + Vidéo */}
-            <MediaSection c={{...c, video_urls: localVideoUrls, photos: localPhotos}} lang={lang} t={t} />
+            <MediaSection c={{...c, video_urls: localVideoUrls, photos: localPhotos}} lang={lang} t={t} canEdit={!!(user && (user.isAdmin || (c.user_id && user.id===c.user_id)))} onPhotosChange={setLocalPhotos} />
 
             {/* ── Journal du patient ── */}
             {(caseUpdates.length > 0 || (user && (user.isAdmin || (c.user_id && user.id===c.user_id)))) && (
