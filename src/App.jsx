@@ -3901,7 +3901,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   );
 };
 // ─────────────────────────────────────────────────────────────────────────────
-const CasePage = ({ c, setPage, lang, user }) => {
+const CasePage = ({ c, setPage, lang, user, setCases, setSelectedCase }) => {
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("FCFA");
   // PayDunya en attente d'activation — pour l'instant on retombe sur Wave (QR statique du marchand)
@@ -4788,6 +4788,10 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         }
                         if (Object.keys(updates).length > 0) {
                           await supabase.from("cases").update(updates).eq("id", c.id);
+                          // Mettre à jour le state pour que le prochain ajout cumule correctement
+                          const updatedCase = { ...c, ...updates };
+                          if (setCases) setCases(prev => prev.map(x => x.id === c.id ? updatedCase : x));
+                          if (setSelectedCase) setSelectedCase(updatedCase);
                           setEditMsg(lang==="fr" ? "✅ Dossier mis à jour !" : "✅ Case updated!");
                         }
                       } catch(err) {
@@ -11934,7 +11938,7 @@ export default function AyyadApp() {
         {page==="collectes"&&<CollectesPage setPage={setPage} lang={lang} />}
         {page==="collectesactives"&&<CollectesActivesPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} setSpecialite={setSpecialite} />}
         {page==="specialite"&&<SpecialitePage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} specialite={specialite} />}
-        {page==="case"&&(selectedCase||_ayyad_case_fb)&&<CasePage c={selectedCase||_ayyad_case_fb} setPage={setPage} lang={lang} user={user} />}
+        {page==="case"&&(selectedCase||_ayyad_case_fb)&&<CasePage c={selectedCase||_ayyad_case_fb} setPage={setPage} lang={lang} user={user} setCases={setCases} setSelectedCase={setSelectedCase} />}
         {page==="donate"&&<DonatePage c={selectedCase||null} lang={lang} user={user} setPage={setPage} />}
         {page==="how"&&<HowPage lang={lang} setPage={setPage} />}
         {page==="refund"&&<RefundPage lang={lang} setPage={setPage} />}
