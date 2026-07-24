@@ -4707,9 +4707,9 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         setEditMsg("");
                         try {
                           const path = `cases/${c.id}/photos/${Date.now()}_${sanitizeFileName(file.name)}`;
-                          const { error: upErr } = await supabase.storage.from("documents").upload(path, file);
+                          const { error: upErr } = await supabase.storage.from("case-photos").upload(path, file);
                           if (upErr) { setEditMsg(lang==="fr" ? "Erreur upload : " + upErr.message : "Upload error: " + upErr.message); return; }
-                          const { data: urlD } = supabase.storage.from("documents").getPublicUrl(path);
+                          const { data: urlD } = supabase.storage.from("case-photos").getPublicUrl(path);
                           const existingPhotos = [...new Set([...(c.photo_url ? [c.photo_url] : []), ...(c.photos || [])])];
                           const newPhotos = [...existingPhotos, urlD.publicUrl];
                           await supabase.from("cases").update({ photos: newPhotos }).eq("id", c.id);
@@ -4742,9 +4742,9 @@ const CasePage = ({ c, setPage, lang, user }) => {
                             setEditMsg("");
                             try {
                               const path = `cases/${c.id}/docs/${doc.key}_${Date.now()}_${sanitizeFileName(file.name)}`;
-                              const { error: upErr } = await supabase.storage.from("documents").upload(path, file);
+                              const { error: upErr } = await supabase.storage.from("case-photos").upload(path, file);
                               if (upErr) { setEditMsg("Erreur : " + upErr.message); return; }
-                              const { data: urlD } = supabase.storage.from("documents").getPublicUrl(path);
+                              const { data: urlD } = supabase.storage.from("case-photos").getPublicUrl(path);
                               const newDocs = { ...(c.document_urls || {}), [doc.key]: urlD.publicUrl };
                               await supabase.from("cases").update({ document_urls: newDocs }).eq("id", c.id);
                               setEditMsg(lang==="fr" ? `✅ ${doc.label} ajouté !` : `✅ ${doc.label} added!`);
@@ -8879,9 +8879,9 @@ const AdminPage = ({ user, setPage, lang }) => {
                                   const file = e.target.files[0];
                                   if (!file) return;
                                   const path = "receipts/"+c.id+"_"+Date.now();
-                                  const { data } = await supabase.storage.from("documents").upload(path, file);
+                                  const { data } = await supabase.storage.from("case-photos").upload(path, file);
                                   if (data) {
-                                    const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
+                                    const { data: urlData } = supabase.storage.from("case-photos").getPublicUrl(path);
                                     await supabase.from("cases").update({ payout_status: "confirmed", payout_receipt: urlData.publicUrl, payout_confirmed_at: new Date().toISOString() }).eq("id", c.id);
                                     setCases(prev => prev.map(x => x.id===c.id ? {...x, payout_status:"confirmed", payout_receipt: urlData.publicUrl} : x));
                                   }
