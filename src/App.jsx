@@ -1080,6 +1080,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
 // ── MediaSection — Photos + Vidéo patient ────────────────────
 const MediaSection = ({ c, lang, t }) => {
   const [activePhoto, setActivePhoto] = useState(0);
+  const [revealedPhotos, setRevealedPhotos] = useState(new Set()); // photos flouttées par défaut
   const photos = c.photos || [];
   const toEmbed = (url) => {
     if (!url) return null;
@@ -1116,8 +1117,16 @@ const MediaSection = ({ c, lang, t }) => {
       {photos.length > 0 && (
         <div>
           <div className="relative overflow-hidden" style={{height:"220px"}}>
-            <img src={photos[activePhoto]} alt={"Photo "+(c.beneficiary||c.full_name||"")} className="w-full h-full object-contain bg-gray-900" />
+            <img src={photos[activePhoto]} alt={"Photo "+(c.beneficiary||c.full_name||"")} className="w-full h-full object-contain bg-gray-900" style={{filter: revealedPhotos.has(activePhoto) ? "none" : "blur(18px)", transition:"filter 0.3s"}} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+            {!revealedPhotos.has(activePhoto) && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30">
+                <button onClick={() => setRevealedPhotos(s => new Set([...s, activePhoto]))} className="flex flex-col items-center gap-1.5 text-white hover:text-emerald-300 transition-colors">
+                  <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center text-2xl hover:bg-white/30 transition-colors">👁</div>
+                  <span className="text-xs font-semibold bg-black/40 px-3 py-1 rounded-full">{lang==="fr" ? "Image sensible — cliquer pour voir" : "Sensitive image — click to reveal"}</span>
+                </button>
+              </div>
+            )}
             <div className="absolute bottom-3 left-3 text-white text-xs font-semibold bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
               📍 {c.hospital} · {c.city}
             </div>
@@ -1135,8 +1144,9 @@ const MediaSection = ({ c, lang, t }) => {
           {photos.length > 1 && (
             <div className="flex gap-2 p-3 overflow-x-auto">
               {photos.map((ph, i) => (
-                <button key={i} onClick={() => setActivePhoto(i)} className={"flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all "+(i===activePhoto?"border-emerald-500":"border-transparent opacity-60 hover:opacity-100")}>
-                  <img src={ph} alt="" className="w-full h-full object-contain bg-gray-900" />
+                <button key={i} onClick={() => setActivePhoto(i)} className={"flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all relative "+(i===activePhoto?"border-emerald-500":"border-transparent opacity-60 hover:opacity-100")}>
+                  <img src={ph} alt="" className="w-full h-full object-contain bg-gray-900" style={{filter: revealedPhotos.has(i) ? "none" : "blur(8px)"}} />
+                  {!revealedPhotos.has(i) && <div className="absolute inset-0 flex items-center justify-center text-white text-sm bg-black/20">👁</div>}
                 </button>
               ))}
             </div>
