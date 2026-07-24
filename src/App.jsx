@@ -3923,6 +3923,9 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [localVideoUrls, setLocalVideoUrls] = useState(
     c.video_urls && c.video_urls.length > 0 ? c.video_urls : (c.video_url ? [c.video_url] : [])
   );
+  const [localPhotos, setLocalPhotos] = useState(
+    [...new Set([...(c.photo_url ? [c.photo_url] : []), ...(c.photos || [])])]
+  );
   const [editOpen, setEditOpen] = useState(false);
   const [editVideoUrl, setEditVideoUrl_] = useState(c.video_url || c.videoUrl || "");
   const [editSaving, setEditSaving] = useState(false);
@@ -4603,7 +4606,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             </div>
 
             {/* Médias — Photos + Vidéo */}
-            <MediaSection c={{...c, video_urls: localVideoUrls}} lang={lang} t={t} />
+            <MediaSection c={{...c, video_urls: localVideoUrls, photos: localPhotos}} lang={lang} t={t} />
 
             {/* ── Journal du patient ── */}
             {(caseUpdates.length > 0 || (user && (user.isAdmin || (c.user_id && user.id===c.user_id)))) && (
@@ -4700,32 +4703,60 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     </p>
                   </div>
 
-                  {/* Ajout de photo */}
+                  {/* Gestion des photos — multi-upload + suppression */}
                   <div>
                     <label className="text-xs font-bold text-gray-700 block mb-1.5">
-                      📷 {lang==="fr" ? "Ajouter une photo" : "Add a photo"}
+                      📷 {lang==="fr" ? "Photos du dossier" : "Case photos"}
                     </label>
+
+                    {/* Grille des photos existantes avec bouton supprimer */}
+                    {localPhotos.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        {localPhotos.map((ph, idx) => (
+                          <div key={idx} className="relative rounded-xl overflow-hidden border border-gray-200" style={{aspectRatio:"1"}}>
+                            <img src={ph} alt="" className="w-full h-full object-cover" />
+                            <button
+                              onClick={async () => {
+                                if (!window.confirm(lang==="fr" ? "Supprimer cette photo ?" : "Delete this photo?")) return;
+                                const newPhotos = localPhotos.filter((_, i) => i !== idx);
+                                await supabase.from("cases").update({ photos: newPhotos, ...(idx === 0 && newPhotos.length > 0 ? { photo_url: newPhotos[0] } : idx === 0 ? { photo_url: null } : {}) }).eq("id", c.id);
+                                setLocalPhotos(newPhotos);
+                                setEditMsg(lang==="fr" ? "✅ Photo supprimée" : "✅ Photo deleted");
+                              }}
+                              className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs shadow hover:bg-red-600 transition-colors"
+                              title={lang==="fr" ? "Supprimer" : "Delete"}
+                            >✕</button>
+                            <div className="absolute bottom-1 left-1 bg-black/50 text-white text-[10px] px-1 rounded">{idx+1}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Bouton ajout multi-photos */}
                     <label className={`flex items-center gap-3 border-2 border-dashed rounded-xl p-4 cursor-pointer transition-colors ${editPhotoUploading ? "border-emerald-300 bg-emerald-50" : "border-gray-200 hover:border-emerald-300 hover:bg-emerald-50"}`}>
-                      <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file || !c.id) return;
+                      <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                        const files = Array.from(e.target.files || []);
+                        if (!files.length || !c.id) return;
                         setEditPhotoUploading(true);
-                        setEditMsg("");
+                        setEditMsg(lang==="fr" ? `Envoi de ${files.length} photo(s)…` : `Uploading ${files.length} photo(s)…`);
                         try {
-                          const path = `cases/${c.id}/photos/${Date.now()}_${sanitizeFileName(file.name)}`;
-                          const { error: upErr } = await supabase.storage.from("case-photos").upload(path, file);
-                          if (upErr) { setEditMsg(lang==="fr" ? "Erreur upload : " + upErr.message : "Upload error: " + upErr.message); return; }
-                          const { data: urlD } = supabase.storage.from("case-photos").getPublicUrl(path);
-                          const existingPhotos = [...new Set([...(c.photo_url ? [c.photo_url] : []), ...(c.photos || [])])];
-                          const newPhotos = [...existingPhotos, urlD.publicUrl];
-                          await supabase.from("cases").update({ photos: newPhotos }).eq("id", c.id);
-                          setEditMsg(lang==="fr" ? "✅ Photo ajoutée !" : "✅ Photo added!");
+                          let current = [...localPhotos];
+                          for (const file of files) {
+                            const path = `cases/${c.id}/photos/${Date.now()}_${sanitizeFileName(file.name)}`;
+                            const { error: upErr } = await supabase.storage.from("case-photos").upload(path, file);
+                            if (upErr) { setEditMsg("Erreur : " + upErr.message); continue; }
+                            const { data: urlD } = supabase.storage.from("case-photos").getPublicUrl(path);
+                            current = [...new Set([...current, urlD.publicUrl])];
+                          }
+                          await supabase.from("cases").update({ photos: current, photo_url: current[0] || null }).eq("id", c.id);
+                          setLocalPhotos(current);
+                          setEditMsg(lang==="fr" ? `✅ ${files.length} photo(s) ajoutée(s) !` : `✅ ${files.length} photo(s) added!`);
                         } catch(err) {
                           setEditMsg(lang==="fr" ? "Erreur : " + err.message : "Error: " + err.message);
                         } finally { setEditPhotoUploading(false); }
                       }} />
                       <span className="text-2xl">{editPhotoUploading ? "⏳" : "📷"}</span>
-                      <span className="text-sm text-gray-500">{editPhotoUploading ? (lang==="fr" ? "Envoi en cours…" : "Uploading…") : (lang==="fr" ? "Choisir une photo" : "Choose a photo")}</span>
+                      <span className="text-sm text-gray-500">{editPhotoUploading ? (lang==="fr" ? "Envoi en cours…" : "Uploading…") : (lang==="fr" ? "Ajouter des photos (plusieurs à la fois)" : "Add photos (multiple at once)")}</span>
                     </label>
                   </div>
 
