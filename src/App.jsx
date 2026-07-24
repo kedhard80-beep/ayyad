@@ -424,7 +424,7 @@ const MOCK_ALERTS = [
 
 // ── Helpers ───────────────────────────────────────────────────
 const fmt = (n) => new Intl.NumberFormat("fr-CI").format(n) + " FCFA";
-const pct = (c, r) => Math.min(100, Math.round((c / r) * 100));
+const pct = (c, r) => (!r || isNaN(r)) ? null : Math.min(100, Math.round((c / r) * 100));
 // Tente de parser un champ JSON (titre/description multilingue)
 function parseMaybeJson(val, fallFr, fallEn) {
   if (!val) return { fr: fallFr || "", en: fallEn || "" };
@@ -804,7 +804,7 @@ const CaseCard = ({ c, lang, t, onClick }) => {
             fontFamily:"var(--font-serif)", fontWeight:800, fontSize:14,
             padding:"4px 12px", borderRadius:9999,
             border:"1px solid rgba(201,168,76,0.40)",
-          }}>{percent}%</span>
+          }}>{percent !== null ? percent + "%" : "—"}</span>
         </div>
       </div>
 
@@ -833,20 +833,26 @@ const CaseCard = ({ c, lang, t, onClick }) => {
         <div style={{ marginBottom: 16 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom: 8 }}>
             <span style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:17, color:"var(--ayyad-deep)" }}>{fmt(c.collected)}</span>
-            <span style={{ fontSize:11, color:"var(--ink-400)", fontWeight:600 }}>{tc.on} {fmt(c.required)}</span>
+            <span style={{ fontSize:11, color:"var(--ink-400)", fontWeight:600 }}>{c.required ? tc.on + " " + fmt(c.required) : (lang==="fr" ? "objectif à définir" : "amount TBD")}</span>
           </div>
-          <div style={{ height:6, background:"#f3f4f6", borderRadius:9999, overflow:"hidden" }}>
-            <div style={{
-              height:"100%",
-              width: percent + "%",
-              background: percent === 100
-                ? "linear-gradient(90deg, #059669, #10b981, #34d399)"
-                : "linear-gradient(90deg, #0d5c2e, #10b981)",
-              borderRadius: 9999,
-              transition:"width 1.2s cubic-bezier(0.16,1,0.3,1)",
-              boxShadow: "0 1px 4px rgba(16,185,129,0.30)",
-            }} />
-          </div>
+          {c.required ? (
+            <div style={{ height:6, background:"#f3f4f6", borderRadius:9999, overflow:"hidden" }}>
+              <div style={{
+                height:"100%",
+                width: (percent||0) + "%",
+                background: percent === 100
+                  ? "linear-gradient(90deg, #059669, #10b981, #34d399)"
+                  : "linear-gradient(90deg, #0d5c2e, #10b981)",
+                borderRadius: 9999,
+                transition:"width 1.2s cubic-bezier(0.16,1,0.3,1)",
+                boxShadow: "0 1px 4px rgba(16,185,129,0.30)",
+              }} />
+            </div>
+          ) : (
+            <div style={{ height:6, background:"#f3f4f6", borderRadius:9999, overflow:"hidden" }}>
+              <div style={{ height:"100%", width:"100%", background:"repeating-linear-gradient(90deg,#d1fae5 0,#d1fae5 8px,#f3f4f6 8px,#f3f4f6 16px)", borderRadius:9999 }} />
+            </div>
+          )}
         </div>
 
         {/* Footer stats */}
@@ -1081,6 +1087,8 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
 const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
   const [activePhoto, setActivePhoto] = useState(0);
   const [revealedPhotos, setRevealedPhotos] = useState(new Set()); // photos flouttées par défaut
+  const [uploading, setUploading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState("");
   const photos = c.photos || [];
   const toEmbed = (url) => {
     if (!url) return null;
@@ -1104,19 +1112,26 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
           <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
             const files = Array.from(e.target.files || []);
             if (!files.length || !c.id) return;
-            let current = [...(c.photos || [])];
-            for (const file of files) {
-              const path = `cases/${c.id}/photos/${Date.now()}_${sanitizeFileName(file.name)}`;
-              const { error } = await supabase.storage.from("case-photos").upload(path, file);
-              if (error) continue;
-              const { data: urlD } = supabase.storage.from("case-photos").getPublicUrl(path);
-              current = [...new Set([...current, urlD.publicUrl])];
-            }
-            await supabase.from("cases").update({ photos: current, photo_url: current[0] || null }).eq("id", c.id);
-            if (onPhotosChange) onPhotosChange(current);
+            setUploading(true);
+            setUploadMsg(lang==="fr" ? "Envoi en cours…" : "Uploading…");
+            try {
+              let current = [...(c.photos || [])];
+              for (const file of files) {
+                const path = `cases/${c.id}/photos/${Date.now()}_${sanitizeFileName(file.name)}`;
+                const { error } = await supabase.storage.from("case-photos").upload(path, file);
+                if (error) { setUploadMsg("Erreur: " + error.message); setUploading(false); return; }
+                const { data: urlD } = supabase.storage.from("case-photos").getPublicUrl(path);
+                current = [...new Set([...current, urlD.publicUrl])];
+              }
+              await supabase.from("cases").update({ photos: current, photo_url: current[0] || null }).eq("id", c.id);
+              if (onPhotosChange) onPhotosChange(current);
+              setUploadMsg("✅ OK");
+            } catch(err) { setUploadMsg("Erreur: " + err.message); }
+            finally { setUploading(false); }
           }} />
-          📷 {lang==="fr" ? "Ajouter des photos" : "Add photos"}
+          {uploading ? "⏳ " + (lang==="fr" ? "Envoi…" : "Uploading…") : "📷 " + (lang==="fr" ? "Ajouter des photos" : "Add photos")}
         </label>
+        {uploadMsg && <div className="text-xs text-center mt-2 text-emerald-700 font-semibold">{uploadMsg}</div>}
       )}
     </div>
   );
@@ -1135,18 +1150,21 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
               <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
                 const files = Array.from(e.target.files || []);
                 if (!files.length || !c.id) return;
-                let current = [...(c.photos || [])];
-                for (const file of files) {
-                  const path = `cases/${c.id}/photos/${Date.now()}_${sanitizeFileName(file.name)}`;
-                  const { error } = await supabase.storage.from("case-photos").upload(path, file);
-                  if (error) continue;
-                  const { data: urlD } = supabase.storage.from("case-photos").getPublicUrl(path);
-                  current = [...new Set([...current, urlD.publicUrl])];
-                }
-                await supabase.from("cases").update({ photos: current, photo_url: current[0] || null }).eq("id", c.id);
-                if (onPhotosChange) onPhotosChange(current);
+                setUploading(true);
+                try {
+                  let current = [...(c.photos || [])];
+                  for (const file of files) {
+                    const path = `cases/${c.id}/photos/${Date.now()}_${sanitizeFileName(file.name)}`;
+                    const { error } = await supabase.storage.from("case-photos").upload(path, file);
+                    if (error) continue;
+                    const { data: urlD } = supabase.storage.from("case-photos").getPublicUrl(path);
+                    current = [...new Set([...current, urlD.publicUrl])];
+                  }
+                  await supabase.from("cases").update({ photos: current, photo_url: current[0] || null }).eq("id", c.id);
+                  if (onPhotosChange) onPhotosChange(current);
+                } finally { setUploading(false); }
               }} />
-              📷+ {lang==="fr" ? "Ajouter" : "Add"}
+              {uploading ? "⏳" : "📷+"} {lang==="fr" ? "Ajouter" : "Add"}
             </label>
           )}
         </div>
