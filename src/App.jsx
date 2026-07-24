@@ -3901,7 +3901,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   );
 };
 // ─────────────────────────────────────────────────────────────────────────────
-const CasePage = ({ c, setPage, lang, user, setCases, setSelectedCase }) => {
+const CasePage = ({ c, setPage, lang, user }) => {
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("FCFA");
   // PayDunya en attente d'activation — pour l'instant on retombe sur Wave (QR statique du marchand)
@@ -3909,6 +3909,10 @@ const CasePage = ({ c, setPage, lang, user, setCases, setSelectedCase }) => {
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
   // Edit mode (owner seulement)
+  // State local pour cumuler les vidéos sans dépendre du prop c (qui ne se met pas à jour)
+  const [localVideoUrls, setLocalVideoUrls] = useState(
+    c.video_urls && c.video_urls.length > 0 ? c.video_urls : (c.video_url ? [c.video_url] : [])
+  );
   const [editOpen, setEditOpen] = useState(false);
   const [editVideoUrl, setEditVideoUrl_] = useState(c.video_url || c.videoUrl || "");
   const [editSaving, setEditSaving] = useState(false);
@@ -4597,7 +4601,7 @@ const CasePage = ({ c, setPage, lang, user, setCases, setSelectedCase }) => {
             </div>
 
             {/* Médias — Photos + Vidéo */}
-            <MediaSection c={c} lang={lang} t={t} />
+            <MediaSection c={{...c, video_urls: localVideoUrls}} lang={lang} t={t} />
 
             {/* ── Journal du patient ── */}
             {(caseUpdates.length > 0 || (user && (user.isAdmin || (c.user_id && user.id===c.user_id)))) && (
@@ -4782,16 +4786,14 @@ const CasePage = ({ c, setPage, lang, user, setCases, setSelectedCase }) => {
                           else if (ytShorts) embed = "https://www.youtube.com/embed/" + ytShorts[1];
                           else if (ytShort) embed = "https://www.youtube.com/embed/" + ytShort[1];
                           else if (tt) embed = "https://www.tiktok.com/embed/v2/" + tt[1];
-                          const existingVideos = c.video_urls && c.video_urls.length > 0 ? c.video_urls : (c.video_url ? [c.video_url] : []);
-                          updates.video_urls = [...existingVideos, embed];
+                          const existingVideos = localVideoUrls.length > 0 ? localVideoUrls : (c.video_url ? [c.video_url] : []);
+                          const newVideoUrls = [...existingVideos, embed];
+                          updates.video_urls = newVideoUrls;
                           if (!c.video_url) updates.video_url = embed;
                         }
                         if (Object.keys(updates).length > 0) {
                           await supabase.from("cases").update(updates).eq("id", c.id);
-                          // Mettre à jour le state pour que le prochain ajout cumule correctement
-                          const updatedCase = { ...c, ...updates };
-                          if (setCases) setCases(prev => prev.map(x => x.id === c.id ? updatedCase : x));
-                          if (setSelectedCase) setSelectedCase(updatedCase);
+                          if (updates.video_urls) setLocalVideoUrls(updates.video_urls);
                           setEditMsg(lang==="fr" ? "✅ Dossier mis à jour !" : "✅ Case updated!");
                         }
                       } catch(err) {
@@ -11938,7 +11940,7 @@ export default function AyyadApp() {
         {page==="collectes"&&<CollectesPage setPage={setPage} lang={lang} />}
         {page==="collectesactives"&&<CollectesActivesPage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} setSpecialite={setSpecialite} />}
         {page==="specialite"&&<SpecialitePage setPage={setPage} setSelectedCase={setSelectedCase} lang={lang} specialite={specialite} />}
-        {page==="case"&&(selectedCase||_ayyad_case_fb)&&<CasePage c={selectedCase||_ayyad_case_fb} setPage={setPage} lang={lang} user={user} setCases={setCases} setSelectedCase={setSelectedCase} />}
+        {page==="case"&&(selectedCase||_ayyad_case_fb)&&<CasePage c={selectedCase||_ayyad_case_fb} setPage={setPage} lang={lang} user={user} />}
         {page==="donate"&&<DonatePage c={selectedCase||null} lang={lang} user={user} setPage={setPage} />}
         {page==="how"&&<HowPage lang={lang} setPage={setPage} />}
         {page==="refund"&&<RefundPage lang={lang} setPage={setPage} />}
