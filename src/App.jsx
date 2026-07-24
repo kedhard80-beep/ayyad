@@ -11872,7 +11872,12 @@ export default function AyyadApp() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    window.history.pushState({ page }, "", "?p=" + page);
+    if (page === "case" && selectedCase) {
+      const tid = selectedCase.trackingId || selectedCase.tracking_id || selectedCase.id;
+      window.history.pushState({ page }, "", "?p=case&case=" + tid);
+    } else {
+      window.history.pushState({ page }, "", "?p=" + page);
+    }
     // ── OG Meta tags dynamiques ──
     const setMeta = (prop, content) => {
       let el = document.querySelector(`meta[property="${prop}"]`) || document.querySelector(`meta[name="${prop}"]`);
@@ -11908,7 +11913,19 @@ export default function AyyadApp() {
     const handlePop = () => {
       const params = new URLSearchParams(window.location.search);
       const p = params.get("p");
-      if (p) setPage(p);
+      const cid = params.get("case");
+      if (p === "case" && cid && /^[A-Z]{2,5}-[\d]{4}(-[\w]{2,8}){1,3}$/i.test(cid)) {
+        supabase.from("cases").select("*").eq("tracking_id", cid).maybeSingle().then(async ({ data }) => {
+          if (data) {
+            const [enriched] = await enrichCasesWithTotals([data]);
+            enriched.title  = parseMaybeJson(enriched.title, "Sans titre", "Untitled");
+            enriched.desc   = parseMaybeJson(enriched.description || enriched.desc, "", "");
+            enriched.photos = [...new Set([...(enriched.photo_url ? [enriched.photo_url] : []), ...(enriched.photos || [])])];
+            setSelectedCase(enriched);
+            setPage("case");
+          } else setPage("home");
+        });
+      } else if (p) setPage(p);
       else setPage("home");
     };
     window.addEventListener("popstate", handlePop);
