@@ -3969,7 +3969,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
   }, [c.id]);
 
   const postUpdate = async () => {
-    if (!newUpdate.trim() || !c.id) return;
+    if ((!newUpdate.trim() && !newUpdatePhoto) || !c.id) return;
     setPostingUpdate(true);
     let photo_url = null;
     if (newUpdatePhoto) {
@@ -4626,7 +4626,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
                     />
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      <button onClick={postUpdate} disabled={postingUpdate||uploadingUpdatePhoto||!newUpdate.trim()}
+                      <button onClick={postUpdate} disabled={postingUpdate||uploadingUpdatePhoto||(!newUpdate.trim()&&!newUpdatePhoto)}
                         className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all">
                         {(postingUpdate||uploadingUpdatePhoto)?(lang==="fr"?"Envoi...":"Sending..."):(lang==="fr"?"Publier la mise à jour":"Publish update")}
                       </button>
