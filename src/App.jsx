@@ -3968,7 +3968,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
     }
     const { data, error } = await supabase.from("case_updates").insert({
       case_id: c.id,
-      author_name: user?.name || user?.email || "Équipe Ayyad",
+      author_name: user?.name || (user?.isAdmin ? "Équipe Ayyad" : "Patient") || "Équipe Ayyad",
       author_role: user?.isAdmin ? "admin" : "patient",
       content: newUpdate.trim(),
       photo_url,
