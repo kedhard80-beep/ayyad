@@ -11135,9 +11135,17 @@ const ProfilePage = ({ user, lang, setPage }) => {
 
   const openEdit = (c) => {
     setEditingCase(c.id);
+    // Parser description bilingue si JSON
+    let descFr = "", descEn = "";
+    try {
+      const parsed = JSON.parse(c.description || "{}");
+      descFr = parsed.fr || c.description || "";
+      descEn = parsed.en || "";
+    } catch { descFr = c.description || ""; descEn = ""; }
     setEditForm({
       title: c.title || "",
-      description: c.description || "",
+      description_fr: descFr,
+      description_en: descEn,
       video_url: c.video_url || "",
       beneficiary_phone: c.beneficiary_phone || "",
     });
@@ -11153,7 +11161,7 @@ const ProfilePage = ({ user, lang, setPage }) => {
     const basePath = `dossiers/${user.id}_edit/${editingCase}`;
     const updates = {
       title: editForm.title,
-      description: editForm.description,
+      description: JSON.stringify({ fr: editForm.description_fr || "", en: editForm.description_en || "" }),
       video_url: editForm.video_url || null,
       beneficiary_phone: editForm.beneficiary_phone || null,
     };
@@ -11296,8 +11304,12 @@ const ProfilePage = ({ user, lang, setPage }) => {
                     <input value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-gray-600 block mb-1">{lang === "fr" ? "Description" : "Description"}</label>
-                    <textarea value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" />
+                    <label className="text-xs font-semibold text-gray-600 block mb-1">🇫🇷 {lang === "fr" ? "Histoire du patient (Français)" : "Patient story (French)"}</label>
+                    <textarea value={editForm.description_fr||""} onChange={e => setEditForm({ ...editForm, description_fr: e.target.value })} rows={5} placeholder="Rédigez l'histoire en français..." className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 block mb-1">🇬🇧 {lang === "fr" ? "Histoire du patient (Anglais)" : "Patient story (English)"}</label>
+                    <textarea value={editForm.description_en||""} onChange={e => setEditForm({ ...editForm, description_en: e.target.value })} rows={5} placeholder="Write the story in English..." className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" />
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-gray-600 block mb-1">🎥 {lang === "fr" ? "Lien vidéo YouTube/TikTok" : "YouTube/TikTok video link"} <span className="text-gray-400 font-normal">({lang === "fr" ? "optionnel" : "optional"})</span></label>
