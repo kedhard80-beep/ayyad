@@ -4639,7 +4639,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-semibold text-gray-900">{upd.author_name||"Ayyad"}</span>
+                            <span className="text-sm font-semibold text-gray-900">{(upd.author_name && !upd.author_name.includes("@")) ? upd.author_name : (lang==="fr"?"Équipe Ayyad":"Ayyad Team")}</span>
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${upd.author_role==="admin"?"bg-purple-100 text-purple-700":"bg-emerald-100 text-emerald-700"}`}>
                               {upd.author_role==="admin"?(lang==="fr"?"Équipe Ayyad":"Ayyad Team"):(lang==="fr"?"Patient":"Patient")}
                             </span>
