@@ -861,7 +861,7 @@ const CaseCard = ({ c, lang, t, onClick }) => {
             </span>
           ) : (
             <span style={{ color:"#d97706", fontWeight:700, display:"inline-flex", alignItems:"center", gap:4 }}>
-              ⏱ {c.daysLeft} {tc.daysLeft}
+              
             </span>
           )}
         </div>
@@ -997,7 +997,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
                         </span>
                         {c.daysLeft !== undefined && (
                           <span style={{background:"rgba(255,255,255,0.95)", color:"#c2410c", fontSize:"11px", fontWeight:700, padding:"4px 10px", borderRadius:"999px"}}>
-                            ⏱️ {c.daysLeft}j
+                            
                           </span>
                         )}
                       </div>
@@ -2877,7 +2877,7 @@ const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">🚨 URGENT</span>
-                  {c.daysLeft <= 7 && <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">⏱️ {c.daysLeft}j restants</span>}
+                  {/* délai retiré */}
                 </div>
                 <h3 className="font-black text-gray-900">{(c.title?.[lang] || c.title?.fr || c.title || "")}</h3>
                 <p className="text-xs text-gray-400 mt-0.5">{c.hospital} · {c.city}</p>
@@ -3001,7 +3001,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
                       <div className="h-full bg-emerald-500 rounded-full" style={{width: percent+"%"}} />
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">👥 {c.donors} · ⏳ {c.daysLeft}j</span>
+                      <span className="text-gray-400">👥 {c.donors}</span>
                       <span className="font-bold text-emerald-600">{percent}%</span>
                     </div>
                     <div className="text-[10px] font-mono text-gray-300 mt-2">{c.trackingId}</div>
@@ -4503,15 +4503,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       <div className="text-xs text-gray-400">{t.progress.donors}</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-sm">⏳</div>
-                    <div>
-                      {funded
-                        ? <div className="font-black text-emerald-600 text-sm">{t.progress.intervention}</div>
-                        : <><div className="font-black text-gray-900 text-sm">{c.daysLeft}</div><div className="text-xs text-gray-400">{t.progress.daysLeft}</div></>
-                      }
-                    </div>
-                  </div>
+
                   {c.trackingId && (
                     <div className="ml-auto flex items-center gap-2">
                       <button onClick={() => navigator.clipboard.writeText(c.trackingId)} className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-emerald-600 border border-gray-200 rounded-lg px-2.5 py-1.5 transition-colors">
@@ -11523,7 +11515,7 @@ const DjanaUrgencyTopBar = () => {
       <div onClick={go} style={{position:"fixed",top:0,left:0,right:0,zIndex:99999,background:"linear-gradient(90deg,#c0130f,#dc2626,#ea580c)",color:"#fff",cursor:"pointer",padding:"0 12px",display:"flex",alignItems:"center",justifyContent:"center",gap:10,height:40,boxShadow:"0 2px 12px rgba(220,38,38,0.5)",userSelect:"none"}}>
         <span style={{width:8,height:8,background:"#fff",borderRadius:"50%",flexShrink:0,animation:"djana-ping 1.2s ease-in-out infinite"}} />
         <span style={{fontSize:13,fontWeight:700,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-          🚨 Djana 5 ans · 2ème opération · <strong>6 jours restants</strong>
+          🚨 Djana 5 ans · 2ème opération urgente
         </span>
         <span style={{background:"rgba(255,255,255,0.22)",border:"1px solid rgba(255,255,255,0.4)",borderRadius:20,padding:"3px 12px",fontSize:12,fontWeight:800,flexShrink:0,whiteSpace:"nowrap"}}>DONNER →</span>
       </div>
