@@ -1107,9 +1107,9 @@ const MediaSection = ({ c, lang, t }) => {
           <span className="text-xl">📸</span>
           <span className="font-bold text-gray-900">{lang==="fr" ? "Photos & vidéo du patient" : "Patient photos & video"}</span>
         </div>
-        <div className="flex gap-1 text-xs text-gray-400">
-          {photos.length > 0 && <span className="bg-gray-100 px-2 py-0.5 rounded-full">{photos.length} {lang==="fr"?"photo(s)":"photo(s)"}</span>}
-          {videoUrls.length > 0 && <span className="bg-gray-100 px-2 py-0.5 rounded-full">{videoUrls.length} {lang==="fr"?"vidéo(s)":"video(s)"}</span>}
+        <div className="flex gap-1 text-xs font-semibold text-gray-600">
+          {photos.length > 0 && <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">📷 {photos.length}</span>}
+          {videoUrls.length > 0 && <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full">🎥 {videoUrls.length}</span>}
         </div>
       </div>
       {/* Galerie photos */}
