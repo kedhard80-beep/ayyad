@@ -1106,7 +1106,7 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
             if (!files.length || !c.id) return;
             let current = [...(c.photos || [])];
             for (const file of files) {
-              const path = \`cases/\${c.id}/photos/\${Date.now()}_\${sanitizeFileName(file.name)}\`;
+              const path = `cases/${c.id}/photos/${Date.now()}_${sanitizeFileName(file.name)}`;
               const { error } = await supabase.storage.from("case-photos").upload(path, file);
               if (error) continue;
               const { data: urlD } = supabase.storage.from("case-photos").getPublicUrl(path);
@@ -1137,7 +1137,7 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
                 if (!files.length || !c.id) return;
                 let current = [...(c.photos || [])];
                 for (const file of files) {
-                  const path = \`cases/\${c.id}/photos/\${Date.now()}_\${sanitizeFileName(file.name)}\`;
+                  const path = `cases/${c.id}/photos/${Date.now()}_${sanitizeFileName(file.name)}`;
                   const { error } = await supabase.storage.from("case-photos").upload(path, file);
                   if (error) continue;
                   const { data: urlD } = supabase.storage.from("case-photos").getPublicUrl(path);
