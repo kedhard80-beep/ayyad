@@ -849,9 +849,7 @@ const CaseCard = ({ c, lang, t, onClick }) => {
               }} />
             </div>
           ) : (
-            <div style={{ height:6, background:"#f3f4f6", borderRadius:9999, overflow:"hidden" }}>
-              <div style={{ height:"100%", width:"100%", background:"repeating-linear-gradient(90deg,#d1fae5 0,#d1fae5 8px,#f3f4f6 8px,#f3f4f6 16px)", borderRadius:9999 }} />
-            </div>
+            <div style={{ height:6, background:"#f3f4f6", borderRadius:9999, overflow:"hidden" }} />
           )}
         </div>
 
@@ -4613,7 +4611,11 @@ const CasePage = ({ c, setPage, lang, user }) => {
               <h2 className="text-lg font-black text-gray-900 mb-4">{lang==="fr"?"L'histoire de ce patient":"This patient's story"}</h2>
               {/* Mobile : collapsible — PATCH W.3 */}
               <div style={{position:"relative",overflow:"hidden",maxHeight:descExpanded?"none":"88px"}} className="lg:!max-h-none">
-                <p className="text-gray-600 leading-relaxed text-base">{(c.desc?.[lang]  || c.desc?.fr  || c.desc  || "")}</p>
+                {(c.desc?.[lang] || c.desc?.fr || c.desc || "").split(/\n\n+/).map((para, i) => (
+                  <p key={i} className="text-gray-700 leading-relaxed text-base mb-4 last:mb-0" style={{whiteSpace:"pre-line"}}>
+                    {para.trim()}
+                  </p>
+                ))}
                 {!descExpanded&&(
                   <div className="absolute bottom-0 left-0 right-0 lg:hidden" style={{height:36,background:"linear-gradient(to top,#fff,transparent)"}} />
                 )}
@@ -11893,7 +11895,8 @@ export default function AyyadApp() {
     if (page === "case" && selectedCase) {
       const tid = selectedCase.trackingId || selectedCase.tracking_id || selectedCase.id;
       window.history.pushState({ page }, "", "?p=case&case=" + tid);
-    } else {
+    } else if (page !== "case") {
+      // Don't overwrite URL when page="case" but selectedCase not loaded yet
       window.history.pushState({ page }, "", "?p=" + page);
     }
     // ── OG Meta tags dynamiques ──
@@ -12022,6 +12025,7 @@ export default function AyyadApp() {
             enriched.photos = [...new Set([...(enriched.photo_url ? [enriched.photo_url] : []), ...(enriched.photos || [])])];
             setSelectedCase(enriched);
             setPage("case");
+            window.history.replaceState({ page: "case" }, "", "?p=case&case=" + caseId);
           }
         });
       }
