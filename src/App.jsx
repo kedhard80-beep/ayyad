@@ -1081,20 +1081,19 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
 const MediaSection = ({ c, lang, t }) => {
   const [activePhoto, setActivePhoto] = useState(0);
   const photos = c.photos || [];
-  const rawVideoUrl = c.videoUrl || c.video_url || null;
-  const videoUrl = (() => {
-    if (!rawVideoUrl) return null;
-    // Convertir TikTok share URL → embed URL si pas déjà converti
-    const ttMatch = rawVideoUrl.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+  const toEmbed = (url) => {
+    if (!url) return null;
+    const ttMatch = url.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
     if (ttMatch) return "https://www.tiktok.com/embed/v2/" + ttMatch[1];
-    // YouTube
-    const ytWatch = rawVideoUrl.match(/youtube\.com\/watch\?v=([^&]+)/);
+    const ytWatch = url.match(/youtube\.com\/watch\?v=([^&]+)/);
     if (ytWatch) return "https://www.youtube.com/embed/" + ytWatch[1];
-    const ytShort = rawVideoUrl.match(/youtu\.be\/([^?&]+)/);
+    const ytShort = url.match(/youtu\.be\/([^?&]+)/);
     if (ytShort) return "https://www.youtube.com/embed/" + ytShort[1];
-    return rawVideoUrl;
-  })();
-  const hasMedia = photos.length > 0 || videoUrl;
+    return url;
+  };
+  const rawVideoUrls = c.video_urls && c.video_urls.length > 0 ? c.video_urls : (c.video_url || c.videoUrl ? [c.video_url || c.videoUrl] : []);
+  const videoUrls = rawVideoUrls.map(toEmbed).filter(Boolean);
+  const hasMedia = photos.length > 0 || videoUrls.length > 0;
   if (!hasMedia) return (
     <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 text-center">
       <div className="text-3xl mb-2">📸</div>
@@ -1110,7 +1109,7 @@ const MediaSection = ({ c, lang, t }) => {
         </div>
         <div className="flex gap-1 text-xs text-gray-400">
           {photos.length > 0 && <span className="bg-gray-100 px-2 py-0.5 rounded-full">{photos.length} {lang==="fr"?"photo(s)":"photo(s)"}</span>}
-          {videoUrl && <span className="bg-gray-100 px-2 py-0.5 rounded-full">1 {lang==="fr"?"vidéo":"video"}</span>}
+          {videoUrls.length > 0 && <span className="bg-gray-100 px-2 py-0.5 rounded-full">{videoUrls.length} {lang==="fr"?"vidéo(s)":"video(s)"}</span>}
         </div>
       </div>
       {/* Galerie photos */}
@@ -1144,25 +1143,25 @@ const MediaSection = ({ c, lang, t }) => {
           )}
         </div>
       )}
-      {/* Vidéo */}
-      {videoUrl && (() => {
+      {/* Vidéos */}
+      {videoUrls.map((videoUrl, vidIdx) => {
         const isTikTok = videoUrl.includes("tiktok.com");
         return (
-          <div>
-            {photos.length > 0 && <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{isTikTok ? "TikTok" : t.video.title}</div>}
-            {!photos.length && <div className="px-4 py-2 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{isTikTok ? "TikTok" : t.video.title}</div>}
+          <div key={vidIdx}>
+            {(photos.length > 0 || vidIdx > 0) && <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{isTikTok ? "TikTok" : t.video.title}{videoUrls.length > 1 ? ` ${vidIdx+1}` : ""}</div>}
+            {photos.length === 0 && vidIdx === 0 && <div className="px-4 py-2 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{isTikTok ? "TikTok" : t.video.title}</div>}
             {isTikTok ? (
               <div className="flex justify-center bg-black">
-                <iframe src={videoUrl} className="w-full max-w-xs" style={{height:"560px"}} allowFullScreen allow="autoplay" title="TikTok video" />
+                <iframe src={videoUrl} className="w-full max-w-xs" style={{height:"560px"}} allowFullScreen allow="autoplay" title={"TikTok video " + (vidIdx+1)} />
               </div>
             ) : (
               <div className="relative w-full" style={{paddingBottom:"56.25%"}}>
-                <iframe src={videoUrl} className="absolute inset-0 w-full h-full" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Patient video" />
+                <iframe src={videoUrl} className="absolute inset-0 w-full h-full" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title={"Patient video " + (vidIdx+1)} />
               </div>
             )}
           </div>
         );
-      })()}
+      })}
     </div>
   );
 };
@@ -2951,7 +2950,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
     donors: Number(c.donors || 0),
     trackingId: c.trackingId || c.tracking_id || "",
     image: c.photos?.[0] || c.photo_url || c.image || null,
-    photos: c.photo_url ? [c.photo_url] : (c.photos || []),
+    photos: [...new Set([...(c.photo_url ? [c.photo_url] : []), ...(c.photos || [])])],
     daysLeft: calcDaysLeft(c),
     urgent: c.urgent ?? false,
   });
@@ -3046,7 +3045,7 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
     donors: Number(c.donors || 0),
     trackingId: c.trackingId || c.tracking_id || "",
     image: c.photos?.[0] || c.photo_url || c.image || null,
-    photos: c.photo_url ? [c.photo_url] : (c.photos || []),
+    photos: [...new Set([...(c.photo_url ? [c.photo_url] : []), ...(c.photos || [])])],
     daysLeft: calcDaysLeft(c),
     urgent: c.urgent ?? false,
   });
@@ -3326,7 +3325,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           donors: Number(c.donors || 0),
           trackingId: c.trackingId || c.tracking_id || "",
           image: c.photo_url || c.image || null,
-          photos: c.photo_url ? [c.photo_url] : (c.photos || []),
+          photos: [...new Set([...(c.photo_url ? [c.photo_url] : []), ...(c.photos || [])])],
           daysLeft: calcDaysLeft(c),
           urgent: c.urgent ?? false,
         }));
@@ -4711,7 +4710,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
                           const { error: upErr } = await supabase.storage.from("documents").upload(path, file);
                           if (upErr) { setEditMsg(lang==="fr" ? "Erreur upload : " + upErr.message : "Upload error: " + upErr.message); return; }
                           const { data: urlD } = supabase.storage.from("documents").getPublicUrl(path);
-                          const newPhotos = [...(c.photos || []), urlD.publicUrl];
+                          const existingPhotos = [...new Set([...(c.photo_url ? [c.photo_url] : []), ...(c.photos || [])])];
+                          const newPhotos = [...existingPhotos, urlD.publicUrl];
                           await supabase.from("cases").update({ photos: newPhotos }).eq("id", c.id);
                           setEditMsg(lang==="fr" ? "✅ Photo ajoutée !" : "✅ Photo added!");
                         } catch(err) {
@@ -4782,7 +4782,9 @@ const CasePage = ({ c, setPage, lang, user }) => {
                           else if (ytShorts) embed = "https://www.youtube.com/embed/" + ytShorts[1];
                           else if (ytShort) embed = "https://www.youtube.com/embed/" + ytShort[1];
                           else if (tt) embed = "https://www.tiktok.com/embed/v2/" + tt[1];
-                          updates.video_url = embed;
+                          const existingVideos = c.video_urls && c.video_urls.length > 0 ? c.video_urls : (c.video_url ? [c.video_url] : []);
+                          updates.video_urls = [...existingVideos, embed];
+                          if (!c.video_url) updates.video_url = embed;
                         }
                         if (Object.keys(updates).length > 0) {
                           await supabase.from("cases").update(updates).eq("id", c.id);
@@ -11893,7 +11895,7 @@ export default function AyyadApp() {
             enriched.title  = parseMaybeJson(enriched.title, "Sans titre", "Untitled");
             enriched.desc   = parseMaybeJson(enriched.description || enriched.desc, "", "");
             enriched.image  = enriched.photo_url || enriched.image || null;
-            enriched.photos = enriched.photo_url ? [enriched.photo_url] : (enriched.photos || []);
+            enriched.photos = [...new Set([...(enriched.photo_url ? [enriched.photo_url] : []), ...(enriched.photos || [])])];
             setSelectedCase(enriched);
             setPage("case");
           }
