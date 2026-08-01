@@ -1129,8 +1129,8 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
           }} />
           {uploading ? "⏳ " + (lang==="fr" ? "Envoi…" : "Uploading…") : "📷 " + (lang==="fr" ? "Ajouter des photos" : "Add photos")}
         </label>
-        {uploadMsg && <div className="text-xs text-center mt-2 text-emerald-700 font-semibold">{uploadMsg}</div>}
       )}
+        {uploadMsg && <div className="text-xs text-center mt-2 text-emerald-700 font-semibold">{uploadMsg}</div>}
     </div>
   );
   return (
