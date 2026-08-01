@@ -7969,6 +7969,7 @@ const AdminPage = ({ user, setPage, lang }) => {
   const [deleting, setDeleting] = useState(false);
   const [editDeadline, setEditDeadline] = useState({});
   const [editVideoUrl, setEditVideoUrl] = useState({}); // { caseId: "https://..." }
+  const [photoMgmt, setPhotoMgmt] = useState(null); // { c, photos: [...urls] }
   const [rejectReason, setRejectReason] = useState("");
   const [payMethods, setPayMethods] = useState({}); // { caseId: "WAVE"|"ORANGE"|"MTN"|"BANK" }
   const [confirmingId, setConfirmingId] = useState(null); // caseId en cours de confirmation
@@ -8569,6 +8570,15 @@ const AdminPage = ({ user, setPage, lang }) => {
                             🎥 Vidéo
                           </button>
                         )}
+                        {/* Bouton Photos */}
+                        {!c._isDemo && !c._mock && (
+                          <button
+                            onClick={() => setPhotoMgmt({ c, photos: Array.isArray(c.photos) ? [...c.photos] : [] })}
+                            title="Gérer les photos"
+                            className="text-xs px-2.5 py-1 rounded-full font-bold border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-all flex-shrink-0">
+                            📷 Photos {c.photos?.length ? `(${c.photos.length})` : ""}
+                          </button>
+                        )}
                         {/* Bouton Supprimer — visible uniquement pour super_admin */}
                         {user?.adminRole === "super_admin" && !c._isDemo && !c._mock && (
                           <button
@@ -8586,6 +8596,70 @@ const AdminPage = ({ user, setPage, lang }) => {
               </div>
             )}
           </div>
+        )}
+
+        {/* ── Modale gestion photos ── */}
+        {photoMgmt && (
+          <>
+            <div onClick={() => setPhotoMgmt(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:29998,backdropFilter:"blur(2px)"}} />
+            <div style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:29999,background:"#fff",borderRadius:20,padding:24,width:"min(90vw,520px)",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 24px 64px rgba(0,0,0,0.25)"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+                <div>
+                  <div style={{fontWeight:800,fontSize:15,color:"#111827"}}>📷 Photos du dossier</div>
+                  <div style={{fontSize:12,color:"#6b7280",marginTop:2}}>{(() => { try { const t = typeof photoMgmt.c.title==="string" && photoMgmt.c.title.startsWith("{") ? JSON.parse(photoMgmt.c.title) : photoMgmt.c.title; return t?.fr || t?.en || photoMgmt.c.title || photoMgmt.c.full_name || "—"; } catch { return photoMgmt.c.title || "—"; } })()}</div>
+                </div>
+                <button onClick={() => setPhotoMgmt(null)} style={{background:"#f3f4f6",border:"none",borderRadius:"50%",width:32,height:32,fontSize:16,cursor:"pointer"}}>✕</button>
+              </div>
+
+              {photoMgmt.photos.length === 0 ? (
+                <div style={{textAlign:"center",padding:"32px 0",color:"#9ca3af"}}>
+                  <div style={{fontSize:40,marginBottom:8}}>🖼️</div>
+                  <div style={{fontSize:13,fontWeight:600}}>Aucune photo pour ce dossier</div>
+                </div>
+              ) : (
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:10,marginBottom:16}}>
+                  {photoMgmt.photos.map((url, idx) => (
+                    <div key={idx} style={{position:"relative",borderRadius:12,overflow:"hidden",border:"2px solid #e5e7eb",background:"#f9fafb"}}>
+                      <img
+                        src={url}
+                        alt={`photo-${idx+1}`}
+                        style={{width:"100%",height:120,objectFit:"cover",display:"block"}}
+                        onError={e => { e.target.style.display="none"; e.target.nextSibling.style.display="flex"; }}
+                      />
+                      <div style={{display:"none",height:120,alignItems:"center",justifyContent:"center",color:"#9ca3af",fontSize:11}}>Erreur chargement</div>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm("Supprimer cette photo ?")) return;
+                          const newPhotos = photoMgmt.photos.filter((_, i) => i !== idx);
+                          const newPhotoUrl = newPhotos[0] || null;
+                          const { error } = await supabase.from("cases").update({
+                            photos: newPhotos.length ? newPhotos : null,
+                            photo_url: newPhotoUrl
+                          }).eq("id", photoMgmt.c.id);
+                          if (!error) {
+                            setCases(prev => prev.map(x => x.id === photoMgmt.c.id ? {...x, photos: newPhotos, photo_url: newPhotoUrl} : x));
+                            setPhotoMgmt(prev => ({ ...prev, photos: newPhotos }));
+                          } else {
+                            alert("Erreur : " + error.message);
+                          }
+                        }}
+                        style={{position:"absolute",top:6,right:6,background:"rgba(239,68,68,0.9)",border:"none",borderRadius:6,color:"#fff",fontSize:13,width:26,height:26,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800}}
+                        title="Supprimer cette photo">
+                        🗑
+                      </button>
+                      <div style={{fontSize:9,color:"#9ca3af",textAlign:"center",padding:"4px 2px",background:"#f3f4f6"}}>
+                        Photo {idx+1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{fontSize:11,color:"#6b7280",background:"#fef3c7",borderRadius:10,padding:"10px 12px",border:"1px solid #fde68a"}}>
+                ⚠️ La suppression est <strong>immédiate et irréversible</strong>. Le fichier reste dans le storage Supabase — seule la référence est retirée du dossier.
+              </div>
+            </div>
+          </>
         )}
 
         {/* Fraud */}
