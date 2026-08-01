@@ -4024,7 +4024,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
     [...new Set([...(c.photo_url ? [c.photo_url] : []), ...(c.photos || [])])]
   );
   const [editOpen, setEditOpen] = useState(false);
-  const [editVideoUrl, setEditVideoUrl_] = useState(c.video_url || c.videoUrl || "");
+  const [editVideoUrl, setEditVideoUrl_] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [editMsg, setEditMsg] = useState("");
   const [editPhotoUploading, setEditPhotoUploading] = useState(false);
@@ -4790,11 +4790,39 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   {/* Lien vidéo YouTube / TikTok */}
                   <div className="pt-4">
                     <label className="text-xs font-bold text-gray-700 block mb-1.5">
-                      🎬 {lang==="fr" ? "Lien vidéo (YouTube ou TikTok)" : "Video link (YouTube or TikTok)"}
+                      🎬 {lang==="fr" ? "Ajouter une vidéo (YouTube ou TikTok)" : "Add a video (YouTube or TikTok)"}
                     </label>
+
+                    {/* Vidéos existantes avec bouton supprimer */}
+                    {localVideoUrls.length > 0 && (
+                      <div className="mb-3 space-y-2">
+                        {localVideoUrls.map((vurl, vi) => {
+                          const label = vurl.includes("tiktok") ? "TikTok" : vurl.includes("youtube") ? "YouTube" : "Vidéo";
+                          return (
+                            <div key={vi} className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
+                              <span className="text-blue-700 text-xs flex-1 truncate">🎥 {label} {localVideoUrls.length > 1 ? vi+1 : ""}</span>
+                              <button
+                                onClick={async () => {
+                                  if (!window.confirm(lang==="fr" ? "Supprimer cette vidéo ?" : "Delete this video?")) return;
+                                  const newVids = localVideoUrls.filter((_, i) => i !== vi);
+                                  await supabase.from("cases").update({
+                                    video_urls: newVids.length ? newVids : null,
+                                    video_url: newVids[0] || null
+                                  }).eq("id", c.id);
+                                  setLocalVideoUrls(newVids);
+                                  setEditMsg(lang==="fr" ? "✅ Vidéo supprimée" : "✅ Video deleted");
+                                }}
+                                className="text-red-500 hover:text-red-700 text-xs font-bold flex-shrink-0 px-1.5 py-0.5 rounded hover:bg-red-50 transition-colors"
+                              >✕</button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
                     <input
                       type="url"
-                      placeholder="https://youtube.com/watch?v=... or https://tiktok.com/@..."
+                      placeholder="https://youtube.com/watch?v=... ou https://tiktok.com/@..."
                       value={editVideoUrl}
                       onChange={e => setEditVideoUrl_(e.target.value)}
                       className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-300"
@@ -4923,12 +4951,16 @@ const CasePage = ({ c, setPage, lang, user }) => {
                           const existingVideos = localVideoUrls.length > 0 ? localVideoUrls : (c.video_url ? [c.video_url] : []);
                           const newVideoUrls = [...existingVideos, embed];
                           updates.video_urls = newVideoUrls;
-                          if (!c.video_url) updates.video_url = embed;
+                          updates.video_url = newVideoUrls[0] || null;
                         }
                         if (Object.keys(updates).length > 0) {
-                          await supabase.from("cases").update(updates).eq("id", c.id);
+                          const { error: saveErr } = await supabase.from("cases").update(updates).eq("id", c.id);
+                          if (saveErr) throw saveErr;
                           if (updates.video_urls) setLocalVideoUrls(updates.video_urls);
-                          setEditMsg(lang==="fr" ? "✅ Dossier mis à jour !" : "✅ Case updated!");
+                          setEditVideoUrl_("");
+                          setEditMsg(lang==="fr" ? "✅ Vidéo ajoutée !" : "✅ Video added!");
+                        } else {
+                          setEditMsg(lang==="fr" ? "Saisissez un lien vidéo." : "Enter a video link.");
                         }
                       } catch(err) {
                         setEditMsg(lang==="fr" ? "Erreur : " + err.message : "Error: " + err.message);
