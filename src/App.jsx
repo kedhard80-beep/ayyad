@@ -3668,6 +3668,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   const [anon, setAnon] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [intlOpen, setIntlOpen] = useState(false);
+  const [intlSel, setIntlSel] = useState(null);
   const [payRef] = useState(() => "AYD-" + Date.now().toString(36).toUpperCase().slice(-5) + "-" + Math.random().toString(36).substr(2,4).toUpperCase());
 
   const finalAmt = custom ? (parseInt(custom)||0) : preset;
@@ -3794,29 +3795,71 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             {/* ── Sous-overlay "Depuis l'étranger" ── */}
             {intlOpen&&(
               <>
-                <div onClick={()=>setIntlOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",zIndex:20000}} />
-                <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:20001,background:"#fff",borderRadius:"20px 20px 0 0",padding:"20px",boxShadow:"0 -8px 32px rgba(0,0,0,0.18)"}}>
+                <div onClick={()=>{setIntlOpen(false);setIntlSel(null);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",zIndex:20000}} />
+                <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:20001,background:"#fff",borderRadius:"20px 20px 0 0",padding:"20px",boxShadow:"0 -8px 32px rgba(0,0,0,0.18)",maxHeight:"90vh",overflowY:"auto"}}>
                   <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
                     <div style={{width:36,height:4,borderRadius:2,background:"#d1d5db"}} />
                   </div>
                   <div style={{fontWeight:800,fontSize:15,color:"#1e3a5f",marginBottom:4}}>🌍 {fr?"Depuis l'étranger":"From abroad"}</div>
-                  <div style={{fontSize:12,color:"#6b7280",marginBottom:16}}>{fr?"Choisissez votre appli de transfert international :":"Choose your international transfer app:"}</div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:8}}>
+                  <div style={{fontSize:12,color:"#6b7280",marginBottom:14}}>{fr?"Choisissez votre appli de transfert :":"Choose your transfer app:"}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
                     {INT_PROVIDERS.map(m=>(
-                      <button key={m.id} onClick={()=>{setProvider(m.id);setIntlOpen(false);}}
-                        style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,padding:"18px 10px",borderRadius:16,fontWeight:800,fontSize:13,cursor:"pointer",transition:"all .15s",
-                          background:provider===m.id?"#eff6ff":"#f9fafb",
-                          border:provider===m.id?"2px solid #3b82f6":"2px solid #e5e7eb",
-                          color:provider===m.id?"#1d4ed8":"#374151"}}>
-                        <span style={{fontSize:32}}>{m.emoji}</span>
+                      <button key={m.id} onClick={()=>setIntlSel(m.id)}
+                        style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,padding:"14px 10px",borderRadius:16,fontWeight:800,fontSize:13,cursor:"pointer",transition:"all .15s",
+                          background:intlSel===m.id?"#eff6ff":"#f9fafb",
+                          border:intlSel===m.id?"2px solid #3b82f6":"2px solid #e5e7eb",
+                          color:intlSel===m.id?"#1d4ed8":"#374151"}}>
+                        <span style={{fontSize:28}}>{m.emoji}</span>
                         <span>{m.label}</span>
                         <span style={{fontSize:10,color:"#9ca3af",fontWeight:600}}>{m.id==="SENDWAVE"?"sendwave.com":"taptapsend.com"}</span>
                       </button>
                     ))}
                   </div>
-                  <button onClick={()=>setIntlOpen(false)} style={{width:"100%",padding:"12px",background:"#f3f4f6",border:"none",borderRadius:12,fontWeight:700,fontSize:13,color:"#6b7280",cursor:"pointer"}}>
-                    {fr?"Annuler":"Cancel"}
-                  </button>
+                  {intlSel&&(
+                    <div style={{background:"#f0f4ff",borderRadius:14,padding:"14px",marginBottom:14,fontSize:12,color:"#4338ca",lineHeight:1.9}}>
+                      <div style={{fontWeight:800,fontSize:13,marginBottom:8,color:"#312e81"}}>
+                        {intlSel==="SENDWAVE"?<>💸 {fr?"Comment envoyer via Sendwave :":"How to send via Sendwave:"}</>:<>✈️ {fr?"Comment envoyer via TapTap Send :":"How to send via TapTap Send:"}</>}
+                      </div>
+                      <div style={{background:"#e0e7ff",borderRadius:10,padding:"10px 14px",marginBottom:10,fontFamily:"monospace",lineHeight:2.2}}>
+                        {fr?"Nom destinataire":"Recipient name"} : <strong style={{fontSize:14}}>AyyadCI</strong><br/>
+                        {fr?"Numéro":"Number"} : <strong style={{fontSize:14}}>+225 07 48 05 61 28</strong><br/>
+                        {fr?"Pays":"Country"} : <strong>Côte d'Ivoire 🇨🇮</strong>
+                      </div>
+                      <div style={{fontSize:11,color:"#6366f1",marginBottom:10,lineHeight:1.7}}>
+                        {fr?<>
+                          1. Ouvrez <strong>{intlSel==="SENDWAVE"?"Sendwave":"TapTap Send"}</strong> (App Store / Play Store)<br/>
+                          2. Appuyez sur <strong>"Envoyer de l'argent"</strong><br/>
+                          3. Choisissez <strong>Côte d'Ivoire</strong> comme pays destinataire<br/>
+                          4. Entrez le numéro et le nom ci-dessus<br/>
+                          5. Indiquez le montant et confirmez
+                        </>:<>
+                          1. Open <strong>{intlSel==="SENDWAVE"?"Sendwave":"TapTap Send"}</strong> (App Store / Play Store)<br/>
+                          2. Tap <strong>"Send money"</strong><br/>
+                          3. Choose <strong>Côte d'Ivoire</strong> as destination<br/>
+                          4. Enter the number and name above<br/>
+                          5. Enter the amount and confirm
+                        </>}
+                      </div>
+                      <a href={intlSel==="SENDWAVE"?"https://sendwave.com":"https://www.taptapsend.com"} target="_blank" rel="noreferrer"
+                        style={{display:"block",textAlign:"center",background:"#4f46e5",color:"#fff",fontWeight:800,fontSize:14,padding:"12px",borderRadius:12,textDecoration:"none",marginBottom:6}}>
+                        🔗 {fr?`Ouvrir ${intlSel==="SENDWAVE"?"Sendwave":"TapTap Send"}`:`Open ${intlSel==="SENDWAVE"?"Sendwave":"TapTap Send"}`}
+                      </a>
+                      <div style={{fontSize:10,color:"#9ca3af",textAlign:"center"}}>
+                        {fr?"Disponible depuis France, Canada, USA, UK, Belgique, Suisse…":"Available from France, Canada, USA, UK, Belgium, Switzerland…"}
+                      </div>
+                    </div>
+                  )}
+                  <div style={{display:"grid",gridTemplateColumns:intlSel?"1fr 1fr":"1fr",gap:8}}>
+                    <button onClick={()=>{setIntlOpen(false);setIntlSel(null);}} style={{padding:"12px",background:"#f3f4f6",border:"none",borderRadius:12,fontWeight:700,fontSize:13,color:"#6b7280",cursor:"pointer"}}>
+                      {fr?"Annuler":"Cancel"}
+                    </button>
+                    {intlSel&&(
+                      <button onClick={()=>{setProvider(intlSel);setIntlOpen(false);setIntlSel(null);setStep("pay");}}
+                        style={{padding:"12px",background:"linear-gradient(135deg,#4f46e5,#6366f1)",border:"none",borderRadius:12,fontWeight:800,fontSize:13,color:"#fff",cursor:"pointer"}}>
+                        {fr?"J'ai payé ✓":"I've paid ✓"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </>
             )}
