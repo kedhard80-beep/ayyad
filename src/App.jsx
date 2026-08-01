@@ -8145,6 +8145,7 @@ const AdminPage = ({ user, setPage, lang }) => {
         emailCaseApproved({ beneficiaryEmail: c.email || null, beneficiaryName: c.full_name || c.beneficiary, caseTitle: c.title, trackingId: newTrackingId });
         emailNewCase({ caseTitle: "✅ APPROUVÉ — " + (c.title || id) + " (" + newTrackingId + ")", hospital: c.hospital, city: c.city, amount: c.amount });
         auditLog(user, "CASE_APPROVED", c.title || id, "PENDING", "COLLECTING");
+        notifyDonors({ caseTitle: c.title, hospital: c.hospital, city: c.city, amount: c.amount, trackingId: newTrackingId, beneficiary: c.full_name || c.beneficiary, urgent: c.urgent || false });
       }
     }
   };
@@ -9790,6 +9791,22 @@ const MonImpactPage = ({ user, setPage, lang }) => {
   const fr = lang === "fr";
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [notifPref, setNotifPref] = useState(null);
+  const [notifSaving, setNotifSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("profiles").select("notify_new_cases").eq("id", user.id).maybeSingle()
+      .then(({ data }) => setNotifPref(data?.notify_new_cases ?? false));
+  }, [user?.id]);
+
+  const toggleNotif = async () => {
+    const next = !notifPref;
+    setNotifSaving(true);
+    await supabase.from("profiles").update({ notify_new_cases: next }).eq("id", user.id);
+    setNotifPref(next);
+    setNotifSaving(false);
+  };
 
   useEffect(() => {
     if (!user?.id) return;
@@ -9860,6 +9877,30 @@ const MonImpactPage = ({ user, setPage, lang }) => {
             ))}
           </div>
         )}
+
+        {/* Preferences notifications */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mt-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-gray-900 text-sm">{fr?"Alertes nouveaux cas":"New case alerts"}</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {fr?"Recevoir un email quand un nouveau patient est publie sur Ayyad":"Get an email when a new patient is published on Ayyad"}
+              </div>
+            </div>
+            <button
+              onClick={toggleNotif}
+              disabled={notifPref === null || notifSaving}
+              className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 focus:outline-none ${notifPref?"bg-emerald-500":"bg-gray-200"} ${notifPref===null||notifSaving?"opacity-50 cursor-not-allowed":"cursor-pointer"}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${notifPref?"translate-x-6":"translate-x-0"}`} />
+            </button>
+          </div>
+          {notifPref && (
+            <p className="text-xs text-emerald-600 mt-3 font-medium">
+              {fr?"Vous recevrez un email a chaque nouveau dossier publie.":"You will receive an email for each new published case."}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
