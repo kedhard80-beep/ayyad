@@ -4954,9 +4954,19 @@ const CasePage = ({ c, setPage, lang, user }) => {
                           updates.video_url = newVideoUrls[0] || null;
                         }
                         if (Object.keys(updates).length > 0) {
+                          // Essayer d'abord avec video_urls (colonne jsonb si elle existe)
                           const { error: saveErr } = await supabase.from("cases").update(updates).eq("id", c.id);
-                          if (saveErr) throw saveErr;
-                          if (updates.video_urls) setLocalVideoUrls(updates.video_urls);
+                          if (saveErr && saveErr.message && saveErr.message.includes("video_urls")) {
+                            // Colonne video_urls absente — fallback sur video_url seul
+                            const { error: fallbackErr } = await supabase.from("cases").update({ video_url: embed }).eq("id", c.id);
+                            if (fallbackErr) throw fallbackErr;
+                            const merged = [...new Set([...localVideoUrls, embed])];
+                            setLocalVideoUrls(merged);
+                          } else if (saveErr) {
+                            throw saveErr;
+                          } else {
+                            if (updates.video_urls) setLocalVideoUrls(updates.video_urls);
+                          }
                           setEditVideoUrl_("");
                           setEditMsg(lang==="fr" ? "✅ Vidéo ajoutée !" : "✅ Video added!");
                         } else {
