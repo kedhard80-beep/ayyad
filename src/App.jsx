@@ -4192,6 +4192,13 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const t = T[lang];
   const td = t.donate;
   const RATES = { FCFA: 1, EUR: 0.00152, USD: 0.00166, GBP: 0.00127 };
+  const CUR_SYMBOL = { FCFA: "FCFA", EUR: "€", USD: "$", GBP: "£" };
+  const fmtCurrency = (fcfa) => {
+    if (!fcfa) return currency === "FCFA" ? "0 FCFA" : (CUR_SYMBOL[currency] || "") + "0";
+    if (currency === "FCFA") return fcfa.toLocaleString("fr-FR") + " FCFA";
+    const converted = (fcfa * RATES[currency]).toFixed(currency === "FCFA" ? 0 : 2);
+    return (CUR_SYMBOL[currency] || "") + Number(converted).toLocaleString("fr-FR");
+  };
   const PRESETS_MAP = { FCFA: [1000,5000,10000,25000,50000], EUR: [1,5,10,25,50], USD: [2,5,10,25,50], GBP: [1,5,10,20,50] };
   const presets = PRESETS_MAP[currency] || PRESETS_MAP.FCFA;
   const amountInFcfa = currency === "FCFA" ? Number(amount) : Math.round(Number(amount) / RATES[currency]);
@@ -4446,7 +4453,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             </div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontWeight:800,fontSize:12,color:"#111827",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                {(liveCollected||0).toLocaleString("fr-FR")} <span style={{color:"#6B7280",fontWeight:600,fontSize:10}}>FCFA</span>
+                {fmtCurrency(liveCollected||0)}
               </div>
               <div style={{fontSize:10,color:"#6B7280",whiteSpace:"nowrap"}}>{liveDonors||0} {lang==="fr"?"dons":"donors"}</div>
             </div>
@@ -4525,10 +4532,10 @@ const CasePage = ({ c, setPage, lang, user }) => {
               </div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontWeight:900,fontSize:20,color:"#111827",lineHeight:1.1}}>
-                  {(liveCollected||0).toLocaleString("fr-FR")} <span style={{fontSize:13,fontWeight:600,color:"#6B7280"}}>FCFA</span>
+                  {fmtCurrency(liveCollected||0)}
                 </div>
                 <div style={{fontSize:12,color:"#6B7280",margin:"3px 0 4px"}}>
-                  {lang==="fr"?"collectés sur":"raised of"} {(c.required||c.amount||0).toLocaleString("fr-FR")} FCFA
+                  {lang==="fr"?"collectés sur":"raised of"} {fmtCurrency(c.required||c.amount||0)}
                 </div>
                 <div style={{fontSize:11,color:"#059669",display:"flex",alignItems:"center",gap:5}}>
                   <span style={{display:"inline-block",width:7,height:7,borderRadius:"50%",background:"#059669",animation:"pulse 1.5s infinite"}}/>
@@ -4987,8 +4994,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
           <div style={{position:"sticky",top:80}}>
             <div style={{background:"#fff",borderRadius:16,padding:"18px 16px",boxShadow:"0 2px 16px rgba(0,0,0,0.09)",marginBottom:12}}>
               <div style={{marginBottom:14}}>
-                <div style={{fontWeight:900,fontSize:20,color:"#111827"}}>{(liveCollected||0).toLocaleString("fr-FR")} <span style={{fontSize:13,fontWeight:600,color:"#6B7280"}}>FCFA</span></div>
-                <div style={{fontSize:12,color:"#6B7280",margin:"2px 0 8px"}}>{lang==="fr"?"collectés sur":"of"} {(c.amount||0).toLocaleString("fr-FR")} FCFA</div>
+                <div style={{fontWeight:900,fontSize:20,color:"#111827"}}>{fmtCurrency(liveCollected||0)}</div>
+                <div style={{fontSize:12,color:"#6B7280",margin:"2px 0 8px"}}>{lang==="fr"?"collectés sur":"of"} {fmtCurrency(c.amount||0)}</div>
                 <div style={{height:5,borderRadius:99,background:"#E5E7EB"}}>
                   <div style={{height:"100%",borderRadius:99,background:"#059669",transition:"width 0.5s",width:Math.min(100,Math.round(((liveCollected||0)/(c.amount||1))*100))+"%"}} />
                 </div>
