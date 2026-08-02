@@ -4010,7 +4010,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const CasePage = ({ c, setPage, lang, user }) => {
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("FCFA");
+  const [currency, setCurrency] = useState(lang === "en" ? "USD" : "FCFA");
   // PayDunya en attente d'activation — pour l'instant on retombe sur Wave (QR statique du marchand)
   const [provider, setProvider] = useState("WAVE");
   const [anonymous, setAnonymous] = useState(false);
@@ -4191,8 +4191,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const goalReached = !funded && (c.collected||0) >= (c.required||1); // objectif atteint mais collecte encore ouverte
   const t = T[lang];
   const td = t.donate;
-  const RATES = { FCFA: 1, EUR: 0.00152, USD: 0.00166 };
-  const PRESETS_MAP = { FCFA: [1000,5000,10000,25000,50000], EUR: [1,5,10,25,50], USD: [1,5,10,25,50] };
+  const RATES = { FCFA: 1, EUR: 0.00152, USD: 0.00166, GBP: 0.00127 };
+  const PRESETS_MAP = { FCFA: [1000,5000,10000,25000,50000], EUR: [1,5,10,25,50], USD: [2,5,10,25,50], GBP: [1,5,10,20,50] };
   const presets = PRESETS_MAP[currency] || PRESETS_MAP.FCFA;
   const amountInFcfa = currency === "FCFA" ? Number(amount) : Math.round(Number(amount) / RATES[currency]);
 
@@ -4312,7 +4312,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             autoComplete="off"
             className="w-full border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-16"
           />
-          <select value={currency} onChange={e=>{setCurrency(e.target.value);setAmount("");}} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold bg-gray-100 border-0 rounded-lg px-1 py-0.5 focus:outline-none cursor-pointer"><option>FCFA</option><option>EUR</option><option>USD</option></select>
+          <select value={currency} onChange={e=>{setCurrency(e.target.value);setAmount("");}} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold bg-gray-100 border-0 rounded-lg px-1 py-0.5 focus:outline-none cursor-pointer"><option>FCFA</option><option>EUR</option><option>USD</option><option>GBP</option></select>
         </div>
         {amount&&Number(amount)>=500&&<div className="text-xs text-center text-gray-400 mt-1.5">{lang==="fr"?"Débité : ":"Charged: "}<span className="font-bold text-gray-700">{fmt(Number(amount))}</span></div>}
       </div>
@@ -11906,7 +11906,11 @@ const DjanaUrgencyBadges = ({ lang }) => {
 const DonatePage = ({ c, lang, user, setPage }) => {
   const fr = lang === "fr";
   const WAVE_LINK = "https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/";
-  const [amount, setAmount] = React.useState(String(c?.__quickAmount || 1000));
+  const [currency, setCurrency] = React.useState(fr ? "FCFA" : "USD");
+  const DONATE_RATES = { FCFA: 1, EUR: 655.957, USD: 600, GBP: 787 };
+  const DONATE_PRESETS = { FCFA: [500,1000,2000,5000], EUR: [1,2,5,10], USD: [1,2,5,10], GBP: [1,2,5,10] };
+  const CURRENCY_SYMBOL = { FCFA: "FCFA", EUR: "€", USD: "$", GBP: "£" };
+  const [amount, setAmount] = React.useState(String(c?.__quickAmount || (fr ? 1000 : 2)));
   const [method, setMethod] = React.useState(null);
   const [donorName, setDonorName] = React.useState(user?.user_metadata?.full_name || "");
   const [donorEmail, setDonorEmail] = React.useState(user?.email || "");
@@ -11916,7 +11920,10 @@ const DonatePage = ({ c, lang, user, setPage }) => {
   const [done, setDone] = React.useState(false);
   const benefName = c?.beneficiary || c?.full_name || (fr ? "Bénéficiaire" : "Beneficiary");
   const amountNum = parseInt(amount) || 0;
-  const amountFmt = amountNum.toLocaleString("fr-FR") + " FCFA";
+  const amountInFcfa = currency === "FCFA" ? amountNum : Math.round(amountNum * DONATE_RATES[currency]);
+  const amountFmt = currency === "FCFA"
+    ? amountNum.toLocaleString("fr-FR") + " FCFA"
+    : (currency === "EUR" ? "€" : currency === "GBP" ? "£" : "$") + amountNum.toLocaleString("fr-FR");
   const METHODS = [
     { id:"WAVE",     label:"Wave CI",       icon:"🟦", sub: fr?"Paiement instantané":"Instant payment",    color:"#1A73E8" },
     { id:"OM",       label:"Orange Money",  icon:"🟧", sub: fr?"Réseau Orange CI":"Orange CI network",     color:"#FF6600" },
@@ -11929,7 +11936,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
     setSubmitting(true); setError("");
     try {
       const res = await createDonation({
-        case_id: c?.id, amount: amountNum, currency: "FCFA", provider: method,
+        case_id: c?.id, amount: amountInFcfa, currency: "FCFA", provider: method,
         donor_name: donorName || null, donor_email: donorEmail || null,
         payment_ref: payRef || null, anonymous: !donorName,
       });
@@ -11970,16 +11977,26 @@ const DonatePage = ({ c, lang, user, setPage }) => {
       <div style={{maxWidth:520,margin:"0 auto",padding:"20px 16px"}}>
         <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:14,boxShadow:"0 1px 8px rgba(0,0,0,0.06)"}}>
           <div style={{fontWeight:700,fontSize:12,color:"#6B7280",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>{fr?"Montant du don":"Donation amount"}</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:10}}>
-            {[500,1000,2000,5000].map(v=>(
-              <button key={v} onClick={()=>setAmount(String(v))}
-                style={{padding:"10px 4px",borderRadius:10,border:"2px solid",borderColor:amountNum===v?"#059669":"#E5E7EB",background:amountNum===v?"#ECFDF5":"#fff",color:amountNum===v?"#059669":"#374151",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.15s"}}>
-                {v.toLocaleString("fr-FR")}
+          {/* Sélecteur de devise */}
+          <div style={{display:"flex",gap:6,marginBottom:10}}>
+            {["FCFA","EUR","USD","GBP"].map(cur=>(
+              <button key={cur} onClick={()=>{setCurrency(cur);setAmount(String(DONATE_PRESETS[cur][1]));}}
+                style={{flex:1,padding:"6px 4px",borderRadius:8,border:"2px solid",borderColor:currency===cur?"#059669":"#E5E7EB",background:currency===cur?"#ECFDF5":"#fff",color:currency===cur?"#059669":"#6B7280",fontWeight:700,fontSize:11,cursor:"pointer",transition:"all 0.15s"}}>
+                {cur==="EUR"?"€ EUR":cur==="USD"?"$ USD":cur==="GBP"?"£ GBP":"FCFA"}
               </button>
             ))}
           </div>
-          <input type="number" placeholder={fr?"Autre montant (FCFA)":"Custom amount (FCFA)"} value={amount} onChange={e=>setAmount(e.target.value)}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:10}}>
+            {(DONATE_PRESETS[currency]||DONATE_PRESETS.FCFA).map(v=>(
+              <button key={v} onClick={()=>setAmount(String(v))}
+                style={{padding:"10px 4px",borderRadius:10,border:"2px solid",borderColor:amountNum===v?"#059669":"#E5E7EB",background:amountNum===v?"#ECFDF5":"#fff",color:amountNum===v?"#059669":"#374151",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.15s"}}>
+                {CURRENCY_SYMBOL[currency]==="FCFA"?v.toLocaleString("fr-FR"):(CURRENCY_SYMBOL[currency]+v)}
+              </button>
+            ))}
+          </div>
+          <input type="number" placeholder={currency==="FCFA"?(fr?"Autre montant (FCFA)":"Custom amount (FCFA)"):`Custom amount (${currency})`} value={amount} onChange={e=>setAmount(e.target.value)}
             style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:10,border:"1.5px solid #E5E7EB",fontSize:14,fontWeight:600,outline:"none"}} />
+          {currency!=="FCFA"&&amountNum>0&&<div style={{fontSize:11,color:"#6B7280",marginTop:4,textAlign:"center"}}>≈ {amountInFcfa.toLocaleString("fr-FR")} FCFA envoyés à l'hôpital</div>}
         </div>
         <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:14,boxShadow:"0 1px 8px rgba(0,0,0,0.06)"}}>
           <div style={{fontWeight:700,fontSize:12,color:"#6B7280",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>{fr?"Moyen de paiement":"Payment method"}</div>
