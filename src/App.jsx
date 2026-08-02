@@ -4994,17 +4994,27 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 </div>
                 <div style={{fontSize:11,color:"#6B7280",marginTop:5}}>{liveDonors||0} {lang==="fr"?"donateurs":"donors"}</div>
               </div>
+              {/* Sélecteur de devise */}
+              <div style={{display:"flex",gap:5,marginBottom:10}}>
+                {["FCFA","EUR","USD","GBP"].map(cur=>(
+                  <button key={cur} onClick={()=>{setCurrency(cur);setAmount(String({FCFA:1000,EUR:2,USD:2,GBP:1}[cur]));}}
+                    style={{flex:1,padding:"5px 2px",borderRadius:7,border:"2px solid",borderColor:currency===cur?"#059669":"#E5E7EB",background:currency===cur?"#ECFDF5":"#fff",color:currency===cur?"#059669":"#6B7280",fontWeight:700,fontSize:10,cursor:"pointer"}}>
+                    {cur==="EUR"?"€":cur==="USD"?"$":cur==="GBP"?"£":"₣"} {cur}
+                  </button>
+                ))}
+              </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:7,marginBottom:10}}>
-                {[500,1000,2000,5000].map(v=>(
+                {({FCFA:[500,1000,2000,5000],EUR:[1,2,5,10],USD:[1,2,5,10],GBP:[1,2,5,10]}[currency]||[500,1000,2000,5000]).map(v=>(
                   <button key={v} onClick={()=>setAmount(String(v))}
                     style={{padding:"9px 4px",borderRadius:9,border:"2px solid",borderColor:parseInt(amount)===v?"#059669":"#E5E7EB",background:parseInt(amount)===v?"#ECFDF5":"#fff",color:parseInt(amount)===v?"#059669":"#374151",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.15s"}}>
-                    {v.toLocaleString("fr-FR")} FCFA
+                    {currency==="EUR"?"€":currency==="USD"?"$":currency==="GBP"?"£":""}{currency!=="FCFA"?v:v.toLocaleString("fr-FR")+" FCFA"}
                   </button>
                 ))}
               </div>
               <input type="number" value={amount} onChange={e=>setAmount(e.target.value)}
-                placeholder={lang==="fr"?"Autre montant (FCFA)":"Custom amount (FCFA)"}
+                placeholder={currency==="FCFA"?(lang==="fr"?"Autre montant (FCFA)":"Custom amount (FCFA)"):`Amount in ${currency}`}
                 style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:9,border:"1.5px solid #E5E7EB",fontSize:13,fontWeight:600,marginBottom:10,outline:"none"}} />
+              {currency!=="FCFA"&&parseInt(amount)>0&&<div style={{fontSize:11,color:"#6B7280",textAlign:"center",marginBottom:8}}>≈ {Math.round(parseInt(amount)*{EUR:655.957,USD:600,GBP:787}[currency]).toLocaleString("fr-FR")} FCFA</div>}
               <button
                 onClick={() => setShowModal(true)}
                 disabled={!amount||parseInt(amount)<1}
