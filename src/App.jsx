@@ -716,6 +716,16 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
 // Carte campagne avec hover lift, hiérarchie éditoriale, progression visible
 // immédiatement sur l'image et micro-CTA "Soutenir" qui apparaît au hover.
 const CaseCard = ({ c, lang, t, onClick }) => {
+  const _CARD_RATES = { fr: 1, en: 0.00166 };
+  const _CARD_SYMBOL = { fr: " FCFA", en: "$" };
+  const fmtCard = (n) => {
+    if (!n) return lang === "en" ? "$0" : "0 FCFA";
+    if (lang === "en") {
+      const usd = (n * _CARD_RATES.en).toFixed(0);
+      return "$" + Number(usd).toLocaleString("en-US");
+    }
+    return new Intl.NumberFormat("fr-CI").format(n) + " FCFA";
+  };
   const percent = pct(c.collected, c.required);
   const funded = c.status==="FUNDED";
   const fr = lang === "fr";
@@ -832,8 +842,8 @@ const CaseCard = ({ c, lang, t, onClick }) => {
         {/* Progression */}
         <div style={{ marginBottom: 16 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom: 8 }}>
-            <span style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:17, color:"var(--ayyad-deep)" }}>{fmt(c.collected)}</span>
-            <span style={{ fontSize:11, color:"var(--ink-400)", fontWeight:600 }}>{c.required ? tc.on + " " + fmt(c.required) : (lang==="fr" ? "objectif à définir" : "amount TBD")}</span>
+            <span style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:17, color:"var(--ayyad-deep)" }}>{fmtCard(c.collected)}</span>
+            <span style={{ fontSize:11, color:"var(--ink-400)", fontWeight:600 }}>{c.required ? tc.on + " " + fmtCard(c.required) : (lang==="fr" ? "objectif à définir" : "amount TBD")}</span>
           </div>
           {c.required ? (
             <div style={{ height:6, background:"#f3f4f6", borderRadius:9999, overflow:"hidden" }}>
@@ -4586,8 +4596,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 {/* Chiffres principaux */}
                 <div className="flex justify-between items-end mb-4">
                   <div>
-                    <div className="text-4xl md:text-5xl font-black text-emerald-600 leading-none">{fmt(liveCollected)}</div>
-                    <div className="text-sm text-gray-400 mt-1 font-medium">{t.progress.collected} <span className="text-gray-600 font-bold">{fmt(c.required)}</span></div>
+                    <div className="text-4xl md:text-5xl font-black text-emerald-600 leading-none">{fmtCurrency(liveCollected)}</div>
+                    <div className="text-sm text-gray-400 mt-1 font-medium">{t.progress.collected} <span className="text-gray-600 font-bold">{fmtCurrency(c.required)}</span></div>
                   </div>
                   <div className="text-right">
                     <div className={`text-5xl md:text-6xl font-black leading-none ${percent>=100?"text-emerald-500":"text-gray-800"}`}>{percent}<span className="text-2xl">%</span></div>
@@ -4604,7 +4614,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 {/* Messages dynamiques */}
                 {percent>=50&&percent<100&&(
                   <div className="mt-3 flex items-center justify-center gap-2 text-sm text-amber-700 font-semibold bg-amber-50 rounded-xl px-4 py-2 border border-amber-100">
-                    🔥 {lang==="fr"?`Plus que ${fmt(c.required - liveCollected)} !`:`Only ${fmt(c.required - liveCollected)} left!`}
+                    🔥 {lang==="fr"?`Plus que ${fmtCurrency(c.required - liveCollected)} !`:`Only ${fmtCurrency(c.required - liveCollected)} left!`}
                   </div>
                 )}
                 {percent>=100&&(
