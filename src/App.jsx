@@ -4025,6 +4025,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
   );
   const [editOpen, setEditOpen] = useState(false);
   const [editVideoUrl, setEditVideoUrl_] = useState("");
+  const [showVideoInput, setShowVideoInput] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editMsg, setEditMsg] = useState("");
   const [editPhotoUploading, setEditPhotoUploading] = useState(false);
@@ -4787,17 +4788,17 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
               {editOpen && (
                 <div className="px-5 pb-6 space-y-5 border-t border-emerald-100">
-                  {/* Lien vidéo YouTube / TikTok */}
-                  <div className="pt-4">
+                  {/* Vidéos */}
+                  <div>
                     <label className="text-xs font-bold text-gray-700 block mb-1.5">
-                      🎬 {lang==="fr" ? "Ajouter une vidéo (YouTube ou TikTok)" : "Add a video (YouTube or TikTok)"}
+                      🎬 {lang==="fr" ? "Vidéos du dossier" : "Case videos"}
                     </label>
 
                     {/* Vidéos existantes avec bouton supprimer */}
                     {localVideoUrls.length > 0 && (
                       <div className="mb-3 space-y-2">
                         {localVideoUrls.map((vurl, vi) => {
-                          const label = vurl.includes("tiktok") ? "TikTok" : vurl.includes("youtube") ? "YouTube" : "Vidéo";
+                          const label = vurl.includes("tiktok") ? "TikTok" : "YouTube";
                           return (
                             <div key={vi} className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
                               <span className="text-blue-700 text-xs flex-1 truncate">🎥 {label} {localVideoUrls.length > 1 ? vi+1 : ""}</span>
@@ -4805,10 +4806,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                                 onClick={async () => {
                                   if (!window.confirm(lang==="fr" ? "Supprimer cette vidéo ?" : "Delete this video?")) return;
                                   const newVids = localVideoUrls.filter((_, i) => i !== vi);
-                                  await supabase.from("cases").update({
-                                    video_urls: newVids.length ? newVids : null,
-                                    video_url: newVids[0] || null
-                                  }).eq("id", c.id);
+                                  await supabase.from("cases").update({ video_urls: newVids.length ? newVids : null, video_url: newVids[0] || null }).eq("id", c.id);
                                   setLocalVideoUrls(newVids);
                                   setEditMsg(lang==="fr" ? "✅ Vidéo supprimée" : "✅ Video deleted");
                                 }}
@@ -4820,16 +4818,62 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       </div>
                     )}
 
-                    <input
-                      type="url"
-                      placeholder="https://youtube.com/watch?v=... ou https://tiktok.com/@..."
-                      value={editVideoUrl}
-                      onChange={e => setEditVideoUrl_(e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-300"
-                    />
-                    <p className="text-[10px] text-gray-400 mt-1">
-                      {lang==="fr" ? "YouTube, YouTube Shorts et TikTok sont acceptés." : "YouTube, YouTube Shorts and TikTok are accepted."}
-                    </p>
+                    {/* Bouton ajouter vidéo — même style que photo */}
+                    {!showVideoInput ? (
+                      <button
+                        onClick={() => setShowVideoInput(true)}
+                        className="flex items-center gap-3 border-2 border-dashed border-gray-200 hover:border-blue-300 rounded-xl p-4 w-full cursor-pointer hover:bg-blue-50 transition-colors text-left">
+                        <span className="text-2xl">🎬</span>
+                        <span className="text-sm text-gray-500">{lang==="fr" ? "Ajouter une vidéo (YouTube ou TikTok)" : "Add a video (YouTube or TikTok)"}</span>
+                      </button>
+                    ) : (
+                      <div className="border-2 border-blue-200 rounded-xl p-4 bg-blue-50 space-y-3">
+                        <input
+                          autoFocus
+                          type="url"
+                          placeholder="https://youtube.com/watch?v=... ou https://tiktok.com/@..."
+                          value={editVideoUrl}
+                          onChange={e => setEditVideoUrl_(e.target.value)}
+                          className="w-full border border-blue-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-300 bg-white"
+                        />
+                        <p className="text-[10px] text-gray-400">{lang==="fr" ? "YouTube, YouTube Shorts et TikTok sont acceptés." : "YouTube, YouTube Shorts and TikTok are accepted."}</p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={async () => {
+                              if (!editVideoUrl.trim()) return;
+                              setEditSaving(true); setEditMsg("");
+                              try {
+                                let embed = editVideoUrl.trim();
+                                const ytWatch = embed.match(/youtube\.com\/watch\?v=([^&]+)/);
+                                const ytShort = embed.match(/youtu\.be\/([^?&]+)/);
+                                const ytShorts = embed.match(/youtube\.com\/shorts\/([^?&]+)/);
+                                const tt = embed.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+                                if (ytWatch) embed = "https://www.youtube.com/embed/" + ytWatch[1];
+                                else if (ytShorts) embed = "https://www.youtube.com/embed/" + ytShorts[1];
+                                else if (ytShort) embed = "https://www.youtube.com/embed/" + ytShort[1];
+                                else if (tt) embed = "https://www.tiktok.com/embed/v2/" + tt[1];
+                                const newVids = [...localVideoUrls, embed];
+                                const { error: e1 } = await supabase.from("cases").update({ video_urls: newVids, video_url: newVids[0] }).eq("id", c.id);
+                                if (e1 && e1.message && e1.message.includes("video_urls")) {
+                                  const { error: e2 } = await supabase.from("cases").update({ video_url: embed }).eq("id", c.id);
+                                  if (e2) throw e2;
+                                } else if (e1) throw e1;
+                                setLocalVideoUrls(newVids);
+                                setEditVideoUrl_("");
+                                setShowVideoInput(false);
+                                setEditMsg(lang==="fr" ? "✅ Vidéo ajoutée !" : "✅ Video added!");
+                              } catch(err) {
+                                setEditMsg("Erreur : " + err.message);
+                              } finally { setEditSaving(false); }
+                            }}
+                            disabled={editSaving || !editVideoUrl.trim()}
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-bold py-2 rounded-xl text-sm transition-colors">
+                            {editSaving ? "…" : (lang==="fr" ? "✅ Ajouter" : "✅ Add")}
+                          </button>
+                          <button onClick={() => { setShowVideoInput(false); setEditVideoUrl_(""); }} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-sm transition-colors">✕</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Gestion des photos — multi-upload + suppression */}
@@ -4930,56 +4974,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     </div>
                   )}
 
-                  {/* Bouton sauvegarder (pour vidéo) */}
-                  <button
-                    onClick={async () => {
-                      setEditSaving(true);
-                      setEditMsg("");
-                      try {
-                        const updates = {};
-                        if (editVideoUrl.trim()) {
-                          // Conversion URL → embed
-                          let embed = editVideoUrl.trim();
-                          const ytWatch = embed.match(/youtube\.com\/watch\?v=([^&]+)/);
-                          const ytShort = embed.match(/youtu\.be\/([^?&]+)/);
-                          const ytShorts = embed.match(/youtube\.com\/shorts\/([^?&]+)/);
-                          const tt = embed.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
-                          if (ytWatch) embed = "https://www.youtube.com/embed/" + ytWatch[1];
-                          else if (ytShorts) embed = "https://www.youtube.com/embed/" + ytShorts[1];
-                          else if (ytShort) embed = "https://www.youtube.com/embed/" + ytShort[1];
-                          else if (tt) embed = "https://www.tiktok.com/embed/v2/" + tt[1];
-                          const existingVideos = localVideoUrls.length > 0 ? localVideoUrls : (c.video_url ? [c.video_url] : []);
-                          const newVideoUrls = [...existingVideos, embed];
-                          updates.video_urls = newVideoUrls;
-                          updates.video_url = newVideoUrls[0] || null;
-                        }
-                        if (Object.keys(updates).length > 0) {
-                          // Essayer d'abord avec video_urls (colonne jsonb si elle existe)
-                          const { error: saveErr } = await supabase.from("cases").update(updates).eq("id", c.id);
-                          if (saveErr && saveErr.message && saveErr.message.includes("video_urls")) {
-                            // Colonne video_urls absente — fallback sur video_url seul
-                            const { error: fallbackErr } = await supabase.from("cases").update({ video_url: embed }).eq("id", c.id);
-                            if (fallbackErr) throw fallbackErr;
-                            const merged = [...new Set([...localVideoUrls, embed])];
-                            setLocalVideoUrls(merged);
-                          } else if (saveErr) {
-                            throw saveErr;
-                          } else {
-                            if (updates.video_urls) setLocalVideoUrls(updates.video_urls);
-                          }
-                          setEditVideoUrl_("");
-                          setEditMsg(lang==="fr" ? "✅ Vidéo ajoutée !" : "✅ Video added!");
-                        } else {
-                          setEditMsg(lang==="fr" ? "Saisissez un lien vidéo." : "Enter a video link.");
-                        }
-                      } catch(err) {
-                        setEditMsg(lang==="fr" ? "Erreur : " + err.message : "Error: " + err.message);
-                      } finally { setEditSaving(false); }
-                    }}
-                    disabled={editSaving}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition-colors">
-                    {editSaving ? (lang==="fr" ? "Sauvegarde…" : "Saving…") : (lang==="fr" ? "💾 Sauvegarder" : "💾 Save")}
-                  </button>
+
                 </div>
               )}
             </div>
