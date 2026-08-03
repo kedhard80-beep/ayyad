@@ -1596,20 +1596,25 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
   }, [open]);
 
   const trackingId = c.trackingId || c.tracking_id || ("AYD-" + c.id);
-  const shareUrl = "https://ayyadci.com/?case=" + trackingId;
+  const shareUrl = "https://www.ayyadci.com/?case=" + trackingId;
   const title = typeof c.title === "object" ? (c.title?.[lang] || c.title?.fr || c.title || "") : (c.title || "");
-  const beneficiary = c.beneficiary || c.full_name || "";
+  const _rawBenef = c.beneficiary || c.full_name || "";
+  const isEmail = _rawBenef.includes("@");
+  const beneficiary = isEmail ? (lang === "fr" ? "un patient" : "a patient") : _rawBenef;
+  const displayName = isEmail ? title : _rawBenef;
   const pct = c.required ? Math.min(100, Math.round(((c.collected||0)/c.required)*100)) : 0;
 
   const msgWA = encodeURIComponent(
     (lang === "fr"
-      ? "Aidez " + beneficiary + " à financer ses soins medicaux ! " + pct + "% atteint. Chaque don compte. "
-      : "Help " + beneficiary + " fund their medical care! " + pct + "% reached. Every donation counts. ")
+      ? "Aidez " + displayName + " à financer ses soins médicaux — " + pct + "% de l'objectif atteint. Chaque don compte. "
+      : "Help " + displayName + " fund their medical care — " + pct + "% reached. Every donation counts. ")
     + shareUrl
   );
   const msgFB = encodeURIComponent(shareUrl);
   const msgX  = encodeURIComponent(
-    (lang === "fr" ? "Soutenez " + beneficiary + " - " + pct + "% de l'objectif atteint " : "Support " + beneficiary + " - " + pct + "% reached ")
+    (lang === "fr"
+      ? displayName + " — " + pct + "% de l'objectif atteint. Aidez depuis n'importe où. "
+      : displayName + " — " + pct + "% funded. Help from anywhere in the world. ")
     + shareUrl + " #Ayyad #SolidariteMedicale"
   );
 
