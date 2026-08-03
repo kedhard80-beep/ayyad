@@ -1603,9 +1603,11 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
   const _rawBenef = c.beneficiary || c.full_name || "";
   const isEmail = _rawBenef.includes("@");
   const beneficiary = isEmail ? (lang === "fr" ? "un patient" : "a patient") : _rawBenef;
+  // Strip French age pattern (", 34 ans") from EN display names
+  const _rawBenefEn = _rawBenef.replace(/,\s*\d+\s*ans\b/gi, "").trim();
   const displayName = isEmail
     ? (lang === "fr" ? titleFr : titleEn)
-    : _rawBenef;
+    : (lang === "fr" ? _rawBenef : _rawBenefEn);
   const pct = c.required ? Math.min(100, Math.round(((c.collected||0)/c.required)*100)) : 0;
 
   const msgWA = encodeURIComponent(
@@ -1615,7 +1617,7 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
   );
   const msgFB = encodeURIComponent(shareUrl);
   const displayNameFr = isEmail ? titleFr : _rawBenef;
-  const displayNameEn = isEmail ? titleEn : _rawBenef;
+  const displayNameEn = isEmail ? titleEn : _rawBenefEn;
   const msgX  = encodeURIComponent(
     lang === "fr"
       ? displayNameFr + " — " + pct + "% de l'objectif atteint. Chaque don va directement à l'hôpital. " + shareUrl + " #Ayyad #SolidariteMedicale #CôtedIvoire"
