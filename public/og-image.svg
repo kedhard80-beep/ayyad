@@ -12,15 +12,9 @@
       <stop offset="0%" stop-color="#1a7a42"/>
       <stop offset="100%" stop-color="#0d5c2e"/>
     </linearGradient>
-    <clipPath id="cardClip">
-      <rect x="72" y="148" width="340" height="420" rx="20"/>
-    </clipPath>
-    <clipPath id="imgClip">
-      <rect x="72" y="148" width="340" height="230" rx="20"/>
-    </clipPath>
   </defs>
 
-  <!-- Fond page -->
+  <!-- Background -->
   <rect width="1200" height="630" fill="url(#bg)"/>
 
   <!-- Navbar -->
@@ -31,88 +25,87 @@
   <rect x="30" y="30" width="28" height="12" rx="3" fill="#C9A84C"/>
   <!-- Logo text -->
   <text x="76" y="44" font-family="Georgia, serif" font-size="26" font-weight="900" fill="white" letter-spacing="3">AYYAD</text>
-  <text x="78" y="57" font-family="Arial, sans-serif" font-size="9" fill="#C9A84C" letter-spacing="2" font-weight="600">FINANCEMENT MÉDICAL SOLIDAIRE</text>
+  <text x="78" y="57" font-family="Arial, sans-serif" font-size="9" fill="#C9A84C" letter-spacing="2" font-weight="600">MEDICAL CROWDFUNDING</text>
   <!-- Nav links -->
-  <text x="620" y="40" font-family="Arial, sans-serif" font-size="13" fill="rgba(255,255,255,0.7)" text-anchor="middle">Collectes actives</text>
-  <text x="760" y="40" font-family="Arial, sans-serif" font-size="13" fill="rgba(255,255,255,0.7)" text-anchor="middle">Cas urgents</text>
-  <text x="890" y="40" font-family="Arial, sans-serif" font-size="13" fill="rgba(255,255,255,0.7)" text-anchor="middle">Comment ça marche</text>
-  <!-- Bouton soumettre -->
+  <text x="620" y="40" font-family="Arial, sans-serif" font-size="13" fill="rgba(255,255,255,0.7)" text-anchor="middle">Active Cases</text>
+  <text x="760" y="40" font-family="Arial, sans-serif" font-size="13" fill="rgba(255,255,255,0.7)" text-anchor="middle">Urgent Cases</text>
+  <text x="890" y="40" font-family="Arial, sans-serif" font-size="13" fill="rgba(255,255,255,0.7)" text-anchor="middle">How It Works</text>
+  <!-- Submit button -->
   <rect x="1040" y="20" width="140" height="36" rx="18" fill="#C9A84C"/>
-  <text x="1110" y="43" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="white" text-anchor="middle">Soumettre un dossier</text>
+  <text x="1110" y="43" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="white" text-anchor="middle">Submit a Case</text>
 
-  <!-- Titre section -->
-  <text x="600" y="116" font-family="Georgia, serif" font-size="22" font-weight="900" fill="#0a3d2e" text-anchor="middle" letter-spacing="1">CAMPAGNES VÉRIFIÉES</text>
-  <text x="600" y="144" font-family="Arial, sans-serif" font-size="13" fill="#6b7280" text-anchor="middle">1 dossier actif · 100% vérifié par notre équipe et un hôpital partenaire</text>
+  <!-- Section header -->
+  <text x="600" y="116" font-family="Georgia, serif" font-size="22" font-weight="900" fill="#0a3d2e" text-anchor="middle" letter-spacing="1">VERIFIED CAMPAIGNS</text>
+  <text x="600" y="144" font-family="Arial, sans-serif" font-size="13" fill="#6b7280" text-anchor="middle">1 active case · 100% verified by our team and a partner hospital</text>
 
-  <!-- Carte Djana -->
+  <!-- Case card -->
   <rect x="72" y="158" width="340" height="440" rx="20" fill="white" filter="drop-shadow(0 4px 24px rgba(0,0,0,0.10))"/>
 
-  <!-- Badge URGENT -->
+  <!-- URGENT badge -->
   <rect x="88" y="172" width="90" height="28" rx="14" fill="#ef4444"/>
   <text x="133" y="191" font-family="Arial, sans-serif" font-size="12" font-weight="800" fill="white" text-anchor="middle">🚨 URGENT</text>
 
-  <!-- Badge % -->
+  <!-- % badge -->
   <rect x="372" y="172" width="56" height="28" rx="14" fill="#0a3d2e"/>
   <text x="400" y="191" font-family="Arial, sans-serif" font-size="12" font-weight="800" fill="white" text-anchor="middle">3%</text>
 
-  <!-- Zone image placeholder (couleur) -->
+  <!-- Image placeholder -->
   <rect x="72" y="158" width="340" height="220" rx="20" fill="#d4c5b0"/>
   <rect x="72" y="338" width="340" height="40" fill="#d4c5b0"/>
 
-  <!-- Badge catégorie -->
+  <!-- Category badge -->
   <rect x="88" y="348" width="90" height="24" rx="12" fill="rgba(255,255,255,0.85)"/>
-  <text x="133" y="364" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#0a3d2e" text-anchor="middle">🏥 Pédiatrie</text>
+  <text x="133" y="364" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#0a3d2e" text-anchor="middle">🏥 Pediatrics</text>
 
-  <!-- Contenu carte -->
-  <text x="92" y="406" font-family="Georgia, serif" font-size="17" font-weight="900" fill="#111827">Djana, 5 ans — Aidez-la à</text>
-  <text x="92" y="428" font-family="Georgia, serif" font-size="17" font-weight="900" fill="#111827">retrouver une vie normale</text>
+  <!-- Card content -->
+  <text x="92" y="406" font-family="Georgia, serif" font-size="17" font-weight="900" fill="#111827">Djana, 5 — Help Her Live</text>
+  <text x="92" y="428" font-family="Georgia, serif" font-size="17" font-weight="900" fill="#111827">a Normal Life Again</text>
 
-  <!-- Hôpital + ville -->
-  <text x="92" y="450" font-family="Arial, sans-serif" font-size="12" fill="#6b7280">🏥 Hôpital Jean-Baptiste Vatelot  📍 Bouaké</text>
+  <!-- Hospital + city -->
+  <text x="92" y="450" font-family="Arial, sans-serif" font-size="12" fill="#6b7280">🏥 Jean-Baptiste Vatelot Hospital  📍 Bouaké</text>
 
-  <!-- Montant collecté -->
-  <text x="92" y="482" font-family="Arial, sans-serif" font-size="22" font-weight="900" fill="#0d5c2e">37 500 FCFA</text>
-  <text x="310" y="482" font-family="Arial, sans-serif" font-size="12" fill="#9ca3af" text-anchor="end">sur 1 145 000 FCFA</text>
+  <!-- Amount collected -->
+  <text x="92" y="482" font-family="Arial, sans-serif" font-size="22" font-weight="900" fill="#0d5c2e">$62</text>
+  <text x="200" y="482" font-family="Arial, sans-serif" font-size="12" fill="#9ca3af">of $1,905 goal</text>
 
-  <!-- Barre de progression -->
+  <!-- Progress bar -->
   <rect x="92" y="490" width="300" height="6" rx="3" fill="#e5e7eb"/>
   <rect x="92" y="490" width="9" height="6" rx="3" fill="#0d5c2e"/>
 
-  <!-- Donateurs + jours -->
-  <text x="92" y="516" font-family="Arial, sans-serif" font-size="12" fill="#6b7280">👥 19 donateurs</text>
-  <text x="310" y="516" font-family="Arial, sans-serif" font-size="12" fill="#ef4444" font-weight="700" text-anchor="end">⏱ 10 j restants</text>
+  <!-- Donors + days -->
+  <text x="92" y="516" font-family="Arial, sans-serif" font-size="12" fill="#6b7280">👥 19 donors</text>
+  <text x="310" y="516" font-family="Arial, sans-serif" font-size="12" fill="#ef4444" font-weight="700" text-anchor="end">⏱ 10 days left</text>
 
   <!-- Tracking ID -->
   <text x="92" y="536" font-family="Arial, sans-serif" font-size="10" fill="#d1d5db">AYD-2026-06-001</text>
 
-  <!-- Boutons -->
+  <!-- Buttons -->
   <rect x="92" y="548" width="110" height="36" rx="18" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1"/>
-  <text x="147" y="571" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#374151" text-anchor="middle">🤝 Partager</text>
+  <text x="147" y="571" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#374151" text-anchor="middle">🤝 Share</text>
   <rect x="214" y="548" width="178" height="36" rx="18" fill="url(#btnGrad)"/>
-  <text x="303" y="571" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="white" text-anchor="middle">Soutenir →</text>
+  <text x="303" y="571" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="white" text-anchor="middle">Support →</text>
 
-  <!-- Côté droit — texte de présentation -->
-  <text x="470" y="200" font-family="Georgia, serif" font-size="42" font-weight="900" fill="#0a3d2e">Soutenez des patients</text>
-  <text x="470" y="252" font-family="Georgia, serif" font-size="42" font-weight="900" fill="#C9A84C" font-style="italic">aujourd'hui.</text>
+  <!-- Right side — headline -->
+  <text x="470" y="200" font-family="Georgia, serif" font-size="42" font-weight="900" fill="#0a3d2e">Support patients</text>
+  <text x="470" y="252" font-family="Georgia, serif" font-size="42" font-weight="900" fill="#C9A84C" font-style="italic">in Côte d'Ivoire.</text>
 
-  <text x="470" y="310" font-family="Arial, sans-serif" font-size="17" fill="#4b5563" letter-spacing="0.3">Chaque don est versé directement à l'hôpital.</text>
-  <text x="470" y="335" font-family="Arial, sans-serif" font-size="17" fill="#4b5563">100% transparent · Zéro frais cachés.</text>
+  <text x="470" y="310" font-family="Arial, sans-serif" font-size="17" fill="#4b5563" letter-spacing="0.3">Every donation goes directly to the hospital.</text>
+  <text x="470" y="335" font-family="Arial, sans-serif" font-size="17" fill="#4b5563">100% transparent · Zero hidden fees.</text>
 
-  <!-- Badges confiance -->
+  <!-- Trust badges -->
   <rect x="470" y="365" width="190" height="40" rx="20" fill="white" stroke="#e5e7eb" stroke-width="1"/>
-  <text x="565" y="390" font-family="Arial, sans-serif" font-size="14" fill="#0d5c2e" font-weight="700" text-anchor="middle">✓ Dossiers vérifiés</text>
+  <text x="565" y="390" font-family="Arial, sans-serif" font-size="14" fill="#0d5c2e" font-weight="700" text-anchor="middle">✓ Verified Cases</text>
 
   <rect x="676" y="365" width="190" height="40" rx="20" fill="white" stroke="#e5e7eb" stroke-width="1"/>
-  <text x="771" y="390" font-family="Arial, sans-serif" font-size="14" fill="#0d5c2e" font-weight="700" text-anchor="middle">✓ Paiement sécurisé</text>
+  <text x="771" y="390" font-family="Arial, sans-serif" font-size="14" fill="#0d5c2e" font-weight="700" text-anchor="middle">✓ Secure Payment</text>
 
   <rect x="882" y="365" width="190" height="40" rx="20" fill="white" stroke="#e5e7eb" stroke-width="1"/>
-  <text x="977" y="390" font-family="Arial, sans-serif" font-size="14" fill="#0d5c2e" font-weight="700" text-anchor="middle">✓ Virement hôpital</text>
+  <text x="977" y="390" font-family="Arial, sans-serif" font-size="14" fill="#0d5c2e" font-weight="700" text-anchor="middle">✓ Direct to Hospital</text>
 
-  <!-- Stats -->
+  <!-- Stats box -->
   <rect x="470" y="430" width="660" height="110" rx="16" fill="white" stroke="#e5e7eb" stroke-width="1"/>
-  <text x="600" y="468" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="#0a3d2e" text-anchor="middle">37 500 FCFA</text>
-  <text x="600" y="492" font-family="Arial, sans-serif" font-size="13" fill="#6b7280" text-anchor="middle">collectés · 19 donateurs · 1 campagne active</text>
+  <text x="600" y="468" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="#0a3d2e" text-anchor="middle">$62 raised</text>
+  <text x="600" y="492" font-family="Arial, sans-serif" font-size="13" fill="#6b7280" text-anchor="middle">19 donors · 1 active campaign</text>
   <rect x="540" y="508" width="120" height="3" rx="2" fill="#C9A84C"/>
-  <text x="600" y="530" font-family="Arial, sans-serif" font-size="13" fill="#0d5c2e" font-weight="700" text-anchor="middle">ayyadci.com</text>
-
+  <text x="600" y="530" font-family="Arial, sans-serif" font-size="13" fill="#0d5c2e" font-weight="700" text-anchor="middle">www.ayyadci.com</text>
 </svg>
