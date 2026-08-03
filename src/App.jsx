@@ -1,5 +1,5 @@
  import { inject } from "@vercel/analytics";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, createPortal } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 // ── Supabase client ──────────────────────────────────────────
@@ -1649,7 +1649,7 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
         <span>{lang === "fr" ? "Partager" : "Share"}</span>
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
           ref={menuRef}
           className="bg-white rounded-2xl shadow-xl border border-gray-100 p-3"
@@ -1725,7 +1725,8 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
           </button>
 
           <button onClick={() => setOpen(false)} className="absolute top-2 right-2 text-gray-300 hover:text-gray-500 text-xs">✕</button>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
