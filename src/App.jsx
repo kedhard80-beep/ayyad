@@ -1597,11 +1597,15 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
 
   const trackingId = c.trackingId || c.tracking_id || ("AYD-" + c.id);
   const shareUrl = "https://www.ayyadci.com/?case=" + trackingId;
-  const title = typeof c.title === "object" ? (c.title?.[lang] || c.title?.fr || c.title || "") : (c.title || "");
+  const _titleObj = c.title;
+  const titleFr = typeof _titleObj === "object" ? (_titleObj?.fr || _titleObj?.en || "") : (_titleObj || "");
+  const titleEn = typeof _titleObj === "object" ? (_titleObj?.en || _titleObj?.fr || "") : (_titleObj || "");
   const _rawBenef = c.beneficiary || c.full_name || "";
   const isEmail = _rawBenef.includes("@");
   const beneficiary = isEmail ? (lang === "fr" ? "un patient" : "a patient") : _rawBenef;
-  const displayName = isEmail ? title : _rawBenef;
+  const displayName = isEmail
+    ? (lang === "fr" ? titleFr : titleEn)
+    : _rawBenef;
   const pct = c.required ? Math.min(100, Math.round(((c.collected||0)/c.required)*100)) : 0;
 
   const msgWA = encodeURIComponent(
@@ -1610,10 +1614,12 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
       : "🙏 " + displayName + " needs your help.\n" + pct + "% funded on AYYAD CI — West Africa's verified medical crowdfunding platform.\nEvery donation goes directly to the hospital. No middlemen.\n👉 " + shareUrl
   );
   const msgFB = encodeURIComponent(shareUrl);
+  const displayNameFr = isEmail ? titleFr : _rawBenef;
+  const displayNameEn = isEmail ? titleEn : _rawBenef;
   const msgX  = encodeURIComponent(
     lang === "fr"
-      ? displayName + " — " + pct + "% de l'objectif atteint. Chaque don va directement à l'hôpital. " + shareUrl + " #Ayyad #SolidariteMedicale #CôtedIvoire"
-      : displayName + " — " + pct + "% funded. Every donation goes directly to the hospital. " + shareUrl + " #Ayyad #MedicalSolidarity #WestAfrica"
+      ? displayNameFr + " — " + pct + "% de l'objectif atteint. Chaque don va directement à l'hôpital. " + shareUrl + " #Ayyad #SolidariteMedicale #CôtedIvoire"
+      : displayNameEn + " — " + pct + "% funded. Every donation goes directly to the hospital. " + shareUrl + " #Ayyad #MedicalSolidarity #WestAfrica"
   );
 
   const copyLink = () => {
