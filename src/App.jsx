@@ -1605,17 +1605,15 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
   const pct = c.required ? Math.min(100, Math.round(((c.collected||0)/c.required)*100)) : 0;
 
   const msgWA = encodeURIComponent(
-    (lang === "fr"
-      ? "Aidez " + displayName + " à financer ses soins médicaux — " + pct + "% de l'objectif atteint. Chaque don compte. "
-      : "Help " + displayName + " fund their medical care — " + pct + "% reached. Every donation counts. ")
-    + shareUrl
+    lang === "fr"
+      ? "🙏 " + displayName + " a besoin de vous.\n" + pct + "% de l'objectif atteint sur AYYAD CI — la plateforme ivoirienne de financement médical solidaire.\nChaque don va directement à l'hôpital. Aucun intermédiaire.\n👉 " + shareUrl
+      : "🙏 " + displayName + " needs your help.\n" + pct + "% funded on AYYAD CI — West Africa's verified medical crowdfunding platform.\nEvery donation goes directly to the hospital. No middlemen.\n👉 " + shareUrl
   );
   const msgFB = encodeURIComponent(shareUrl);
   const msgX  = encodeURIComponent(
-    (lang === "fr"
-      ? displayName + " — " + pct + "% de l'objectif atteint. Aidez depuis n'importe où. "
-      : displayName + " — " + pct + "% funded. Help from anywhere in the world. ")
-    + shareUrl + " #Ayyad #SolidariteMedicale"
+    lang === "fr"
+      ? displayName + " — " + pct + "% de l'objectif atteint. Chaque don va directement à l'hôpital. " + shareUrl + " #Ayyad #SolidariteMedicale #CôtedIvoire"
+      : displayName + " — " + pct + "% funded. Every donation goes directly to the hospital. " + shareUrl + " #Ayyad #MedicalSolidarity #WestAfrica"
   );
 
   const copyLink = () => {
