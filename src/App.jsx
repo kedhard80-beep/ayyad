@@ -1581,18 +1581,13 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
       const inMenu = menuRef.current && menuRef.current.contains(e.target);
       if (!inContainer && !inMenu) setOpen(false);
     };
-    // Ferme le menu si l'utilisateur scrolle (plus stable que repositionner)
-    const closeOnScroll = () => setOpen(false);
-    // Recalcule seulement sur resize
     const handleResize = () => computePosition();
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("touchstart", handleClickOutside);
-    window.addEventListener("scroll", closeOnScroll, { passive: true });
     window.addEventListener("resize", handleResize);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
-      window.removeEventListener("scroll", closeOnScroll);
       window.removeEventListener("resize", handleResize);
     };
   }, [open]);
