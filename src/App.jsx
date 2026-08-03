@@ -1573,7 +1573,6 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
   };
 
   // Click-outside : mousedown + touchstart (fire AVANT click) + check ref
-  // pour éviter le bug d'ouverture/fermeture instantanée
   useEffect(() => {
     if (!open) return;
     const handleClickOutside = (e) => {
@@ -1581,17 +1580,19 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
       const inMenu = menuRef.current && menuRef.current.contains(e.target);
       if (!inContainer && !inMenu) setOpen(false);
     };
+    // Ferme le menu si l'utilisateur scrolle (plus stable que repositionner)
+    const closeOnScroll = () => setOpen(false);
+    // Recalcule seulement sur resize
+    const handleResize = () => computePosition();
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("touchstart", handleClickOutside);
-    // Recalcule la position si scroll/resize quand menu ouvert
-    const reposition = () => computePosition();
-    window.addEventListener("scroll", reposition, true);
-    window.addEventListener("resize", reposition);
+    window.addEventListener("scroll", closeOnScroll, { passive: true });
+    window.addEventListener("resize", handleResize);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
-      window.removeEventListener("scroll", reposition, true);
-      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", closeOnScroll);
+      window.removeEventListener("resize", handleResize);
     };
   }, [open]);
 
