@@ -1615,7 +1615,10 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
       ? "🙏 " + displayName + " a besoin de vous.\n" + pct + "% de l'objectif atteint sur AYYAD CI — la plateforme ivoirienne de financement médical solidaire.\nChaque don va directement à l'hôpital. Aucun intermédiaire.\n👉 " + shareUrl
       : "🙏 " + displayName + " needs your help.\n" + pct + "% funded on AYYAD CI — West Africa's verified medical crowdfunding platform.\nEvery donation goes directly to the hospital. No middlemen.\n👉 " + shareUrl
   );
-  const msgFB = encodeURIComponent(shareUrl);
+  const _msgFBText = lang === "fr"
+    ? "🙏 " + displayName + " a besoin de vous. " + pct + "% de l'objectif atteint sur AYYAD CI — financement médical solidaire pour la Côte d'Ivoire. Chaque don va directement à l'hôpital. Aucun intermédiaire."
+    : "🙏 " + displayName + " needs your help. " + pct + "% funded on AYYAD CI — verified medical crowdfunding for Côte d'Ivoire. Every donation goes directly to the hospital. No middlemen.";
+  const msgFB = "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(shareUrl) + "&quote=" + encodeURIComponent(_msgFBText);
   const displayNameFr = isEmail ? titleFr : _rawBenef;
   const displayNameEn = isEmail ? titleEn : _rawBenefEn;
   const msgX  = encodeURIComponent(
@@ -1676,7 +1679,7 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
           </a>
 
           {/* Facebook */}
-          <a href={"https://www.facebook.com/sharer/sharer.php?u=" + msgFB} target="_blank" rel="noreferrer"
+          <a href={msgFB} target="_blank" rel="noreferrer"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-50 transition-colors w-full text-left">
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-black">f</div>
             <div>
