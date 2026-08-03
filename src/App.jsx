@@ -1596,7 +1596,7 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
   }, [open]);
 
   const trackingId = c.trackingId || c.tracking_id || ("AYD-" + c.id);
-  const shareUrl = "https://www.www.ayyadci.com/?case=" + trackingId;
+  const shareUrl = "https://www.ayyadci.com/?case=" + trackingId;
   const _titleObj = c.title;
   const titleFr = typeof _titleObj === "object" ? (_titleObj?.fr || _titleObj?.en || "") : (_titleObj || "");
   const titleEn = typeof _titleObj === "object" ? (_titleObj?.en || _titleObj?.fr || "") : (_titleObj || "");
@@ -6816,7 +6816,7 @@ const RegisterPage = ({ setPage, setUser, lang }) => {
           ))}
           <div className="flex items-start gap-2 text-xs text-gray-500">
             <input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} className="mt-0.5 accent-emerald-600 cursor-pointer" />
-            <span onClick={()=>setAcceptedTerms(v=>!v)} className="cursor-pointer">{t.terms} <a href="https://www.www.ayyadci.com/cgu" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.termsLink}</a> {t.and} <a href="https://www.www.ayyadci.com/confidentialite" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.privacyLink}</a>.</span>
+            <span onClick={()=>setAcceptedTerms(v=>!v)} className="cursor-pointer">{t.terms} <a href="https://www.ayyadci.com/cgu" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.termsLink}</a> {t.and} <a href="https://www.ayyadci.com/confidentialite" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.privacyLink}</a>.</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button onClick={()=>setStep(1)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{t.back}</button>
@@ -12156,8 +12156,8 @@ export default function AyyadApp() {
     if (page === "case" && selectedCase) {
       const title = (selectedCase.title && typeof selectedCase.title==="object") ? (selectedCase.title.fr||selectedCase.title.en||"Ayyad") : (selectedCase.title||"Ayyad");
       const desc = (selectedCase.desc && typeof selectedCase.desc==="object") ? (selectedCase.desc.fr||selectedCase.desc.en||"") : (selectedCase.description||selectedCase.desc||"");
-      const img = selectedCase.photos?.[0] || selectedCase.image || "https://www.www.ayyadci.com/og-default.png";
-      const url = "https://www.www.ayyadci.com/?p=case&case="+(selectedCase.trackingId||selectedCase.tracking_id||selectedCase.id);
+      const img = selectedCase.photos?.[0] || selectedCase.image || "https://www.ayyadci.com/og-default.png";
+      const url = "https://www.ayyadci.com/?p=case&case="+(selectedCase.trackingId||selectedCase.tracking_id||selectedCase.id);
       document.title = title + " — Ayyad CI";
       setMeta("og:title", title + " — Ayyad CI");
       setMeta("og:description", desc.slice(0,200));
@@ -12172,8 +12172,8 @@ export default function AyyadApp() {
       document.title = "Ayyad CI — Financement médical solidaire";
       setMeta("og:title", "Ayyad CI — Financement médical solidaire");
       setMeta("og:description", "Aidez des patients ivoiriens à financer leurs soins médicaux. Paiement via Wave CI. Fonds versés directement à l'hôpital.");
-      setMeta("og:image", "https://www.www.ayyadci.com/og-default.png");
-      setMeta("og:url", "https://www.www.ayyadci.com");
+      setMeta("og:image", "https://www.ayyadci.com/og-default.png");
+      setMeta("og:url", "https://www.ayyadci.com");
     }
   }, [page, selectedCase]);
 
