@@ -1608,21 +1608,23 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
     : (lang === "fr" ? _rawBenef : _rawBenefEn);
   const pct = c.required ? Math.min(100, Math.round(((c.collected||0)/c.required)*100)) : 0;
 
+  // Utilise le titre du dossier (qui décrit la situation) plutôt que le seul nom
+  const shareTitleFr = titleFr || displayName;
+  const shareTitleEn = titleEn || displayName;
+
   const msgWA = encodeURIComponent(
     lang === "fr"
-      ? "🙏 " + displayName + " a besoin de vous.\n" + pct + "% de l'objectif atteint sur AYYAD CI — la plateforme ivoirienne de financement médical solidaire.\nChaque don va directement à l'hôpital. Aucun intermédiaire.\n👉 " + shareUrl
-      : "🙏 " + displayName + " needs your help.\n" + pct + "% funded on AYYAD CI — West Africa's verified medical crowdfunding platform.\nEvery donation goes directly to the hospital. No middlemen.\n👉 " + shareUrl
+      ? "🙏 " + shareTitleFr + "\n" + pct + "% de l'objectif atteint sur AYYAD CI — la plateforme ivoirienne de financement médical solidaire.\nChaque don va directement à l'hôpital. Aucun intermédiaire.\n👉 " + shareUrl
+      : "🙏 " + shareTitleEn + "\n" + pct + "% funded on AYYAD CI — West Africa's verified medical crowdfunding platform.\nEvery donation goes directly to the hospital. No middlemen.\n👉 " + shareUrl
   );
   const _msgFBText = lang === "fr"
-    ? "🙏 " + displayName + " a besoin de vous. " + pct + "% de l'objectif atteint sur AYYAD CI — financement médical solidaire pour la Côte d'Ivoire. Chaque don va directement à l'hôpital. Aucun intermédiaire."
-    : "🙏 " + displayName + " needs your help. " + pct + "% funded on AYYAD CI — verified medical crowdfunding for Côte d'Ivoire. Every donation goes directly to the hospital. No middlemen.";
+    ? "🙏 " + shareTitleFr + "\n" + pct + "% de l'objectif atteint sur AYYAD CI — financement médical solidaire pour la Côte d'Ivoire. Chaque don va directement à l'hôpital. Aucun intermédiaire."
+    : "🙏 " + shareTitleEn + "\n" + pct + "% funded on AYYAD CI — verified medical crowdfunding for Côte d'Ivoire. Every donation goes directly to the hospital. No middlemen.";
   const msgFB = "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(shareUrl) + "&quote=" + encodeURIComponent(_msgFBText);
-  const displayNameFr = isEmail ? titleFr : _rawBenef;
-  const displayNameEn = isEmail ? titleEn : _rawBenefEn;
   const msgX  = encodeURIComponent(
     lang === "fr"
-      ? displayNameFr + " — " + pct + "% de l'objectif atteint. Chaque don va directement à l'hôpital. " + shareUrl + " #Ayyad #SolidariteMedicale #CôtedIvoire"
-      : displayNameEn + " — " + pct + "% funded. Every donation goes directly to the hospital. " + shareUrl + " #Ayyad #MedicalSolidarity #WestAfrica"
+      ? shareTitleFr + " — " + pct + "% de l'objectif atteint. Chaque don va directement à l'hôpital. " + shareUrl + " #Ayyad #SolidariteMedicale #CôtedIvoire"
+      : shareTitleEn + " — " + pct + "% funded. Every donation goes directly to the hospital. " + shareUrl + " #Ayyad #MedicalSolidarity #WestAfrica"
   );
 
   const copyLink = () => {
