@@ -1544,6 +1544,7 @@ const printDonationCertificate = ({ donorName, amount, beneficiary, caseTitle, t
 
 const ShareButton = ({ c, lang, size = "normal" }) => {
   const [copied, setCopied] = useState(false);
+  const [fbCopied, setFbCopied] = useState(false);
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const containerRef = useRef(null);
@@ -1679,15 +1680,32 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
             </div>
           </a>
 
-          {/* Facebook */}
-          <a href={msgFB} target="_blank" rel="noreferrer"
+          {/* Facebook — copie le message + ouvre Facebook */}
+          <button
+            onClick={() => {
+              // Facebook ne supporte plus de pré-remplir le texte via URL.
+              // On copie le message dans le presse-papiers, puis on ouvre Facebook.
+              navigator.clipboard.writeText(_msgFBText + "\n👉 " + shareUrl).then(() => {
+                setFbCopied(true);
+                setTimeout(() => {
+                  window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(shareUrl), "_blank");
+                  setTimeout(() => setFbCopied(false), 3000);
+                }, 600);
+              }).catch(() => {
+                window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(shareUrl), "_blank");
+              });
+            }}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-50 transition-colors w-full text-left">
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-black">f</div>
             <div>
               <div className="text-sm font-bold text-gray-900">Facebook</div>
-              <div className="text-[10px] text-gray-400">{lang === "fr" ? "Mur & groupes" : "Wall & groups"}</div>
+              <div className="text-[10px] text-gray-400">
+                {fbCopied
+                  ? (lang === "fr" ? "✓ Message copié — colle-le dans Facebook !" : "✓ Message copied — paste it in Facebook!")
+                  : (lang === "fr" ? "Message copié automatiquement" : "Message auto-copied to clipboard")}
+              </div>
             </div>
-          </a>
+          </button>
 
           {/* X / Twitter */}
           <a href={"https://x.com/intent/tweet?text=" + msgX} target="_blank" rel="noreferrer"
