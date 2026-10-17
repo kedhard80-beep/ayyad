@@ -755,8 +755,8 @@ const CaseCard = ({ c, lang, t, onClick }) => {
   const fr = lang === "fr";
   const tc = t.card;
   const photo = c.photo_url || (c.photos && c.photos[0]) || null;
-  const title = typeof c.title === "object" ? ((c.title?.[lang] || c.title?.fr || c.title || "") || c.title.fr) : c.title;
-  const category = typeof c.category === "object" ? ((c.category?.[lang] || c.category?.fr || c.category || "") || c.category.fr) : c.category;
+  const title = parseMaybeJson(c.title, "Sans titre", "Untitled")[lang] || parseMaybeJson(c.title, "Sans titre", "Untitled").fr || "";
+  const category = parseMaybeJson(c.category, "", "")[lang] || parseMaybeJson(c.category, "", "").fr || "";
 
   return (
     <div
@@ -3336,7 +3336,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
   const normalizCase = (c) => ({
     ...c,
     title: parseMaybeJson(c.title, "Sans titre", "Untitled"),
-    category: typeof c.category === "object" ? c.category : { fr: c.category || "Autre", en: c.category || "Other" },
+    category: parseMaybeJson(c.category, "Autre", "Other"),
     desc: parseMaybeJson(c.description || c.desc, "", ""),
     required: Number(c.required || c.amount || 0),
     collected: Number(c.collected || 0),
@@ -3431,7 +3431,7 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
   const normalizCase = (c) => ({
     ...c,
     title: parseMaybeJson(c.title, "Sans titre", "Untitled"),
-    category: typeof c.category === "object" ? c.category : { fr: c.category || "Autre", en: c.category || "Other" },
+    category: parseMaybeJson(c.category, "Autre", "Other"),
     desc: parseMaybeJson(c.description || c.desc, "", ""),
     required: Number(c.required || c.amount || 0),
     collected: Number(c.collected || 0),
@@ -3712,7 +3712,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
         const normalized = enriched.map(c => ({
           ...c,
           title: parseMaybeJson(c.title, "Sans titre", "Untitled"),
-          category: typeof c.category === "object" ? c.category : { fr: c.category || "Autre", en: c.category || "Other" },
+          category: parseMaybeJson(c.category, "Autre", "Other"),
           desc: parseMaybeJson(c.description || c.desc, "", ""),
           required: Number(c.required || c.amount || 0),
           collected: Number(c.collected || 0),
@@ -4939,7 +4939,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
         <div className="absolute bottom-0 left-0 right-0 z-10 px-5 pb-7 max-w-6xl mx-auto" style={{left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"72rem"}}>
           {/* Badges */}
           <div className="flex flex-wrap gap-2 mb-3">
-            <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">{(c.category?.[lang] || c.category?.fr || c.category || "")}</span>
+            <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">{parseMaybeJson(c.category,"","")[lang] || parseMaybeJson(c.category,"","").fr || ""}</span>
             <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm border border-white/30">✓ {t.badges.verified}</span>
             {funded && <span className="bg-emerald-400/90 text-white text-xs font-bold px-3 py-1 rounded-full">✓ {t.badges.funded}</span>}
             {c.urgent && <span className="bg-red-500/90 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">🚨 {t.badges.urgent}</span>}
