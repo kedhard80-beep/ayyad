@@ -2793,12 +2793,34 @@ const TestimonialsCarousel = ({ lang }) => {
   const [form, setForm] = useState({ name: "", caseId: "", file: null });
   const videoRef = useRef(null);
   const [isMuted, setIsMuted] = useState(true);
+  const [videoError, setVideoError] = useState(false);
+
+  // Extrait le chemin Storage depuis une URL Supabase (public ou signed)
+  const extractStoragePath = (url) => {
+    if (!url) return null;
+    // Format: .../storage/v1/object/public/testimonials/PATH
+    const m = url.match(/\/storage\/v1\/object\/(?:public|sign)\/testimonials\/([^?]+)/);
+    return m ? m[1] : null;
+  };
 
   useEffect(() => {
     supabase.from("testimonial_media")
       .select("*").eq("status", "approved")
       .order("created_at", { ascending: false })
-      .then(({ data }) => { if (data && data.length > 0) setMedias(data); });
+      .then(async ({ data }) => {
+        if (!data || data.length === 0) return;
+        // Génère des signed URLs pour tous les médias (fonctionne bucket public ET privé)
+        const enriched = await Promise.all(data.map(async (m) => {
+          const path = extractStoragePath(m.file_url);
+          if (path) {
+            const { data: signed } = await supabase.storage
+              .from("testimonials").createSignedUrl(path, 7200);
+            if (signed?.signedUrl) return { ...m, file_url: signed.signedUrl };
+          }
+          return m; // fallback URL originale
+        }));
+        setMedias(enriched);
+      });
   }, []);
 
   // Auto-avance pour les photos (5s) — les vidéos avancent via onEnded
@@ -2810,8 +2832,8 @@ const TestimonialsCarousel = ({ lang }) => {
     return () => clearTimeout(t);
   }, [idx, medias]);
 
-  // Reset muet quand on change de vidéo
-  useEffect(() => { setIsMuted(true); }, [idx]);
+  // Reset muet et erreur quand on change de slide
+  useEffect(() => { setIsMuted(true); setVideoError(false); }, [idx]);
 
   // Contrôle impératif du mute (React ne met pas à jour l'attribut muted dynamiquement)
   useEffect(() => {
@@ -2916,13 +2938,28 @@ const TestimonialsCarousel = ({ lang }) => {
                 {cur && cur.file_type === "video" ? (
                   <>
                     <video
-                      ref={videoRef}
+                      ref={(el) => { videoRef.current = el; if(el) el.muted = true; }}
                       key={cur.id}
                       src={cur.file_url}
                       autoPlay playsInline controls muted
+                      preload="auto"
                       onEnded={handleVideoEnd}
-                      style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000" }}
+                      onError={() => setVideoError(true)}
+                      onLoadedData={() => setVideoError(false)}
+                      style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display: videoError ? "none" : "block" }}
                     />
+                    {videoError && (
+                      <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.85)", color:"#fff", textAlign:"center", padding:24 }}>
+                        <div style={{ fontSize:40, marginBottom:12 }}>🎬</div>
+                        <p style={{ fontSize:15, marginBottom:16, color:"rgba(255,255,255,0.85)" }}>
+                          {fr ? "La vidéo ne peut pas s'afficher ici." : "The video can't display here."}
+                        </p>
+                        <a href={cur.file_url} target="_blank" rel="noopener noreferrer"
+                          style={{ background:"#e9d59a", color:"#0a3d2e", borderRadius:999, padding:"10px 22px", fontWeight:800, fontSize:14, textDecoration:"none" }}>
+                          ▶ {fr ? "Ouvrir la vidéo" : "Open video"}
+                        </a>
+                      </div>
+                    )}
                     {isMuted && (
                       <button
                         onClick={() => {
