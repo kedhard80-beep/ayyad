@@ -2846,6 +2846,15 @@ const TestimonialsCarousel = ({ lang }) => {
   // Reset muet et erreur quand on change de slide
   useEffect(() => { setIsMuted(true); setVideoError(false); }, [idx]);
 
+  // Déclenche play() dès que le blob URL est disponible (autoPlay bloqué sur blob URLs)
+  useEffect(() => {
+    const cur = medias[idx];
+    if (!cur || !blobCache[cur.id] || !videoRef.current) return;
+    const v = videoRef.current;
+    v.muted = true;
+    v.play().catch(() => {}); // ignorer l'erreur si l'utilisateur n'a pas encore interagi
+  }, [blobCache, idx, medias]);
+
   // Contrôle impératif du mute (React ne met pas à jour l'attribut muted dynamiquement)
   useEffect(() => {
     if (!videoRef.current) return;
@@ -2959,10 +2968,11 @@ const TestimonialsCarousel = ({ lang }) => {
                     {/* Lecteur vidéo — src = blob URL téléchargé via SDK */}
                     {blobCache[cur.id] && (
                       <video
-                        ref={(el) => { videoRef.current = el; if(el) el.muted = true; }}
-                        key={cur.id}
+                        ref={(el) => { videoRef.current = el; if(el) { el.muted = true; el.play().catch(()=>{}); } }}
+                        key={cur.id + "_blob"}
                         src={blobCache[cur.id]}
-                        autoPlay playsInline controls muted
+                        playsInline controls muted
+                        onCanPlay={(e) => { e.target.muted = true; e.target.play().catch(()=>{}); }}
                         onEnded={handleVideoEnd}
                         style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000" }}
                       />
