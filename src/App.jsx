@@ -1132,7 +1132,13 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
     if (ytShort) return "https://www.youtube.com/embed/" + ytShort[1];
     return url;
   };
-  const rawVideoUrls = c.video_urls && c.video_urls.length > 0 ? c.video_urls : (c.video_url || c.videoUrl ? [c.video_url || c.videoUrl] : []);
+  const rawVideoUrls = (() => {
+    if (c.video_urls && c.video_urls.length > 0) return c.video_urls;
+    const v = c.video_url || c.videoUrl;
+    if (!v) return [];
+    try { const parsed = JSON.parse(v); if (Array.isArray(parsed)) return parsed; } catch(e) {}
+    return [v];
+  })();
   const videoUrls = rawVideoUrls.map(toEmbed).filter(Boolean);
   const hasMedia = photos.length > 0 || videoUrls.length > 0;
   if (!hasMedia) return (
