@@ -1204,7 +1204,7 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
       {/* Galerie photos */}
       {photos.length > 0 && (
         <div>
-          <div className="relative overflow-hidden" style={{height:"220px"}}>
+          <div className="relative overflow-hidden" style={{height:"380px"}}>
             <img src={photos[activePhoto]} alt={"Photo "+(c.beneficiary||c.full_name||"")} className="w-full h-full object-contain bg-gray-900" style={{filter: revealedPhotos.has(activePhoto) ? "none" : "blur(18px)", transition:"filter 0.3s"}} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             {!revealedPhotos.has(activePhoto) && (
@@ -1255,12 +1255,12 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
                 <iframe src={videoUrl} className="w-full max-w-xs" style={{height:"560px"}} allowFullScreen allow="autoplay" title={"TikTok video " + (vidIdx+1)} />
               </div>
             ) : isDirectVideo ? (
-              <div className="bg-black w-full">
+              <div className="bg-black w-full" style={{minHeight:"280px"}}>
                 <video
                   controls
                   playsInline
                   className="w-full"
-                  style={{maxHeight:"400px", display:"block"}}
+                  style={{minHeight:"280px", maxHeight:"480px", display:"block", objectFit:"contain"}}
                   preload="metadata"
                 >
                   <source src={videoUrl} type={videoUrl.match(/\.mov(\?.*)?$/i) ? "video/quicktime" : videoUrl.match(/\.webm(\?.*)?$/i) ? "video/webm" : "video/mp4"} />
