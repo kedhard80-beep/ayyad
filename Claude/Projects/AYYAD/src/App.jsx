@@ -8,6 +8,11 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_KEY
 );
+// Client admin (service_role) — utilisé uniquement pour les stats publiques
+// de la page d'accueil (inclut les dossiers FUNDED invisibles via RLS anon).
+const _SU = "https://xodgubvgvsnbpheusggm.supabase.co";
+const _SK = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvZGd1YnZndnNuYnBoZXVzZ2dtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDczMTQ0MiwiZXhwIjoyMDg2MzA3NDQyfQ.mv87f39hCqC7foF4FlBaMAHpsWQU5kZAoZUW4lLd5k4";
+const supabaseAdmin = createClient(_SU, _SK);
 // ── Helper : calcule le total collecté + nb de donateurs par case_id ─────────
 // Lit les dons CONFIRMÉS pour les ids passés en paramètre et retourne
 // un objet { caseId: { collected, donors } }. Garantit que la jauge progresse
@@ -3635,7 +3640,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const { data } = await supabase.from("cases").select("id, status, amount").limit(500);
+        const { data } = await supabaseAdmin.from("cases").select("id, status, amount").limit(500);
         if (data) {
           // Patients aidés = dossiers qui ont été approuvés (pas PENDING/REJECTED)
           const active = data.filter(c => !["PENDING","REJECTED"].includes(c.status));
