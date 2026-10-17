@@ -3595,9 +3595,10 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           const active = data.filter(c => !["PENDING","REJECTED"].includes(c.status));
           // Campagnes financées = sous-ensemble des dossiers au statut FUNDED uniquement
           const fundedCount = data.filter(c => c.status === "FUNDED").length;
-          // Total collecté = uniquement les dossiers COLLECTING visibles (cohérence avec les cartes)
-          const collecting = data.filter(c => c.status === "COLLECTING");
-          const totals = await fetchConfirmedTotals(collecting.map(c => c.id));
+          // Total collecté = TOUTES les campagnes actives ou financées (pas seulement COLLECTING)
+          // Inclut les dossiers FUNDED pour ne pas perdre les montants déjà collectés
+          const allActive = data.filter(c => !["PENDING","REJECTED"].includes(c.status));
+          const totals = await fetchConfirmedTotals(allActive.map(c => c.id));
           const totalCollected = Object.values(totals).reduce((s, t) => s + (t.collected || 0), 0);
           const fmtCollected = totalCollected >= 1000000
             ? (totalCollected / 1000000).toFixed(1).replace(".0","") + "M"
