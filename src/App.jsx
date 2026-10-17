@@ -8,7 +8,8 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_KEY
 );
-// Client admin (service_role) — pour les stats publiques (inclut dossiers FUNDED non visibles via RLS anon).
+// Client admin (service_role) — utilisé uniquement pour les stats publiques
+// de la page d'accueil (inclut les dossiers FUNDED invisibles via RLS anon).
 const _SU = "https://xodgubvgvsnbpheusggm.supabase.co";
 const _SK = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvZGd1YnZndnNuYnBoZXVzZ2dtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDczMTQ0MiwiZXhwIjoyMDg2MzA3NDQyfQ.mv87f39hCqC7foF4FlBaMAHpsWQU5kZAoZUW4lLd5k4";
 const supabaseAdmin = createClient(_SU, _SK);
@@ -755,8 +756,8 @@ const CaseCard = ({ c, lang, t, onClick }) => {
   const fr = lang === "fr";
   const tc = t.card;
   const photo = c.photo_url || (c.photos && c.photos[0]) || null;
-  const title = parseMaybeJson(c.title, "Sans titre", "Untitled")[lang] || parseMaybeJson(c.title, "Sans titre", "Untitled").fr || "";
-  const category = parseMaybeJson(c.category, "", "")[lang] || parseMaybeJson(c.category, "", "").fr || "";
+  const title = typeof c.title === "object" ? ((c.title?.[lang] || c.title?.fr || c.title || "") || c.title.fr) : c.title;
+  const category = typeof c.category === "object" ? ((c.category?.[lang] || c.category?.fr || c.category || "") || c.category.fr) : c.category;
 
   return (
     <div
@@ -1132,13 +1133,7 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
     if (ytShort) return "https://www.youtube.com/embed/" + ytShort[1];
     return url;
   };
-  const rawVideoUrls = (() => {
-    if (c.video_urls && c.video_urls.length > 0) return c.video_urls;
-    const v = c.video_url || c.videoUrl;
-    if (!v) return [];
-    try { const parsed = JSON.parse(v); if (Array.isArray(parsed)) return parsed; } catch(e) {}
-    return [v];
-  })();
+  const rawVideoUrls = c.video_urls && c.video_urls.length > 0 ? c.video_urls : (c.video_url || c.videoUrl ? [c.video_url || c.videoUrl] : []);
   const videoUrls = rawVideoUrls.map(toEmbed).filter(Boolean);
   const hasMedia = photos.length > 0 || videoUrls.length > 0;
   if (!hasMedia) return (
@@ -1210,7 +1205,7 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
       {/* Galerie photos */}
       {photos.length > 0 && (
         <div>
-          <div className="relative overflow-hidden" style={{height:"380px"}}>
+          <div className="relative overflow-hidden" style={{height:"220px"}}>
             <img src={photos[activePhoto]} alt={"Photo "+(c.beneficiary||c.full_name||"")} className="w-full h-full object-contain bg-gray-900" style={{filter: revealedPhotos.has(activePhoto) ? "none" : "blur(18px)", transition:"filter 0.3s"}} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             {!revealedPhotos.has(activePhoto) && (
@@ -1250,28 +1245,13 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
       {/* Vidéos */}
       {videoUrls.map((videoUrl, vidIdx) => {
         const isTikTok = videoUrl.includes("tiktok.com");
-        const isDirectVideo = /\.(mp4|mov|webm|avi|mkv)(\?.*)?$/i.test(videoUrl);
-        const label = isTikTok ? "TikTok" : (isDirectVideo ? "🎞️ Vidéo" : t.video.title);
         return (
           <div key={vidIdx}>
-            {(photos.length > 0 || vidIdx > 0) && <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{label}{videoUrls.length > 1 ? ` ${vidIdx+1}` : ""}</div>}
-            {photos.length === 0 && vidIdx === 0 && <div className="px-4 py-2 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{label}</div>}
+            {(photos.length > 0 || vidIdx > 0) && <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{isTikTok ? "TikTok" : t.video.title}{videoUrls.length > 1 ? ` ${vidIdx+1}` : ""}</div>}
+            {photos.length === 0 && vidIdx === 0 && <div className="px-4 py-2 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{isTikTok ? "TikTok" : t.video.title}</div>}
             {isTikTok ? (
               <div className="flex justify-center bg-black">
                 <iframe src={videoUrl} className="w-full max-w-xs" style={{height:"560px"}} allowFullScreen allow="autoplay" title={"TikTok video " + (vidIdx+1)} />
-              </div>
-            ) : isDirectVideo ? (
-              <div className="bg-black w-full" style={{minHeight:"280px"}}>
-                <video
-                  controls
-                  playsInline
-                  className="w-full"
-                  style={{minHeight:"280px", maxHeight:"480px", display:"block", objectFit:"contain"}}
-                  preload="metadata"
-                >
-                  <source src={videoUrl} type={videoUrl.match(/\.mov(\?.*)?$/i) ? "video/quicktime" : videoUrl.match(/\.webm(\?.*)?$/i) ? "video/webm" : "video/mp4"} />
-                  Votre navigateur ne supporte pas la lecture vidéo.
-                </video>
               </div>
             ) : (
               <div className="relative w-full" style={{paddingBottom:"56.25%"}}>
@@ -1329,19 +1309,10 @@ const WaveQRCode = ({ data, size = 176 }) => {
       <canvas ref={canvasRef} width={size} height={size} className="rounded-xl border border-gray-100" />
       <a
         href={data}
-        onClick={(e) => { e.preventDefault(); window.location.href = data; }}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm text-center transition-colors block"
-        style={{WebkitTapHighlightColor:"transparent", touchAction:"manipulation"}}
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm text-center transition-colors"
       >
         📱 Ouvrir Wave CI
       </a>
-      <button
-        onClick={() => { navigator.clipboard && navigator.clipboard.writeText(AYYAD_ACCOUNTS.WAVE.numero); alert("Numéro copié : " + AYYAD_ACCOUNTS.WAVE.numero); }}
-        className="w-full border border-blue-300 text-blue-700 font-semibold py-2 rounded-xl text-xs text-center bg-blue-50"
-        style={{touchAction:"manipulation"}}
-      >
-        📋 Copier le numéro Wave
-      </button>
     </div>
   );
 };
@@ -3336,7 +3307,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
   const normalizCase = (c) => ({
     ...c,
     title: parseMaybeJson(c.title, "Sans titre", "Untitled"),
-    category: parseMaybeJson(c.category, "Autre", "Other"),
+    category: typeof c.category === "object" ? c.category : { fr: c.category || "Autre", en: c.category || "Other" },
     desc: parseMaybeJson(c.description || c.desc, "", ""),
     required: Number(c.required || c.amount || 0),
     collected: Number(c.collected || 0),
@@ -3431,7 +3402,7 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
   const normalizCase = (c) => ({
     ...c,
     title: parseMaybeJson(c.title, "Sans titre", "Untitled"),
-    category: parseMaybeJson(c.category, "Autre", "Other"),
+    category: typeof c.category === "object" ? c.category : { fr: c.category || "Autre", en: c.category || "Other" },
     desc: parseMaybeJson(c.description || c.desc, "", ""),
     required: Number(c.required || c.amount || 0),
     collected: Number(c.collected || 0),
@@ -3712,7 +3683,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
         const normalized = enriched.map(c => ({
           ...c,
           title: parseMaybeJson(c.title, "Sans titre", "Untitled"),
-          category: parseMaybeJson(c.category, "Autre", "Other"),
+          category: typeof c.category === "object" ? c.category : { fr: c.category || "Autre", en: c.category || "Other" },
           desc: parseMaybeJson(c.description || c.desc, "", ""),
           required: Number(c.required || c.amount || 0),
           collected: Number(c.collected || 0),
@@ -4028,7 +3999,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   };
 
   const CI_PROVIDERS  = [{id:"WAVE",label:"Wave CI",emoji:"〰️"},{id:"OM",label:"Orange Money",emoji:"🟠"},{id:"MTN",label:"MTN MoMo",emoji:"🟡"}];
-  const INT_PROVIDERS = [{id:"SENDWAVE",label:"Sendwave",emoji:"💸"},{id:"TAPTAP",label:"TapTap Send",emoji:"✈️"}];
+  const INT_PROVIDERS = [{id:"SENDWAVE",label:"Sendwave",emoji:"💸"},{id:"TAPTAP",label:"TapTap Send",emoji:"✈️"},{id:"MONECO",label:"MONECO",emoji:"🟢"}];
   const SOON_PROVIDERS= [{id:"CB",label:fr?"Carte bancaire":"Credit Card",emoji:"💳",soon:true}];
   const ALL_PROVIDERS = [...CI_PROVIDERS,...INT_PROVIDERS,[{id:"VB",label:fr?"Virement bancaire":"Bank Transfer",emoji:"🏦"}],...SOON_PROVIDERS];
 
@@ -4139,13 +4110,13 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             {provider==="WAVE"&&finalAmt>=500&&(
               <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:14,padding:"14px",marginBottom:12}}>
                 <div style={{fontWeight:800,fontSize:13,color:"#1d4ed8",marginBottom:10}}>〰️ {fr?"Comment payer via Wave :":"How to pay via Wave:"}</div>
-                <div style={{background:"#dbeafe",borderRadius:10,padding:"12px",marginBottom:10,textAlign:"center"}}>
-                  <a href={`wave://pay?to=+2250748056128&amount=${finalAmt}`} style={{display:"inline-block",marginBottom:8}}>
-                    <img src={`data:image/png;base64,${QR_WAVE}`} alt="QR Wave" style={{width:140,height:140,borderRadius:10,border:"2px solid #bfdbfe",display:"block"}} />
-                  </a>
-                  <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:4}}>{fr?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
-                  <div style={{fontWeight:900,fontSize:16,color:"#1d4ed8",fontFamily:"monospace",whiteSpace:"nowrap"}}>+225 07 48 05 61 28</div>
-                  <div style={{fontSize:10,color:"#6366f1",marginTop:4}}>📷 {fr?"Scannez ou entrez le numéro":"Scan or enter the number"}</div>
+                <div style={{background:"#dbeafe",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
+                  <img src={`data:image/png;base64,${QR_WAVE}`} alt="QR Wave" style={{width:80,height:80,flexShrink:0,borderRadius:8,border:"2px solid #bfdbfe"}} />
+                  <div>
+                    <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:4}}>{fr?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
+                    <div style={{fontWeight:900,fontSize:17,color:"#1d4ed8",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
+                    <div style={{fontSize:10,color:"#6366f1",marginTop:5}}>📷 {fr?"Scannez le QR ou entrez le numéro":"Scan QR or enter the number"}</div>
+                  </div>
                 </div>
                 <div style={{fontSize:11,color:"#3730a3",lineHeight:1.9}}>
                   {fr?<>1. App <strong>Wave</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Revenez ici → "J'ai effectué le paiement"</>
@@ -4156,13 +4127,13 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             {provider==="OM"&&finalAmt>=500&&(
               <div style={{background:"#fff7ed",border:"1.5px solid #fdba74",borderRadius:14,padding:"14px",marginBottom:12}}>
                 <div style={{fontWeight:800,fontSize:13,color:"#c2410c",marginBottom:10}}>🟠 {fr?"Comment payer via Orange Money :":"How to pay via Orange Money:"}</div>
-                <div style={{background:"#ffedd5",borderRadius:10,padding:"12px",marginBottom:10,textAlign:"center"}}>
-                  <div style={{display:"inline-block",marginBottom:8}}>
-                    <img src={`data:image/png;base64,${QR_OM}`} alt="QR Orange Money" style={{width:140,height:140,borderRadius:10,border:"2px solid #fdba74",display:"block"}} />
+                <div style={{background:"#ffedd5",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
+                  <img src={`data:image/png;base64,${QR_OM}`} alt="QR Orange Money" style={{width:80,height:80,flexShrink:0,borderRadius:8,border:"2px solid #fdba74"}} />
+                  <div>
+                    <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:4}}>{fr?"Numéro Orange Money AYYAD :":"AYYAD Orange Money number:"}</div>
+                    <div style={{fontWeight:900,fontSize:17,color:"#c2410c",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
+                    <div style={{fontSize:10,color:"#ea580c",marginTop:5}}>📷 {fr?"Scannez le QR ou entrez le numéro":"Scan QR or enter the number"}</div>
                   </div>
-                  <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:4}}>{fr?"Numéro Orange Money AYYAD :":"AYYAD Orange Money number:"}</div>
-                  <div style={{fontWeight:900,fontSize:16,color:"#c2410c",fontFamily:"monospace",whiteSpace:"nowrap"}}>+225 07 48 05 61 28</div>
-                  <div style={{fontSize:10,color:"#ea580c",marginTop:4}}>📷 {fr?"Scannez ou entrez le numéro":"Scan or enter the number"}</div>
                 </div>
                 <div style={{fontSize:11,color:"#9a3412",lineHeight:1.9}}>
                   {fr?<>1. App <strong>Orange Money</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>#144#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
@@ -4173,13 +4144,13 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             {provider==="MTN"&&finalAmt>=500&&(
               <div style={{background:"#fefce8",border:"1.5px solid #fde047",borderRadius:14,padding:"14px",marginBottom:12}}>
                 <div style={{fontWeight:800,fontSize:13,color:"#854d0e",marginBottom:10}}>🟡 {fr?"Comment payer via MTN MoMo :":"How to pay via MTN MoMo:"}</div>
-                <div style={{background:"#fef9c3",borderRadius:10,padding:"12px",marginBottom:10,textAlign:"center"}}>
-                  <div style={{display:"inline-block",marginBottom:8}}>
-                    <img src={`data:image/png;base64,${QR_MTN}`} alt="QR MTN MoMo" style={{width:140,height:140,borderRadius:10,border:"2px solid #fde047",display:"block"}} />
+                <div style={{background:"#fef9c3",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
+                  <img src={`data:image/png;base64,${QR_MTN}`} alt="QR MTN MoMo" style={{width:80,height:80,flexShrink:0,borderRadius:8,border:"2px solid #fde047"}} />
+                  <div>
+                    <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:4}}>{fr?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
+                    <div style={{fontWeight:900,fontSize:17,color:"#ca8a04",fontFamily:"monospace",letterSpacing:"1px"}}>+225 05 01 85 59 91</div>
+                    <div style={{fontSize:10,color:"#854d0e",marginTop:5}}>📷 {fr?"Scannez le QR ou entrez le numéro":"Scan QR or enter the number"}</div>
                   </div>
-                  <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:4}}>{fr?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
-                  <div style={{fontWeight:900,fontSize:16,color:"#ca8a04",fontFamily:"monospace",whiteSpace:"nowrap"}}>+225 05 01 85 59 91</div>
-                  <div style={{fontSize:10,color:"#854d0e",marginTop:4}}>📷 {fr?"Scannez ou entrez le numéro":"Scan or enter the number"}</div>
                 </div>
                 <div style={{fontSize:11,color:"#713f12",lineHeight:1.9}}>
                   {fr?<>1. App <strong>MTN MoMo</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>*133#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
@@ -4226,11 +4197,11 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                           color:intlSel===m.id?"#1d4ed8":"#374151"}}>
                         <span style={{fontSize:28}}>{m.emoji}</span>
                         <span>{m.label}</span>
-                        <span style={{fontSize:10,color:"#9ca3af",fontWeight:600}}>{m.id==="SENDWAVE"?"sendwave.com":"taptapsend.com"}</span>
+                        <span style={{fontSize:10,color:"#9ca3af",fontWeight:600}}>{m.id==="SENDWAVE"?"sendwave.com":m.id==="TAPTAP"?"taptapsend.com":"moneco.com"}</span>
                       </button>
                     ))}
                   </div>
-                  {intlSel&&(
+                  {intlSel&&intlSel!=="MONECO"&&(
                     <div style={{background:"#f0f4ff",borderRadius:14,padding:"14px",marginBottom:14,fontSize:12,color:"#4338ca",lineHeight:1.9}}>
                       <div style={{fontWeight:800,fontSize:13,marginBottom:8,color:"#312e81"}}>
                         {intlSel==="SENDWAVE"?<>💸 {fr?"Comment envoyer via Sendwave :":"How to send via Sendwave:"}</>:<>✈️ {fr?"Comment envoyer via TapTap Send :":"How to send via TapTap Send:"}</>}
@@ -4261,6 +4232,54 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                       </a>
                       <div style={{fontSize:10,color:"#9ca3af",textAlign:"center"}}>
                         {fr?"Disponible depuis France, Canada, USA, UK, Belgique, Suisse…":"Available from France, Canada, USA, UK, Belgium, Switzerland…"}
+                      </div>
+                    </div>
+                  )}
+                  {intlSel==="MONECO"&&(
+                    <div style={{background:"#f0fdf4",borderRadius:14,padding:"14px",marginBottom:14,fontSize:12,color:"#065f46",lineHeight:1.9}}>
+                      <div style={{fontWeight:800,fontSize:13,marginBottom:8,color:"#064e3b"}}>
+                        🟢 {fr?"Comment envoyer via MONECO :":"How to send via MONECO:"}
+                      </div>
+                      <div style={{background:"#d1fae5",borderRadius:10,padding:"10px 14px",marginBottom:10,fontFamily:"monospace",lineHeight:2.2}}>
+                        {fr?"Réseau":"Network"} : <strong style={{fontSize:14}}>Orange Money CI 🟠</strong><br/>
+                        {fr?"Numéro destinataire":"Recipient number"} : <strong style={{fontSize:14}}>+225 07 48 05 61 28</strong><br/>
+                        {fr?"Nom":"Name"} : <strong>AYYAD CI</strong><br/>
+                        {fr?"Pays":"Country"} : <strong>Côte d'Ivoire 🇨🇮</strong>
+                      </div>
+                      <div style={{fontSize:11,color:"#059669",marginBottom:10,lineHeight:1.8}}>
+                        {fr?<>
+                          1. Téléchargez <strong>MONECO</strong> (App Store / Play Store)<br/>
+                          2. Créez un compte et ajoutez votre carte bancaire<br/>
+                          3. Appuyez sur <strong>"Envoyer de l'argent"</strong><br/>
+                          4. Choisissez <strong>Orange Money – Côte d'Ivoire</strong><br/>
+                          5. Entrez le numéro <strong>+225 07 48 05 61 28</strong><br/>
+                          6. Indiquez le montant et ajoutez le nom du patient en note<br/>
+                          7. Confirmez — l'argent arrive en quelques secondes !
+                        </>:<>
+                          1. Download <strong>MONECO</strong> (App Store / Play Store)<br/>
+                          2. Create an account and add your bank card<br/>
+                          3. Tap <strong>"Send money"</strong><br/>
+                          4. Choose <strong>Orange Money – Côte d'Ivoire</strong><br/>
+                          5. Enter number <strong>+225 07 48 05 61 28</strong><br/>
+                          6. Enter the amount and add the patient name in the note<br/>
+                          7. Confirm — money arrives in seconds!
+                        </>}
+                      </div>
+                      <div style={{background:"#fef3c7",borderRadius:8,padding:"8px 10px",fontSize:11,color:"#92400e",fontWeight:700,marginBottom:10}}>
+                        💡 {fr?"MONECO est gratuit pour la diaspora africaine en Europe. Transferts instantanés vers Orange CI.":"MONECO is free for the African diaspora in Europe. Instant transfers to Orange CI."}
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:6}}>
+                        <a href="https://apps.apple.com/app/moneco/id1574796272" target="_blank" rel="noreferrer"
+                          style={{display:"block",textAlign:"center",background:"#111",color:"#fff",fontWeight:700,fontSize:12,padding:"10px",borderRadius:10,textDecoration:"none"}}>
+                          🍎 App Store
+                        </a>
+                        <a href="https://play.google.com/store/apps/details?id=com.moneco.app" target="_blank" rel="noreferrer"
+                          style={{display:"block",textAlign:"center",background:"#34a853",color:"#fff",fontWeight:700,fontSize:12,padding:"10px",borderRadius:10,textDecoration:"none"}}>
+                          🤖 Play Store
+                        </a>
+                      </div>
+                      <div style={{fontSize:10,color:"#9ca3af",textAlign:"center"}}>
+                        {fr?"Disponible depuis France, Belgique, Allemagne, Espagne, Italie, Pays-Bas…":"Available from France, Belgium, Germany, Spain, Italy, Netherlands…"}
                       </div>
                     </div>
                   )}
@@ -4451,14 +4470,9 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [message, setMessage] = useState("");
   // Edit mode (owner seulement)
   // State local pour cumuler les vidéos sans dépendre du prop c (qui ne se met pas à jour)
-  const _parseInitVideoUrls = (c) => {
-    if (c.video_urls && c.video_urls.length > 0) return c.video_urls;
-    const v = c.video_url;
-    if (!v) return [];
-    try { const p = JSON.parse(v); if (Array.isArray(p)) return p; } catch(e) {}
-    return [v];
-  };
-  const [localVideoUrls, setLocalVideoUrls] = useState(_parseInitVideoUrls(c));
+  const [localVideoUrls, setLocalVideoUrls] = useState(
+    c.video_urls && c.video_urls.length > 0 ? c.video_urls : (c.video_url ? [c.video_url] : [])
+  );
   const [localPhotos, setLocalPhotos] = useState(
     [...new Set([...(c.photo_url ? [c.photo_url] : []), ...(c.photos || [])])]
   );
@@ -4939,7 +4953,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
         <div className="absolute bottom-0 left-0 right-0 z-10 px-5 pb-7 max-w-6xl mx-auto" style={{left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"72rem"}}>
           {/* Badges */}
           <div className="flex flex-wrap gap-2 mb-3">
-            <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">{parseMaybeJson(c.category,"","")[lang] || parseMaybeJson(c.category,"","").fr || ""}</span>
+            <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">{(c.category?.[lang] || c.category?.fr || c.category || "")}</span>
             <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm border border-white/30">✓ {t.badges.verified}</span>
             {funded && <span className="bg-emerald-400/90 text-white text-xs font-bold px-3 py-1 rounded-full">✓ {t.badges.funded}</span>}
             {c.urgent && <span className="bg-red-500/90 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">🚨 {t.badges.urgent}</span>}
