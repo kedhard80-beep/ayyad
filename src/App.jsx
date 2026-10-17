@@ -2794,45 +2794,14 @@ const TestimonialsCarousel = ({ lang }) => {
   const videoRef = useRef(null);
   const [isMuted, setIsMuted] = useState(true);
   const [videoError, setVideoError] = useState(false);
-  const [blobCache, setBlobCache] = useState({}); // {mediaId: blobUrl}
-  const [loadingBlob, setLoadingBlob] = useState(false);
 
-  // Extrait le chemin Storage depuis une URL Supabase
-  const extractStoragePath = (url) => {
-    if (!url) return null;
-    const m = url.match(/\/storage\/v1\/object\/(?:public|sign)\/testimonials\/([^?]+)/);
-    return m ? m[1] : null;
-  };
-
-  // Charge les métadonnées depuis la DB
+  // Charge les médias depuis la DB
   useEffect(() => {
     supabase.from("testimonial_media")
       .select("*").eq("status", "approved")
       .order("created_at", { ascending: false })
       .then(({ data }) => { if (data && data.length > 0) setMedias(data); });
   }, []);
-
-  // Télécharge le fichier courant via SDK (contourne les restrictions d'accès URL)
-  useEffect(() => {
-    const cur = medias[idx];
-    if (!cur) return;
-    if (blobCache[cur.id]) { setVideoError(false); return; } // déjà en cache
-    const path = extractStoragePath(cur.file_url);
-    if (!path) return;
-    setLoadingBlob(true);
-    setVideoError(false);
-    supabase.storage.from("testimonials").download(path)
-      .then(({ data: blob, error }) => {
-        setLoadingBlob(false);
-        if (blob && !error) {
-          const blobUrl = URL.createObjectURL(blob);
-          setBlobCache(prev => ({ ...prev, [cur.id]: blobUrl }));
-        } else {
-          setVideoError(true);
-        }
-      })
-      .catch(() => { setLoadingBlob(false); setVideoError(true); });
-  }, [idx, medias]);
 
   // Auto-avance pour les photos (5s) — les vidéos avancent via onEnded
   useEffect(() => {
@@ -2845,15 +2814,6 @@ const TestimonialsCarousel = ({ lang }) => {
 
   // Reset muet et erreur quand on change de slide
   useEffect(() => { setIsMuted(true); setVideoError(false); }, [idx]);
-
-  // Déclenche play() dès que le blob URL est disponible (autoPlay bloqué sur blob URLs)
-  useEffect(() => {
-    const cur = medias[idx];
-    if (!cur || !blobCache[cur.id] || !videoRef.current) return;
-    const v = videoRef.current;
-    v.muted = true;
-    v.play().catch(() => {}); // ignorer l'erreur si l'utilisateur n'a pas encore interagi
-  }, [blobCache, idx, medias]);
 
   // Contrôle impératif du mute (React ne met pas à jour l'attribut muted dynamiquement)
   useEffect(() => {
@@ -2958,38 +2918,29 @@ const TestimonialsCarousel = ({ lang }) => {
               }}>
                 {cur && cur.file_type === "video" ? (
                   <>
-                    {/* Chargement en cours */}
-                    {loadingBlob && !blobCache[cur.id] && (
-                      <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"#000", color:"#fff" }}>
-                        <div style={{ width:40, height:40, border:"3px solid rgba(255,255,255,0.2)", borderTopColor:"#e9d59a", borderRadius:"50%", animation:"spin 0.8s linear infinite", marginBottom:12 }} />
-                        <p style={{ fontSize:14, color:"rgba(255,255,255,0.7)" }}>{fr ? "Chargement…" : "Loading…"}</p>
+                    {/* Lecteur vidéo direct (bucket public requis) */}
+                    <video
+                      ref={(el) => { videoRef.current = el; if(el) { el.muted = true; } }}
+                      key={cur.id}
+                      src={cur.file_url}
+                      autoPlay playsInline controls muted
+                      onEnded={handleVideoEnd}
+                      onError={() => setVideoError(true)}
+                      onLoadedData={() => setVideoError(false)}
+                      style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display: videoError ? "none" : "block" }}
+                    />
+                    {videoError && (
+                      <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.9)", color:"#fff", textAlign:"center", padding:24 }}>
+                        <div style={{ fontSize:36, marginBottom:10 }}>⚙️</div>
+                        <p style={{ fontSize:13, color:"rgba(255,255,255,0.8)", marginBottom:6 }}>
+                          {fr ? "Lance le script pour activer la vidéo :" : "Run the script to enable video:"}
+                        </p>
+                        <code style={{ background:"rgba(255,255,255,0.1)", borderRadius:8, padding:"8px 14px", fontSize:12, color:"#e9d59a" }}>
+                          python3 fix_video_testimonial.py
+                        </code>
                       </div>
                     )}
-                    {/* Lecteur vidéo — src = blob URL téléchargé via SDK */}
-                    {blobCache[cur.id] && (
-                      <video
-                        ref={(el) => { videoRef.current = el; if(el) { el.muted = true; el.play().catch(()=>{}); } }}
-                        key={cur.id + "_blob"}
-                        src={blobCache[cur.id]}
-                        playsInline controls muted
-                        onCanPlay={(e) => { e.target.muted = true; e.target.play().catch(()=>{}); }}
-                        onEnded={handleVideoEnd}
-                        style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000" }}
-                      />
-                    )}
-                    {/* Erreur téléchargement */}
-                    {videoError && !loadingBlob && (
-                      <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.85)", color:"#fff", textAlign:"center", padding:24 }}>
-                        <div style={{ fontSize:40, marginBottom:12 }}>⚠️</div>
-                        <p style={{ fontSize:14, marginBottom:8, color:"rgba(255,255,255,0.85)" }}>
-                          {fr ? "Fichier vidéo inaccessible." : "Video file inaccessible."}
-                        </p>
-                        <p style={{ fontSize:12, color:"rgba(255,255,255,0.5)" }}>
-                          {fr ? "Rendez le bucket Supabase public (Storage → testimonials → Make public)" : "Make the Supabase bucket public (Storage → testimonials → Make public)"}
-                        </p>
-                      </div>
-                    )}
-                    {isMuted && blobCache[cur.id] && (
+                    {isMuted && !videoError && (
                       <button
                         onClick={() => {
                           setIsMuted(false);
