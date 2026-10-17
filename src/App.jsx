@@ -2794,34 +2794,45 @@ const TestimonialsCarousel = ({ lang }) => {
   const videoRef = useRef(null);
   const [isMuted, setIsMuted] = useState(true);
   const [videoError, setVideoError] = useState(false);
+  const [blobCache, setBlobCache] = useState({}); // {mediaId: blobUrl}
+  const [loadingBlob, setLoadingBlob] = useState(false);
 
-  // Extrait le chemin Storage depuis une URL Supabase (public ou signed)
+  // Extrait le chemin Storage depuis une URL Supabase
   const extractStoragePath = (url) => {
     if (!url) return null;
-    // Format: .../storage/v1/object/public/testimonials/PATH
     const m = url.match(/\/storage\/v1\/object\/(?:public|sign)\/testimonials\/([^?]+)/);
     return m ? m[1] : null;
   };
 
+  // Charge les métadonnées depuis la DB
   useEffect(() => {
     supabase.from("testimonial_media")
       .select("*").eq("status", "approved")
       .order("created_at", { ascending: false })
-      .then(async ({ data }) => {
-        if (!data || data.length === 0) return;
-        // Génère des signed URLs pour tous les médias (fonctionne bucket public ET privé)
-        const enriched = await Promise.all(data.map(async (m) => {
-          const path = extractStoragePath(m.file_url);
-          if (path) {
-            const { data: signed } = await supabase.storage
-              .from("testimonials").createSignedUrl(path, 7200);
-            if (signed?.signedUrl) return { ...m, file_url: signed.signedUrl };
-          }
-          return m; // fallback URL originale
-        }));
-        setMedias(enriched);
-      });
+      .then(({ data }) => { if (data && data.length > 0) setMedias(data); });
   }, []);
+
+  // Télécharge le fichier courant via SDK (contourne les restrictions d'accès URL)
+  useEffect(() => {
+    const cur = medias[idx];
+    if (!cur) return;
+    if (blobCache[cur.id]) { setVideoError(false); return; } // déjà en cache
+    const path = extractStoragePath(cur.file_url);
+    if (!path) return;
+    setLoadingBlob(true);
+    setVideoError(false);
+    supabase.storage.from("testimonials").download(path)
+      .then(({ data: blob, error }) => {
+        setLoadingBlob(false);
+        if (blob && !error) {
+          const blobUrl = URL.createObjectURL(blob);
+          setBlobCache(prev => ({ ...prev, [cur.id]: blobUrl }));
+        } else {
+          setVideoError(true);
+        }
+      })
+      .catch(() => { setLoadingBlob(false); setVideoError(true); });
+  }, [idx, medias]);
 
   // Auto-avance pour les photos (5s) — les vidéos avancent via onEnded
   useEffect(() => {
@@ -2885,6 +2896,7 @@ const TestimonialsCarousel = ({ lang }) => {
       padding:"clamp(40px, 5vw, 64px) 0",
       position:"relative", overflow:"hidden", color:"#fff",
     }}>
+      <style>{`@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}`}</style>
       {/* Pattern décoratif */}
       <div style={{ position:"absolute", inset:0, opacity:0.06, pointerEvents:"none",
         backgroundImage:"radial-gradient(rgba(201,168,76,1) 1px, transparent 1px)", backgroundSize:"32px 32px" }} />
@@ -2937,30 +2949,37 @@ const TestimonialsCarousel = ({ lang }) => {
               }}>
                 {cur && cur.file_type === "video" ? (
                   <>
-                    <video
-                      ref={(el) => { videoRef.current = el; if(el) el.muted = true; }}
-                      key={cur.id}
-                      src={cur.file_url}
-                      autoPlay playsInline controls muted
-                      preload="auto"
-                      onEnded={handleVideoEnd}
-                      onError={() => setVideoError(true)}
-                      onLoadedData={() => setVideoError(false)}
-                      style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display: videoError ? "none" : "block" }}
-                    />
-                    {videoError && (
-                      <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.85)", color:"#fff", textAlign:"center", padding:24 }}>
-                        <div style={{ fontSize:40, marginBottom:12 }}>🎬</div>
-                        <p style={{ fontSize:15, marginBottom:16, color:"rgba(255,255,255,0.85)" }}>
-                          {fr ? "La vidéo ne peut pas s'afficher ici." : "The video can't display here."}
-                        </p>
-                        <a href={cur.file_url} target="_blank" rel="noopener noreferrer"
-                          style={{ background:"#e9d59a", color:"#0a3d2e", borderRadius:999, padding:"10px 22px", fontWeight:800, fontSize:14, textDecoration:"none" }}>
-                          ▶ {fr ? "Ouvrir la vidéo" : "Open video"}
-                        </a>
+                    {/* Chargement en cours */}
+                    {loadingBlob && !blobCache[cur.id] && (
+                      <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"#000", color:"#fff" }}>
+                        <div style={{ width:40, height:40, border:"3px solid rgba(255,255,255,0.2)", borderTopColor:"#e9d59a", borderRadius:"50%", animation:"spin 0.8s linear infinite", marginBottom:12 }} />
+                        <p style={{ fontSize:14, color:"rgba(255,255,255,0.7)" }}>{fr ? "Chargement…" : "Loading…"}</p>
                       </div>
                     )}
-                    {isMuted && (
+                    {/* Lecteur vidéo — src = blob URL téléchargé via SDK */}
+                    {blobCache[cur.id] && (
+                      <video
+                        ref={(el) => { videoRef.current = el; if(el) el.muted = true; }}
+                        key={cur.id}
+                        src={blobCache[cur.id]}
+                        autoPlay playsInline controls muted
+                        onEnded={handleVideoEnd}
+                        style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000" }}
+                      />
+                    )}
+                    {/* Erreur téléchargement */}
+                    {videoError && !loadingBlob && (
+                      <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.85)", color:"#fff", textAlign:"center", padding:24 }}>
+                        <div style={{ fontSize:40, marginBottom:12 }}>⚠️</div>
+                        <p style={{ fontSize:14, marginBottom:8, color:"rgba(255,255,255,0.85)" }}>
+                          {fr ? "Fichier vidéo inaccessible." : "Video file inaccessible."}
+                        </p>
+                        <p style={{ fontSize:12, color:"rgba(255,255,255,0.5)" }}>
+                          {fr ? "Rendez le bucket Supabase public (Storage → testimonials → Make public)" : "Make the Supabase bucket public (Storage → testimonials → Make public)"}
+                        </p>
+                      </div>
+                    )}
+                    {isMuted && blobCache[cur.id] && (
                       <button
                         onClick={() => {
                           setIsMuted(false);
