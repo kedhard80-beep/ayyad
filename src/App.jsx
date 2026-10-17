@@ -2918,28 +2918,43 @@ const TestimonialsCarousel = ({ lang }) => {
               }}>
                 {cur && cur.file_type === "video" ? (
                   <>
-                    {/* Lecteur vidéo direct (bucket public requis) */}
-                    <video
-                      ref={(el) => { videoRef.current = el; if(el) { el.muted = true; } }}
-                      key={cur.id}
-                      src={cur.file_url}
-                      autoPlay playsInline controls muted
-                      onEnded={handleVideoEnd}
-                      onError={() => setVideoError(true)}
-                      onLoadedData={() => setVideoError(false)}
-                      style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display: videoError ? "none" : "block" }}
-                    />
-                    {videoError && (
-                      <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.9)", color:"#fff", textAlign:"center", padding:24 }}>
-                        <div style={{ fontSize:36, marginBottom:10 }}>⚙️</div>
-                        <p style={{ fontSize:13, color:"rgba(255,255,255,0.8)", marginBottom:6 }}>
-                          {fr ? "Lance le script pour activer la vidéo :" : "Run the script to enable video:"}
-                        </p>
-                        <code style={{ background:"rgba(255,255,255,0.1)", borderRadius:8, padding:"8px 14px", fontSize:12, color:"#e9d59a" }}>
-                          python3 fix_video_testimonial.py
-                        </code>
-                      </div>
-                    )}
+                    {/* Détecte YouTube vs fichier direct */}
+                    {(()=>{
+                      const ytMatch = cur.file_url && cur.file_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+                      const ytId = ytMatch ? ytMatch[1] : null;
+                      return ytId ? (
+                        /* ── Embed YouTube ── */
+                        <iframe
+                          key={cur.id}
+                          src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&rel=0&modestbranding=1`}
+                          allow="autoplay; encrypted-media; fullscreen"
+                          allowFullScreen
+                          style={{ width:"100%", height:"100%", border:"none" }}
+                        />
+                      ) : (
+                        /* ── Fichier direct (Supabase/autre) ── */
+                        <>
+                          <video
+                            ref={(el) => { videoRef.current = el; if(el) { el.muted = true; } }}
+                            key={cur.id}
+                            src={cur.file_url}
+                            autoPlay playsInline controls muted
+                            onEnded={handleVideoEnd}
+                            onError={() => setVideoError(true)}
+                            onLoadedData={() => setVideoError(false)}
+                            style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display: videoError ? "none" : "block" }}
+                          />
+                          {videoError && (
+                            <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.9)", color:"#fff", textAlign:"center", padding:24 }}>
+                              <div style={{ fontSize:36, marginBottom:10 }}>🎬</div>
+                              <p style={{ fontSize:14, color:"rgba(255,255,255,0.8)" }}>
+                                {fr ? "Vidéo non disponible." : "Video unavailable."}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                     {isMuted && !videoError && (
                       <button
                         onClick={() => {
