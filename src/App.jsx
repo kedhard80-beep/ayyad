@@ -4451,9 +4451,14 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [message, setMessage] = useState("");
   // Edit mode (owner seulement)
   // State local pour cumuler les vidéos sans dépendre du prop c (qui ne se met pas à jour)
-  const [localVideoUrls, setLocalVideoUrls] = useState(
-    c.video_urls && c.video_urls.length > 0 ? c.video_urls : (c.video_url ? [c.video_url] : [])
-  );
+  const _parseInitVideoUrls = (c) => {
+    if (c.video_urls && c.video_urls.length > 0) return c.video_urls;
+    const v = c.video_url;
+    if (!v) return [];
+    try { const p = JSON.parse(v); if (Array.isArray(p)) return p; } catch(e) {}
+    return [v];
+  };
+  const [localVideoUrls, setLocalVideoUrls] = useState(_parseInitVideoUrls(c));
   const [localPhotos, setLocalPhotos] = useState(
     [...new Set([...(c.photo_url ? [c.photo_url] : []), ...(c.photos || [])])]
   );
