@@ -3899,6 +3899,11 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 
 // ── Case Detail + Donation Widget ─────────────────────────────
 
+// ─── QR Codes paiement (base64 PNG) ──────────────────────────────────────────
+const QR_WAVE = "iVBORw0KGgoAAAANSUhEUgAAALkAAAC5AQAAAABc1qPxAAACHElEQVR4nOWYQW7bMBBF31gCpB3dE1BAzxHLOVYAB3YiA9n0ThWdi4gHKEDtKEDx78LNLu2q4aLlkrN4GBL8/w9NfLieNh/vw79TCGbWBqvjYmbdsp/NbFMKbpKwdKBROk5cOEpjsSOZrWPnak/wjx3wZu1fZ/yxEGzp7D6dacZPY/y20KuOzZXDZzI+LDhNaIvPzDUtVMrF4DIzXuNKe7l1/mS2LwXvJWVtz3C3BXZO0rUU/DLX0Y4aJnBNyJf5FJdC7xwFrWh0J58tVaJP1YTpVAJew/zNGwxr+92vEW3pdCnVuSTlPh2gT/iMGyaFMp2jKwffhISXUjVl3DDlvhR8dFKG46SQjtJINVEIvsFiHdsdZ7/0WyKWDr6gsfDQZUtvnQuybnncPhUzll93ProTGaC5ckAqdeyviZgtQXN1K8t9glIis+HON1Mr02Qb8M13X/t2V0xewc/3CRqllzDvOVDO1Sw9WLtzNct+XnqAWDDJzIPyZV66rG0VeI3D1DyXk9fVA3iNHG9RspSxbJANIe84Tq2lM/nO18XuHIWbh67QS9II5GKWumNFF160tFatmN5qCj01NALNSDU10snftL2YwpkkcEsHVAHcKZYal2qYt54dL5PXlx9fc2v4WEzhALjMq2+Z60ivIeRCMeq94KwDN8g9zydcoeiMgqTmSiVuw4o7+VIZ7n1i0UqGQ6SPayzlavbffov8BFUILisQj47eAAAAAElFTkSuQmCC";
+const QR_MTN  = "iVBORw0KGgoAAAANSUhEUgAAAJEAAACRAQAAAADro2eOAAABSklEQVR4nN2WTWrjUBCEv3IE8k6+wfNFxvK1AgErjA+mJ19EuoHfTgY5NQvNKg7ZxA3D9KZ5taiiqf55Mp/jffMAwb+PZUnbvGNiKJI2ERqyzQEScLL7kNqK9lyud92O3LX9Od9DVGv6pbf0FL7vsKai6eM0Go9cJmfgxXOIhiUB9xZ4l44RfrTrFFaTwT/m+xobSofa3RvAme0Q44fkHtKt1TI9ge8x/AHUtkfaK9TZ3fM18hXcN3bdN/bcRmjYdv3BaeTAyQ6oYwOcmS/u1nfELtmQd0xbOKcZ7oqZwfb62s7WMtW/XZtDRF/1vIwcmo4ZIMKP1XNnL2mWl4QiPM+StsDU9KUj5katd7BUCZruCXxfYkV7nJxvrSpux7gbVTpquyOir/5iA+dUjjARsHdxtl3bHmd5SXZEX1kSQ9EeSkVEHfpP/qJ/AJt2o99l3f/cAAAAAElFTkSuQmCC";
+const QR_OM   = "iVBORw0KGgoAAAANSUhEUgAAAJEAAACRAQAAAADro2eOAAABYUlEQVR4nN1WMW7cMBCcORE4djzAD6B+kBdYSmW/x6UBx+HlDPhbJ+YjUudS7CjgdJMiceODq9wCQbYhMcUMF5jhLoWPtd9cQMC/jw0kfS7fWuRCcmOhQUlAcJPv8F06mvRW2EI8jDVjpf97votyv48uPPRvtVzlzZ9p/Jx22F6D7xMsaEQXEgA0qiYaIolcThEZe/KrhUYvqd5GB3RB0tlCI2NPboqGpd+trUU+oHM4xdrPjYBwgqRk0Edxk1dcWvRTArKRr6QfJQEIB1lkcAPOKz3CYYCYYOFdB/EJ5X5e+3oX2L5Vm7/4JfqMZvQoGoqJr4a5Ue3nJ2w1I24HC18hJHgEFwt3mK7Ad1mSJB3RqFKnaJOPgaQHHhmOJRnlg5LA+XWsCAnozOYgACw9nUkf7v3y2Gr4cjOSZ6td5TZux+U5LLwS30csaATntYV2iDYaf+ZgAnJxsNh9+J/sor8AR3SgNRC0s8MAAAAASUVORK5CYII=";
+
 // ─── DonateModal — bottom sheet GoFundMe style ───────────────────────────────
 const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   const WAVE_LINK  = "https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/";
@@ -4052,40 +4057,52 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             {/* ── Instructions inline CI — apparaissent immédiatement au choix du provider ── */}
             {provider==="WAVE"&&finalAmt>=500&&(
               <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:14,padding:"14px",marginBottom:12}}>
-                <div style={{fontWeight:800,fontSize:13,color:"#1d4ed8",marginBottom:8}}>〰️ {fr?"Comment payer via Wave :":"How to pay via Wave:"}</div>
-                <div style={{background:"#dbeafe",borderRadius:10,padding:"12px",textAlign:"center",marginBottom:10}}>
-                  <div style={{fontSize:11,color:"#1e40af",fontWeight:600,marginBottom:3}}>{fr?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
-                  <div style={{fontWeight:900,fontSize:22,color:"#1d4ed8",fontFamily:"monospace",letterSpacing:"2px"}}>+225 07 48 05 61 28</div>
+                <div style={{fontWeight:800,fontSize:13,color:"#1d4ed8",marginBottom:10}}>〰️ {fr?"Comment payer via Wave :":"How to pay via Wave:"}</div>
+                <div style={{background:"#dbeafe",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
+                  <img src={`data:image/png;base64,${QR_WAVE}`} alt="QR Wave" style={{width:80,height:80,flexShrink:0,borderRadius:8,border:"2px solid #bfdbfe"}} />
+                  <div>
+                    <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:4}}>{fr?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
+                    <div style={{fontWeight:900,fontSize:17,color:"#1d4ed8",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
+                    <div style={{fontSize:10,color:"#6366f1",marginTop:5}}>📷 {fr?"Scannez le QR ou entrez le numéro":"Scan QR or enter the number"}</div>
+                  </div>
                 </div>
-                <div style={{fontSize:12,color:"#3730a3",lineHeight:2}}>
-                  {fr?<>1. Ouvrez l'<strong>app Wave</strong> → Envoyer de l'argent<br/>2. Entrez le numéro ci-dessus<br/>3. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
-                    :<>1. Open <strong>Wave app</strong> → Send money<br/>2. Enter the number above<br/>3. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>4. Come back → "I've completed payment"</>}
+                <div style={{fontSize:11,color:"#3730a3",lineHeight:1.9}}>
+                  {fr?<>1. App <strong>Wave</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Revenez ici → "J'ai effectué le paiement"</>
+                    :<>1. <strong>Wave</strong> app → Send → scan QR or enter number<br/>2. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Come back → "I've completed payment"</>}
                 </div>
               </div>
             )}
             {provider==="OM"&&finalAmt>=500&&(
               <div style={{background:"#fff7ed",border:"1.5px solid #fdba74",borderRadius:14,padding:"14px",marginBottom:12}}>
-                <div style={{fontWeight:800,fontSize:13,color:"#c2410c",marginBottom:8}}>🟠 {fr?"Comment payer via Orange Money :":"How to pay via Orange Money:"}</div>
-                <div style={{background:"#ffedd5",borderRadius:10,padding:"12px",textAlign:"center",marginBottom:10}}>
-                  <div style={{fontSize:11,color:"#9a3412",fontWeight:600,marginBottom:3}}>{fr?"Numéro Orange Money AYYAD :":"AYYAD Orange Money number:"}</div>
-                  <div style={{fontWeight:900,fontSize:22,color:"#c2410c",fontFamily:"monospace",letterSpacing:"2px"}}>+225 07 48 05 61 28</div>
+                <div style={{fontWeight:800,fontSize:13,color:"#c2410c",marginBottom:10}}>🟠 {fr?"Comment payer via Orange Money :":"How to pay via Orange Money:"}</div>
+                <div style={{background:"#ffedd5",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
+                  <img src={`data:image/png;base64,${QR_OM}`} alt="QR Orange Money" style={{width:80,height:80,flexShrink:0,borderRadius:8,border:"2px solid #fdba74"}} />
+                  <div>
+                    <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:4}}>{fr?"Numéro Orange Money AYYAD :":"AYYAD Orange Money number:"}</div>
+                    <div style={{fontWeight:900,fontSize:17,color:"#c2410c",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
+                    <div style={{fontSize:10,color:"#ea580c",marginTop:5}}>📷 {fr?"Scannez le QR ou entrez le numéro":"Scan QR or enter the number"}</div>
+                  </div>
                 </div>
-                <div style={{fontSize:12,color:"#9a3412",lineHeight:2}}>
-                  {fr?<>1. App <strong>Orange Money</strong> → Envoyer de l'argent<br/>2. Entrez le numéro ci-dessus<br/>3. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>4. Ou composez <strong>#144#</strong> → Transfert<br/>5. Revenez ici → "J'ai effectué le paiement"</>
-                    :<>1. <strong>Orange Money</strong> app → Send money<br/>2. Enter the number above<br/>3. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>4. Or dial <strong>#144#</strong> → Transfer<br/>5. Come back → "I've completed payment"</>}
+                <div style={{fontSize:11,color:"#9a3412",lineHeight:1.9}}>
+                  {fr?<>1. App <strong>Orange Money</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>#144#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
+                    :<>1. <strong>Orange Money</strong> → Send → scan QR or enter number<br/>2. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>#144#</strong><br/>4. Come back → "I've completed payment"</>}
                 </div>
               </div>
             )}
             {provider==="MTN"&&finalAmt>=500&&(
               <div style={{background:"#fefce8",border:"1.5px solid #fde047",borderRadius:14,padding:"14px",marginBottom:12}}>
-                <div style={{fontWeight:800,fontSize:13,color:"#854d0e",marginBottom:8}}>🟡 {fr?"Comment payer via MTN MoMo :":"How to pay via MTN MoMo:"}</div>
-                <div style={{background:"#fef9c3",borderRadius:10,padding:"12px",textAlign:"center",marginBottom:10}}>
-                  <div style={{fontSize:11,color:"#713f12",fontWeight:600,marginBottom:3}}>{fr?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
-                  <div style={{fontWeight:900,fontSize:22,color:"#ca8a04",fontFamily:"monospace",letterSpacing:"2px"}}>+225 05 01 85 59 91</div>
+                <div style={{fontWeight:800,fontSize:13,color:"#854d0e",marginBottom:10}}>🟡 {fr?"Comment payer via MTN MoMo :":"How to pay via MTN MoMo:"}</div>
+                <div style={{background:"#fef9c3",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
+                  <img src={`data:image/png;base64,${QR_MTN}`} alt="QR MTN MoMo" style={{width:80,height:80,flexShrink:0,borderRadius:8,border:"2px solid #fde047"}} />
+                  <div>
+                    <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:4}}>{fr?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
+                    <div style={{fontWeight:900,fontSize:17,color:"#ca8a04",fontFamily:"monospace",letterSpacing:"1px"}}>+225 05 01 85 59 91</div>
+                    <div style={{fontSize:10,color:"#854d0e",marginTop:5}}>📷 {fr?"Scannez le QR ou entrez le numéro":"Scan QR or enter the number"}</div>
+                  </div>
                 </div>
-                <div style={{fontSize:12,color:"#713f12",lineHeight:2}}>
-                  {fr?<>1. App <strong>MTN MoMo</strong> → Envoyer de l'argent<br/>2. Entrez le numéro ci-dessus<br/>3. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>4. Ou composez <strong>*133#</strong><br/>5. Revenez ici → "J'ai effectué le paiement"</>
-                    :<>1. <strong>MTN MoMo</strong> app → Send money<br/>2. Enter the number above<br/>3. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>4. Or dial <strong>*133#</strong><br/>5. Come back → "I've completed payment"</>}
+                <div style={{fontSize:11,color:"#713f12",lineHeight:1.9}}>
+                  {fr?<>1. App <strong>MTN MoMo</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>*133#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
+                    :<>1. <strong>MTN MoMo</strong> → Send → scan QR or enter number<br/>2. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>*133#</strong><br/>4. Come back → "I've completed payment"</>}
                 </div>
               </div>
             )}
@@ -5419,45 +5436,59 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 </button>
 
                 {/* ── Instructions inline CI ── */}
+                {(()=>{const sbAmtFcfa=(currency==="FCFA"?parseInt(amount)||0:Math.round((parseInt(amount)||0)*({EUR:655.957,USD:600,GBP:787}[currency]||1)));return(<>
                 {sbProvider==="WAVE"&&(
                   <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:14,padding:"14px",marginBottom:12}}>
-                    <div style={{fontWeight:800,fontSize:12,color:"#1d4ed8",marginBottom:8}}>〰️ {lang==="fr"?"Comment payer via Wave :":"How to pay via Wave:"}</div>
-                    <div style={{background:"#dbeafe",borderRadius:10,padding:"12px",textAlign:"center",marginBottom:8}}>
-                      <div style={{fontSize:11,color:"#1e40af",fontWeight:600,marginBottom:2}}>{lang==="fr"?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
-                      <div style={{fontWeight:900,fontSize:20,color:"#1d4ed8",fontFamily:"monospace",letterSpacing:"2px"}}>+225 07 48 05 61 28</div>
+                    <div style={{fontWeight:800,fontSize:12,color:"#1d4ed8",marginBottom:10}}>〰️ {lang==="fr"?"Comment payer via Wave :":"How to pay via Wave:"}</div>
+                    <div style={{background:"#dbeafe",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
+                      <img src={`data:image/png;base64,${QR_WAVE}`} alt="QR Wave" style={{width:76,height:76,flexShrink:0,borderRadius:8,border:"2px solid #bfdbfe"}} />
+                      <div>
+                        <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
+                        <div style={{fontWeight:900,fontSize:16,color:"#1d4ed8",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
+                        <div style={{fontSize:10,color:"#6366f1",marginTop:4}}>📷 {lang==="fr"?"Scannez ou entrez le numéro":"Scan or enter number"}</div>
+                      </div>
                     </div>
                     <div style={{fontSize:11,color:"#3730a3",lineHeight:1.9}}>
-                      {lang==="fr"?<>1. App <strong>Wave</strong> → Envoyer → entrez le numéro<br/>2. Montant : <strong>{(currency==="FCFA"?parseInt(amount):Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1))).toLocaleString("fr-CI")} FCFA</strong><br/>3. Revenez ici → "J'ai payé"</>
-                        :<>1. <strong>Wave</strong> app → Send → enter number above<br/>2. Amount: <strong>{(currency==="FCFA"?parseInt(amount):Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1))).toLocaleString("fr-CI")} FCFA</strong><br/>3. Come back → "I've paid"</>}
+                      {lang==="fr"?<>1. App <strong>Wave</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Revenez ici → "J'ai effectué le paiement"</>
+                        :<>1. <strong>Wave</strong> app → Send → scan or enter number<br/>2. Amount: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Come back → "I've completed payment"</>}
                     </div>
                   </div>
                 )}
                 {sbProvider==="OM"&&(
                   <div style={{background:"#fff7ed",border:"1.5px solid #fdba74",borderRadius:14,padding:"14px",marginBottom:12}}>
-                    <div style={{fontWeight:800,fontSize:12,color:"#c2410c",marginBottom:8}}>🟠 {lang==="fr"?"Comment payer via Orange Money :":"How to pay via Orange Money:"}</div>
-                    <div style={{background:"#ffedd5",borderRadius:10,padding:"12px",textAlign:"center",marginBottom:8}}>
-                      <div style={{fontSize:11,color:"#9a3412",fontWeight:600,marginBottom:2}}>{lang==="fr"?"Numéro Orange Money AYYAD :":"AYYAD Orange Money number:"}</div>
-                      <div style={{fontWeight:900,fontSize:20,color:"#c2410c",fontFamily:"monospace",letterSpacing:"2px"}}>+225 07 48 05 61 28</div>
+                    <div style={{fontWeight:800,fontSize:12,color:"#c2410c",marginBottom:10}}>🟠 {lang==="fr"?"Comment payer via Orange Money :":"How to pay via Orange Money:"}</div>
+                    <div style={{background:"#ffedd5",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
+                      <img src={`data:image/png;base64,${QR_OM}`} alt="QR Orange Money" style={{width:76,height:76,flexShrink:0,borderRadius:8,border:"2px solid #fdba74"}} />
+                      <div>
+                        <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro Orange Money AYYAD :":"AYYAD Orange Money number:"}</div>
+                        <div style={{fontWeight:900,fontSize:16,color:"#c2410c",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
+                        <div style={{fontSize:10,color:"#ea580c",marginTop:4}}>📷 {lang==="fr"?"Scannez ou entrez le numéro":"Scan or enter number"}</div>
+                      </div>
                     </div>
                     <div style={{fontSize:11,color:"#9a3412",lineHeight:1.9}}>
-                      {lang==="fr"?<>1. App <strong>Orange Money</strong> → Envoyer → entrez le numéro<br/>2. Montant : <strong>{(currency==="FCFA"?parseInt(amount):Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1))).toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>#144#</strong><br/>4. Revenez ici → "J'ai payé"</>
-                        :<>1. <strong>Orange Money</strong> → Send → enter number above<br/>2. Amount: <strong>{(currency==="FCFA"?parseInt(amount):Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1))).toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>#144#</strong><br/>4. Come back → "I've paid"</>}
+                      {lang==="fr"?<>1. App <strong>Orange Money</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>#144#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
+                        :<>1. <strong>Orange Money</strong> → Send → scan or enter number<br/>2. Amount: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>#144#</strong><br/>4. Come back → "I've completed payment"</>}
                     </div>
                   </div>
                 )}
                 {sbProvider==="MTN"&&(
                   <div style={{background:"#fefce8",border:"1.5px solid #fde047",borderRadius:14,padding:"14px",marginBottom:12}}>
-                    <div style={{fontWeight:800,fontSize:12,color:"#854d0e",marginBottom:8}}>🟡 {lang==="fr"?"Comment payer via MTN MoMo :":"How to pay via MTN MoMo:"}</div>
-                    <div style={{background:"#fef9c3",borderRadius:10,padding:"12px",textAlign:"center",marginBottom:8}}>
-                      <div style={{fontSize:11,color:"#713f12",fontWeight:600,marginBottom:2}}>{lang==="fr"?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
-                      <div style={{fontWeight:900,fontSize:20,color:"#ca8a04",fontFamily:"monospace",letterSpacing:"2px"}}>+225 05 01 85 59 91</div>
+                    <div style={{fontWeight:800,fontSize:12,color:"#854d0e",marginBottom:10}}>🟡 {lang==="fr"?"Comment payer via MTN MoMo :":"How to pay via MTN MoMo:"}</div>
+                    <div style={{background:"#fef9c3",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
+                      <img src={`data:image/png;base64,${QR_MTN}`} alt="QR MTN MoMo" style={{width:76,height:76,flexShrink:0,borderRadius:8,border:"2px solid #fde047"}} />
+                      <div>
+                        <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
+                        <div style={{fontWeight:900,fontSize:16,color:"#ca8a04",fontFamily:"monospace",letterSpacing:"1px"}}>+225 05 01 85 59 91</div>
+                        <div style={{fontSize:10,color:"#854d0e",marginTop:4}}>📷 {lang==="fr"?"Scannez ou entrez le numéro":"Scan or enter number"}</div>
+                      </div>
                     </div>
                     <div style={{fontSize:11,color:"#713f12",lineHeight:1.9}}>
-                      {lang==="fr"?<>1. App <strong>MTN MoMo</strong> → Envoyer → entrez le numéro<br/>2. Montant : <strong>{(currency==="FCFA"?parseInt(amount):Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1))).toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>*133#</strong><br/>4. Revenez ici → "J'ai payé"</>
-                        :<>1. <strong>MTN MoMo</strong> → Send → enter number above<br/>2. Amount: <strong>{(currency==="FCFA"?parseInt(amount):Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1))).toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>*133#</strong><br/>4. Come back → "I've paid"</>}
+                      {lang==="fr"?<>1. App <strong>MTN MoMo</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>*133#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
+                        :<>1. <strong>MTN MoMo</strong> → Send → scan or enter number<br/>2. Amount: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>*133#</strong><br/>4. Come back → "I've completed payment"</>}
                     </div>
                   </div>
                 )}
+                </>);})()}
                 {sbProvider==="INTL"&&(
                   <div style={{background:"#eff6ff",border:"1.5px solid #a5b4fc",borderRadius:14,padding:"14px",marginBottom:12}}>
                     <div style={{fontWeight:800,fontSize:12,color:"#4338ca",marginBottom:8}}>🌍 {lang==="fr"?"Depuis l'étranger (Sendwave / TapTap)":"From abroad (Sendwave / TapTap)"}</div>
