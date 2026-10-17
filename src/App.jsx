@@ -1244,13 +1244,28 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
       {/* Vidéos */}
       {videoUrls.map((videoUrl, vidIdx) => {
         const isTikTok = videoUrl.includes("tiktok.com");
+        const isDirectVideo = /\.(mp4|mov|webm|avi|mkv)(\?.*)?$/i.test(videoUrl);
+        const label = isTikTok ? "TikTok" : (isDirectVideo ? "🎞️ Vidéo" : t.video.title);
         return (
           <div key={vidIdx}>
-            {(photos.length > 0 || vidIdx > 0) && <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{isTikTok ? "TikTok" : t.video.title}{videoUrls.length > 1 ? ` ${vidIdx+1}` : ""}</div>}
-            {photos.length === 0 && vidIdx === 0 && <div className="px-4 py-2 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{isTikTok ? "TikTok" : t.video.title}</div>}
+            {(photos.length > 0 || vidIdx > 0) && <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{label}{videoUrls.length > 1 ? ` ${vidIdx+1}` : ""}</div>}
+            {photos.length === 0 && vidIdx === 0 && <div className="px-4 py-2 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{label}</div>}
             {isTikTok ? (
               <div className="flex justify-center bg-black">
                 <iframe src={videoUrl} className="w-full max-w-xs" style={{height:"560px"}} allowFullScreen allow="autoplay" title={"TikTok video " + (vidIdx+1)} />
+              </div>
+            ) : isDirectVideo ? (
+              <div className="bg-black w-full">
+                <video
+                  controls
+                  playsInline
+                  className="w-full"
+                  style={{maxHeight:"400px", display:"block"}}
+                  preload="metadata"
+                >
+                  <source src={videoUrl} type={videoUrl.match(/\.mov(\?.*)?$/i) ? "video/quicktime" : videoUrl.match(/\.webm(\?.*)?$/i) ? "video/webm" : "video/mp4"} />
+                  Votre navigateur ne supporte pas la lecture vidéo.
+                </video>
               </div>
             ) : (
               <div className="relative w-full" style={{paddingBottom:"56.25%"}}>
@@ -1308,10 +1323,19 @@ const WaveQRCode = ({ data, size = 176 }) => {
       <canvas ref={canvasRef} width={size} height={size} className="rounded-xl border border-gray-100" />
       <a
         href={data}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm text-center transition-colors"
+        onClick={(e) => { e.preventDefault(); window.location.href = data; }}
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm text-center transition-colors block"
+        style={{WebkitTapHighlightColor:"transparent", touchAction:"manipulation"}}
       >
         📱 Ouvrir Wave CI
       </a>
+      <button
+        onClick={() => { navigator.clipboard && navigator.clipboard.writeText(AYYAD_ACCOUNTS.WAVE.numero); alert("Numéro copié : " + AYYAD_ACCOUNTS.WAVE.numero); }}
+        className="w-full border border-blue-300 text-blue-700 font-semibold py-2 rounded-xl text-xs text-center bg-blue-50"
+        style={{touchAction:"manipulation"}}
+      >
+        📋 Copier le numéro Wave
+      </button>
     </div>
   );
 };
