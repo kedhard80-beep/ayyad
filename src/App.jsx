@@ -3999,7 +3999,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   };
 
   const CI_PROVIDERS  = [{id:"WAVE",label:"Wave CI",emoji:"〰️"},{id:"OM",label:"Orange Money",emoji:"🟠"},{id:"MTN",label:"MTN MoMo",emoji:"🟡"}];
-  const INT_PROVIDERS = [{id:"SENDWAVE",label:"Sendwave",emoji:"💸"},{id:"TAPTAP",label:"TapTap Send",emoji:"✈️"},{id:"MONECO",label:"MONECO",emoji:"🟢"}];
+  const INT_PROVIDERS = [{id:"SENDWAVE",label:"Sendwave",emoji:"💸"},{id:"TAPTAP",label:"TapTap Send",emoji:"✈️"}];
   const SOON_PROVIDERS= [{id:"CB",label:fr?"Carte bancaire":"Credit Card",emoji:"💳",soon:true}];
   const ALL_PROVIDERS = [...CI_PROVIDERS,...INT_PROVIDERS,[{id:"VB",label:fr?"Virement bancaire":"Bank Transfer",emoji:"🏦"}],...SOON_PROVIDERS];
 
@@ -4197,11 +4197,11 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                           color:intlSel===m.id?"#1d4ed8":"#374151"}}>
                         <span style={{fontSize:28}}>{m.emoji}</span>
                         <span>{m.label}</span>
-                        <span style={{fontSize:10,color:"#9ca3af",fontWeight:600}}>{m.id==="SENDWAVE"?"sendwave.com":m.id==="TAPTAP"?"taptapsend.com":"moneco.com"}</span>
+                        <span style={{fontSize:10,color:"#9ca3af",fontWeight:600}}>{m.id==="SENDWAVE"?"sendwave.com":"taptapsend.com"}</span>
                       </button>
                     ))}
                   </div>
-                  {intlSel&&intlSel!=="MONECO"&&(
+                  {intlSel&&(
                     <div style={{background:"#f0f4ff",borderRadius:14,padding:"14px",marginBottom:14,fontSize:12,color:"#4338ca",lineHeight:1.9}}>
                       <div style={{fontWeight:800,fontSize:13,marginBottom:8,color:"#312e81"}}>
                         {intlSel==="SENDWAVE"?<>💸 {fr?"Comment envoyer via Sendwave :":"How to send via Sendwave:"}</>:<>✈️ {fr?"Comment envoyer via TapTap Send :":"How to send via TapTap Send:"}</>}
@@ -4232,54 +4232,6 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                       </a>
                       <div style={{fontSize:10,color:"#9ca3af",textAlign:"center"}}>
                         {fr?"Disponible depuis France, Canada, USA, UK, Belgique, Suisse…":"Available from France, Canada, USA, UK, Belgium, Switzerland…"}
-                      </div>
-                    </div>
-                  )}
-                  {intlSel==="MONECO"&&(
-                    <div style={{background:"#f0fdf4",borderRadius:14,padding:"14px",marginBottom:14,fontSize:12,color:"#065f46",lineHeight:1.9}}>
-                      <div style={{fontWeight:800,fontSize:13,marginBottom:8,color:"#064e3b"}}>
-                        🟢 {fr?"Comment envoyer via MONECO :":"How to send via MONECO:"}
-                      </div>
-                      <div style={{background:"#d1fae5",borderRadius:10,padding:"10px 14px",marginBottom:10,fontFamily:"monospace",lineHeight:2.2}}>
-                        {fr?"Réseau":"Network"} : <strong style={{fontSize:14}}>Orange Money CI 🟠</strong><br/>
-                        {fr?"Numéro destinataire":"Recipient number"} : <strong style={{fontSize:14}}>+225 07 48 05 61 28</strong><br/>
-                        {fr?"Nom":"Name"} : <strong>AYYAD CI</strong><br/>
-                        {fr?"Pays":"Country"} : <strong>Côte d'Ivoire 🇨🇮</strong>
-                      </div>
-                      <div style={{fontSize:11,color:"#059669",marginBottom:10,lineHeight:1.8}}>
-                        {fr?<>
-                          1. Téléchargez <strong>MONECO</strong> (App Store / Play Store)<br/>
-                          2. Créez un compte et ajoutez votre carte bancaire<br/>
-                          3. Appuyez sur <strong>"Envoyer de l'argent"</strong><br/>
-                          4. Choisissez <strong>Orange Money – Côte d'Ivoire</strong><br/>
-                          5. Entrez le numéro <strong>+225 07 48 05 61 28</strong><br/>
-                          6. Indiquez le montant et ajoutez le nom du patient en note<br/>
-                          7. Confirmez — l'argent arrive en quelques secondes !
-                        </>:<>
-                          1. Download <strong>MONECO</strong> (App Store / Play Store)<br/>
-                          2. Create an account and add your bank card<br/>
-                          3. Tap <strong>"Send money"</strong><br/>
-                          4. Choose <strong>Orange Money – Côte d'Ivoire</strong><br/>
-                          5. Enter number <strong>+225 07 48 05 61 28</strong><br/>
-                          6. Enter the amount and add the patient name in the note<br/>
-                          7. Confirm — money arrives in seconds!
-                        </>}
-                      </div>
-                      <div style={{background:"#fef3c7",borderRadius:8,padding:"8px 10px",fontSize:11,color:"#92400e",fontWeight:700,marginBottom:10}}>
-                        💡 {fr?"MONECO est gratuit pour la diaspora africaine en Europe. Transferts instantanés vers Orange CI.":"MONECO is free for the African diaspora in Europe. Instant transfers to Orange CI."}
-                      </div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:6}}>
-                        <a href="https://apps.apple.com/app/moneco/id1574796272" target="_blank" rel="noreferrer"
-                          style={{display:"block",textAlign:"center",background:"#111",color:"#fff",fontWeight:700,fontSize:12,padding:"10px",borderRadius:10,textDecoration:"none"}}>
-                          🍎 App Store
-                        </a>
-                        <a href="https://play.google.com/store/apps/details?id=com.moneco.app" target="_blank" rel="noreferrer"
-                          style={{display:"block",textAlign:"center",background:"#34a853",color:"#fff",fontWeight:700,fontSize:12,padding:"10px",borderRadius:10,textDecoration:"none"}}>
-                          🤖 Play Store
-                        </a>
-                      </div>
-                      <div style={{fontSize:10,color:"#9ca3af",textAlign:"center"}}>
-                        {fr?"Disponible depuis France, Belgique, Allemagne, Espagne, Italie, Pays-Bas…":"Available from France, Belgium, Germany, Spain, Italy, Netherlands…"}
                       </div>
                     </div>
                   )}
