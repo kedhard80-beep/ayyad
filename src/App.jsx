@@ -2919,7 +2919,6 @@ const TestimonialsCarousel = ({ lang }) => {
                       ref={videoRef}
                       key={cur.id}
                       src={cur.file_url}
-                      crossOrigin="anonymous"
                       autoPlay playsInline controls muted
                       onEnded={handleVideoEnd}
                       style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000" }}
