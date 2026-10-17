@@ -2795,12 +2795,27 @@ const TestimonialsCarousel = ({ lang }) => {
   const [isMuted, setIsMuted] = useState(true);
   const [videoError, setVideoError] = useState(false);
 
-  // Charge les médias depuis la DB
+  // Entrée permanente Djana (hébergée sur Vercel — même domaine, zéro CORS)
+  const DJANA_ENTRY = {
+    id: "djana-static",
+    beneficiary_name: "Djana Coulibaly",
+    case_tracking_id: "AYD-2026-06-001",
+    file_url: "/videos/djana_coulibaly.mp4",
+    file_type: "video",
+    status: "approved",
+  };
+
+  // Charge les médias depuis la DB + ajoute Djana si absente
   useEffect(() => {
     supabase.from("testimonial_media")
       .select("*").eq("status", "approved")
       .order("created_at", { ascending: false })
-      .then(({ data }) => { if (data && data.length > 0) setMedias(data); });
+      .then(({ data }) => {
+        const dbItems = data || [];
+        // Toujours inclure Djana (hébergée localement) en premier
+        const hasDjana = dbItems.some(m => m.case_tracking_id === "AYD-2026-06-001");
+        setMedias(hasDjana ? dbItems : [DJANA_ENTRY, ...dbItems]);
+      });
   }, []);
 
   // Auto-avance pour les photos (5s) — les vidéos avancent via onEnded
