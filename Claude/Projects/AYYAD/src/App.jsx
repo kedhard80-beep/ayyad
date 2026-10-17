@@ -1,5 +1,6 @@
  import { inject } from "@vercel/analytics";
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@supabase/supabase-js";
 
 // ── Supabase client ──────────────────────────────────────────
@@ -324,7 +325,7 @@ const T = {
       title: "Administration Ayyad", sub: "Tableau de bord opérationnel", status: "Système opérationnel",
       tabs: [{ id:"overview",label:"Vue d'ensemble",icon:"📊" },{ id:"cases",label:"Dossiers",icon:"📋" },{ id:"donations",label:"Dons",icon:"💚" },{ id:"fraud",label:"Fraude",icon:"🔍" },{ id:"payouts",label:"Virements",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaires",icon:"👔" },{ id:"audit",label:"Audit",icon:"📝" },{ id:"bilan",label:"Bilan",icon:"📈" },{ id:"testimonials",label:"Témoignages",icon:"💬" },{ id:"visitors",label:"Visiteurs",icon:"👁️" },{ id:"accounts",label:"Comptes",icon:"👤" },{ id:"team",label:"Équipe",icon:"👥" },{ id:"export",label:"Export",icon:"📤",superAdminOnly:true }],
       stats: [{ label:"Dossiers actifs",v:"—",icon:"📋" },{ label:"Dons ce mois",v:"—",icon:"💚" },{ label:"Bénéficiaires aidés",v:"—",icon:"🏥" }],
-      recentTitle: "Dossiers récents", revenueTitle: "Revenus opérationnels (5%)",
+      recentTitle: "Dossiers récents", revenueTitle: "Revenus opérationnels (7%)",
       months: [{ month:"Mars 2025",dons:"24.8M",fees:"1 240 000 FCFA" },{ month:"Fév. 2025",dons:"19.2M",fees:"960 000 FCFA" },{ month:"Jan. 2025",dons:"15.1M",fees:"755 000 FCFA" }],
       pendingTitle: "Dossiers en attente de validation", pending: "en attente", empty: "Aucun dossier en attente", loading: "Chargement...",
       risk: "Risque", reject: "Rejeter", approve: "Approuver ✓", rejectConfirm: "Motif de rejet :", rejectBtn: "Confirmer le rejet",
@@ -358,7 +359,7 @@ const T = {
       title: "Ayyad Administration", sub: "Operational dashboard", status: "System operational",
       tabs: [{ id:"overview",label:"Overview",icon:"📊" },{ id:"cases",label:"Cases",icon:"📋" },{ id:"donations",label:"Donations",icon:"💚" },{ id:"fraud",label:"Fraud",icon:"🔍" },{ id:"payouts",label:"Payouts",icon:"🏦" },{ id:"finance",label:"Finance",icon:"💰" },{ id:"salary",label:"Salaries",icon:"👔" },{ id:"audit",label:"Audit log",icon:"📝" },{ id:"bilan",label:"Reporting",icon:"📈" },{ id:"testimonials",label:"Testimonials",icon:"💬" },{ id:"visitors",label:"Visitors",icon:"👁️" },{ id:"accounts",label:"Accounts",icon:"👤" },{ id:"team",label:"Team",icon:"👥" },{ id:"export",label:"Export",icon:"📤",superAdminOnly:true }],
       stats: [{ label:"Active cases",v:"—",icon:"📋" },{ label:"Donations this month",v:"—",icon:"💚" },{ label:"Patients helped",v:"—",icon:"🏥" }],
-      recentTitle: "Recent cases", revenueTitle: "Operational revenue (5%)",
+      recentTitle: "Recent cases", revenueTitle: "Operational revenue (7%)",
       months: [{ month:"March 2025",dons:"24.8M",fees:"1,240,000 FCFA" },{ month:"Feb. 2025",dons:"19.2M",fees:"960,000 FCFA" },{ month:"Jan. 2025",dons:"15.1M",fees:"755,000 FCFA" }],
       pendingTitle: "Cases pending validation", pending: "pending", empty: "No cases pending", loading: "Loading...",
       risk: "Risk", reject: "Reject", approve: "Approve ✓", rejectConfirm: "Rejection reason:", rejectBtn: "Confirm rejection",
@@ -448,12 +449,16 @@ const sanitizeFileName = (name) => {
 };
 
 // ── Règles financières Ayyad ──────────────────────────────────
-// required = devis_hopital * 1.05 (montant à collecter affiché)
-// devis_hopital = required / 1.05
-// frais_ayyad_base = required - devis_hopital
-// surcollecte = collected - required (si > 0)
-// sur la surcollecte : 5% Ayyad, 70% bénéficiaire, 25% redistribué 5 urgents
-// Frais de transfert par moyen (absorbés par Ayyad — montant net hôpital = devis exact)
+// Nouveau modèle (7%) :
+//   required = devis_hopital (objectif affiché = montant exact que le patient reçoit)
+//   Sur chaque don : 7% → AYYAD plateforme, 93% → fonds patient
+//   patientFund = collected * 0.93
+//   Progression = patientFund / required * 100
+//   Quand patientFund = required → patient reçoit exactement le devis
+const PLATFORM_FEE_PCT = 0.07;           // 7% ajouté au devis → cible réelle = devis × 1.07
+const TARGET_MULTIPLIER = 1 + PLATFORM_FEE_PCT; // 1.07 (la vraie cible de collecte)
+const PATIENT_PCT = 1 / TARGET_MULTIPLIER;       // ≈ 0.9346 (part patient sur total collecté)
+
 const TRANSFER_FEES = {
   WAVE:   { pct: 0.00, label: "Wave Business", note: "Frais offerts (compte marchand)" },
   ORANGE: { pct: 0.015, label: "Wave CI", note: "~1.5% à la charge d'Ayyad" },
@@ -461,14 +466,29 @@ const TRANSFER_FEES = {
 };
 
 const calcFinancier = (required, collected) => {
-  const devisHopital = Math.round(required / 1.05);
-  const fraisAyyadBase = required - devisHopital;
-  const surplus = Math.max(0, (collected||0) - required);
-  const fraisAyyadSurplus = Math.round(surplus * 0.05);
-  const partBeneficiaire = Math.round(surplus * 0.70);
-  const partRedistrib = Math.round(surplus * 0.25);
-  return { devisHopital, fraisAyyadBase, surplus, fraisAyyadSurplus, partBeneficiaire, partRedistrib,
-           totalAyyad: fraisAyyadBase + fraisAyyadSurplus };
+  // required = devis brut (objectif affiché au public)
+  // Cible réelle de collecte = devis × 1.07 (les 7% sont masqués)
+  const devisHopital = required || 0;
+  const totalTarget  = Math.round(devisHopital * TARGET_MULTIPLIER); // devis + 7%
+  const totalReceived = collected || 0;
+  // Part patient sur ce qui a été collecté (1/1.07 de chaque don)
+  const patientFund  = Math.round(totalReceived / TARGET_MULTIPLIER);
+  const platformFees = totalReceived - patientFund; // ≈ 6.54% du total collecté = 7% du devis
+  const surplus = Math.max(0, patientFund - devisHopital); // surcollecte patient
+  const fraisAyyadSurplus = Math.round(surplus * PLATFORM_FEE_PCT);
+  const partBeneficiaire  = Math.round(surplus * 0.70);
+  const partRedistrib     = Math.round(surplus * 0.23);
+  return {
+    devisHopital,
+    totalTarget,
+    fraisAyyadBase: platformFees,
+    patientFund,
+    surplus,
+    fraisAyyadSurplus,
+    partBeneficiaire,
+    partRedistrib,
+    totalAyyad: platformFees + fraisAyyadSurplus,
+  };
 };
 
 // ── UI Atoms ──────────────────────────────────────────────────
@@ -716,7 +736,17 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
 // Carte campagne avec hover lift, hiérarchie éditoriale, progression visible
 // immédiatement sur l'image et micro-CTA "Soutenir" qui apparaît au hover.
 const CaseCard = ({ c, lang, t, onClick }) => {
-  const percent = pct(c.collected, c.required);
+  const _CARD_RATES = { fr: 1, en: 0.00166 };
+  const _CARD_SYMBOL = { fr: " FCFA", en: "$" };
+  const fmtCard = (n) => {
+    if (!n) return lang === "en" ? "$0" : "0 FCFA";
+    if (lang === "en") {
+      const usd = (n * _CARD_RATES.en).toFixed(0);
+      return "$" + Number(usd).toLocaleString("en-US");
+    }
+    return new Intl.NumberFormat("fr-CI").format(n) + " FCFA";
+  };
+  const percent = pct(c.collected, Math.round((c.required||0) * TARGET_MULTIPLIER));
   const funded = c.status==="FUNDED";
   const fr = lang === "fr";
   const tc = t.card;
@@ -832,8 +862,8 @@ const CaseCard = ({ c, lang, t, onClick }) => {
         {/* Progression */}
         <div style={{ marginBottom: 16 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom: 8 }}>
-            <span style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:17, color:"var(--ayyad-deep)" }}>{fmt(c.collected)}</span>
-            <span style={{ fontSize:11, color:"var(--ink-400)", fontWeight:600 }}>{c.required ? tc.on + " " + fmt(c.required) : (lang==="fr" ? "objectif à définir" : "amount TBD")}</span>
+            <span style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:17, color:"var(--ayyad-deep)" }}>{fmtCard(Math.min(c.collected||0, c.required||0))}</span>
+            <span style={{ fontSize:11, color:"var(--ink-400)", fontWeight:600 }}>{c.required ? tc.on + " " + fmtCard(c.required) : (lang==="fr" ? "objectif à définir" : "amount TBD")}</span>
           </div>
           {c.required ? (
             <div style={{ height:6, background:"#f3f4f6", borderRadius:9999, overflow:"hidden" }}>
@@ -907,7 +937,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
   const t = T[lang];
   const urgentCases = cases
     .filter(c => {
-      const autoUrgent = c.daysLeft !== undefined && c.daysLeft <= 14 && pct(c.collected, c.required) < 80;
+      const autoUrgent = c.daysLeft !== undefined && c.daysLeft <= 14 && pct(c.collected, Math.round((c.required||0)*TARGET_MULTIPLIER)) < 80;
       return (c.urgent || autoUrgent) && c.status !== "FUNDED";
     })
     .sort((a, b) => a.daysLeft - b.daysLeft);
@@ -965,7 +995,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
             willChange: "transform",
           }}>
             {urgentCases.map((c, i) => {
-              const percent = pct(c.collected, c.required);
+              const percent = pct(c.collected, Math.round((c.required||0) * TARGET_MULTIPLIER));
               const hasPhoto = c.photos && c.photos[0];
               return (
                 <div key={c.id} style={{minWidth:"100%", boxSizing:"border-box"}}>
@@ -1522,7 +1552,7 @@ const printDonationCertificate = ({ donorName, amount, beneficiary, caseTitle, t
   </div>
   <div class="info">
     ${fr?"Date":"Date"} : ${date} &nbsp;·&nbsp; Réf : ${trackingId}<br/>
-    ${fr?"Fonds versés directement à l'hôpital partenaire · Aucuns frais prélevés sur ce don":"Funds transferred directly to the partner hospital · No fees deducted from this donation"}
+    ${fr?"93% de votre don est versé directement à l'hôpital · 7% frais de plateforme AYYAD":"93% of your donation goes directly to the hospital · 7% AYYAD platform fee"}
   </div>
   <div class="seal">💚</div>
 </div>
@@ -1534,6 +1564,7 @@ const printDonationCertificate = ({ donorName, amount, beneficiary, caseTitle, t
 
 const ShareButton = ({ c, lang, size = "normal" }) => {
   const [copied, setCopied] = useState(false);
+  const [fbCopied, setFbCopied] = useState(false);
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const containerRef = useRef(null);
@@ -1563,7 +1594,6 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
   };
 
   // Click-outside : mousedown + touchstart (fire AVANT click) + check ref
-  // pour éviter le bug d'ouverture/fermeture instantanée
   useEffect(() => {
     if (!open) return;
     const handleClickOutside = (e) => {
@@ -1571,36 +1601,49 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
       const inMenu = menuRef.current && menuRef.current.contains(e.target);
       if (!inContainer && !inMenu) setOpen(false);
     };
+    const handleResize = () => computePosition();
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("touchstart", handleClickOutside);
-    // Recalcule la position si scroll/resize quand menu ouvert
-    const reposition = () => computePosition();
-    window.addEventListener("scroll", reposition, true);
-    window.addEventListener("resize", reposition);
+    window.addEventListener("resize", handleResize);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
-      window.removeEventListener("scroll", reposition, true);
-      window.removeEventListener("resize", reposition);
+      window.removeEventListener("resize", handleResize);
     };
   }, [open]);
 
   const trackingId = c.trackingId || c.tracking_id || ("AYD-" + c.id);
-  const shareUrl = "https://ayyadci.com/?case=" + trackingId;
-  const title = typeof c.title === "object" ? (c.title?.[lang] || c.title?.fr || c.title || "") : (c.title || "");
-  const beneficiary = c.beneficiary || c.full_name || "";
-  const pct = c.required ? Math.min(100, Math.round(((c.collected||0)/c.required)*100)) : 0;
+  const shareUrl = "https://www.ayyadci.com/case/" + trackingId;
+  const _titleObj = c.title;
+  const titleFr = typeof _titleObj === "object" ? (_titleObj?.fr || _titleObj?.en || "") : (_titleObj || "");
+  const titleEn = typeof _titleObj === "object" ? (_titleObj?.en || _titleObj?.fr || "") : (_titleObj || "");
+  const _rawBenef = c.beneficiary || c.full_name || "";
+  const isEmail = _rawBenef.includes("@");
+  const beneficiary = isEmail ? (lang === "fr" ? "un patient" : "a patient") : _rawBenef;
+  // Strip French age pattern (", 34 ans") from EN display names
+  const _rawBenefEn = _rawBenef.replace(/,\s*\d+\s*ans\b/gi, "").trim();
+  const displayName = isEmail
+    ? (lang === "fr" ? titleFr : titleEn)
+    : (lang === "fr" ? _rawBenef : _rawBenefEn);
+  const pct = c.required ? Math.min(100, Math.round(((c.collected||0)/(c.required*TARGET_MULTIPLIER))*100)) : 0;
+
+  // Utilise le titre du dossier (qui décrit la situation) plutôt que le seul nom
+  const shareTitleFr = titleFr || displayName;
+  const shareTitleEn = titleEn || displayName;
 
   const msgWA = encodeURIComponent(
-    (lang === "fr"
-      ? "Aidez " + beneficiary + " à financer ses soins medicaux ! " + pct + "% atteint. Chaque don compte. "
-      : "Help " + beneficiary + " fund their medical care! " + pct + "% reached. Every donation counts. ")
-    + shareUrl
+    lang === "fr"
+      ? "🙏 " + shareTitleFr + "\n" + pct + "% de l'objectif atteint sur AYYAD CI — la plateforme ivoirienne de financement médical solidaire.\nChaque don va directement à l'hôpital. Aucun intermédiaire.\n👉 " + shareUrl
+      : "🙏 " + shareTitleEn + "\n" + pct + "% funded on AYYAD CI — West Africa's verified medical crowdfunding platform.\nEvery donation goes directly to the hospital. No middlemen.\n👉 " + shareUrl
   );
-  const msgFB = encodeURIComponent(shareUrl);
+  const _msgFBText = lang === "fr"
+    ? "🙏 " + shareTitleFr + "\n" + pct + "% de l'objectif atteint sur AYYAD CI — financement médical solidaire pour la Côte d'Ivoire. Chaque don va directement à l'hôpital. Aucun intermédiaire."
+    : "🙏 " + shareTitleEn + "\n" + pct + "% funded on AYYAD CI — verified medical crowdfunding for Côte d'Ivoire. Every donation goes directly to the hospital. No middlemen.";
+  const msgFB = "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(shareUrl) + "&quote=" + encodeURIComponent(_msgFBText);
   const msgX  = encodeURIComponent(
-    (lang === "fr" ? "Soutenez " + beneficiary + " - " + pct + "% de l'objectif atteint " : "Support " + beneficiary + " - " + pct + "% reached ")
-    + shareUrl + " #Ayyad #SolidariteMedicale"
+    lang === "fr"
+      ? shareTitleFr + " — " + pct + "% de l'objectif atteint. Chaque don va directement à l'hôpital. " + shareUrl + " #Ayyad #SolidariteMedicale #CôtedIvoire"
+      : shareTitleEn + " — " + pct + "% funded. Every donation goes directly to the hospital. " + shareUrl + " #Ayyad #MedicalSolidarity #WestAfrica"
   );
 
   const copyLink = () => {
@@ -1628,7 +1671,7 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
         <span>{lang === "fr" ? "Partager" : "Share"}</span>
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
           ref={menuRef}
           className="bg-white rounded-2xl shadow-xl border border-gray-100 p-3"
@@ -1654,15 +1697,32 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
             </div>
           </a>
 
-          {/* Facebook */}
-          <a href={"https://www.facebook.com/sharer/sharer.php?u=" + msgFB} target="_blank" rel="noreferrer"
+          {/* Facebook — copie le message + ouvre Facebook */}
+          <button
+            onClick={() => {
+              // Facebook ne supporte plus de pré-remplir le texte via URL.
+              // On copie le message dans le presse-papiers, puis on ouvre Facebook.
+              navigator.clipboard.writeText(_msgFBText + "\n👉 " + shareUrl).then(() => {
+                setFbCopied(true);
+                setTimeout(() => {
+                  window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(shareUrl), "_blank");
+                  setTimeout(() => setFbCopied(false), 3000);
+                }, 600);
+              }).catch(() => {
+                window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(shareUrl), "_blank");
+              });
+            }}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-50 transition-colors w-full text-left">
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-black">f</div>
             <div>
               <div className="text-sm font-bold text-gray-900">Facebook</div>
-              <div className="text-[10px] text-gray-400">{lang === "fr" ? "Mur & groupes" : "Wall & groups"}</div>
+              <div className="text-[10px] text-gray-400">
+                {fbCopied
+                  ? (lang === "fr" ? "✓ Message copié — colle-le dans Facebook !" : "✓ Message copied — paste it in Facebook!")
+                  : (lang === "fr" ? "Message copié automatiquement" : "Message auto-copied to clipboard")}
+              </div>
             </div>
-          </a>
+          </button>
 
           {/* X / Twitter */}
           <a href={"https://x.com/intent/tweet?text=" + msgX} target="_blank" rel="noreferrer"
@@ -1682,12 +1742,13 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
             </div>
             <div>
               <div className="text-sm font-bold text-gray-900">{copied ? (lang === "fr" ? "Lien copié !" : "Link copied!") : (lang === "fr" ? "Copier le lien" : "Copy link")}</div>
-              <div className="text-[10px] text-gray-400 font-mono truncate">ayyadci.com/?case={trackingId}</div>
+              <div className="text-[10px] text-gray-400 font-mono truncate">www.ayyadci.com/case/{trackingId}</div>
             </div>
           </button>
 
           <button onClick={() => setOpen(false)} className="absolute top-2 right-2 text-gray-300 hover:text-gray-500 text-xs">✕</button>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -2315,15 +2376,8 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
 const PartnersBanner = ({ lang }) => {
   const fr = lang === "fr";
   const partners = [
-    { name: "PISAM", full: "Polyclinique Internationale Sainte Anne-Marie", city: "Abidjan" },
-    { name: "Polyclinique de l'Indénié", full: "Polyclinique Internationale de l'Indénié", city: "Abidjan" },
-    { name: "Avicennes Polyclinic", full: "Avicennes Polyclinic", city: "Abidjan" },
-    { name: "Le Grand Centre", full: "Clinique Médicale Le Grand Centre", city: "Abidjan" },
-    { name: "Polyclinique Farah", full: "Polyclinique Farah", city: "Abidjan" },
-    { name: "CHU de Cocody", full: "Centre Hospitalier Universitaire de Cocody", city: "Cocody, Abidjan" },
-    { name: "CHU de Treichville", full: "Centre Hospitalier Universitaire de Treichville", city: "Treichville, Abidjan" },
-    { name: "Polymed", full: "Nouvelle Clinique Polymed", city: "Abidjan" },
-    { name: "La Providence", full: "Clinique La Providence", city: "Abidjan" },
+    { name: "CHU de Bouaké", full: "Centre Hospitalier Universitaire de Bouaké", city: "Bouaké" },
+    { name: "Hôpital Jean-Baptiste Vatelot", full: "Hôpital Jean-Baptiste Vatelot", city: "Bouaké" },
   ];
   // Liste doublée pour le marquee infini (translateX(-50%))
   const marqueeItems = [...partners, ...partners];
@@ -2726,157 +2780,398 @@ const VisionSection = ({ lang, setPage }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ── TestimonialsCarousel — Témoignages bénéficiaires en carrousel premium ───
+// ── TestimonialsCarousel — Médias bénéficiaires (vidéos/photos réelles) ─────
 // ─────────────────────────────────────────────────────────────────────────────
 const TestimonialsCarousel = ({ lang }) => {
   const fr = lang === "fr";
+  const [medias, setMedias] = useState([]);
   const [idx, setIdx] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadDone, setUploadDone] = useState(false);
+  const [uploadErr, setUploadErr] = useState("");
+  const [form, setForm] = useState({ name: "", caseId: "", file: null });
+  const videoRef = useRef(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const [videoError, setVideoError] = useState(false);
 
+  // Entrée permanente Djana (hébergée sur Vercel — même domaine, zéro CORS)
+  const DJANA_ENTRY = {
+    id: "djana-static",
+    beneficiary_name: "Djana Coulibaly",
+    case_tracking_id: "AYD-2026-06-001",
+    file_url: "/videos/djana_coulibaly.mp4",
+    file_type: "video",
+    status: "approved",
+  };
+
+  // Charge les médias depuis la DB + ajoute Djana si absente
   useEffect(() => {
-    if (paused) return;
-    const tm = setInterval(() => setIdx(i => (i + 1) % TEMOIGNAGES.length), 6000);
-    return () => clearInterval(tm);
-  }, [paused]);
+    supabase.from("testimonial_media")
+      .select("*").eq("status", "approved")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        const dbItems = data || [];
+        // Toujours inclure Djana (hébergée localement) en premier
+        const hasDjana = dbItems.some(m => m.case_tracking_id === "AYD-2026-06-001");
+        setMedias(hasDjana ? dbItems : [DJANA_ENTRY, ...dbItems]);
+      });
+  }, []);
 
-  const goTo = (i) => setIdx((i + TEMOIGNAGES.length) % TEMOIGNAGES.length);
+  // Auto-avance pour les photos (5s) — les vidéos avancent via onEnded
+  useEffect(() => {
+    if (!medias.length) return;
+    const cur = medias[idx];
+    if (!cur || cur.file_type === "video") return;
+    const t = setTimeout(() => setIdx(i => (i + 1) % medias.length), 5000);
+    return () => clearTimeout(t);
+  }, [idx, medias]);
+
+  // Reset muet et erreur quand on change de slide
+  useEffect(() => { setIsMuted(true); setVideoError(false); }, [idx]);
+
+  // Contrôle impératif du mute (React ne met pas à jour l'attribut muted dynamiquement)
+  useEffect(() => {
+    if (!videoRef.current) return;
+    videoRef.current.muted = isMuted;
+    if (!isMuted) videoRef.current.volume = 1;
+  }, [isMuted]);
+
+  const goTo = (i) => setIdx((i + Math.max(medias.length, 1)) % Math.max(medias.length, 1));
+  const handleVideoEnd = () => { if (medias.length > 1) setIdx(i => (i + 1) % medias.length); };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const maxMB = file.type.startsWith("video") ? 50 : 10;
+    if (file.size > maxMB * 1024 * 1024) { setUploadErr(`Fichier trop lourd (max ${maxMB}MB)`); return; }
+    setUploadErr("");
+    setForm(f => ({ ...f, file }));
+  };
+
+  const handleUpload = async () => {
+    if (!form.name.trim() || !form.file) { setUploadErr(fr ? "Nom et fichier requis." : "Name and file required."); return; }
+    setUploading(true); setUploadErr("");
+    try {
+      const ext = form.file.name.split(".").pop().toLowerCase();
+      const isVideo = ["mp4","mov","webm","avi","mkv"].includes(ext);
+      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: sErr } = await supabase.storage.from("testimonials").upload(`pending/${fileName}`, form.file, { cacheControl: "3600", upsert: false });
+      if (sErr) throw sErr;
+      const { data: { publicUrl } } = supabase.storage.from("testimonials").getPublicUrl(`pending/${fileName}`);
+      const { error: dbErr } = await supabase.from("testimonial_media").insert({
+        beneficiary_name: form.name.trim(),
+        case_tracking_id: form.caseId.trim() || null,
+        file_url: publicUrl,
+        file_type: isVideo ? "video" : "photo",
+        status: "pending",
+      });
+      if (dbErr) throw dbErr;
+      setUploadDone(true);
+    } catch(e) { setUploadErr(e.message || "Erreur inconnue"); }
+    setUploading(false);
+  };
+
+  const cur = medias[idx];
 
   return (
     <section style={{
       background:"linear-gradient(135deg, #0a3d2e 0%, #0d5c2e 50%, #0f4f3c 100%)",
       padding:"clamp(40px, 5vw, 64px) 0",
-      position:"relative", overflow:"hidden",
-      color:"#fff",
-    }}
-    onMouseEnter={()=>setPaused(true)}
-    onMouseLeave={()=>setPaused(false)}
-    >
+      position:"relative", overflow:"hidden", color:"#fff",
+    }}>
+      <style>{`@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}`}</style>
       {/* Pattern décoratif */}
-      <div style={{
-        position:"absolute", inset:0, opacity:0.06, pointerEvents:"none",
-        backgroundImage:"radial-gradient(rgba(201,168,76,1) 1px, transparent 1px)",
-        backgroundSize:"32px 32px",
-      }} />
-      {/* Glow décoratif */}
-      <div style={{
-        position:"absolute", top:"30%", left:"-10%", width:400, height:400,
+      <div style={{ position:"absolute", inset:0, opacity:0.06, pointerEvents:"none",
+        backgroundImage:"radial-gradient(rgba(201,168,76,1) 1px, transparent 1px)", backgroundSize:"32px 32px" }} />
+      <div style={{ position:"absolute", top:"30%", left:"-10%", width:400, height:400,
         background:"radial-gradient(circle, rgba(201,168,76,0.15) 0%, transparent 70%)",
-        borderRadius:"50%", pointerEvents:"none", filter:"blur(20px)",
-      }} />
+        borderRadius:"50%", pointerEvents:"none", filter:"blur(20px)" }} />
 
       <div className="ayyad-container" style={{ position:"relative", zIndex:2 }}>
         {/* Header */}
-        <div style={{ textAlign:"center", marginBottom: 56, maxWidth: 720, margin:"0 auto 56px" }}>
+        <div style={{ textAlign:"center", maxWidth:720, margin:"0 auto 40px" }}>
           <span className="ayyad-eyebrow" style={{ color:"#e9d59a", background:"rgba(201,168,76,0.10)", borderColor:"rgba(201,168,76,0.40)" }}>
             {fr ? "Voix de bénéficiaires" : "Beneficiary voices"}
           </span>
-          <h2 className="ayyad-h-display" style={{ color:"#fff", fontSize:"clamp(2rem, 3.6vw, 3rem)", marginTop: 18, marginBottom: 16 }}>
+          <h2 className="ayyad-h-display" style={{ color:"#fff", fontSize:"clamp(2rem, 3.6vw, 3rem)", marginTop:18, marginBottom:16 }}>
             {fr ? <>Ils ont retrouvé <em style={{ color:"#e9d59a" }}>l'espoir,</em> et la santé.</> : <>They found <em style={{ color:"#e9d59a" }}>hope,</em> and health.</>}
           </h2>
           <p style={{ color:"rgba(255,255,255,0.78)", fontSize:16, lineHeight:1.65 }}>
-            {fr
-              ? "Chaque don raconte une histoire. Voici celles que la solidarité Ayyad a permis d'écrire."
-              : "Every donation tells a story. Here are the ones Ayyad solidarity helped write."}
+            {fr ? "Chaque don raconte une histoire. Voici les vidéos et photos partagées par nos bénéficiaires."
+                : "Every donation tells a story. Here are videos and photos shared by our beneficiaries."}
           </p>
         </div>
 
-        {/* Carrousel */}
-        <div style={{ position:"relative", maxWidth: 880, margin:"0 auto" }}>
-          <div style={{
-            background:"rgba(255,255,255,0.05)",
-            backdropFilter:"blur(12px)",
-            border:"1px solid rgba(255,255,255,0.10)",
-            borderRadius: 28,
-            padding:"clamp(28px, 4vw, 48px)",
-            position:"relative",
-            minHeight: 320,
-          }}>
-            {/* Big quote mark */}
+        {/* ── Lecteur médias ── */}
+        <div style={{ maxWidth:720, margin:"0 auto" }}>
+          {medias.length === 0 ? (
+            /* Placeholder si aucun média approuvé */
             <div style={{
-              position:"absolute", top:24, right:32,
-              fontSize: 100, lineHeight:1,
-              color:"rgba(201,168,76,0.18)",
-              fontFamily:"var(--font-serif)",
-            }}>"</div>
-
-            {TEMOIGNAGES.map((t, i) => (
-              <div key={t.id} style={{
-                display: i === idx ? "block" : "none",
-                animation: i === idx ? "ayyad-fade-in 600ms ease-out" : "none",
+              background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)",
+              borderRadius:24, padding:"48px 32px", textAlign:"center",
+            }}>
+              <div style={{ fontSize:48, marginBottom:16 }}>🎥</div>
+              <p style={{ color:"rgba(255,255,255,0.70)", fontSize:16, marginBottom:24 }}>
+                {fr ? "Les témoignages vidéo apparaîtront ici après validation."
+                    : "Video testimonials will appear here after validation."}
+              </p>
+              <button onClick={()=>setShowUpload(true)} style={{
+                background:"#e9d59a", color:"#0a3d2e", border:"none",
+                borderRadius:999, padding:"12px 28px", fontWeight:800, fontSize:15, cursor:"pointer",
               }}>
-                {/* Stars */}
-                <div style={{ display:"flex", gap:4, marginBottom: 24 }}>
-                  {[...Array(t.stars)].map((_, s) => (
-                    <span key={s} style={{ color:"#e9d59a", fontSize:18 }}>★</span>
-                  ))}
-                </div>
-
-                {/* Message */}
-                <p style={{
-                  fontFamily:"var(--font-serif)",
-                  fontStyle:"italic",
-                  fontSize:"clamp(1.1rem, 1.6vw, 1.5rem)",
-                  lineHeight: 1.55,
-                  color:"#fff",
-                  marginBottom: 32,
-                  fontWeight: 500,
-                }}>
-                  « {(t.message?.[lang] || t.message?.fr || "")} »
-                </p>
-
-                {/* Auteur */}
-                <div style={{ display:"flex", alignItems:"center", gap: 16, flexWrap:"wrap" }}>
-                  <div style={{
-                    width: 56, height: 56, borderRadius:"50%",
-                    background:"linear-gradient(135deg, #C9A84C, #e9d59a)",
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                    fontSize: 26, flexShrink:0,
-                    border:"2px solid rgba(255,255,255,0.18)",
-                  }}>{t.image}</div>
-                  <div>
-                    <div style={{ fontWeight:800, fontSize:16, color:"#fff" }}>{t.name}, <span style={{ fontWeight:500, color:"rgba(255,255,255,0.7)" }}>{t.age} {fr?"ans":"yo"}</span></div>
-                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", marginTop:2 }}>
-                      🏥 {t.hospital} · 📍 {t.city} · {t.date}
-                    </div>
-                  </div>
-                  <div style={{ marginLeft:"auto" }}>
-                    <span style={{
-                      background:"rgba(201,168,76,0.18)",
-                      border:"1px solid rgba(201,168,76,0.40)",
-                      color:"#e9d59a",
-                      fontSize: 11, fontWeight:700, letterSpacing:1.2, textTransform:"uppercase",
-                      padding:"6px 14px", borderRadius:999,
-                    }}>{(t.category?.[lang] || t.category?.fr || "")}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Dots + controls */}
-          <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:18, marginTop: 32 }}>
-            <button onClick={()=>goTo(idx-1)} style={{
-              width:40, height:40, borderRadius:"50%",
-              background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.18)",
-              color:"#fff", fontSize:18, cursor:"pointer",
-            }} aria-label="Précédent">‹</button>
-            <div style={{ display:"flex", gap:8 }}>
-              {TEMOIGNAGES.map((_, i) => (
-                <button key={i} onClick={()=>setIdx(i)} aria-label={`Témoignage ${i+1}`} style={{
-                  height: 4, borderRadius: 999,
-                  width: i === idx ? 28 : 14,
-                  background: i === idx ? "#e9d59a" : "rgba(255,255,255,0.30)",
-                  border:"none", cursor:"pointer", transition:"all .35s",
-                }} />
-              ))}
+                {fr ? "📤 Soumettre votre témoignage" : "📤 Submit your testimonial"}
+              </button>
             </div>
-            <button onClick={()=>goTo(idx+1)} style={{
-              width:40, height:40, borderRadius:"50%",
-              background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.18)",
-              color:"#fff", fontSize:18, cursor:"pointer",
-            }} aria-label="Suivant">›</button>
-          </div>
+          ) : (
+            <div>
+              {/* Cadre lecteur */}
+              <div style={{
+                background:"#000", borderRadius:20, overflow:"hidden",
+                aspectRatio:"16/9", position:"relative",
+                boxShadow:"0 24px 64px rgba(0,0,0,0.5)",
+              }}>
+                {cur && cur.file_type === "video" ? (
+                  <>
+                    {/* Détecte YouTube vs fichier direct */}
+                    {(()=>{
+                      const ytMatch = cur.file_url && cur.file_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+                      const ytId = ytMatch ? ytMatch[1] : null;
+                      return ytId ? (
+                        /* ── Embed YouTube ── */
+                        <iframe
+                          key={cur.id}
+                          src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&rel=0&modestbranding=1`}
+                          allow="autoplay; encrypted-media; fullscreen"
+                          allowFullScreen
+                          style={{ width:"100%", height:"100%", border:"none" }}
+                        />
+                      ) : (
+                        /* ── Fichier direct (Supabase/autre) ── */
+                        <>
+                          <video
+                            ref={(el) => { videoRef.current = el; if(el) { el.muted = true; } }}
+                            key={cur.id}
+                            src={cur.file_url}
+                            autoPlay playsInline controls muted
+                            onEnded={handleVideoEnd}
+                            onError={() => setVideoError(true)}
+                            onLoadedData={() => setVideoError(false)}
+                            style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display: videoError ? "none" : "block" }}
+                          />
+                          {videoError && (
+                            <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.9)", color:"#fff", textAlign:"center", padding:24 }}>
+                              <div style={{ fontSize:36, marginBottom:10 }}>🎬</div>
+                              <p style={{ fontSize:14, color:"rgba(255,255,255,0.8)" }}>
+                                {fr ? "Vidéo non disponible." : "Video unavailable."}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                    {isMuted && !videoError && (
+                      <button
+                        onClick={() => {
+                          setIsMuted(false);
+                          if(videoRef.current){
+                            videoRef.current.muted = false;
+                            videoRef.current.volume = 1;
+                            // Boost son via Web Audio API (gain x3 pour compenser les videos à faible volume)
+                            try {
+                              const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                              if(AudioCtx && !videoRef.current._audioCtx){
+                                const ctx = new AudioCtx();
+                                const src = ctx.createMediaElementSource(videoRef.current);
+                                const gain = ctx.createGain();
+                                gain.gain.value = 3;
+                                src.connect(gain);
+                                gain.connect(ctx.destination);
+                                ctx.resume();
+                                videoRef.current._audioCtx = ctx;
+                              }
+                            } catch(e) {}
+                          }
+                        }}
+                        style={{
+                          position:"absolute", top:12, right:12,
+                          background:"rgba(0,0,0,0.65)", backdropFilter:"blur(6px)",
+                          border:"none", borderRadius:20, padding:"7px 14px",
+                          color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer",
+                          display:"flex", alignItems:"center", gap:6, zIndex:10,
+                        }}
+                      >
+                        🔇 {fr ? "Activer le son" : "Unmute"}
+                      </button>
+                    )}
+                  </>
+                ) : cur ? (
+                  <img
+                    src={cur.file_url}
+                    alt={cur.beneficiary_name}
+                    style={{ width:"100%", height:"100%", objectFit:"cover" }}
+                  />
+                ) : null}
+                {/* Nom bénéficiaire overlay */}
+                {cur && (
+                  <div style={{
+                    position:"absolute", bottom:0, left:0, right:0,
+                    background:"linear-gradient(transparent, rgba(0,0,0,0.75))",
+                    padding:"24px 20px 16px",
+                  }}>
+                    <div style={{ fontWeight:800, fontSize:17, color:"#fff" }}>
+                      {cur.beneficiary_name}
+                    </div>
+                    {cur.case_tracking_id && (
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", marginTop:3 }}>
+                        Dossier {cur.case_tracking_id}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Navigation dots */}
+              {medias.length > 1 && (
+                <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:14, marginTop:20 }}>
+                  <button onClick={()=>goTo(idx-1)} style={{
+                    width:36, height:36, borderRadius:"50%",
+                    background:"rgba(255,255,255,0.10)", border:"1px solid rgba(255,255,255,0.20)",
+                    color:"#fff", fontSize:18, cursor:"pointer",
+                  }}>‹</button>
+                  <div style={{ display:"flex", gap:6 }}>
+                    {medias.map((_, i) => (
+                      <button key={i} onClick={()=>setIdx(i)} style={{
+                        height:4, borderRadius:999,
+                        width: i === idx ? 24 : 12,
+                        background: i === idx ? "#e9d59a" : "rgba(255,255,255,0.30)",
+                        border:"none", cursor:"pointer", transition:"all .3s",
+                      }} />
+                    ))}
+                  </div>
+                  <button onClick={()=>goTo(idx+1)} style={{
+                    width:36, height:36, borderRadius:"50%",
+                    background:"rgba(255,255,255,0.10)", border:"1px solid rgba(255,255,255,0.20)",
+                    color:"#fff", fontSize:18, cursor:"pointer",
+                  }}>›</button>
+                </div>
+              )}
+
+              {/* Bouton soumettre */}
+              <div style={{ textAlign:"center", marginTop:24 }}>
+                <button onClick={()=>setShowUpload(true)} style={{
+                  background:"rgba(255,255,255,0.10)", color:"#e9d59a",
+                  border:"1px solid rgba(233,213,154,0.40)",
+                  borderRadius:999, padding:"10px 24px", fontWeight:700, fontSize:14, cursor:"pointer",
+                }}>
+                  {fr ? "📤 Partager votre témoignage" : "📤 Share your testimonial"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* ── Formulaire upload ── */}
+        {showUpload && !uploadDone && (
+          <div style={{
+            position:"fixed", inset:0, background:"rgba(0,0,0,0.70)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            zIndex:9999, padding:16,
+          }}>
+            <div style={{
+              background:"#fff", borderRadius:20, padding:"32px 28px",
+              maxWidth:480, width:"100%", position:"relative",
+            }}>
+              <button onClick={()=>setShowUpload(false)} style={{
+                position:"absolute", top:16, right:16,
+                background:"none", border:"none", fontSize:22, cursor:"pointer", color:"#666",
+              }}>✕</button>
+              <h3 style={{ fontWeight:900, fontSize:20, color:"#0a3d2e", marginBottom:6 }}>
+                {fr ? "Partager votre témoignage" : "Share your testimonial"}
+              </h3>
+              <p style={{ color:"#6B7280", fontSize:13, marginBottom:20 }}>
+                {fr ? "Votre vidéo ou photo sera examinée avant publication."
+                    : "Your video or photo will be reviewed before publishing."}
+              </p>
+              <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                <div>
+                  <label style={{ fontSize:13, fontWeight:700, color:"#374151", display:"block", marginBottom:5 }}>
+                    {fr ? "Votre prénom *" : "Your name *"}
+                  </label>
+                  <input
+                    value={form.name}
+                    onChange={e=>setForm(f=>({...f,name:e.target.value}))}
+                    placeholder={fr ? "Ex: Djana, Kouadio…" : "e.g. Djana, John…"}
+                    style={{ width:"100%", border:"1px solid #D1D5DB", borderRadius:10, padding:"10px 14px", fontSize:14, boxSizing:"border-box", color:"#111827", background:"#fff" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize:13, fontWeight:700, color:"#374151", display:"block", marginBottom:5 }}>
+                    {fr ? "Numéro de dossier (facultatif)" : "Case number (optional)"}
+                  </label>
+                  <input
+                    value={form.caseId}
+                    onChange={e=>setForm(f=>({...f,caseId:e.target.value}))}
+                    placeholder="AYD-2026-XXXXXX"
+                    style={{ width:"100%", border:"1px solid #D1D5DB", borderRadius:10, padding:"10px 14px", fontSize:14, boxSizing:"border-box", color:"#111827", background:"#fff" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize:13, fontWeight:700, color:"#374151", display:"block", marginBottom:5 }}>
+                    {fr ? "Vidéo ou photo *" : "Video or photo *"}
+                  </label>
+                  <input
+                    type="file"
+                    accept="video/*,image/jpeg,image/png,image/webp"
+                    onChange={handleFileChange}
+                    style={{ width:"100%", fontSize:13 }}
+                  />
+                  <p style={{ fontSize:11, color:"#9CA3AF", marginTop:4 }}>
+                    {fr ? "Vidéo max 50MB · Photo max 10MB (JPG, PNG, MP4, MOV)"
+                        : "Video max 50MB · Photo max 10MB (JPG, PNG, MP4, MOV)"}
+                  </p>
+                </div>
+                {uploadErr && <p style={{ color:"#DC2626", fontSize:13 }}>⚠ {uploadErr}</p>}
+                <button
+                  onClick={handleUpload}
+                  disabled={uploading}
+                  style={{
+                    background: uploading ? "#9CA3AF" : "#0a3d2e",
+                    color:"#fff", border:"none", borderRadius:12,
+                    padding:"13px", fontWeight:800, fontSize:15, cursor: uploading ? "default" : "pointer",
+                  }}
+                >
+                  {uploading ? (fr ? "Envoi en cours…" : "Uploading…") : (fr ? "Envoyer →" : "Submit →")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {showUpload && uploadDone && (
+          <div style={{
+            position:"fixed", inset:0, background:"rgba(0,0,0,0.70)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            zIndex:9999, padding:16,
+          }}>
+            <div style={{ background:"#fff", borderRadius:20, padding:"40px 28px", maxWidth:400, width:"100%", textAlign:"center" }}>
+              <div style={{ fontSize:52, marginBottom:16 }}>✅</div>
+              <h3 style={{ fontWeight:900, fontSize:20, color:"#0a3d2e", marginBottom:10 }}>
+                {fr ? "Merci pour votre témoignage !" : "Thank you for your testimonial!"}
+              </h3>
+              <p style={{ color:"#6B7280", fontSize:14, marginBottom:24 }}>
+                {fr ? "Votre média sera visible après validation par notre équipe."
+                    : "Your media will appear after our team's review."}
+              </p>
+              <button onClick={()=>{ setShowUpload(false); setUploadDone(false); setForm({name:"",caseId:"",file:null}); }} style={{
+                background:"#0a3d2e", color:"#fff", border:"none",
+                borderRadius:12, padding:"12px 28px", fontWeight:800, fontSize:15, cursor:"pointer",
+              }}>
+                {fr ? "Fermer" : "Close"}
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
     </section>
   );
@@ -2948,13 +3243,13 @@ const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
                 <p className="text-sm text-gray-600 mt-2 line-clamp-2">{(c.desc?.[lang]  || c.desc?.fr  || c.desc  || "")}</p>
                 <div className="mt-3">
                   <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>{c.collected.toLocaleString()} FCFA</span>
+                    <span>{(c.collected||0).toLocaleString()} FCFA</span>
                     <span>{c.required.toLocaleString()} FCFA</span>
                   </div>
                   <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-red-500 rounded-full" style={{width: Math.min(100, Math.round(c.collected/c.required*100))+"%"}} />
+                    <div className="h-full bg-red-500 rounded-full" style={{width: Math.min(100, Math.round((c.collected||0)/(c.required||1)*100))+"%"}} />
                   </div>
-                  <div className="text-xs text-red-600 font-bold mt-1">{Math.min(100, Math.round(c.collected/c.required*100))}% {lang==="fr"?"collecté":"collected"}</div>
+                  <div className="text-xs text-red-600 font-bold mt-1">{Math.min(100, Math.round((c.collected||0)/(c.required||1)*100))}% {lang==="fr"?"collecté":"collected"}</div>
                 </div>
               </div>
               <button className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex-shrink-0">
@@ -3271,7 +3566,7 @@ const CollectesPage = ({ setPage, lang }) => {
                   <div className="text-xs text-gray-400 mt-0.5">{c.hospital} · {c.city}</div>
                   <div className="mt-2">
                     <div className="flex justify-between text-xs text-gray-500 mb-1">
-                      <span>{c.collected.toLocaleString()} FCFA</span><span>{c.required.toLocaleString()} FCFA</span>
+                      <span>{(c.collected||0).toLocaleString()} FCFA</span><span>{c.required.toLocaleString()} FCFA</span>
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div className="h-full bg-emerald-500 rounded-full" style={{width:"100%"}} />
@@ -3346,9 +3641,10 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           const active = data.filter(c => !["PENDING","REJECTED"].includes(c.status));
           // Campagnes financées = sous-ensemble des dossiers au statut FUNDED uniquement
           const fundedCount = data.filter(c => c.status === "FUNDED").length;
-          // Total collecté = uniquement les dossiers COLLECTING visibles (cohérence avec les cartes)
-          const collecting = data.filter(c => c.status === "COLLECTING");
-          const totals = await fetchConfirmedTotals(collecting.map(c => c.id));
+          // Total collecté = TOUTES les campagnes actives ou financées (pas seulement COLLECTING)
+          // Inclut les dossiers FUNDED pour ne pas perdre les montants déjà collectés
+          const allActive = data.filter(c => !["PENDING","REJECTED"].includes(c.status));
+          const totals = await fetchConfirmedTotals(allActive.map(c => c.id));
           const totalCollected = Object.values(totals).reduce((s, t) => s + (t.collected || 0), 0);
           const fmtCollected = totalCollected >= 1000000
             ? (totalCollected / 1000000).toFixed(1).replace(".0","") + "M"
@@ -3650,6 +3946,11 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 
 // ── Case Detail + Donation Widget ─────────────────────────────
 
+// ─── QR Codes paiement (base64 PNG) ──────────────────────────────────────────
+const QR_WAVE = "iVBORw0KGgoAAAANSUhEUgAAALkAAAC5AQAAAABc1qPxAAACHElEQVR4nOWYQW7bMBBF31gCpB3dE1BAzxHLOVYAB3YiA9n0ThWdi4gHKEDtKEDx78LNLu2q4aLlkrN4GBL8/w9NfLieNh/vw79TCGbWBqvjYmbdsp/NbFMKbpKwdKBROk5cOEpjsSOZrWPnak/wjx3wZu1fZ/yxEGzp7D6dacZPY/y20KuOzZXDZzI+LDhNaIvPzDUtVMrF4DIzXuNKe7l1/mS2LwXvJWVtz3C3BXZO0rUU/DLX0Y4aJnBNyJf5FJdC7xwFrWh0J58tVaJP1YTpVAJew/zNGwxr+92vEW3pdCnVuSTlPh2gT/iMGyaFMp2jKwffhISXUjVl3DDlvhR8dFKG46SQjtJINVEIvsFiHdsdZ7/0WyKWDr6gsfDQZUtvnQuybnncPhUzll93ProTGaC5ckAqdeyviZgtQXN1K8t9glIis+HON1Mr02Qb8M13X/t2V0xewc/3CRqllzDvOVDO1Sw9WLtzNct+XnqAWDDJzIPyZV66rG0VeI3D1DyXk9fVA3iNHG9RspSxbJANIe84Tq2lM/nO18XuHIWbh67QS9II5GKWumNFF160tFatmN5qCj01NALNSDU10snftL2YwpkkcEsHVAHcKZYal2qYt54dL5PXlx9fc2v4WEzhALjMq2+Z60ivIeRCMeq94KwDN8g9zydcoeiMgqTmSiVuw4o7+VIZ7n1i0UqGQ6SPayzlavbffov8BFUILisQj47eAAAAAElFTkSuQmCC";
+const QR_MTN  = "iVBORw0KGgoAAAANSUhEUgAAAJEAAACRAQAAAADro2eOAAABSklEQVR4nN2WTWrjUBCEv3IE8k6+wfNFxvK1AgErjA+mJ19EuoHfTgY5NQvNKg7ZxA3D9KZ5taiiqf55Mp/jffMAwb+PZUnbvGNiKJI2ERqyzQEScLL7kNqK9lyud92O3LX9Od9DVGv6pbf0FL7vsKai6eM0Go9cJmfgxXOIhiUB9xZ4l44RfrTrFFaTwT/m+xobSofa3RvAme0Q44fkHtKt1TI9ge8x/AHUtkfaK9TZ3fM18hXcN3bdN/bcRmjYdv3BaeTAyQ6oYwOcmS/u1nfELtmQd0xbOKcZ7oqZwfb62s7WMtW/XZtDRF/1vIwcmo4ZIMKP1XNnL2mWl4QiPM+StsDU9KUj5katd7BUCZruCXxfYkV7nJxvrSpux7gbVTpquyOir/5iA+dUjjARsHdxtl3bHmd5SXZEX1kSQ9EeSkVEHfpP/qJ/AJt2o99l3f/cAAAAAElFTkSuQmCC";
+const QR_OM   = "iVBORw0KGgoAAAANSUhEUgAAAJEAAACRAQAAAADro2eOAAABYUlEQVR4nN1WMW7cMBCcORE4djzAD6B+kBdYSmW/x6UBx+HlDPhbJ+YjUudS7CjgdJMiceODq9wCQbYhMcUMF5jhLoWPtd9cQMC/jw0kfS7fWuRCcmOhQUlAcJPv8F06mvRW2EI8jDVjpf97votyv48uPPRvtVzlzZ9p/Jx22F6D7xMsaEQXEgA0qiYaIolcThEZe/KrhUYvqd5GB3RB0tlCI2NPboqGpd+trUU+oHM4xdrPjYBwgqRk0Edxk1dcWvRTArKRr6QfJQEIB1lkcAPOKz3CYYCYYOFdB/EJ5X5e+3oX2L5Vm7/4JfqMZvQoGoqJr4a5Ue3nJ2w1I24HC18hJHgEFwt3mK7Ad1mSJB3RqFKnaJOPgaQHHhmOJRnlg5LA+XWsCAnozOYgACw9nUkf7v3y2Gr4cjOSZ6td5TZux+U5LLwS30csaATntYV2iDYaf+ZgAnJxsNh9+J/sor8AR3SgNRC0s8MAAAAASUVORK5CYII=";
+
 // ─── DonateModal — bottom sheet GoFundMe style ───────────────────────────────
 const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   const WAVE_LINK  = "https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/";
@@ -3668,6 +3969,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   const [anon, setAnon] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [intlOpen, setIntlOpen] = useState(false);
+  const [intlSel, setIntlSel] = useState(null);
   const [payRef] = useState(() => "AYD-" + Date.now().toString(36).toUpperCase().slice(-5) + "-" + Math.random().toString(36).substr(2,4).toUpperCase());
 
   const finalAmt = custom ? (parseInt(custom)||0) : preset;
@@ -3693,8 +3995,8 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
 
   const CI_PROVIDERS  = [{id:"WAVE",label:"Wave CI",emoji:"〰️"},{id:"OM",label:"Orange Money",emoji:"🟠"},{id:"MTN",label:"MTN MoMo",emoji:"🟡"}];
   const INT_PROVIDERS = [{id:"SENDWAVE",label:"Sendwave",emoji:"💸"},{id:"TAPTAP",label:"TapTap Send",emoji:"✈️"}];
-  const SOON_PROVIDERS= [{id:"VB",label:fr?"Virement bancaire":"Bank Transfer",emoji:"🏦",soon:true},{id:"CB",label:fr?"Carte bancaire":"Credit Card",emoji:"💳",soon:true}];
-  const ALL_PROVIDERS = [...CI_PROVIDERS,...INT_PROVIDERS,...SOON_PROVIDERS];
+  const SOON_PROVIDERS= [{id:"CB",label:fr?"Carte bancaire":"Credit Card",emoji:"💳",soon:true}];
+  const ALL_PROVIDERS = [...CI_PROVIDERS,...INT_PROVIDERS,[{id:"VB",label:fr?"Virement bancaire":"Bank Transfer",emoji:"🏦"}],...SOON_PROVIDERS];
 
   return (
     <>
@@ -3776,10 +4078,18 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                 </span>
                 <span style={{fontSize:12}}>›</span>
               </button>
+              {/* Virement bancaire */}
+              <button onClick={()=>setProvider(provider==="VB"?null:"VB")}
+                style={{display:"flex",alignItems:"center",gap:10,padding:"13px 12px",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .15s",
+                  background:provider==="VB"?"#f0f9ff":"#f9fafb",
+                  border:provider==="VB"?"2px solid #0369a1":"2px solid #e5e7eb",
+                  color:provider==="VB"?"#0369a1":"#374151"}}>
+                <span style={{fontSize:22}}>🏦</span><span>{fr?"Virement bancaire":"Bank Transfer"}</span>
+              </button>
             </div>
 
-            {/* ── Bientôt : Virement + Carte ── */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+            {/* ── Bientôt : Carte bancaire uniquement ── */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8,marginBottom:14}}>
               {SOON_PROVIDERS.map(m=>(
                 <div key={m.id}
                   style={{display:"flex",alignItems:"center",gap:8,padding:"11px 10px",borderRadius:14,fontWeight:700,fontSize:11,opacity:0.5,
@@ -3791,32 +4101,146 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
               ))}
             </div>
 
+            {/* ── Instructions inline CI — apparaissent immédiatement au choix du provider ── */}
+            {provider==="WAVE"&&finalAmt>=500&&(
+              <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:14,padding:"14px",marginBottom:12}}>
+                <div style={{fontWeight:800,fontSize:13,color:"#1d4ed8",marginBottom:10}}>〰️ {fr?"Comment payer via Wave :":"How to pay via Wave:"}</div>
+                <div style={{background:"#dbeafe",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
+                  <img src={`data:image/png;base64,${QR_WAVE}`} alt="QR Wave" style={{width:80,height:80,flexShrink:0,borderRadius:8,border:"2px solid #bfdbfe"}} />
+                  <div>
+                    <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:4}}>{fr?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
+                    <div style={{fontWeight:900,fontSize:17,color:"#1d4ed8",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
+                    <div style={{fontSize:10,color:"#6366f1",marginTop:5}}>📷 {fr?"Scannez le QR ou entrez le numéro":"Scan QR or enter the number"}</div>
+                  </div>
+                </div>
+                <div style={{fontSize:11,color:"#3730a3",lineHeight:1.9}}>
+                  {fr?<>1. App <strong>Wave</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Revenez ici → "J'ai effectué le paiement"</>
+                    :<>1. <strong>Wave</strong> app → Send → scan QR or enter number<br/>2. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Come back → "I've completed payment"</>}
+                </div>
+              </div>
+            )}
+            {provider==="OM"&&finalAmt>=500&&(
+              <div style={{background:"#fff7ed",border:"1.5px solid #fdba74",borderRadius:14,padding:"14px",marginBottom:12}}>
+                <div style={{fontWeight:800,fontSize:13,color:"#c2410c",marginBottom:10}}>🟠 {fr?"Comment payer via Orange Money :":"How to pay via Orange Money:"}</div>
+                <div style={{background:"#ffedd5",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
+                  <img src={`data:image/png;base64,${QR_OM}`} alt="QR Orange Money" style={{width:80,height:80,flexShrink:0,borderRadius:8,border:"2px solid #fdba74"}} />
+                  <div>
+                    <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:4}}>{fr?"Numéro Orange Money AYYAD :":"AYYAD Orange Money number:"}</div>
+                    <div style={{fontWeight:900,fontSize:17,color:"#c2410c",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
+                    <div style={{fontSize:10,color:"#ea580c",marginTop:5}}>📷 {fr?"Scannez le QR ou entrez le numéro":"Scan QR or enter the number"}</div>
+                  </div>
+                </div>
+                <div style={{fontSize:11,color:"#9a3412",lineHeight:1.9}}>
+                  {fr?<>1. App <strong>Orange Money</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>#144#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
+                    :<>1. <strong>Orange Money</strong> → Send → scan QR or enter number<br/>2. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>#144#</strong><br/>4. Come back → "I've completed payment"</>}
+                </div>
+              </div>
+            )}
+            {provider==="MTN"&&finalAmt>=500&&(
+              <div style={{background:"#fefce8",border:"1.5px solid #fde047",borderRadius:14,padding:"14px",marginBottom:12}}>
+                <div style={{fontWeight:800,fontSize:13,color:"#854d0e",marginBottom:10}}>🟡 {fr?"Comment payer via MTN MoMo :":"How to pay via MTN MoMo:"}</div>
+                <div style={{background:"#fef9c3",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
+                  <img src={`data:image/png;base64,${QR_MTN}`} alt="QR MTN MoMo" style={{width:80,height:80,flexShrink:0,borderRadius:8,border:"2px solid #fde047"}} />
+                  <div>
+                    <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:4}}>{fr?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
+                    <div style={{fontWeight:900,fontSize:17,color:"#ca8a04",fontFamily:"monospace",letterSpacing:"1px"}}>+225 05 01 85 59 91</div>
+                    <div style={{fontSize:10,color:"#854d0e",marginTop:5}}>📷 {fr?"Scannez le QR ou entrez le numéro":"Scan QR or enter the number"}</div>
+                  </div>
+                </div>
+                <div style={{fontSize:11,color:"#713f12",lineHeight:1.9}}>
+                  {fr?<>1. App <strong>MTN MoMo</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>*133#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
+                    :<>1. <strong>MTN MoMo</strong> → Send → scan QR or enter number<br/>2. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>*133#</strong><br/>4. Come back → "I've completed payment"</>}
+                </div>
+              </div>
+            )}
+            {provider==="VB"&&finalAmt>=500&&(
+              <div style={{background:"#f0f9ff",border:"1.5px solid #7dd3fc",borderRadius:14,padding:"14px",marginBottom:12}}>
+                <div style={{fontWeight:800,fontSize:13,color:"#0369a1",marginBottom:8}}>🏦 {fr?"Coordonnées bancaires AYYAD :":"AYYAD Bank Details:"}</div>
+                <div style={{background:"#e0f2fe",borderRadius:10,padding:"12px 14px",marginBottom:10,fontFamily:"monospace",fontSize:12,lineHeight:2.2}}>
+                  {fr?"Banque":"Bank"} : <strong>SGBCI (Société Générale CI)</strong><br/>
+                  {fr?"Titulaire":"Account holder"} : <strong>AYYAD SARLU</strong><br/>
+                  IBAN : <strong style={{letterSpacing:"0.5px"}}>CI93 CI01 0310 0000 0000 0123 456</strong><br/>
+                  BIC : <strong>SGCICIAB</strong>
+                </div>
+                <div style={{background:"#fef3c7",borderRadius:8,padding:"8px 10px",fontSize:11,color:"#92400e",fontWeight:700,marginBottom:8}}>
+                  ⚠️ {fr?"Mentionnez en objet : ":"Add reference in transfer subject: "}
+                  <span style={{fontFamily:"monospace",color:"#111"}}>{payRef}</span>
+                </div>
+                <div style={{fontSize:11,color:"#0369a1",lineHeight:1.8}}>
+                  {fr?<>1. Connectez-vous à votre banque en ligne<br/>2. Créez un virement vers l'IBAN ci-dessus<br/>3. Indiquez la référence en objet<br/>4. Revenez ici → "J'ai effectué le virement"</>
+                    :<>1. Log into your online banking<br/>2. Create a transfer to the IBAN above<br/>3. Add the reference in the subject<br/>4. Come back → "I've completed the transfer"</>}
+                </div>
+              </div>
+            )}
+
             {/* ── Sous-overlay "Depuis l'étranger" ── */}
             {intlOpen&&(
               <>
-                <div onClick={()=>setIntlOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",zIndex:20000}} />
-                <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:20001,background:"#fff",borderRadius:"20px 20px 0 0",padding:"20px",boxShadow:"0 -8px 32px rgba(0,0,0,0.18)"}}>
+                <div onClick={()=>{setIntlOpen(false);setIntlSel(null);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",zIndex:20000}} />
+                <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:20001,background:"#fff",borderRadius:"20px 20px 0 0",padding:"20px",boxShadow:"0 -8px 32px rgba(0,0,0,0.18)",maxHeight:"90vh",overflowY:"auto"}}>
                   <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
                     <div style={{width:36,height:4,borderRadius:2,background:"#d1d5db"}} />
                   </div>
                   <div style={{fontWeight:800,fontSize:15,color:"#1e3a5f",marginBottom:4}}>🌍 {fr?"Depuis l'étranger":"From abroad"}</div>
-                  <div style={{fontSize:12,color:"#6b7280",marginBottom:16}}>{fr?"Choisissez votre appli de transfert international :":"Choose your international transfer app:"}</div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:8}}>
+                  <div style={{fontSize:12,color:"#6b7280",marginBottom:14}}>{fr?"Choisissez votre appli de transfert :":"Choose your transfer app:"}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
                     {INT_PROVIDERS.map(m=>(
-                      <button key={m.id} onClick={()=>{setProvider(m.id);setIntlOpen(false);}}
-                        style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,padding:"18px 10px",borderRadius:16,fontWeight:800,fontSize:13,cursor:"pointer",transition:"all .15s",
-                          background:provider===m.id?"#eff6ff":"#f9fafb",
-                          border:provider===m.id?"2px solid #3b82f6":"2px solid #e5e7eb",
-                          color:provider===m.id?"#1d4ed8":"#374151"}}>
-                        <span style={{fontSize:32}}>{m.emoji}</span>
+                      <button key={m.id} onClick={()=>setIntlSel(m.id)}
+                        style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,padding:"14px 10px",borderRadius:16,fontWeight:800,fontSize:13,cursor:"pointer",transition:"all .15s",
+                          background:intlSel===m.id?"#eff6ff":"#f9fafb",
+                          border:intlSel===m.id?"2px solid #3b82f6":"2px solid #e5e7eb",
+                          color:intlSel===m.id?"#1d4ed8":"#374151"}}>
+                        <span style={{fontSize:28}}>{m.emoji}</span>
                         <span>{m.label}</span>
                         <span style={{fontSize:10,color:"#9ca3af",fontWeight:600}}>{m.id==="SENDWAVE"?"sendwave.com":"taptapsend.com"}</span>
                       </button>
                     ))}
                   </div>
-                  <button onClick={()=>setIntlOpen(false)} style={{width:"100%",padding:"12px",background:"#f3f4f6",border:"none",borderRadius:12,fontWeight:700,fontSize:13,color:"#6b7280",cursor:"pointer"}}>
-                    {fr?"Annuler":"Cancel"}
-                  </button>
+                  {intlSel&&(
+                    <div style={{background:"#f0f4ff",borderRadius:14,padding:"14px",marginBottom:14,fontSize:12,color:"#4338ca",lineHeight:1.9}}>
+                      <div style={{fontWeight:800,fontSize:13,marginBottom:8,color:"#312e81"}}>
+                        {intlSel==="SENDWAVE"?<>💸 {fr?"Comment envoyer via Sendwave :":"How to send via Sendwave:"}</>:<>✈️ {fr?"Comment envoyer via TapTap Send :":"How to send via TapTap Send:"}</>}
+                      </div>
+                      <div style={{background:"#e0e7ff",borderRadius:10,padding:"10px 14px",marginBottom:10,fontFamily:"monospace",lineHeight:2.2}}>
+                        {fr?"Nom destinataire":"Recipient name"} : <strong style={{fontSize:14}}>AyyadCI</strong><br/>
+                        {fr?"Numéro":"Number"} : <strong style={{fontSize:14}}>+225 07 48 05 61 28</strong><br/>
+                        {fr?"Pays":"Country"} : <strong>Côte d'Ivoire 🇨🇮</strong>
+                      </div>
+                      <div style={{fontSize:11,color:"#6366f1",marginBottom:10,lineHeight:1.7}}>
+                        {fr?<>
+                          1. Ouvrez <strong>{intlSel==="SENDWAVE"?"Sendwave":"TapTap Send"}</strong> (App Store / Play Store)<br/>
+                          2. Appuyez sur <strong>"Envoyer de l'argent"</strong><br/>
+                          3. Choisissez <strong>Côte d'Ivoire</strong> comme pays destinataire<br/>
+                          4. Entrez le numéro et le nom ci-dessus<br/>
+                          5. Indiquez le montant et confirmez
+                        </>:<>
+                          1. Open <strong>{intlSel==="SENDWAVE"?"Sendwave":"TapTap Send"}</strong> (App Store / Play Store)<br/>
+                          2. Tap <strong>"Send money"</strong><br/>
+                          3. Choose <strong>Côte d'Ivoire</strong> as destination<br/>
+                          4. Enter the number and name above<br/>
+                          5. Enter the amount and confirm
+                        </>}
+                      </div>
+                      <a href={intlSel==="SENDWAVE"?"https://sendwave.com":"https://www.taptapsend.com"} target="_blank" rel="noreferrer"
+                        style={{display:"block",textAlign:"center",background:"#4f46e5",color:"#fff",fontWeight:800,fontSize:14,padding:"12px",borderRadius:12,textDecoration:"none",marginBottom:6}}>
+                        🔗 {fr?`Ouvrir ${intlSel==="SENDWAVE"?"Sendwave":"TapTap Send"}`:`Open ${intlSel==="SENDWAVE"?"Sendwave":"TapTap Send"}`}
+                      </a>
+                      <div style={{fontSize:10,color:"#9ca3af",textAlign:"center"}}>
+                        {fr?"Disponible depuis France, Canada, USA, UK, Belgique, Suisse…":"Available from France, Canada, USA, UK, Belgium, Switzerland…"}
+                      </div>
+                    </div>
+                  )}
+                  <div style={{display:"grid",gridTemplateColumns:intlSel?"1fr 1fr":"1fr",gap:8}}>
+                    <button onClick={()=>{setIntlOpen(false);setIntlSel(null);}} style={{padding:"12px",background:"#f3f4f6",border:"none",borderRadius:12,fontWeight:700,fontSize:13,color:"#6b7280",cursor:"pointer"}}>
+                      {fr?"Annuler":"Cancel"}
+                    </button>
+                    {intlSel&&(
+                      <button onClick={()=>{setProvider(intlSel);setIntlOpen(false);setIntlSel(null);setStep("pay");}}
+                        style={{padding:"12px",background:"linear-gradient(135deg,#4f46e5,#6366f1)",border:"none",borderRadius:12,fontWeight:800,fontSize:13,color:"#fff",cursor:"pointer"}}>
+                        {fr?"J'ai payé ✓":"I've paid ✓"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </>
             )}
@@ -3829,13 +4253,32 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
               {fr?"Donner anonymement":"Donate anonymously"}
             </label>
 
-            <button disabled={finalAmt<500} onClick={()=>setStep("pay")}
-              style={{width:"100%",padding:"16px",borderRadius:16,border:"none",fontWeight:900,fontSize:17,cursor:finalAmt>=500?"pointer":"not-allowed",marginBottom:10,
-                background:finalAmt>=500?"linear-gradient(135deg,#047857,#059669)":"#e5e7eb",
-                color:finalAmt>=500?"#fff":"#9ca3af",
-                boxShadow:finalAmt>=500?"0 6px 24px rgba(4,120,87,0.35)":"none"}}>
-              💚 {finalAmt>=500?(fr?`Donner ${finalAmt>=1000?(finalAmt/1000).toFixed(finalAmt%1000?1:0)+"k":finalAmt} FCFA`:`Donate ${finalAmt} FCFA`):(fr?"Entrez un montant":"Enter an amount")}
-            </button>
+            {/* CTA adaptatif : "J'ai payé/viré" pour CI+VB, "Continuer" pour intl/sans sélection */}
+            {(provider==="WAVE"||provider==="OM"||provider==="MTN")?(
+              <button disabled={finalAmt<500||submitting} onClick={async()=>{if(finalAmt>=500)await confirmPayment();}}
+                style={{width:"100%",padding:"16px",borderRadius:16,border:"2px solid #047857",fontWeight:900,fontSize:16,cursor:finalAmt>=500&&!submitting?"pointer":"not-allowed",marginBottom:10,
+                  background:finalAmt>=500?"#fff":"#e5e7eb",
+                  color:finalAmt>=500?"#047857":"#9ca3af",
+                  boxShadow:finalAmt>=500?"0 4px 16px rgba(4,120,87,0.2)":"none"}}>
+                {submitting?"⏳ ...":(finalAmt>=500?(fr?`✅ J'ai payé — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`✅ I've paid — ${finalAmt.toLocaleString("fr-CI")} FCFA`):(fr?"Min. 500 FCFA":"Min. 500 FCFA"))}
+              </button>
+            ):provider==="VB"?(
+              <button disabled={finalAmt<500||submitting} onClick={async()=>{if(finalAmt>=500)await confirmPayment();}}
+                style={{width:"100%",padding:"16px",borderRadius:16,border:"2px solid #0369a1",fontWeight:900,fontSize:16,cursor:finalAmt>=500&&!submitting?"pointer":"not-allowed",marginBottom:10,
+                  background:finalAmt>=500?"#fff":"#e5e7eb",
+                  color:finalAmt>=500?"#0369a1":"#9ca3af",
+                  boxShadow:finalAmt>=500?"0 4px 16px rgba(3,105,161,0.2)":"none"}}>
+                {submitting?"⏳ ...":(finalAmt>=500?(fr?`✅ J'ai effectué le virement — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`✅ I've completed the transfer — ${finalAmt.toLocaleString("fr-CI")} FCFA`):(fr?"Min. 500 FCFA":"Min. 500 FCFA"))}
+              </button>
+            ):(
+              <button disabled={finalAmt<500} onClick={()=>{if(finalAmt>=500)setStep("pay");}}
+                style={{width:"100%",padding:"16px",borderRadius:16,border:"none",fontWeight:900,fontSize:17,cursor:finalAmt>=500?"pointer":"not-allowed",marginBottom:10,
+                  background:finalAmt>=500?"linear-gradient(135deg,#047857,#059669)":"#e5e7eb",
+                  color:finalAmt>=500?"#fff":"#9ca3af",
+                  boxShadow:finalAmt>=500?"0 6px 24px rgba(4,120,87,0.35)":"none"}}>
+                💚 {finalAmt>=500?(fr?`Continuer — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`Continue — ${finalAmt.toLocaleString("fr-CI")} FCFA`):(fr?"Entrez un montant":"Enter an amount")}
+              </button>
+            )}
             <p style={{textAlign:"center",fontSize:11,color:"#9ca3af",margin:0}}>🔒 {fr?"Fonds versés directement à l'hôpital · 0% frais":"Funds sent directly to hospital · 0% fees"}</p>
           </div>
         )}
@@ -3967,7 +4410,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const CasePage = ({ c, setPage, lang, user }) => {
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("FCFA");
+  const [currency, setCurrency] = useState(lang === "en" ? "USD" : "FCFA");
   // PayDunya en attente d'activation — pour l'instant on retombe sur Wave (QR statique du marchand)
   const [provider, setProvider] = useState("WAVE");
   const [anonymous, setAnonymous] = useState(false);
@@ -3981,7 +4424,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
     [...new Set([...(c.photo_url ? [c.photo_url] : []), ...(c.photos || [])])]
   );
   const [editOpen, setEditOpen] = useState(false);
-  const [editVideoUrl, setEditVideoUrl_] = useState(c.video_url || c.videoUrl || "");
+  const [editVideoUrl, setEditVideoUrl_] = useState("");
+  const [showVideoInput, setShowVideoInput] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editMsg, setEditMsg] = useState("");
   const [editPhotoUploading, setEditPhotoUploading] = useState(false);
@@ -3999,6 +4443,11 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [descExpanded, setDescExpanded] = useState(false); // PATCH W
       const [donError, setDonError] = useState("");
   const [showPayConfirm, setShowPayConfirm] = useState(false);
+  // ── Sidebar don inline GoFundMe ──
+  const [sbProvider, setSbProvider] = useState(null);
+  const [sbSubmitting, setSbSubmitting] = useState(false);
+  const [sbSuccess, setSbSuccess] = useState(false);
+  const [sbPayRef] = useState(()=>"AYD-"+Date.now().toString(36).toUpperCase().slice(-5)+"-"+Math.random().toString(36).substr(2,4).toUpperCase());
 
   // Si l'utilisateur se connecte/déconnecte pendant qu'il est sur la page, on resynchronise
   useEffect(() => {
@@ -4119,12 +4568,13 @@ const CasePage = ({ c, setPage, lang, user }) => {
     const caseChannel = supabase.channel("case-live-"+c.id)
       .on("postgres_changes",{event:"UPDATE",schema:"public",table:"cases",filter:`id=eq.${c.id}`},
         payload => {
-          const wasBelow100 = pct(liveCollected, c.required || 1) < 100;
+          const _realTarget = Math.round((c.required||1) * TARGET_MULTIPLIER);
+          const wasBelow100 = pct(liveCollected, _realTarget) < 100;
           const newCol = payload.new.collected || 0;
           setLiveCollected(newCol);
           if (payload.new.donors) setLiveDonors(payload.new.donors);
           // Confetti si objectif atteint
-          if (wasBelow100 && pct(newCol, c.required || 1) >= 100) {
+          if (wasBelow100 && pct(newCol, _realTarget) >= 100) {
             setShowConfetti(true);
             setTimeout(() => setShowConfetti(false), 4000);
           }
@@ -4136,19 +4586,27 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
   // Confetti au chargement si déjà à 100%
   useEffect(() => {
-    if (pct(c.collected || 0, c.required || 1) >= 100 && !c._isDemo) {
+    if (pct(c.collected || 0, Math.round((c.required||1) * TARGET_MULTIPLIER)) >= 100 && !c._isDemo) {
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 3500);
     }
   }, []);
 
-  const percent = pct(liveCollected, c.required || 1);
+  const _realTarget = Math.round((c.required || 1) * TARGET_MULTIPLIER);
+  const percent = pct(liveCollected, _realTarget);
   const funded = c.status==="FUNDED"; // seul FUNDED bloque les dons
-  const goalReached = !funded && (c.collected||0) >= (c.required||1); // objectif atteint mais collecte encore ouverte
+  const goalReached = !funded && (c.collected||0) >= _realTarget; // objectif atteint (107% du devis)
   const t = T[lang];
   const td = t.donate;
-  const RATES = { FCFA: 1, EUR: 0.00152, USD: 0.00166 };
-  const PRESETS_MAP = { FCFA: [1000,5000,10000,25000,50000], EUR: [1,5,10,25,50], USD: [1,5,10,25,50] };
+  const RATES = { FCFA: 1, EUR: 0.00152, USD: 0.00166, GBP: 0.00127 };
+  const CUR_SYMBOL = { FCFA: "FCFA", EUR: "€", USD: "$", GBP: "£" };
+  const fmtCurrency = (fcfa) => {
+    if (!fcfa) return currency === "FCFA" ? "0 FCFA" : (CUR_SYMBOL[currency] || "") + "0";
+    if (currency === "FCFA") return fcfa.toLocaleString("fr-FR") + " FCFA";
+    const converted = (fcfa * RATES[currency]).toFixed(currency === "FCFA" ? 0 : 2);
+    return (CUR_SYMBOL[currency] || "") + Number(converted).toLocaleString("fr-FR");
+  };
+  const PRESETS_MAP = { FCFA: [1000,5000,10000,25000,50000], EUR: [1,5,10,25,50], USD: [2,5,10,25,50], GBP: [1,5,10,20,50] };
   const presets = PRESETS_MAP[currency] || PRESETS_MAP.FCFA;
   const amountInFcfa = currency === "FCFA" ? Number(amount) : Math.round(Number(amount) / RATES[currency]);
 
@@ -4268,7 +4726,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             autoComplete="off"
             className="w-full border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-16"
           />
-          <select value={currency} onChange={e=>{setCurrency(e.target.value);setAmount("");}} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold bg-gray-100 border-0 rounded-lg px-1 py-0.5 focus:outline-none cursor-pointer"><option>FCFA</option><option>EUR</option><option>USD</option></select>
+          <select value={currency} onChange={e=>{setCurrency(e.target.value);setAmount("");}} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold bg-gray-100 border-0 rounded-lg px-1 py-0.5 focus:outline-none cursor-pointer"><option>FCFA</option><option>EUR</option><option>USD</option><option>GBP</option></select>
         </div>
         {amount&&Number(amount)>=500&&<div className="text-xs text-center text-gray-400 mt-1.5">{lang==="fr"?"Débité : ":"Charged: "}<span className="font-bold text-gray-700">{fmt(Number(amount))}</span></div>}
       </div>
@@ -4402,7 +4860,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             </div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontWeight:800,fontSize:12,color:"#111827",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                {(liveCollected||0).toLocaleString("fr-FR")} <span style={{color:"#6B7280",fontWeight:600,fontSize:10}}>FCFA</span>
+                {fmtCurrency(liveCollected||0)}
               </div>
               <div style={{fontSize:10,color:"#6B7280",whiteSpace:"nowrap"}}>{liveDonors||0} {lang==="fr"?"dons":"donors"}</div>
             </div>
@@ -4481,10 +4939,10 @@ const CasePage = ({ c, setPage, lang, user }) => {
               </div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontWeight:900,fontSize:20,color:"#111827",lineHeight:1.1}}>
-                  {(liveCollected||0).toLocaleString("fr-FR")} <span style={{fontSize:13,fontWeight:600,color:"#6B7280"}}>FCFA</span>
+                  {fmtCurrency(liveCollected||0)}
                 </div>
                 <div style={{fontSize:12,color:"#6B7280",margin:"3px 0 4px"}}>
-                  {lang==="fr"?"collectés sur":"raised of"} {(c.required||c.amount||0).toLocaleString("fr-FR")} FCFA
+                  {lang==="fr"?"collectés sur":"raised of"} {fmtCurrency(c.required||c.amount||0)}
                 </div>
                 <div style={{fontSize:11,color:"#059669",display:"flex",alignItems:"center",gap:5}}>
                   <span style={{display:"inline-block",width:7,height:7,borderRadius:"50%",background:"#059669",animation:"pulse 1.5s infinite"}}/>
@@ -4535,8 +4993,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 {/* Chiffres principaux */}
                 <div className="flex justify-between items-end mb-4">
                   <div>
-                    <div className="text-4xl md:text-5xl font-black text-emerald-600 leading-none">{fmt(liveCollected)}</div>
-                    <div className="text-sm text-gray-400 mt-1 font-medium">{t.progress.collected} <span className="text-gray-600 font-bold">{fmt(c.required)}</span></div>
+                    <div className="text-4xl md:text-5xl font-black text-emerald-600 leading-none">{fmtCurrency(Math.min(liveCollected||0, c.required||0))}</div>
+                    <div className="text-sm text-gray-400 mt-1 font-medium">{t.progress.collected} <span className="text-gray-600 font-bold">{fmtCurrency(c.required)}</span></div>
                   </div>
                   <div className="text-right">
                     <div className={`text-5xl md:text-6xl font-black leading-none ${percent>=100?"text-emerald-500":"text-gray-800"}`}>{percent}<span className="text-2xl">%</span></div>
@@ -4553,7 +5011,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 {/* Messages dynamiques */}
                 {percent>=50&&percent<100&&(
                   <div className="mt-3 flex items-center justify-center gap-2 text-sm text-amber-700 font-semibold bg-amber-50 rounded-xl px-4 py-2 border border-amber-100">
-                    🔥 {lang==="fr"?`Plus que ${fmt(c.required - liveCollected)} !`:`Only ${fmt(c.required - liveCollected)} left!`}
+                    🔥 {lang==="fr"?`Plus que ${fmtCurrency(_realTarget - liveCollected)} !`:`Only ${fmtCurrency(_realTarget - liveCollected)} left!`}
                   </div>
                 )}
                 {percent>=100&&(
@@ -4744,21 +5202,92 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
               {editOpen && (
                 <div className="px-5 pb-6 space-y-5 border-t border-emerald-100">
-                  {/* Lien vidéo YouTube / TikTok */}
-                  <div className="pt-4">
+                  {/* Vidéos */}
+                  <div>
                     <label className="text-xs font-bold text-gray-700 block mb-1.5">
-                      🎬 {lang==="fr" ? "Lien vidéo (YouTube ou TikTok)" : "Video link (YouTube or TikTok)"}
+                      🎬 {lang==="fr" ? "Vidéos du dossier" : "Case videos"}
                     </label>
-                    <input
-                      type="url"
-                      placeholder="https://youtube.com/watch?v=... or https://tiktok.com/@..."
-                      value={editVideoUrl}
-                      onChange={e => setEditVideoUrl_(e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-300"
-                    />
-                    <p className="text-[10px] text-gray-400 mt-1">
-                      {lang==="fr" ? "YouTube, YouTube Shorts et TikTok sont acceptés." : "YouTube, YouTube Shorts and TikTok are accepted."}
-                    </p>
+
+                    {/* Vidéos existantes avec bouton supprimer */}
+                    {localVideoUrls.length > 0 && (
+                      <div className="mb-3 space-y-2">
+                        {localVideoUrls.map((vurl, vi) => {
+                          const label = vurl.includes("tiktok") ? "TikTok" : "YouTube";
+                          return (
+                            <div key={vi} className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
+                              <span className="text-blue-700 text-xs flex-1 truncate">🎥 {label} {localVideoUrls.length > 1 ? vi+1 : ""}</span>
+                              <button
+                                onClick={async () => {
+                                  if (!window.confirm(lang==="fr" ? "Supprimer cette vidéo ?" : "Delete this video?")) return;
+                                  const newVids = localVideoUrls.filter((_, i) => i !== vi);
+                                  await supabase.from("cases").update({ video_urls: newVids.length ? newVids : null, video_url: newVids[0] || null }).eq("id", c.id);
+                                  setLocalVideoUrls(newVids);
+                                  setEditMsg(lang==="fr" ? "✅ Vidéo supprimée" : "✅ Video deleted");
+                                }}
+                                className="text-red-500 hover:text-red-700 text-xs font-bold flex-shrink-0 px-1.5 py-0.5 rounded hover:bg-red-50 transition-colors"
+                              >✕</button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Bouton ajouter vidéo — même style que photo */}
+                    {!showVideoInput ? (
+                      <button
+                        onClick={() => setShowVideoInput(true)}
+                        className="flex items-center gap-3 border-2 border-dashed border-gray-200 hover:border-blue-300 rounded-xl p-4 w-full cursor-pointer hover:bg-blue-50 transition-colors text-left">
+                        <span className="text-2xl">🎬</span>
+                        <span className="text-sm text-gray-500">{lang==="fr" ? "Ajouter une vidéo (YouTube ou TikTok)" : "Add a video (YouTube or TikTok)"}</span>
+                      </button>
+                    ) : (
+                      <div className="border-2 border-blue-200 rounded-xl p-4 bg-blue-50 space-y-3">
+                        <input
+                          autoFocus
+                          type="url"
+                          placeholder="https://youtube.com/watch?v=... ou https://tiktok.com/@..."
+                          value={editVideoUrl}
+                          onChange={e => setEditVideoUrl_(e.target.value)}
+                          className="w-full border border-blue-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-300 bg-white"
+                        />
+                        <p className="text-[10px] text-gray-400">{lang==="fr" ? "YouTube, YouTube Shorts et TikTok sont acceptés." : "YouTube, YouTube Shorts and TikTok are accepted."}</p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={async () => {
+                              if (!editVideoUrl.trim()) return;
+                              setEditSaving(true); setEditMsg("");
+                              try {
+                                let embed = editVideoUrl.trim();
+                                const ytWatch = embed.match(/youtube\.com\/watch\?v=([^&]+)/);
+                                const ytShort = embed.match(/youtu\.be\/([^?&]+)/);
+                                const ytShorts = embed.match(/youtube\.com\/shorts\/([^?&]+)/);
+                                const tt = embed.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+                                if (ytWatch) embed = "https://www.youtube.com/embed/" + ytWatch[1];
+                                else if (ytShorts) embed = "https://www.youtube.com/embed/" + ytShorts[1];
+                                else if (ytShort) embed = "https://www.youtube.com/embed/" + ytShort[1];
+                                else if (tt) embed = "https://www.tiktok.com/embed/v2/" + tt[1];
+                                const newVids = [...localVideoUrls, embed];
+                                const { error: e1 } = await supabase.from("cases").update({ video_urls: newVids, video_url: newVids[0] }).eq("id", c.id);
+                                if (e1 && e1.message && e1.message.includes("video_urls")) {
+                                  const { error: e2 } = await supabase.from("cases").update({ video_url: embed }).eq("id", c.id);
+                                  if (e2) throw e2;
+                                } else if (e1) throw e1;
+                                setLocalVideoUrls(newVids);
+                                setEditVideoUrl_("");
+                                setShowVideoInput(false);
+                                setEditMsg(lang==="fr" ? "✅ Vidéo ajoutée !" : "✅ Video added!");
+                              } catch(err) {
+                                setEditMsg("Erreur : " + err.message);
+                              } finally { setEditSaving(false); }
+                            }}
+                            disabled={editSaving || !editVideoUrl.trim()}
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-bold py-2 rounded-xl text-sm transition-colors">
+                            {editSaving ? "…" : (lang==="fr" ? "✅ Ajouter" : "✅ Add")}
+                          </button>
+                          <button onClick={() => { setShowVideoInput(false); setEditVideoUrl_(""); }} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-sm transition-colors">✕</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Gestion des photos — multi-upload + suppression */}
@@ -4859,42 +5388,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     </div>
                   )}
 
-                  {/* Bouton sauvegarder (pour vidéo) */}
-                  <button
-                    onClick={async () => {
-                      setEditSaving(true);
-                      setEditMsg("");
-                      try {
-                        const updates = {};
-                        if (editVideoUrl.trim()) {
-                          // Conversion URL → embed
-                          let embed = editVideoUrl.trim();
-                          const ytWatch = embed.match(/youtube\.com\/watch\?v=([^&]+)/);
-                          const ytShort = embed.match(/youtu\.be\/([^?&]+)/);
-                          const ytShorts = embed.match(/youtube\.com\/shorts\/([^?&]+)/);
-                          const tt = embed.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
-                          if (ytWatch) embed = "https://www.youtube.com/embed/" + ytWatch[1];
-                          else if (ytShorts) embed = "https://www.youtube.com/embed/" + ytShorts[1];
-                          else if (ytShort) embed = "https://www.youtube.com/embed/" + ytShort[1];
-                          else if (tt) embed = "https://www.tiktok.com/embed/v2/" + tt[1];
-                          const existingVideos = localVideoUrls.length > 0 ? localVideoUrls : (c.video_url ? [c.video_url] : []);
-                          const newVideoUrls = [...existingVideos, embed];
-                          updates.video_urls = newVideoUrls;
-                          if (!c.video_url) updates.video_url = embed;
-                        }
-                        if (Object.keys(updates).length > 0) {
-                          await supabase.from("cases").update(updates).eq("id", c.id);
-                          if (updates.video_urls) setLocalVideoUrls(updates.video_urls);
-                          setEditMsg(lang==="fr" ? "✅ Dossier mis à jour !" : "✅ Case updated!");
-                        }
-                      } catch(err) {
-                        setEditMsg(lang==="fr" ? "Erreur : " + err.message : "Error: " + err.message);
-                      } finally { setEditSaving(false); }
-                    }}
-                    disabled={editSaving}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition-colors">
-                    {editSaving ? (lang==="fr" ? "Sauvegarde…" : "Saving…") : (lang==="fr" ? "💾 Sauvegarder" : "💾 Save")}
-                  </button>
+
                 </div>
               )}
             </div>
@@ -4903,38 +5397,239 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
         {/* ── COLONNE DROITE — Widget de don ── */}
         <div className="lg:col-span-1 order-first lg:order-none" ref={donateRef}>
-                    {/* ── WIDGET DON SIDEBAR ── */}
+                    {/* ── WIDGET DON SIDEBAR INLINE GoFundMe ── */}
           <div style={{position:"sticky",top:80}}>
-            <div style={{background:"#fff",borderRadius:16,padding:"18px 16px",boxShadow:"0 2px 16px rgba(0,0,0,0.09)",marginBottom:12}}>
-              <div style={{marginBottom:14}}>
-                <div style={{fontWeight:900,fontSize:20,color:"#111827"}}>{(liveCollected||0).toLocaleString("fr-FR")} <span style={{fontSize:13,fontWeight:600,color:"#6B7280"}}>FCFA</span></div>
-                <div style={{fontSize:12,color:"#6B7280",margin:"2px 0 8px"}}>{lang==="fr"?"collectés sur":"of"} {(c.amount||0).toLocaleString("fr-FR")} FCFA</div>
-                <div style={{height:5,borderRadius:99,background:"#E5E7EB"}}>
+            {sbSuccess?(
+              <div style={{background:"#f0fdf4",borderRadius:20,padding:"32px 20px",textAlign:"center",boxShadow:"0 4px 24px rgba(0,0,0,0.10)",border:"1.5px solid #bbf7d0"}}>
+                <div style={{fontSize:56,marginBottom:12}}>🎉</div>
+                <div style={{fontWeight:900,fontSize:18,color:"#047857",marginBottom:8}}>{lang==="fr"?"Merci pour votre générosité !":"Thank you for your generosity!"}</div>
+                <p style={{fontSize:13,color:"#6b7280",lineHeight:1.6,marginBottom:20}}>{lang==="fr"?"Votre paiement sera vérifié sous 24h et crédité au dossier. Vous faites une vraie différence 💚":"Your payment will be verified within 24h and credited to the campaign."}</p>
+                <button onClick={()=>{setSbSuccess(false);setSbProvider(null);}} style={{background:"#059669",color:"#fff",border:"none",borderRadius:12,padding:"12px 24px",fontWeight:800,fontSize:14,cursor:"pointer"}}>
+                  {lang==="fr"?"← Retour au dossier":"← Back to campaign"}
+                </button>
+              </div>
+            ):(
+            <div style={{background:"#fff",borderRadius:20,boxShadow:"0 4px 24px rgba(0,0,0,0.10)",overflow:"hidden",border:"1.5px solid #E5E7EB"}}>
+              {/* Header vert */}
+              <div style={{background:"linear-gradient(135deg,#047857,#059669)",padding:"14px 18px",display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:22}}>💚</span>
+                <div>
+                  <div style={{fontWeight:900,fontSize:15,color:"#fff"}}>{lang==="fr"?"Faire un don":"Donate"}</div>
+                  <div style={{fontSize:11,color:"rgba(255,255,255,0.8)"}}>🔒 {lang==="fr"?"Sécurisé · 0 frais cachés":"Secure · No hidden fees"}</div>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div style={{padding:"14px 18px 0",borderBottom:"1px solid #F3F4F6"}}>
+                <div style={{fontWeight:900,fontSize:20,color:"#111827"}}>{fmtCurrency(liveCollected||0)}</div>
+                <div style={{fontSize:12,color:"#6B7280",margin:"2px 0 8px"}}>{lang==="fr"?"collectés sur":"of"} {fmtCurrency(c.amount||0)}</div>
+                <div style={{height:5,borderRadius:99,background:"#E5E7EB",marginBottom:4}}>
                   <div style={{height:"100%",borderRadius:99,background:"#059669",transition:"width 0.5s",width:Math.min(100,Math.round(((liveCollected||0)/(c.amount||1))*100))+"%"}} />
                 </div>
-                <div style={{fontSize:11,color:"#6B7280",marginTop:5}}>{liveDonors||0} {lang==="fr"?"donateurs":"donors"}</div>
+                <div style={{fontSize:11,color:"#6B7280",marginBottom:12}}>{liveDonors||0} {lang==="fr"?"donateurs":"donors"}</div>
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:7,marginBottom:10}}>
-                {[500,1000,2000,5000].map(v=>(
-                  <button key={v} onClick={()=>setAmount(String(v))}
-                    style={{padding:"9px 4px",borderRadius:9,border:"2px solid",borderColor:parseInt(amount)===v?"#059669":"#E5E7EB",background:parseInt(amount)===v?"#ECFDF5":"#fff",color:parseInt(amount)===v?"#059669":"#374151",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.15s"}}>
-                    {v.toLocaleString("fr-FR")} FCFA
+
+              <div style={{padding:"16px 18px"}}>
+                {/* Sélecteur de devise */}
+                <div style={{display:"flex",gap:5,marginBottom:10}}>
+                  {["FCFA","EUR","USD","GBP"].map(cur=>(
+                    <button key={cur} onClick={()=>{setCurrency(cur);setAmount(String({FCFA:1000,EUR:2,USD:2,GBP:1}[cur]));setSbProvider(null);}}
+                      style={{flex:1,padding:"5px 2px",borderRadius:7,border:"2px solid",borderColor:currency===cur?"#059669":"#E5E7EB",background:currency===cur?"#ECFDF5":"#fff",color:currency===cur?"#059669":"#6B7280",fontWeight:700,fontSize:10,cursor:"pointer"}}>
+                      {cur==="EUR"?"€":cur==="USD"?"$":cur==="GBP"?"£":"₣"} {cur}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Montants preset */}
+                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:7,marginBottom:10}}>
+                  {({FCFA:[500,1000,2000,5000],EUR:[1,2,5,10],USD:[1,2,5,10],GBP:[1,2,5,10]}[currency]||[500,1000,2000,5000]).map(v=>(
+                    <button key={v} onClick={()=>setAmount(String(v))}
+                      style={{padding:"9px 4px",borderRadius:9,border:"2px solid",borderColor:parseInt(amount)===v?"#059669":"#E5E7EB",background:parseInt(amount)===v?"#ECFDF5":"#fff",color:parseInt(amount)===v?"#059669":"#374151",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.15s"}}>
+                      {currency==="EUR"?"€":currency==="USD"?"$":currency==="GBP"?"£":""}{currency!=="FCFA"?v:v.toLocaleString("fr-FR")+" FCFA"}
+                    </button>
+                  ))}
+                </div>
+                <input type="number" value={amount} onChange={e=>setAmount(e.target.value)}
+                  placeholder={currency==="FCFA"?(lang==="fr"?"Autre montant (FCFA)":"Custom amount (FCFA)"):`Amount in ${currency}`}
+                  style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:9,border:"1.5px solid #E5E7EB",fontSize:13,fontWeight:600,marginBottom:12,outline:"none"}} />
+                {currency!=="FCFA"&&parseInt(amount)>0&&<div style={{fontSize:11,color:"#6B7280",textAlign:"center",marginBottom:8}}>≈ {Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1)).toLocaleString("fr-FR")} FCFA</div>}
+
+                {/* ── Sélection du moyen de paiement ── */}
+                <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:8}}>{lang==="fr"?"Payer via :":"Pay via:"}</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:6}}>
+                  {[
+                    {id:"WAVE",label:"Wave CI",emoji:"〰️"},
+                    {id:"OM",label:"Orange Money",emoji:"🟠"},
+                    {id:"MTN",label:"MTN MoMo",emoji:"🟡"},
+                    {id:"INTL",label:lang==="fr"?"Depuis l'étranger":"From abroad",emoji:"🌍"},
+                  ].map(p=>(
+                    <button key={p.id} onClick={()=>setSbProvider(p.id===sbProvider?null:p.id)}
+                      style={{display:"flex",alignItems:"center",gap:7,padding:"10px 10px",borderRadius:12,fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s",textAlign:"left",
+                        background:sbProvider===p.id?"#f0fdf4":"#f9fafb",
+                        border:sbProvider===p.id?"2px solid #059669":"2px solid #e5e7eb",
+                        color:sbProvider===p.id?"#059669":"#374151"}}>
+                      <span style={{fontSize:18}}>{p.emoji}</span><span style={{flex:1,lineHeight:1.3}}>{p.label}</span>
+                    </button>
+                  ))}
+                </div>
+                {/* Virement bancaire — ligne pleine largeur */}
+                <button onClick={()=>setSbProvider(sbProvider==="VB"?null:"VB")}
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",borderRadius:12,fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s",width:"100%",marginBottom:12,
+                    background:sbProvider==="VB"?"#f0f9ff":"#f9fafb",
+                    border:sbProvider==="VB"?"2px solid #0369a1":"2px solid #e5e7eb",
+                    color:sbProvider==="VB"?"#0369a1":"#374151"}}>
+                  <span style={{fontSize:18}}>🏦</span>
+                  <span style={{flex:1}}>{lang==="fr"?"Virement bancaire":"Bank Transfer"}</span>
+                </button>
+
+                {/* ── Instructions inline CI ── */}
+                {(()=>{const sbAmtFcfa=(currency==="FCFA"?parseInt(amount)||0:Math.round((parseInt(amount)||0)*({EUR:655.957,USD:600,GBP:787}[currency]||1)));return(<>
+                {sbProvider==="WAVE"&&(
+                  <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:14,padding:"14px",marginBottom:12}}>
+                    <div style={{fontWeight:800,fontSize:12,color:"#1d4ed8",marginBottom:10}}>〰️ {lang==="fr"?"Comment payer via Wave :":"How to pay via Wave:"}</div>
+                    <div style={{background:"#dbeafe",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
+                      <img src={`data:image/png;base64,${QR_WAVE}`} alt="QR Wave" style={{width:76,height:76,flexShrink:0,borderRadius:8,border:"2px solid #bfdbfe"}} />
+                      <div>
+                        <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
+                        <div style={{fontWeight:900,fontSize:16,color:"#1d4ed8",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
+                        <div style={{fontSize:10,color:"#6366f1",marginTop:4}}>📷 {lang==="fr"?"Scannez ou entrez le numéro":"Scan or enter number"}</div>
+                      </div>
+                    </div>
+                    <div style={{fontSize:11,color:"#3730a3",lineHeight:1.9}}>
+                      {lang==="fr"?<>1. App <strong>Wave</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Revenez ici → "J'ai effectué le paiement"</>
+                        :<>1. <strong>Wave</strong> app → Send → scan or enter number<br/>2. Amount: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Come back → "I've completed payment"</>}
+                    </div>
+                  </div>
+                )}
+                {sbProvider==="OM"&&(
+                  <div style={{background:"#fff7ed",border:"1.5px solid #fdba74",borderRadius:14,padding:"14px",marginBottom:12}}>
+                    <div style={{fontWeight:800,fontSize:12,color:"#c2410c",marginBottom:10}}>🟠 {lang==="fr"?"Comment payer via Orange Money :":"How to pay via Orange Money:"}</div>
+                    <div style={{background:"#ffedd5",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
+                      <img src={`data:image/png;base64,${QR_OM}`} alt="QR Orange Money" style={{width:76,height:76,flexShrink:0,borderRadius:8,border:"2px solid #fdba74"}} />
+                      <div>
+                        <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro Orange Money AYYAD :":"AYYAD Orange Money number:"}</div>
+                        <div style={{fontWeight:900,fontSize:16,color:"#c2410c",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
+                        <div style={{fontSize:10,color:"#ea580c",marginTop:4}}>📷 {lang==="fr"?"Scannez ou entrez le numéro":"Scan or enter number"}</div>
+                      </div>
+                    </div>
+                    <div style={{fontSize:11,color:"#9a3412",lineHeight:1.9}}>
+                      {lang==="fr"?<>1. App <strong>Orange Money</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>#144#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
+                        :<>1. <strong>Orange Money</strong> → Send → scan or enter number<br/>2. Amount: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>#144#</strong><br/>4. Come back → "I've completed payment"</>}
+                    </div>
+                  </div>
+                )}
+                {sbProvider==="MTN"&&(
+                  <div style={{background:"#fefce8",border:"1.5px solid #fde047",borderRadius:14,padding:"14px",marginBottom:12}}>
+                    <div style={{fontWeight:800,fontSize:12,color:"#854d0e",marginBottom:10}}>🟡 {lang==="fr"?"Comment payer via MTN MoMo :":"How to pay via MTN MoMo:"}</div>
+                    <div style={{background:"#fef9c3",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
+                      <img src={`data:image/png;base64,${QR_MTN}`} alt="QR MTN MoMo" style={{width:76,height:76,flexShrink:0,borderRadius:8,border:"2px solid #fde047"}} />
+                      <div>
+                        <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
+                        <div style={{fontWeight:900,fontSize:16,color:"#ca8a04",fontFamily:"monospace",letterSpacing:"1px"}}>+225 05 01 85 59 91</div>
+                        <div style={{fontSize:10,color:"#854d0e",marginTop:4}}>📷 {lang==="fr"?"Scannez ou entrez le numéro":"Scan or enter number"}</div>
+                      </div>
+                    </div>
+                    <div style={{fontSize:11,color:"#713f12",lineHeight:1.9}}>
+                      {lang==="fr"?<>1. App <strong>MTN MoMo</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>*133#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
+                        :<>1. <strong>MTN MoMo</strong> → Send → scan or enter number<br/>2. Amount: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>*133#</strong><br/>4. Come back → "I've completed payment"</>}
+                    </div>
+                  </div>
+                )}
+                </>);})()}
+                {sbProvider==="INTL"&&(
+                  <div style={{background:"#eff6ff",border:"1.5px solid #a5b4fc",borderRadius:14,padding:"14px",marginBottom:12}}>
+                    <div style={{fontWeight:800,fontSize:12,color:"#4338ca",marginBottom:8}}>🌍 {lang==="fr"?"Depuis l'étranger (Sendwave / TapTap)":"From abroad (Sendwave / TapTap)"}</div>
+                    <div style={{background:"#e0e7ff",borderRadius:10,padding:"10px 12px",marginBottom:8,fontFamily:"monospace",fontSize:12,lineHeight:2.1}}>
+                      {lang==="fr"?"Nom":"Name"} : <strong>AyyadCI</strong><br/>
+                      {lang==="fr"?"Numéro":"Number"} : <strong>+225 07 48 05 61 28</strong><br/>
+                      {lang==="fr"?"Pays":"Country"} : <strong>Côte d'Ivoire 🇨🇮</strong>
+                    </div>
+                    <div style={{fontSize:11,color:"#4338ca",lineHeight:1.8}}>
+                      {lang==="fr"?"Applis compatibles : Sendwave · TapTap Send · WorldRemit":"Compatible apps: Sendwave · TapTap Send · WorldRemit"}
+                    </div>
+                  </div>
+                )}
+                {sbProvider==="VB"&&(
+                  <div style={{background:"#f0f9ff",border:"1.5px solid #7dd3fc",borderRadius:14,padding:"14px",marginBottom:12}}>
+                    <div style={{fontWeight:800,fontSize:12,color:"#0369a1",marginBottom:8}}>🏦 {lang==="fr"?"Coordonnées bancaires AYYAD :":"AYYAD Bank Details:"}</div>
+                    <div style={{background:"#e0f2fe",borderRadius:10,padding:"10px 12px",marginBottom:8,fontFamily:"monospace",fontSize:11,lineHeight:2.2}}>
+                      {lang==="fr"?"Banque":"Bank"} : <strong>SGBCI (Société Générale CI)</strong><br/>
+                      {lang==="fr"?"Titulaire":"Account holder"} : <strong>AYYAD SARLU</strong><br/>
+                      IBAN : <strong style={{letterSpacing:"0.5px"}}>CI93 CI01 0310 0000 0000 0123 456</strong><br/>
+                      BIC : <strong>SGCICIAB</strong>
+                    </div>
+                    <div style={{background:"#fef3c7",borderRadius:8,padding:"8px 10px",fontSize:11,color:"#92400e",fontWeight:700,marginBottom:8}}>
+                      ⚠️ {lang==="fr"?"Mentionnez en objet : ":"Add reference in subject: "}
+                      <span style={{fontFamily:"monospace",color:"#111"}}>{sbPayRef}</span>
+                    </div>
+                    <div style={{fontSize:11,color:"#0369a1",lineHeight:1.8}}>
+                      {lang==="fr"
+                        ?<>1. Connectez-vous à votre banque en ligne<br/>2. Créez un virement vers l'IBAN ci-dessus<br/>3. Indiquez la référence en objet<br/>4. Revenez ici → "J'ai effectué le virement"</>
+                        :<>1. Log into your online banking<br/>2. Transfer to the IBAN above<br/>3. Add the reference in subject<br/>4. Come back → "I've completed the transfer"</>}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Bouton principal ── */}
+                {(sbProvider==="WAVE"||sbProvider==="OM"||sbProvider==="MTN"||sbProvider==="VB")?(
+                  <button
+                    disabled={!amount||parseInt(amount)<1||sbSubmitting}
+                    onClick={async()=>{
+                      if(!amount||parseInt(amount)<1||sbSubmitting) return;
+                      setSbSubmitting(true);
+                      const amtFcfa = currency==="FCFA"?parseInt(amount):Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1));
+                      try {
+                        if(c.id&&!c._isDemo){
+                          await supabase.from("donations").insert({
+                            case_id:c.id, donor_name:null, amount_fcfa:amtFcfa, amount:amtFcfa,
+                            provider:sbProvider, status:"pending", reference:sbPayRef,
+                            created_at:new Date().toISOString(),
+                          });
+                        }
+                      } catch(e){}
+                      setSbSubmitting(false);
+                      setSbSuccess(true);
+                    }}
+                    style={{width:"100%",padding:"14px",borderRadius:14,border:sbProvider==="VB"?"2px solid #0369a1":"2px solid #047857",background:"#fff",color:sbProvider==="VB"?"#0369a1":"#047857",fontWeight:900,fontSize:15,cursor:(!amount||parseInt(amount)<1||sbSubmitting)?"not-allowed":"pointer",marginBottom:8,transition:"all 0.2s",boxShadow:"0 3px 12px rgba(4,120,87,0.15)"}}>
+                    {sbSubmitting?"⏳ ...":sbProvider==="VB"?(lang==="fr"?"✅ J'ai effectué le virement":"✅ I've completed the transfer"):(lang==="fr"?"✅ J'ai effectué le paiement":"✅ I've completed the payment")}
                   </button>
-                ))}
-              </div>
-              <input type="number" value={amount} onChange={e=>setAmount(e.target.value)}
-                placeholder={lang==="fr"?"Autre montant (FCFA)":"Custom amount (FCFA)"}
-                style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:9,border:"1.5px solid #E5E7EB",fontSize:13,fontWeight:600,marginBottom:10,outline:"none"}} />
-              <button
-                onClick={() => setShowModal(true)}
-                disabled={!amount||parseInt(amount)<1}
-                style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:(!amount||parseInt(amount)<1)?"#9CA3AF":"#059669",color:"#fff",fontWeight:800,fontSize:15,cursor:(!amount||parseInt(amount)<1)?"not-allowed":"pointer",boxShadow:(!amount||parseInt(amount)<1)?"none":"0 4px 14px rgba(5,150,105,0.32)",transition:"all 0.2s"}}>
-                💚 {lang==="fr"?"Faire un don":"Donate"}
-              </button>
-              <div style={{textAlign:"center",marginTop:9,fontSize:11,color:"#9CA3AF",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                🔒 {lang==="fr"?"Sécurisé · 0 frais cachés":"Secure · No hidden fees"}
+                ):(sbProvider==="INTL")?(
+                  <button
+                    disabled={!amount||parseInt(amount)<1||sbSubmitting}
+                    onClick={async()=>{
+                      if(!amount||parseInt(amount)<1||sbSubmitting) return;
+                      setSbSubmitting(true);
+                      const amtFcfa = currency==="FCFA"?parseInt(amount):Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1));
+                      try {
+                        if(c.id&&!c._isDemo){
+                          await supabase.from("donations").insert({
+                            case_id:c.id, donor_name:null, amount_fcfa:amtFcfa, amount:amtFcfa,
+                            provider:"SENDWAVE", status:"pending", reference:sbPayRef,
+                            created_at:new Date().toISOString(),
+                          });
+                        }
+                      } catch(e){}
+                      setSbSubmitting(false);
+                      setSbSuccess(true);
+                    }}
+                    style={{width:"100%",padding:"14px",borderRadius:14,border:"2px solid #4f46e5",background:"#fff",color:"#4f46e5",fontWeight:900,fontSize:15,cursor:(!amount||parseInt(amount)<1||sbSubmitting)?"not-allowed":"pointer",marginBottom:8,boxShadow:"0 3px 12px rgba(79,70,229,0.15)"}}>
+                    {sbSubmitting?"⏳ ...":(lang==="fr"?"✅ J'ai effectué le transfert":"✅ I've completed the transfer")}
+                  </button>
+                ):(
+                  <button
+                    onClick={() => setShowModal(true)}
+                    disabled={!amount||parseInt(amount)<1}
+                    style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:(!amount||parseInt(amount)<1)?"#9CA3AF":"#059669",color:"#fff",fontWeight:800,fontSize:15,cursor:(!amount||parseInt(amount)<1)?"not-allowed":"pointer",boxShadow:(!amount||parseInt(amount)<1)?"none":"0 4px 14px rgba(5,150,105,0.32)",transition:"all 0.2s",marginBottom:8}}>
+                    💚 {lang==="fr"?"Faire un don":"Donate"}
+                  </button>
+                )}
+
+                <div style={{textAlign:"center",fontSize:11,color:"#9CA3AF",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                  🔒 {lang==="fr"?"Sécurisé · 0 frais cachés":"Secure · No hidden fees"}
+                </div>
               </div>
             </div>
+            )}
           </div>
           {/* ── FIN WIDGET DON ── */}
           
@@ -5842,70 +6537,100 @@ const AdminVisitorsTab = ({ lang }) => {
   );
 };
 
-// ── Composant Gestion Témoignages Admin ──────────────────────────────
+// ── Composant Gestion Médias Témoignages Admin ───────────────────────────────
 const AdminTestimonialsTab = ({ lang, user }) => {
   const fr = lang === "fr";
-  const [testimonials, setTestimonials] = useState([]);
+  const [medias, setMedias] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("pending"); // pending | approved | rejected | all
-  const [editing, setEditing] = useState(null); // témoignage en cours d'édition
-  const [editForm, setEditForm] = useState({});
+  const [filter, setFilter] = useState("pending");
   const [msg, setMsg] = useState("");
+  const [preview, setPreview] = useState(null); // { url, type }
+  // Admin upload direct
+  const [showAdminUpload, setShowAdminUpload] = useState(false);
+  const [adminForm, setAdminForm] = useState({ name: "", caseId: "", file: null });
+  const [adminUploading, setAdminUploading] = useState(false);
+  const [adminUploadErr, setAdminUploadErr] = useState("");
 
-  const fetchTestimonials = React.useCallback(async () => {
+  const fetch = React.useCallback(async () => {
     setLoading(true);
-    const query = supabase.from("testimonials").select("*").order("created_at", { ascending: false }).limit(200);
-    const { data, error } = filter === "all" ? await query : await query.eq("status", filter);
-    if (!error) setTestimonials(data || []);
+    const q = supabase.from("testimonial_media").select("*").order("created_at", { ascending: false }).limit(200);
+    const { data } = filter === "all" ? await q : await q.eq("status", filter);
+    setMedias(data || []);
     setLoading(false);
   }, [filter]);
 
-  useEffect(() => { fetchTestimonials(); }, [fetchTestimonials]);
+  useEffect(() => { fetch(); }, [fetch]);
+
+  const notify = (m) => { setMsg(m); setTimeout(() => setMsg(""), 3000); };
 
   const approve = async (id) => {
-    await supabase.from("testimonials").update({ status: "approved", reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq("id", id);
-    setMsg(fr ? "✓ Témoignage approuvé" : "✓ Testimonial approved");
-    fetchTestimonials();
-    setTimeout(() => setMsg(""), 3000);
+    await supabase.from("testimonial_media").update({ status: "approved" }).eq("id", id);
+    notify("✓ Approuvé — visible sur le site");
+    fetch();
   };
-
   const reject = async (id) => {
-    await supabase.from("testimonials").update({ status: "rejected", reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq("id", id);
-    setMsg(fr ? "Témoignage rejeté" : "Testimonial rejected");
-    fetchTestimonials();
-    setTimeout(() => setMsg(""), 3000);
+    await supabase.from("testimonial_media").update({ status: "rejected" }).eq("id", id);
+    notify("Rejeté");
+    fetch();
+  };
+  const del = async (id) => {
+    if (!window.confirm("Supprimer ce média ?")) return;
+    await supabase.from("testimonial_media").delete().eq("id", id);
+    notify("Supprimé");
+    fetch();
   };
 
-  const deleteTestimonial = async (id) => {
-    if (!window.confirm(fr ? "Supprimer ce témoignage ?" : "Delete this testimonial?")) return;
-    await supabase.from("testimonials").delete().eq("id", id);
-    setMsg(fr ? "Témoignage supprimé" : "Testimonial deleted");
-    fetchTestimonials();
-    setTimeout(() => setMsg(""), 3000);
+  // Upload admin direct (status = approved immédiatement)
+  const handleAdminFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const maxMB = file.type.startsWith("video") ? 50 : 10;
+    if (file.size > maxMB * 1024 * 1024) { setAdminUploadErr(`Fichier trop lourd (max ${maxMB}MB)`); return; }
+    setAdminUploadErr("");
+    setAdminForm(f => ({ ...f, file }));
   };
 
-  const saveEdit = async () => {
-    await supabase.from("testimonials").update({
-      beneficiary: editForm.beneficiary,
-      message_fr: editForm.message_fr,
-      message_en: editForm.message_en,
-      stars: Number(editForm.stars),
-      admin_note: editForm.admin_note,
-    }).eq("id", editing);
-    setEditing(null);
-    setMsg(fr ? "✓ Témoignage modifié" : "✓ Testimonial updated");
-    fetchTestimonials();
-    setTimeout(() => setMsg(""), 3000);
+  const handleAdminUpload = async () => {
+    if (!adminForm.name.trim() || !adminForm.file) { setAdminUploadErr("Nom et fichier requis."); return; }
+    setAdminUploading(true); setAdminUploadErr("");
+    try {
+      const ext = adminForm.file.name.split(".").pop().toLowerCase();
+      const isVideo = ["mp4","mov","webm","avi","mkv"].includes(ext);
+      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: sErr } = await supabase.storage.from("testimonials").upload(`approved/${fileName}`, adminForm.file, { cacheControl: "3600", upsert: false });
+      if (sErr) throw sErr;
+      const { data: { publicUrl } } = supabase.storage.from("testimonials").getPublicUrl(`approved/${fileName}`);
+      const { error: dbErr } = await supabase.from("testimonial_media").insert({
+        beneficiary_name: adminForm.name.trim(),
+        case_tracking_id: adminForm.caseId.trim() || null,
+        file_url: publicUrl,
+        file_type: isVideo ? "video" : "photo",
+        status: "approved",
+      });
+      if (dbErr) throw dbErr;
+      setShowAdminUpload(false);
+      setAdminForm({ name: "", caseId: "", file: null });
+      notify("✓ Média publié directement !");
+      fetch();
+    } catch(e) { setAdminUploadErr(e.message || "Erreur"); }
+    setAdminUploading(false);
   };
 
   const statusColors = { pending: "bg-yellow-100 text-yellow-700", approved: "bg-green-100 text-green-700", rejected: "bg-red-100 text-red-700" };
-  const statusLabels = { pending: fr ? "En attente" : "Pending", approved: fr ? "Approuvé" : "Approved", rejected: fr ? "Rejeté" : "Rejected" };
+  const statusLabels = { pending: "En attente", approved: "Approuvé", rejected: "Rejeté" };
 
   return (
     <div className="space-y-5">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-xl font-bold text-gray-800">💬 {fr ? "Gestion des témoignages" : "Testimonial management"}</h2>
-        {msg && <span className="text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">{msg}</span>}
+        <h2 className="text-xl font-bold text-gray-800">🎥 Médias bénéficiaires</h2>
+        <div className="flex items-center gap-2 flex-wrap">
+          {msg && <span className="text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">{msg}</span>}
+          <button onClick={()=>setShowAdminUpload(true)}
+            className="bg-emerald-600 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-emerald-700">
+            📤 Publier un média
+          </button>
+        </div>
       </div>
 
       {/* Filtres */}
@@ -5913,114 +6638,160 @@ const AdminTestimonialsTab = ({ lang, user }) => {
         {["pending","approved","rejected","all"].map(s => (
           <button key={s} onClick={() => setFilter(s)}
             className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${filter===s ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
-            {s==="all" ? (fr?"Tous":"All") : statusLabels[s]}
+            {s==="all" ? "Tous" : statusLabels[s]}
           </button>
         ))}
       </div>
 
-      {loading && <div className="text-center py-10 text-gray-400">{fr ? "Chargement..." : "Loading..."}</div>}
-
-      {!loading && testimonials.length === 0 && (
+      {loading && <div className="text-center py-10 text-gray-400">Chargement…</div>}
+      {!loading && medias.length === 0 && (
         <div className="text-center py-16 text-gray-400">
-          <div className="text-4xl mb-3">💬</div>
-          <p>{fr ? "Aucun témoignage dans cette catégorie." : "No testimonials in this category."}</p>
+          <div className="text-4xl mb-3">🎥</div>
+          <p>Aucun média dans cette catégorie.</p>
         </div>
       )}
 
+      {/* Liste */}
       <div className="space-y-4">
-        {testimonials.map(t => (
-          <div key={t.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            {editing === t.id ? (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 mb-1 block">{fr?"Nom":"Name"}</label>
-                    <input value={editForm.beneficiary||""} onChange={e=>setEditForm(f=>({...f,beneficiary:e.target.value}))}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+        {medias.map(m => (
+          <div key={m.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <div className="flex gap-4 items-start flex-wrap">
+              {/* Miniature cliquable */}
+              <div
+                onClick={() => setPreview({ url: m.file_url, type: m.file_type })}
+                className="cursor-pointer flex-shrink-0"
+                style={{ width:120, height:80, borderRadius:10, overflow:"hidden", background:"#111", position:"relative" }}
+              >
+                {m.file_type === "video" ? (
+                  <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1a2e" }}>
+                    <span style={{ fontSize:32 }}>▶️</span>
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 mb-1 block">⭐ {fr?"Note":"Stars"}</label>
-                    <select value={editForm.stars||5} onChange={e=>setEditForm(f=>({...f,stars:e.target.value}))}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
-                      {[5,4,3,2,1].map(n=><option key={n} value={n}>{n} ⭐</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Message (FR)</label>
-                  <textarea value={editForm.message_fr||""} onChange={e=>setEditForm(f=>({...f,message_fr:e.target.value}))}
-                    rows={4} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Message (EN)</label>
-                  <textarea value={editForm.message_en||""} onChange={e=>setEditForm(f=>({...f,message_en:e.target.value}))}
-                    rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">{fr?"Note interne (non visible)":"Internal note (not public)"}</label>
-                  <input value={editForm.admin_note||""} onChange={e=>setEditForm(f=>({...f,admin_note:e.target.value}))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-                </div>
-                <div className="flex gap-2 pt-1">
-                  <button onClick={saveEdit} className="bg-emerald-600 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-emerald-700">
-                    {fr?"Enregistrer":"Save"}
-                  </button>
-                  <button onClick={()=>setEditing(null)} className="bg-gray-100 text-gray-700 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-gray-200">
-                    {fr?"Annuler":"Cancel"}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-gray-800">{t.beneficiary}</span>
-                      {t.age && <span className="text-xs text-gray-400">{t.age} ans</span>}
-                      {t.city && <span className="text-xs text-gray-400">· {t.city}</span>}
-                      {t.hospital && <span className="text-xs text-gray-400">· {t.hospital}</span>}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusColors[t.status]}`}>{statusLabels[t.status]}</span>
-                      {t.category_fr && <span className="text-xs text-gray-400">{t.category_fr}</span>}
-                      {t.amount && <span className="text-xs font-semibold text-emerald-700">{t.amount.toLocaleString()} FCFA</span>}
-                      <span className="text-xs text-gray-300">{new Date(t.created_at).toLocaleDateString("fr-FR")}</span>
-                    </div>
-                  </div>
-                  <span className="text-lg">{"⭐".repeat(t.stars||5)}</span>
-                </div>
-                <blockquote className="text-sm text-gray-700 italic border-l-3 border-emerald-300 pl-3 mb-3">
-                  "{t.message_fr}"
-                </blockquote>
-                {t.admin_note && (
-                  <div className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mb-3">
-                    📝 {t.admin_note}
-                  </div>
+                ) : (
+                  <img src={m.file_url} alt={m.beneficiary_name} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                 )}
+                <div style={{
+                  position:"absolute", bottom:4, left:4,
+                  background: m.file_type === "video" ? "#1e40af" : "#065f46",
+                  color:"#fff", fontSize:9, fontWeight:700,
+                  padding:"2px 6px", borderRadius:4, textTransform:"uppercase",
+                }}>
+                  {m.file_type === "video" ? "Vidéo" : "Photo"}
+                </div>
+              </div>
+
+              {/* Infos */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className="font-bold text-gray-900">{m.beneficiary_name}</span>
+                  {m.case_tracking_id && <span className="text-xs text-gray-400">· {m.case_tracking_id}</span>}
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusColors[m.status]}`}>{statusLabels[m.status]}</span>
+                </div>
+                <p className="text-xs text-gray-400 mb-3">{new Date(m.created_at).toLocaleDateString("fr-FR", { day:"numeric", month:"long", year:"numeric" })}</p>
                 <div className="flex gap-2 flex-wrap">
-                  {t.status !== "approved" && (
-                    <button onClick={()=>approve(t.id)} className="text-xs bg-green-600 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-green-700">
-                      ✓ {fr?"Approuver":"Approve"}
-                    </button>
-                  )}
-                  {t.status !== "rejected" && (
-                    <button onClick={()=>reject(t.id)} className="text-xs bg-orange-500 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-orange-600">
-                      ✗ {fr?"Rejeter":"Reject"}
-                    </button>
-                  )}
-                  <button onClick={()=>{ setEditing(t.id); setEditForm({beneficiary:t.beneficiary,message_fr:t.message_fr,message_en:t.message_en,stars:t.stars,admin_note:t.admin_note||""}); }}
-                    className="text-xs bg-gray-100 text-gray-700 font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-200">
-                    ✏️ {fr?"Modifier":"Edit"}
+                  <button onClick={() => setPreview({ url: m.file_url, type: m.file_type })}
+                    className="text-xs bg-blue-50 text-blue-700 font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-100">
+                    👁 Visualiser
                   </button>
-                  <button onClick={()=>deleteTestimonial(t.id)} className="text-xs bg-red-50 text-red-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-red-100">
-                    🗑️ {fr?"Supprimer":"Delete"}
+                  {m.status !== "approved" && (
+                    <button onClick={() => approve(m.id)}
+                      className="text-xs bg-green-600 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-green-700">
+                      ✓ Approuver
+                    </button>
+                  )}
+                  {m.status !== "rejected" && (
+                    <button onClick={() => reject(m.id)}
+                      className="text-xs bg-orange-500 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-orange-600">
+                      ✗ Rejeter
+                    </button>
+                  )}
+                  <button onClick={() => del(m.id)}
+                    className="text-xs bg-red-50 text-red-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-red-100">
+                    🗑️ Supprimer
                   </button>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         ))}
       </div>
+
+      {/* ── Modale prévisualisation ── */}
+      {preview && (
+        <div onClick={()=>setPreview(null)} style={{
+          position:"fixed", inset:0, background:"rgba(0,0,0,0.88)",
+          display:"flex", alignItems:"center", justifyContent:"center",
+          zIndex:99999, cursor:"pointer", padding:16,
+        }}>
+          <div onClick={e=>e.stopPropagation()} style={{ maxWidth:800, width:"100%", position:"relative" }}>
+            <button onClick={()=>setPreview(null)} style={{
+              position:"absolute", top:-40, right:0,
+              background:"none", border:"none", color:"#fff", fontSize:28, cursor:"pointer",
+            }}>✕</button>
+            {preview.type === "video" ? (
+              <video
+                src={preview.url}
+                controls autoPlay
+                style={{ width:"100%", borderRadius:16, maxHeight:"80vh", background:"#000" }}
+              />
+            ) : (
+              <img
+                src={preview.url}
+                style={{ width:"100%", borderRadius:16, maxHeight:"80vh", objectFit:"contain" }}
+                alt="preview"
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Modale upload admin ── */}
+      {showAdminUpload && (
+        <div style={{
+          position:"fixed", inset:0, background:"rgba(0,0,0,0.70)",
+          display:"flex", alignItems:"center", justifyContent:"center",
+          zIndex:9999, padding:16,
+        }}>
+          <div style={{ background:"#fff", borderRadius:20, padding:"32px 28px", maxWidth:460, width:"100%", position:"relative" }}>
+            <button onClick={()=>setShowAdminUpload(false)} style={{
+              position:"absolute", top:16, right:16,
+              background:"none", border:"none", fontSize:22, cursor:"pointer", color:"#666",
+            }}>✕</button>
+            <h3 style={{ fontWeight:900, fontSize:18, color:"#0a3d2e", marginBottom:6 }}>
+              📤 Publier une vidéo ou photo
+            </h3>
+            <p style={{ color:"#6B7280", fontSize:13, marginBottom:20 }}>
+              Publié immédiatement sur le site. Peut être un témoignage patient ou une vidéo générale de la plateforme.
+            </p>
+            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              <div>
+                <label style={{ fontSize:13, fontWeight:700, color:"#374151", display:"block", marginBottom:4 }}>Nom / Titre *</label>
+                <input value={adminForm.name} onChange={e=>setAdminForm(f=>({...f,name:e.target.value}))}
+                  placeholder="Ex: Djana, 5 ans — ou — AYYAD CI"
+                  style={{ width:"100%", border:"1px solid #D1D5DB", borderRadius:10, padding:"10px 14px", fontSize:14, boxSizing:"border-box", color:"#111827", background:"#fff" }} />
+              </div>
+              <div>
+                <label style={{ fontSize:13, fontWeight:700, color:"#374151", display:"block", marginBottom:4 }}>N° de dossier <span style={{fontWeight:400,color:"#9CA3AF"}}>(optionnel — laisser vide pour une vidéo plateforme)</span></label>
+                <input value={adminForm.caseId} onChange={e=>setAdminForm(f=>({...f,caseId:e.target.value}))}
+                  placeholder="AYD-2026-XXXXXX"
+                  style={{ width:"100%", border:"1px solid #D1D5DB", borderRadius:10, padding:"10px 14px", fontSize:14, boxSizing:"border-box", color:"#111827", background:"#fff" }} />
+              </div>
+              <div>
+                <label style={{ fontSize:13, fontWeight:700, color:"#374151", display:"block", marginBottom:4 }}>Vidéo ou photo *</label>
+                <input type="file" accept="video/*,image/jpeg,image/png,image/webp" onChange={handleAdminFileChange} style={{ fontSize:13, width:"100%" }} />
+                <p style={{ fontSize:11, color:"#9CA3AF", marginTop:3 }}>Vidéo max 50MB · Photo max 10MB</p>
+              </div>
+              {adminUploadErr && <p style={{ color:"#DC2626", fontSize:13 }}>⚠ {adminUploadErr}</p>}
+              <button onClick={handleAdminUpload} disabled={adminUploading} style={{
+                background: adminUploading ? "#9CA3AF" : "#059669",
+                color:"#fff", border:"none", borderRadius:12,
+                padding:"13px", fontWeight:800, fontSize:15, cursor: adminUploading ? "default" : "pointer",
+              }}>
+                {adminUploading ? "Publication en cours…" : "✓ Publier maintenant"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -6700,7 +7471,7 @@ const RegisterPage = ({ setPage, setUser, lang }) => {
           ))}
           <div className="flex items-start gap-2 text-xs text-gray-500">
             <input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} className="mt-0.5 accent-emerald-600 cursor-pointer" />
-            <span onClick={()=>setAcceptedTerms(v=>!v)} className="cursor-pointer">{t.terms} <a href="https://ayyadci.com/cgu" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.termsLink}</a> {t.and} <a href="https://ayyadci.com/confidentialite" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.privacyLink}</a>.</span>
+            <span onClick={()=>setAcceptedTerms(v=>!v)} className="cursor-pointer">{t.terms} <a href="https://www.ayyadci.com/cgu" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.termsLink}</a> {t.and} <a href="https://www.ayyadci.com/confidentialite" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-emerald-600 underline font-medium">{t.privacyLink}</a>.</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button onClick={()=>setStep(1)} className="border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm">{t.back}</button>
@@ -7926,6 +8697,7 @@ const AdminPage = ({ user, setPage, lang }) => {
   const [deleting, setDeleting] = useState(false);
   const [editDeadline, setEditDeadline] = useState({});
   const [editVideoUrl, setEditVideoUrl] = useState({}); // { caseId: "https://..." }
+  const [photoMgmt, setPhotoMgmt] = useState(null); // { c, photos: [...urls] }
   const [rejectReason, setRejectReason] = useState("");
   const [payMethods, setPayMethods] = useState({}); // { caseId: "WAVE"|"ORANGE"|"MTN"|"BANK" }
   const [confirmingId, setConfirmingId] = useState(null); // caseId en cours de confirmation
@@ -8101,6 +8873,7 @@ const AdminPage = ({ user, setPage, lang }) => {
         emailCaseApproved({ beneficiaryEmail: c.email || null, beneficiaryName: c.full_name || c.beneficiary, caseTitle: c.title, trackingId: newTrackingId });
         emailNewCase({ caseTitle: "✅ APPROUVÉ — " + (c.title || id) + " (" + newTrackingId + ")", hospital: c.hospital, city: c.city, amount: c.amount });
         auditLog(user, "CASE_APPROVED", c.title || id, "PENDING", "COLLECTING");
+        notifyDonors({ caseTitle: c.title, hospital: c.hospital, city: c.city, amount: c.amount, trackingId: newTrackingId, beneficiary: c.full_name || c.beneficiary, urgent: c.urgent || false });
       }
     }
   };
@@ -8181,8 +8954,6 @@ const AdminPage = ({ user, setPage, lang }) => {
   const activeCases = cases.filter(c => ["APPROVED","COLLECTING"].includes(c.status));
 
   // ── Compteur des dons en attente de validation ──
-  // Affiché en badge sur l'onglet Dons + mis à jour en realtime quand
-  // un nouveau don tombe (pré-insert via QR mobile, manuel, etc.)
   const [pendingDonationsCount, setPendingDonationsCount] = useState(0);
   useEffect(() => {
     let alive = true;
@@ -8194,12 +8965,28 @@ const AdminPage = ({ user, setPage, lang }) => {
       if (alive) setPendingDonationsCount(count || 0);
     };
     refreshCount();
-
-    // Realtime: le badge bouge quand un nouveau don arrive ou change de statut
     const ch = supabase.channel("admin-pending-dons")
       .on("postgres_changes", { event: "*", schema: "public", table: "donations" }, () => refreshCount())
       .subscribe();
     return () => { alive = false; supabase.removeChannel(ch); };
+  }, []);
+
+  // ── Compteur médias témoignages en attente ──
+  const [pendingMediaCount, setPendingMediaCount] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const refreshMedia = async () => {
+      const { count } = await supabase
+        .from("testimonial_media")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+      if (alive) setPendingMediaCount(count || 0);
+    };
+    refreshMedia();
+    const ch2 = supabase.channel("admin-pending-media")
+      .on("postgres_changes", { event: "*", schema: "public", table: "testimonial_media" }, () => refreshMedia())
+      .subscribe();
+    return () => { alive = false; supabase.removeChannel(ch2); };
   }, []);
 
   const statusColor = (s) => ({ PENDING:"yellow", APPROVED:"blue", COLLECTING:"green", FUNDED:"green", REJECTED:"red" }[s] || "gray");
@@ -8289,6 +9076,7 @@ const AdminPage = ({ user, setPage, lang }) => {
               {tab_.id==="cases"&&pendingCases.length>0&&<span className="bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{pendingCases.length}</span>}
               {tab_.id==="donations"&&pendingDonationsCount>0&&<span className="bg-emerald-500 text-white text-xs rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center font-bold animate-pulse">{pendingDonationsCount}</span>}
               {tab_.id==="fraud"&&unresolved>0&&<span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{unresolved}</span>}
+              {tab_.id==="testimonials"&&pendingMediaCount>0&&<span className="bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">{pendingMediaCount}</span>}
             </button>
           ))}
         </div>
@@ -8412,7 +9200,8 @@ const AdminPage = ({ user, setPage, lang }) => {
                 </div>
                 <div className="divide-y divide-gray-50">
                   {cases.filter(c=>c.status!=="PENDING").map(c=>(
-                    <div key={c.id} className="p-4 flex items-center gap-3 flex-wrap">
+                    <div key={c.id} className="p-4 flex flex-col gap-2">
+                      <div className="flex items-center gap-3 flex-wrap">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-sm text-gray-900 truncate">{(()=>{try{const t=typeof c.title==="string"&&c.title.startsWith("{")?JSON.parse(c.title):c.title;return t?.fr||t?.en||c.title||c.full_name||"—"}catch{return c.title||c.full_name||"—"}})()}</span>
@@ -8526,6 +9315,32 @@ const AdminPage = ({ user, setPage, lang }) => {
                             🎥 Vidéo
                           </button>
                         )}
+                        {/* Bouton Photos */}
+                        {!c._isDemo && !c._mock && (
+                          <button
+                            onClick={() => setPhotoMgmt({ c, photos: Array.isArray(c.photos) ? [...c.photos] : [] })}
+                            title="Gérer les photos"
+                            className="text-xs px-2.5 py-1 rounded-full font-bold border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-all flex-shrink-0">
+                            📷 Photos {c.photos?.length ? `(${c.photos.length})` : ""}
+                          </button>
+                        )}
+                        {/* Bouton Clôturer la campagne — COLLECTING → FUNDED */}
+                        {c.status === "COLLECTING" && !c._isDemo && !c._mock && (
+                          <button
+                            onClick={async () => {
+                              if (!window.confirm(lang==="fr"
+                                ? `Clôturer la campagne "${c.full_name||c.title||c.id}" ? Elle passera en statut Financé et ne sera plus visible dans les collectes actives.`
+                                : `Close the campaign? It will be marked as Funded and removed from active collections.`)) return;
+                              await supabase.from("cases").update({ status: "FUNDED" }).eq("id", c.id);
+                              setCases(prev => prev.map(x => x.id === c.id ? {...x, status: "FUNDED"} : x));
+                              auditLog(user, "CASE_CLOSED", c.title || c.id, "COLLECTING", "FUNDED");
+                            }}
+                            title={lang==="fr"?"Clôturer la campagne (patient traité)":"Close campaign (patient treated)"}
+                            className="text-xs px-2.5 py-1 rounded-full font-bold border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-all flex-shrink-0"
+                          >
+                            ✅ {lang==="fr"?"Clôturer":"Close campaign"}
+                          </button>
+                        )}
                         {/* Bouton Supprimer — visible uniquement pour super_admin */}
                         {user?.adminRole === "super_admin" && !c._isDemo && !c._mock && (
                           <button
@@ -8537,12 +9352,108 @@ const AdminPage = ({ user, setPage, lang }) => {
                           </button>
                         )}
                       </div>
+                      </div>{/* end flex items-center row */}
+                      {/* ── Barres de progression admin (patient + AYYAD 7%) ── */}
+                      {c.status === "COLLECTING" && (() => {
+                        const _devis = c.amount||c.required||0;
+                        const _col = c.collected||0;
+                        const _patPct = _devis > 0 ? Math.min(100, Math.round((_col / _devis) * 100)) : 0;
+                        const _ayyadAmt = Math.round(_col * PLATFORM_FEE_PCT);
+                        const _ayyadTarget = Math.round(_devis * PLATFORM_FEE_PCT);
+                        const _ayyadPct = _ayyadTarget > 0 ? Math.min(100, Math.round((_ayyadAmt / _ayyadTarget) * 100)) : 0;
+                        return (
+                          <div className="pt-2 border-t border-gray-100 space-y-1.5">
+                            <div>
+                              <div className="flex justify-between items-center text-[11px] mb-1">
+                                <span className="text-gray-600 font-semibold">🏥 Patient — {_col.toLocaleString("fr-FR")} / {_devis.toLocaleString("fr-FR")} FCFA</span>
+                                <span className="font-black text-emerald-700">{_patPct}%</span>
+                              </div>
+                              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{width:_patPct+"%"}} />
+                              </div>
+                            </div>
+                            <div>
+                              <div className="flex justify-between items-center text-[11px] mb-1">
+                                <span className="text-amber-700 font-semibold">💚 AYYAD 7% — {_ayyadAmt.toLocaleString("fr-FR")} / {_ayyadTarget.toLocaleString("fr-FR")} FCFA</span>
+                                <span className="font-black text-amber-700">{_ayyadPct}%</span>
+                              </div>
+                              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-amber-400 rounded-full transition-all duration-500" style={{width:_ayyadPct+"%"}} />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   ))}
                 </div>
               </div>
             )}
           </div>
+        )}
+
+        {/* ── Modale gestion photos ── */}
+        {photoMgmt && (
+          <>
+            <div onClick={() => setPhotoMgmt(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:29998,backdropFilter:"blur(2px)"}} />
+            <div style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:29999,background:"#fff",borderRadius:20,padding:24,width:"min(90vw,520px)",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 24px 64px rgba(0,0,0,0.25)"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+                <div>
+                  <div style={{fontWeight:800,fontSize:15,color:"#111827"}}>📷 Photos du dossier</div>
+                  <div style={{fontSize:12,color:"#6b7280",marginTop:2}}>{(() => { try { const t = typeof photoMgmt.c.title==="string" && photoMgmt.c.title.startsWith("{") ? JSON.parse(photoMgmt.c.title) : photoMgmt.c.title; return t?.fr || t?.en || photoMgmt.c.title || photoMgmt.c.full_name || "—"; } catch { return photoMgmt.c.title || "—"; } })()}</div>
+                </div>
+                <button onClick={() => setPhotoMgmt(null)} style={{background:"#f3f4f6",border:"none",borderRadius:"50%",width:32,height:32,fontSize:16,cursor:"pointer"}}>✕</button>
+              </div>
+
+              {photoMgmt.photos.length === 0 ? (
+                <div style={{textAlign:"center",padding:"32px 0",color:"#9ca3af"}}>
+                  <div style={{fontSize:40,marginBottom:8}}>🖼️</div>
+                  <div style={{fontSize:13,fontWeight:600}}>Aucune photo pour ce dossier</div>
+                </div>
+              ) : (
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:10,marginBottom:16}}>
+                  {photoMgmt.photos.map((url, idx) => (
+                    <div key={idx} style={{position:"relative",borderRadius:12,overflow:"hidden",border:"2px solid #e5e7eb",background:"#f9fafb"}}>
+                      <img
+                        src={url}
+                        alt={`photo-${idx+1}`}
+                        style={{width:"100%",height:120,objectFit:"cover",display:"block"}}
+                        onError={e => { e.target.style.display="none"; e.target.nextSibling.style.display="flex"; }}
+                      />
+                      <div style={{display:"none",height:120,alignItems:"center",justifyContent:"center",color:"#9ca3af",fontSize:11}}>Erreur chargement</div>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm("Supprimer cette photo ?")) return;
+                          const newPhotos = photoMgmt.photos.filter((_, i) => i !== idx);
+                          const newPhotoUrl = newPhotos[0] || null;
+                          const { error } = await supabase.from("cases").update({
+                            photos: newPhotos.length ? newPhotos : null,
+                            photo_url: newPhotoUrl
+                          }).eq("id", photoMgmt.c.id);
+                          if (!error) {
+                            setCases(prev => prev.map(x => x.id === photoMgmt.c.id ? {...x, photos: newPhotos, photo_url: newPhotoUrl} : x));
+                            setPhotoMgmt(prev => ({ ...prev, photos: newPhotos }));
+                          } else {
+                            alert("Erreur : " + error.message);
+                          }
+                        }}
+                        style={{position:"absolute",top:6,right:6,background:"rgba(239,68,68,0.9)",border:"none",borderRadius:6,color:"#fff",fontSize:13,width:26,height:26,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800}}
+                        title="Supprimer cette photo">
+                        🗑
+                      </button>
+                      <div style={{fontSize:9,color:"#9ca3af",textAlign:"center",padding:"4px 2px",background:"#f3f4f6"}}>
+                        Photo {idx+1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{fontSize:11,color:"#6b7280",background:"#fef3c7",borderRadius:10,padding:"10px 12px",border:"1px solid #fde68a"}}>
+                ⚠️ La suppression est <strong>immédiate et irréversible</strong>. Le fichier reste dans le storage Supabase — seule la référence est retirée du dossier.
+              </div>
+            </div>
+          </>
         )}
 
         {/* Fraud */}
@@ -9673,6 +10584,22 @@ const MonImpactPage = ({ user, setPage, lang }) => {
   const fr = lang === "fr";
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [notifPref, setNotifPref] = useState(null);
+  const [notifSaving, setNotifSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("profiles").select("notify_new_cases").eq("id", user.id).maybeSingle()
+      .then(({ data }) => setNotifPref(data?.notify_new_cases ?? false));
+  }, [user?.id]);
+
+  const toggleNotif = async () => {
+    const next = !notifPref;
+    setNotifSaving(true);
+    await supabase.from("profiles").update({ notify_new_cases: next }).eq("id", user.id);
+    setNotifPref(next);
+    setNotifSaving(false);
+  };
 
   useEffect(() => {
     if (!user?.id) return;
@@ -9743,6 +10670,30 @@ const MonImpactPage = ({ user, setPage, lang }) => {
             ))}
           </div>
         )}
+
+        {/* Preferences notifications */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mt-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-gray-900 text-sm">{fr?"Alertes nouveaux cas":"New case alerts"}</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {fr?"Recevoir un email quand un nouveau patient est publie sur Ayyad":"Get an email when a new patient is published on Ayyad"}
+              </div>
+            </div>
+            <button
+              onClick={toggleNotif}
+              disabled={notifPref === null || notifSaving}
+              className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 focus:outline-none ${notifPref?"bg-emerald-500":"bg-gray-200"} ${notifPref===null||notifSaving?"opacity-50 cursor-not-allowed":"cursor-pointer"}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${notifPref?"translate-x-6":"translate-x-0"}`} />
+            </button>
+          </div>
+          {notifPref && (
+            <p className="text-xs text-emerald-600 mt-3 font-medium">
+              {fr?"Vous recevrez un email a chaque nouveau dossier publie.":"You will receive an email for each new published case."}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -10064,7 +11015,7 @@ const LegalPage = ({ setPage, lang }) => {
               <Heading>{fr ? "1. Éditeur de la plateforme" : "1. Platform editor"}</Heading>
               <P>
                 {fr ? "La plateforme Ayyad (accessible à l'adresse " : "The Ayyad platform (accessible at "}
-                <strong>ayyadci.com</strong>
+                <strong>www.ayyadci.com</strong>
                 {fr ? ") est éditée par :" : ") is published by:"}
               </P>
               <div className="bg-gray-50 rounded-xl p-4 text-xs space-y-1.5 mb-3">
@@ -11711,7 +12662,11 @@ const DjanaUrgencyBadges = ({ lang }) => {
 const DonatePage = ({ c, lang, user, setPage }) => {
   const fr = lang === "fr";
   const WAVE_LINK = "https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/";
-  const [amount, setAmount] = React.useState(String(c?.__quickAmount || 1000));
+  const [currency, setCurrency] = React.useState(fr ? "FCFA" : "USD");
+  const DONATE_RATES = { FCFA: 1, EUR: 655.957, USD: 600, GBP: 787 };
+  const DONATE_PRESETS = { FCFA: [500,1000,2000,5000], EUR: [1,2,5,10], USD: [1,2,5,10], GBP: [1,2,5,10] };
+  const CURRENCY_SYMBOL = { FCFA: "FCFA", EUR: "€", USD: "$", GBP: "£" };
+  const [amount, setAmount] = React.useState(String(c?.__quickAmount || (fr ? 1000 : 2)));
   const [method, setMethod] = React.useState(null);
   const [donorName, setDonorName] = React.useState(user?.user_metadata?.full_name || "");
   const [donorEmail, setDonorEmail] = React.useState(user?.email || "");
@@ -11721,7 +12676,10 @@ const DonatePage = ({ c, lang, user, setPage }) => {
   const [done, setDone] = React.useState(false);
   const benefName = c?.beneficiary || c?.full_name || (fr ? "Bénéficiaire" : "Beneficiary");
   const amountNum = parseInt(amount) || 0;
-  const amountFmt = amountNum.toLocaleString("fr-FR") + " FCFA";
+  const amountInFcfa = currency === "FCFA" ? amountNum : Math.round(amountNum * DONATE_RATES[currency]);
+  const amountFmt = currency === "FCFA"
+    ? amountNum.toLocaleString("fr-FR") + " FCFA"
+    : (currency === "EUR" ? "€" : currency === "GBP" ? "£" : "$") + amountNum.toLocaleString("fr-FR");
   const METHODS = [
     { id:"WAVE",     label:"Wave CI",       icon:"🟦", sub: fr?"Paiement instantané":"Instant payment",    color:"#1A73E8" },
     { id:"OM",       label:"Orange Money",  icon:"🟧", sub: fr?"Réseau Orange CI":"Orange CI network",     color:"#FF6600" },
@@ -11734,7 +12692,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
     setSubmitting(true); setError("");
     try {
       const res = await createDonation({
-        case_id: c?.id, amount: amountNum, currency: "FCFA", provider: method,
+        case_id: c?.id, amount: amountInFcfa, currency: "FCFA", provider: method,
         donor_name: donorName || null, donor_email: donorEmail || null,
         payment_ref: payRef || null, anonymous: !donorName,
       });
@@ -11775,16 +12733,26 @@ const DonatePage = ({ c, lang, user, setPage }) => {
       <div style={{maxWidth:520,margin:"0 auto",padding:"20px 16px"}}>
         <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:14,boxShadow:"0 1px 8px rgba(0,0,0,0.06)"}}>
           <div style={{fontWeight:700,fontSize:12,color:"#6B7280",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>{fr?"Montant du don":"Donation amount"}</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:10}}>
-            {[500,1000,2000,5000].map(v=>(
-              <button key={v} onClick={()=>setAmount(String(v))}
-                style={{padding:"10px 4px",borderRadius:10,border:"2px solid",borderColor:amountNum===v?"#059669":"#E5E7EB",background:amountNum===v?"#ECFDF5":"#fff",color:amountNum===v?"#059669":"#374151",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.15s"}}>
-                {v.toLocaleString("fr-FR")}
+          {/* Sélecteur de devise */}
+          <div style={{display:"flex",gap:6,marginBottom:10}}>
+            {["FCFA","EUR","USD","GBP"].map(cur=>(
+              <button key={cur} onClick={()=>{setCurrency(cur);setAmount(String(DONATE_PRESETS[cur][1]));}}
+                style={{flex:1,padding:"6px 4px",borderRadius:8,border:"2px solid",borderColor:currency===cur?"#059669":"#E5E7EB",background:currency===cur?"#ECFDF5":"#fff",color:currency===cur?"#059669":"#6B7280",fontWeight:700,fontSize:11,cursor:"pointer",transition:"all 0.15s"}}>
+                {cur==="EUR"?"€ EUR":cur==="USD"?"$ USD":cur==="GBP"?"£ GBP":"FCFA"}
               </button>
             ))}
           </div>
-          <input type="number" placeholder={fr?"Autre montant (FCFA)":"Custom amount (FCFA)"} value={amount} onChange={e=>setAmount(e.target.value)}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:10}}>
+            {(DONATE_PRESETS[currency]||DONATE_PRESETS.FCFA).map(v=>(
+              <button key={v} onClick={()=>setAmount(String(v))}
+                style={{padding:"10px 4px",borderRadius:10,border:"2px solid",borderColor:amountNum===v?"#059669":"#E5E7EB",background:amountNum===v?"#ECFDF5":"#fff",color:amountNum===v?"#059669":"#374151",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.15s"}}>
+                {CURRENCY_SYMBOL[currency]==="FCFA"?v.toLocaleString("fr-FR"):(CURRENCY_SYMBOL[currency]+v)}
+              </button>
+            ))}
+          </div>
+          <input type="number" placeholder={currency==="FCFA"?(fr?"Autre montant (FCFA)":"Custom amount (FCFA)"):`Custom amount (${currency})`} value={amount} onChange={e=>setAmount(e.target.value)}
             style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:10,border:"1.5px solid #E5E7EB",fontSize:14,fontWeight:600,outline:"none"}} />
+          {currency!=="FCFA"&&amountNum>0&&<div style={{fontSize:11,color:"#6B7280",marginTop:4,textAlign:"center"}}>≈ {amountInFcfa.toLocaleString("fr-FR")} FCFA envoyés à l'hôpital</div>}
         </div>
         <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:14,boxShadow:"0 1px 8px rgba(0,0,0,0.06)"}}>
           <div style={{fontWeight:700,fontSize:12,color:"#6B7280",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>{fr?"Moyen de paiement":"Payment method"}</div>
@@ -11875,14 +12843,27 @@ export default function AyyadApp() {
   // (injectées ici car App.css n'est pas importé dans le bundle)
   // ─────────────────────────────────────────────────────────────────
 
-  // Lire ?case= MAINTENANT avant que pushState ne l'écrase (les useEffects tournent après)
-  const _initialCaseId = useRef(new URLSearchParams(window.location.search).get("case")).current;
+  // Mapping chemin propre → nom de page interne
+  const _PATH_TO_PAGE = { "/":"home","/how":"how","/comment-ca-marche":"how","/donate":"donate","/urgents":"urgents","/collectes":"collectesactives","/historique":"collectes","/specialite":"specialite","/soumettre":"submit","/suivi":"tracking","/admin":"admin","/connexion":"login","/profil":"profile","/inscription":"register","/nouveau-mot-de-passe":"change-password","/soutenir":"support-ayyad","/impact":"impact","/bceao":"bceao","/hopitaux":"hopitaux","/mon-impact":"monimpact","/mentions-legales":"legal","/remboursement":"refund","/faq":"faq","/politique-admission":"politique-admission","/retour":"dunya-return" };
+  const _PAGE_TO_PATH = { home:"/",how:"/how",donate:"/donate",urgents:"/urgents",collectesactives:"/collectes",collectes:"/historique",specialite:"/specialite",submit:"/soumettre",tracking:"/suivi",track:"/suivi",admin:"/admin",login:"/connexion",profile:"/profil",register:"/inscription","change-password":"/nouveau-mot-de-passe","support-ayyad":"/soutenir",impact:"/impact",bceao:"/bceao",hopitaux:"/hopitaux",monimpact:"/mon-impact",legal:"/mentions-legales",refund:"/remboursement",faq:"/faq","politique-admission":"/politique-admission","dunya-return":"/retour" };
+
+  // Lire l'ID de dossier depuis l'URL MAINTENANT (avant que pushState ne l'écrase)
+  const _initialCaseId = useRef((() => {
+    const caseMatch = window.location.pathname.match(/^\/case\/(.+)$/);
+    if (caseMatch) return caseMatch[1];
+    // Compat ancienne URL ?case=
+    return new URLSearchParams(window.location.search).get("case");
+  })()).current;
 
   // Initialiser la page depuis l'URL pour survivre aux rafraîchissements
   const [page, setPage] = useState(() => {
-    const p = new URLSearchParams(window.location.search).get("p");
+    const path = window.location.pathname;
+    if (path.match(/^\/case\/.+$/)) return "case";
+    if (_PATH_TO_PAGE[path]) return _PATH_TO_PAGE[path];
+    // Compat ancienne URL ?p=
+    const oldP = new URLSearchParams(window.location.search).get("p");
     const valid = ["home","admin","login","collectes","collectesactives","profile","register","case","track","change-password","urgents","specialite","how","refund","legal","impact","bceao","hopitaux","monimpact","submit","tracking","changepassword","faq","politique-admission","dunya-return","support-ayyad","donate"];
-    return (p && valid.includes(p)) ? p : "home";
+    return (oldP && valid.includes(oldP)) ? oldP : "home";
   });
   // ── IMPORTANT: declare all state BEFORE any useEffect that references them ──
   const [lang, setLang] = useState(sessionStorage.getItem("ayyadLang") || "fr");
@@ -11894,10 +12875,10 @@ export default function AyyadApp() {
     window.scrollTo(0, 0);
     if (page === "case" && selectedCase) {
       const tid = selectedCase.trackingId || selectedCase.tracking_id || selectedCase.id;
-      window.history.pushState({ page }, "", "?p=case&case=" + tid);
+      window.history.pushState({ page }, "", "/case/" + tid);
     } else if (page !== "case") {
       // Don't overwrite URL when page="case" but selectedCase not loaded yet
-      window.history.pushState({ page }, "", "?p=" + page);
+      window.history.pushState({ page }, "", _PAGE_TO_PATH[page] || "/" + page);
     }
     // ── OG Meta tags dynamiques ──
     const setMeta = (prop, content) => {
@@ -11908,8 +12889,8 @@ export default function AyyadApp() {
     if (page === "case" && selectedCase) {
       const title = (selectedCase.title && typeof selectedCase.title==="object") ? (selectedCase.title.fr||selectedCase.title.en||"Ayyad") : (selectedCase.title||"Ayyad");
       const desc = (selectedCase.desc && typeof selectedCase.desc==="object") ? (selectedCase.desc.fr||selectedCase.desc.en||"") : (selectedCase.description||selectedCase.desc||"");
-      const img = selectedCase.photos?.[0] || selectedCase.image || "https://ayyadci.com/og-default.png";
-      const url = "https://ayyadci.com/?p=case&case="+(selectedCase.trackingId||selectedCase.tracking_id||selectedCase.id);
+      const img = selectedCase.photos?.[0] || selectedCase.image || "https://www.ayyadci.com/og-default.png";
+      const url = "https://www.ayyadci.com/case/"+(selectedCase.trackingId||selectedCase.tracking_id||selectedCase.id);
       document.title = title + " — Ayyad CI";
       setMeta("og:title", title + " — Ayyad CI");
       setMeta("og:description", desc.slice(0,200));
@@ -11924,30 +12905,36 @@ export default function AyyadApp() {
       document.title = "Ayyad CI — Financement médical solidaire";
       setMeta("og:title", "Ayyad CI — Financement médical solidaire");
       setMeta("og:description", "Aidez des patients ivoiriens à financer leurs soins médicaux. Paiement via Wave CI. Fonds versés directement à l'hôpital.");
-      setMeta("og:image", "https://ayyadci.com/og-default.png");
-      setMeta("og:url", "https://ayyadci.com");
+      setMeta("og:image", "https://www.ayyadci.com/og-default.png");
+      setMeta("og:url", "https://www.ayyadci.com");
     }
   }, [page, selectedCase]);
 
   // Fix bouton précédent navigateur
   useEffect(() => {
     const handlePop = () => {
-      const params = new URLSearchParams(window.location.search);
-      const p = params.get("p");
-      const cid = params.get("case");
-      if (p === "case" && cid && /^[A-Z]{2,5}-[\d]{4}(-[\w]{2,8}){1,3}$/i.test(cid)) {
-        supabase.from("cases").select("*").eq("tracking_id", cid).maybeSingle().then(async ({ data }) => {
-          if (data) {
-            const [enriched] = await enrichCasesWithTotals([data]);
-            enriched.title  = parseMaybeJson(enriched.title, "Sans titre", "Untitled");
-            enriched.desc   = parseMaybeJson(enriched.description || enriched.desc, "", "");
-            enriched.photos = [...new Set([...(enriched.photo_url ? [enriched.photo_url] : []), ...(enriched.photos || [])])];
-            setSelectedCase(enriched);
-            setPage("case");
-          } else setPage("home");
-        });
-      } else if (p) setPage(p);
-      else setPage("home");
+      const path = window.location.pathname;
+      const caseMatch = path.match(/^\/case\/(.+)$/);
+      if (caseMatch) {
+        const cid = caseMatch[1];
+        if (/^[A-Z]{2,5}-[\d]{4}(-[\w]{2,8}){1,3}$/i.test(cid)) {
+          supabase.from("cases").select("*").eq("tracking_id", cid).maybeSingle().then(async ({ data }) => {
+            if (data) {
+              const [enriched] = await enrichCasesWithTotals([data]);
+              enriched.title  = parseMaybeJson(enriched.title, "Sans titre", "Untitled");
+              enriched.desc   = parseMaybeJson(enriched.description || enriched.desc, "", "");
+              enriched.photos = [...new Set([...(enriched.photo_url ? [enriched.photo_url] : []), ...(enriched.photos || [])])];
+              setSelectedCase(enriched);
+              setPage("case");
+            } else setPage("home");
+          });
+        }
+      } else {
+        // Compat ancienne URL ?p=
+        const p = _PATH_TO_PAGE[path] || new URLSearchParams(window.location.search).get("p");
+        if (p) setPage(p);
+        else setPage("home");
+      }
     };
     window.addEventListener("popstate", handlePop);
     return () => window.removeEventListener("popstate", handlePop);
@@ -11979,7 +12966,7 @@ export default function AyyadApp() {
         setUser({ id: session.user.id, name: userName2, email: session.user.email, isAdmin, adminRole });
         trackVisit(session.user.id, session.user.email, userName2);
         // Restaurer la page depuis l'URL après vérification de session
-        const urlPage = new URLSearchParams(window.location.search).get("p");
+        const urlPage = _PATH_TO_PAGE[window.location.pathname] || new URLSearchParams(window.location.search).get("p");
         if (urlPage && urlPage !== "login" && urlPage !== "register") {
           // Pour les pages protégées, vérifier que l'utilisateur a les droits
           if (urlPage === "admin" && !isAdmin) setPage("home");
@@ -11987,7 +12974,7 @@ export default function AyyadApp() {
         }
       } else {
         // Pas de session : rediriger vers login si page protégée
-        const urlPage = new URLSearchParams(window.location.search).get("p");
+        const urlPage = _PATH_TO_PAGE[window.location.pathname] || new URLSearchParams(window.location.search).get("p");
         if (urlPage === "admin" || urlPage === "profile") setPage("login");
       }
     });
@@ -12025,7 +13012,7 @@ export default function AyyadApp() {
             enriched.photos = [...new Set([...(enriched.photo_url ? [enriched.photo_url] : []), ...(enriched.photos || [])])];
             setSelectedCase(enriched);
             setPage("case");
-            window.history.replaceState({ page: "case" }, "", "?p=case&case=" + caseId);
+            window.history.replaceState({ page: "case" }, "", "/case/" + caseId);
           }
         });
       }
@@ -12038,7 +13025,7 @@ export default function AyyadApp() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      <div className="hidden md:block"><DjanaUrgencyTopBar />{/* PATCH U — cachée mobile */}</div>
+      {/* DjanaUrgencyTopBar désactivée — campagne clôturée */}
       <style>{`
         @keyframes glow-wave {
           0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.8); }
@@ -12102,7 +13089,7 @@ export default function AyyadApp() {
       </main>
       {showFooter&&<Footer setPage={setPage} lang={lang} />}
       <ChatWidget lang={lang} />
-      <DjanaUrgencyBadges lang={lang} />
+      {/* DjanaUrgencyBadges désactivée — campagne clôturée */}
     </div>
   );
 }
