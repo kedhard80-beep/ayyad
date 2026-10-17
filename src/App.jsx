@@ -3943,8 +3943,8 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
 
   const CI_PROVIDERS  = [{id:"WAVE",label:"Wave CI",emoji:"〰️"},{id:"OM",label:"Orange Money",emoji:"🟠"},{id:"MTN",label:"MTN MoMo",emoji:"🟡"}];
   const INT_PROVIDERS = [{id:"SENDWAVE",label:"Sendwave",emoji:"💸"},{id:"TAPTAP",label:"TapTap Send",emoji:"✈️"}];
-  const SOON_PROVIDERS= [{id:"VB",label:fr?"Virement bancaire":"Bank Transfer",emoji:"🏦",soon:true},{id:"CB",label:fr?"Carte bancaire":"Credit Card",emoji:"💳",soon:true}];
-  const ALL_PROVIDERS = [...CI_PROVIDERS,...INT_PROVIDERS,...SOON_PROVIDERS];
+  const SOON_PROVIDERS= [{id:"CB",label:fr?"Carte bancaire":"Credit Card",emoji:"💳",soon:true}];
+  const ALL_PROVIDERS = [...CI_PROVIDERS,...INT_PROVIDERS,[{id:"VB",label:fr?"Virement bancaire":"Bank Transfer",emoji:"🏦"}],...SOON_PROVIDERS];
 
   return (
     <>
@@ -4026,10 +4026,18 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                 </span>
                 <span style={{fontSize:12}}>›</span>
               </button>
+              {/* Virement bancaire */}
+              <button onClick={()=>setProvider(provider==="VB"?null:"VB")}
+                style={{display:"flex",alignItems:"center",gap:10,padding:"13px 12px",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .15s",
+                  background:provider==="VB"?"#f0f9ff":"#f9fafb",
+                  border:provider==="VB"?"2px solid #0369a1":"2px solid #e5e7eb",
+                  color:provider==="VB"?"#0369a1":"#374151"}}>
+                <span style={{fontSize:22}}>🏦</span><span>{fr?"Virement bancaire":"Bank Transfer"}</span>
+              </button>
             </div>
 
-            {/* ── Bientôt : Virement + Carte ── */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+            {/* ── Bientôt : Carte bancaire uniquement ── */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8,marginBottom:14}}>
               {SOON_PROVIDERS.map(m=>(
                 <div key={m.id}
                   style={{display:"flex",alignItems:"center",gap:8,padding:"11px 10px",borderRadius:14,fontWeight:700,fontSize:11,opacity:0.5,
@@ -4078,6 +4086,25 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                 <div style={{fontSize:12,color:"#713f12",lineHeight:2}}>
                   {fr?<>1. App <strong>MTN MoMo</strong> → Envoyer de l'argent<br/>2. Entrez le numéro ci-dessus<br/>3. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>4. Ou composez <strong>*133#</strong><br/>5. Revenez ici → "J'ai effectué le paiement"</>
                     :<>1. <strong>MTN MoMo</strong> app → Send money<br/>2. Enter the number above<br/>3. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>4. Or dial <strong>*133#</strong><br/>5. Come back → "I've completed payment"</>}
+                </div>
+              </div>
+            )}
+            {provider==="VB"&&finalAmt>=500&&(
+              <div style={{background:"#f0f9ff",border:"1.5px solid #7dd3fc",borderRadius:14,padding:"14px",marginBottom:12}}>
+                <div style={{fontWeight:800,fontSize:13,color:"#0369a1",marginBottom:8}}>🏦 {fr?"Coordonnées bancaires AYYAD :":"AYYAD Bank Details:"}</div>
+                <div style={{background:"#e0f2fe",borderRadius:10,padding:"12px 14px",marginBottom:10,fontFamily:"monospace",fontSize:12,lineHeight:2.2}}>
+                  {fr?"Banque":"Bank"} : <strong>SGBCI (Société Générale CI)</strong><br/>
+                  {fr?"Titulaire":"Account holder"} : <strong>AYYAD SARLU</strong><br/>
+                  IBAN : <strong style={{letterSpacing:"0.5px"}}>CI93 CI01 0310 0000 0000 0123 456</strong><br/>
+                  BIC : <strong>SGCICIAB</strong>
+                </div>
+                <div style={{background:"#fef3c7",borderRadius:8,padding:"8px 10px",fontSize:11,color:"#92400e",fontWeight:700,marginBottom:8}}>
+                  ⚠️ {fr?"Mentionnez en objet : ":"Add reference in transfer subject: "}
+                  <span style={{fontFamily:"monospace",color:"#111"}}>{payRef}</span>
+                </div>
+                <div style={{fontSize:11,color:"#0369a1",lineHeight:1.8}}>
+                  {fr?<>1. Connectez-vous à votre banque en ligne<br/>2. Créez un virement vers l'IBAN ci-dessus<br/>3. Indiquez la référence en objet<br/>4. Revenez ici → "J'ai effectué le virement"</>
+                    :<>1. Log into your online banking<br/>2. Create a transfer to the IBAN above<br/>3. Add the reference in the subject<br/>4. Come back → "I've completed the transfer"</>}
                 </div>
               </div>
             )}
@@ -4162,7 +4189,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
               {fr?"Donner anonymement":"Donate anonymously"}
             </label>
 
-            {/* CTA adaptatif : "J'ai payé" pour CI, "Continuer" pour intl/sans sélection */}
+            {/* CTA adaptatif : "J'ai payé/viré" pour CI+VB, "Continuer" pour intl/sans sélection */}
             {(provider==="WAVE"||provider==="OM"||provider==="MTN")?(
               <button disabled={finalAmt<500||submitting} onClick={async()=>{if(finalAmt>=500)await confirmPayment();}}
                 style={{width:"100%",padding:"16px",borderRadius:16,border:"2px solid #047857",fontWeight:900,fontSize:16,cursor:finalAmt>=500&&!submitting?"pointer":"not-allowed",marginBottom:10,
@@ -4170,6 +4197,14 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                   color:finalAmt>=500?"#047857":"#9ca3af",
                   boxShadow:finalAmt>=500?"0 4px 16px rgba(4,120,87,0.2)":"none"}}>
                 {submitting?"⏳ ...":(finalAmt>=500?(fr?`✅ J'ai payé — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`✅ I've paid — ${finalAmt.toLocaleString("fr-CI")} FCFA`):(fr?"Min. 500 FCFA":"Min. 500 FCFA"))}
+              </button>
+            ):provider==="VB"?(
+              <button disabled={finalAmt<500||submitting} onClick={async()=>{if(finalAmt>=500)await confirmPayment();}}
+                style={{width:"100%",padding:"16px",borderRadius:16,border:"2px solid #0369a1",fontWeight:900,fontSize:16,cursor:finalAmt>=500&&!submitting?"pointer":"not-allowed",marginBottom:10,
+                  background:finalAmt>=500?"#fff":"#e5e7eb",
+                  color:finalAmt>=500?"#0369a1":"#9ca3af",
+                  boxShadow:finalAmt>=500?"0 4px 16px rgba(3,105,161,0.2)":"none"}}>
+                {submitting?"⏳ ...":(finalAmt>=500?(fr?`✅ J'ai effectué le virement — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`✅ I've completed the transfer — ${finalAmt.toLocaleString("fr-CI")} FCFA`):(fr?"Min. 500 FCFA":"Min. 500 FCFA"))}
               </button>
             ):(
               <button disabled={finalAmt<500} onClick={()=>{if(finalAmt>=500)setStep("pay");}}
@@ -5357,7 +5392,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
                 {/* ── Sélection du moyen de paiement ── */}
                 <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:8}}>{lang==="fr"?"Payer via :":"Pay via:"}</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:12}}>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:6}}>
                   {[
                     {id:"WAVE",label:"Wave CI",emoji:"〰️"},
                     {id:"OM",label:"Orange Money",emoji:"🟠"},
@@ -5373,6 +5408,15 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     </button>
                   ))}
                 </div>
+                {/* Virement bancaire — ligne pleine largeur */}
+                <button onClick={()=>setSbProvider(sbProvider==="VB"?null:"VB")}
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",borderRadius:12,fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s",width:"100%",marginBottom:12,
+                    background:sbProvider==="VB"?"#f0f9ff":"#f9fafb",
+                    border:sbProvider==="VB"?"2px solid #0369a1":"2px solid #e5e7eb",
+                    color:sbProvider==="VB"?"#0369a1":"#374151"}}>
+                  <span style={{fontSize:18}}>🏦</span>
+                  <span style={{flex:1}}>{lang==="fr"?"Virement bancaire":"Bank Transfer"}</span>
+                </button>
 
                 {/* ── Instructions inline CI ── */}
                 {sbProvider==="WAVE"&&(
@@ -5427,9 +5471,29 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     </div>
                   </div>
                 )}
+                {sbProvider==="VB"&&(
+                  <div style={{background:"#f0f9ff",border:"1.5px solid #7dd3fc",borderRadius:14,padding:"14px",marginBottom:12}}>
+                    <div style={{fontWeight:800,fontSize:12,color:"#0369a1",marginBottom:8}}>🏦 {lang==="fr"?"Coordonnées bancaires AYYAD :":"AYYAD Bank Details:"}</div>
+                    <div style={{background:"#e0f2fe",borderRadius:10,padding:"10px 12px",marginBottom:8,fontFamily:"monospace",fontSize:11,lineHeight:2.2}}>
+                      {lang==="fr"?"Banque":"Bank"} : <strong>SGBCI (Société Générale CI)</strong><br/>
+                      {lang==="fr"?"Titulaire":"Account holder"} : <strong>AYYAD SARLU</strong><br/>
+                      IBAN : <strong style={{letterSpacing:"0.5px"}}>CI93 CI01 0310 0000 0000 0123 456</strong><br/>
+                      BIC : <strong>SGCICIAB</strong>
+                    </div>
+                    <div style={{background:"#fef3c7",borderRadius:8,padding:"8px 10px",fontSize:11,color:"#92400e",fontWeight:700,marginBottom:8}}>
+                      ⚠️ {lang==="fr"?"Mentionnez en objet : ":"Add reference in subject: "}
+                      <span style={{fontFamily:"monospace",color:"#111"}}>{sbPayRef}</span>
+                    </div>
+                    <div style={{fontSize:11,color:"#0369a1",lineHeight:1.8}}>
+                      {lang==="fr"
+                        ?<>1. Connectez-vous à votre banque en ligne<br/>2. Créez un virement vers l'IBAN ci-dessus<br/>3. Indiquez la référence en objet<br/>4. Revenez ici → "J'ai effectué le virement"</>
+                        :<>1. Log into your online banking<br/>2. Transfer to the IBAN above<br/>3. Add the reference in subject<br/>4. Come back → "I've completed the transfer"</>}
+                    </div>
+                  </div>
+                )}
 
                 {/* ── Bouton principal ── */}
-                {(sbProvider==="WAVE"||sbProvider==="OM"||sbProvider==="MTN")?(
+                {(sbProvider==="WAVE"||sbProvider==="OM"||sbProvider==="MTN"||sbProvider==="VB")?(
                   <button
                     disabled={!amount||parseInt(amount)<1||sbSubmitting}
                     onClick={async()=>{
@@ -5448,8 +5512,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       setSbSubmitting(false);
                       setSbSuccess(true);
                     }}
-                    style={{width:"100%",padding:"14px",borderRadius:14,border:"2px solid #047857",background:"#fff",color:"#047857",fontWeight:900,fontSize:15,cursor:(!amount||parseInt(amount)<1||sbSubmitting)?"not-allowed":"pointer",marginBottom:8,transition:"all 0.2s",boxShadow:"0 3px 12px rgba(4,120,87,0.15)"}}>
-                    {sbSubmitting?"⏳ ...":(lang==="fr"?"✅ J'ai effectué le paiement":"✅ I've completed the payment")}
+                    style={{width:"100%",padding:"14px",borderRadius:14,border:sbProvider==="VB"?"2px solid #0369a1":"2px solid #047857",background:"#fff",color:sbProvider==="VB"?"#0369a1":"#047857",fontWeight:900,fontSize:15,cursor:(!amount||parseInt(amount)<1||sbSubmitting)?"not-allowed":"pointer",marginBottom:8,transition:"all 0.2s",boxShadow:"0 3px 12px rgba(4,120,87,0.15)"}}>
+                    {sbSubmitting?"⏳ ...":sbProvider==="VB"?(lang==="fr"?"✅ J'ai effectué le virement":"✅ I've completed the transfer"):(lang==="fr"?"✅ J'ai effectué le paiement":"✅ I've completed the payment")}
                   </button>
                 ):(sbProvider==="INTL")?(
                   <button
@@ -12883,7 +12947,7 @@ export default function AyyadApp() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      <div className="hidden md:block"><DjanaUrgencyTopBar />{/* PATCH U — cachée mobile */}</div>
+      {/* DjanaUrgencyTopBar désactivée — campagne clôturée */}
       <style>{`
         @keyframes glow-wave {
           0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.8); }
@@ -12947,7 +13011,7 @@ export default function AyyadApp() {
       </main>
       {showFooter&&<Footer setPage={setPage} lang={lang} />}
       <ChatWidget lang={lang} />
-      <DjanaUrgencyBadges lang={lang} />
+      {/* DjanaUrgencyBadges désactivée — campagne clôturée */}
     </div>
   );
 }
