@@ -5835,15 +5835,14 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     </button>
                   ))}
                 </div>
-                {/* Virement bancaire — ligne pleine largeur */}
-                <button onClick={()=>setSbProvider(sbProvider==="VB"?null:"VB")}
-                  style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",borderRadius:12,fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s",width:"100%",marginBottom:12,
-                    background:sbProvider==="VB"?"#f0f9ff":"#f9fafb",
-                    border:sbProvider==="VB"?"2px solid #0369a1":"2px solid #e5e7eb",
-                    color:sbProvider==="VB"?"#0369a1":"#374151"}}>
+                {/* Virement bancaire — désactivé (compte bancaire en cours d'ouverture) */}
+                <div
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",borderRadius:12,fontWeight:700,fontSize:12,cursor:"not-allowed",width:"100%",marginBottom:12,
+                    background:"#f9fafb",border:"2px dashed #e5e7eb",color:"#9ca3af",opacity:0.6,boxSizing:"border-box"}}>
                   <span style={{fontSize:18}}>🏦</span>
                   <span style={{flex:1}}>{lang==="fr"?"Virement bancaire":"Bank Transfer"}</span>
-                </button>
+                  <span style={{fontSize:9,background:"#fef3c7",color:"#92400e",padding:"2px 6px",borderRadius:20,fontWeight:800,flexShrink:0}}>{lang==="fr"?"Bientôt":"Soon"}</span>
+                </div>
 
                 {/* ── Instructions inline CI ── */}
                 {(()=>{const sbAmtFcfa=(currency==="FCFA"?parseInt(amount)||0:Math.round((parseInt(amount)||0)*({EUR:655.957,USD:600,GBP:787}[currency]||1)));return(<>
