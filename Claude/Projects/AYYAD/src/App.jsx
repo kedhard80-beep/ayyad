@@ -2662,6 +2662,209 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ── ProcessStrip — Comment fonctionne AYYAD (visible sur tous les écrans) ───
+// ─────────────────────────────────────────────────────────────────────────────
+const ProcessStrip = ({ lang, setPage }) => {
+  const fr = lang === "fr";
+  const steps = fr ? [
+    { n:"01", icon:"📋", title:"Dossier soumis & vérifié", desc:"Le patient soumet son dossier médical. Notre équipe le vérifie avec un hôpital partenaire en 48h." },
+    { n:"02", icon:"💚", title:"Campagne lancée publiquement", desc:"La collecte est publiée sur la plateforme. Chaque centime reçu est tracé en temps réel." },
+    { n:"03", icon:"🏥", title:"Fonds versés à l'hôpital", desc:"L'argent va directement à l'hôpital. Zéro intermédiaire. Zéro frais cachés." },
+  ] : [
+    { n:"01", icon:"📋", title:"Case submitted & verified", desc:"The patient submits their medical file. Our team verifies it with a partner hospital within 48h." },
+    { n:"02", icon:"💚", title:"Campaign launched publicly", desc:"The campaign is published on the platform. Every cent received is tracked in real time." },
+    { n:"03", icon:"🏥", title:"Funds sent to hospital", desc:"Money goes directly to the hospital. Zero intermediary. Zero hidden fees." },
+  ];
+  return (
+    <section style={{ background:"#fff", padding:"clamp(28px,4vw,52px) 0", borderBottom:"1px solid rgba(10,31,26,0.06)" }}>
+      <div className="ayyad-container">
+        <div style={{ textAlign:"center", marginBottom:"clamp(18px,3vw,36px)" }}>
+          <span className="ayyad-eyebrow">{fr ? "Notre fonctionnement" : "How we work"}</span>
+          <h2 style={{ fontFamily:"var(--font-serif)", fontSize:"clamp(1.5rem,2.8vw,2.3rem)", fontWeight:800, color:"var(--ayyad-deep)", margin:"10px 0 6px", lineHeight:1.2 }}>
+            {fr ? <>3 étapes. 0 intermédiaire. <span style={{color:"var(--ayyad-accent)"}}>100% transparent.</span></> : <>3 steps. 0 intermediary. <span style={{color:"var(--ayyad-accent)"}}>100% transparent.</span></>}
+          </h2>
+          <p style={{ color:"var(--ink-500)", fontSize:"clamp(13px,1.6vw,15px)", maxWidth:540, margin:"0 auto", lineHeight:1.6 }}>
+            {fr ? "AYYAD connecte directement le donateur à l'hôpital. Ici, votre argent ne se perd jamais." : "AYYAD connects donors directly to hospitals. Here, your money is never lost."}
+          </p>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(min(280px,100%), 1fr))", gap:"clamp(12px,2vw,24px)", marginBottom:28 }}>
+          {steps.map((s, i) => (
+            <div key={i} style={{ position:"relative", padding:"clamp(18px,2.5vw,28px)", background:"linear-gradient(135deg,#f7fcf9 0%,#f0f9f4 100%)", borderRadius:20, border:"1.5px solid rgba(13,92,46,0.09)" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+                <span style={{ fontSize:10, fontWeight:900, color:"var(--ayyad-accent)", letterSpacing:"2px", background:"rgba(13,92,46,0.07)", borderRadius:99, padding:"3px 10px" }}>{s.n}</span>
+                <span style={{ fontSize:26 }}>{s.icon}</span>
+              </div>
+              <div style={{ fontWeight:800, fontSize:"clamp(14px,1.8vw,16px)", color:"var(--ayyad-deep)", marginBottom:8, lineHeight:1.3 }}>{s.title}</div>
+              <div style={{ fontSize:"clamp(12px,1.5vw,14px)", color:"var(--ink-500)", lineHeight:1.65 }}>{s.desc}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign:"center" }}>
+          <button onClick={()=>setPage("how")} style={{ background:"transparent", border:"1.5px solid rgba(13,92,46,0.22)", color:"var(--ayyad-deep)", fontWeight:700, fontSize:14, padding:"12px 28px", borderRadius:9999, cursor:"pointer", transition:"all .2s" }}>
+            {fr ? "En savoir plus sur notre démarche →" : "Learn more about our approach →"}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ── WhyAyyadSection — 4 piliers de confiance (GoFundMe-style) ───────────────
+// ─────────────────────────────────────────────────────────────────────────────
+const WhyAyyadSection = ({ lang }) => {
+  const fr = lang === "fr";
+  const pillars = fr ? [
+    { icon:"🏥", title:"Vérification médicale en 48h", desc:"Chaque dossier est examiné par notre équipe ET confirmé par un hôpital partenaire. Aucune collecte ne démarre sans validation hospitalière." },
+    { icon:"🔒", title:"Zéro intermédiaire. Vraiment.", desc:"L'argent va DIRECTEMENT à l'hôpital partenaire. Aucun cash ne transite par nos mains. Le virement est documenté et public." },
+    { icon:"📊", title:"100% transparent", desc:"Chaque virement hospitalier est publié dans nos rapports. Vous pouvez vérifier chaque franc collecté, euro par euro, FCFA par FCFA." },
+    { icon:"🌍", title:"Conçu pour l'Afrique", desc:"Paiez via Wave CI, Orange Money, MTN Money ou virement bancaire. Dossiers traités en français. Fondé en Côte d'Ivoire, pensé pour la diaspora." },
+  ] : [
+    { icon:"🏥", title:"Medical verification in 48h", desc:"Every case is reviewed by our team AND confirmed by a partner hospital. No campaign starts without hospital validation." },
+    { icon:"🔒", title:"Zero intermediary. Really.", desc:"Money goes DIRECTLY to the partner hospital. No cash passes through our hands. Every transfer is documented and public." },
+    { icon:"📊", title:"100% transparent", desc:"Every hospital transfer is published in our reports. You can verify every franc collected, euro by euro, FCFA by FCFA." },
+    { icon:"🌍", title:"Built for Africa", desc:"Pay via Wave CI, Orange Money, MTN Money or bank transfer. Cases handled in French. Founded in Côte d'Ivoire, designed for the diaspora." },
+  ];
+  return (
+    <section style={{ background:"#fff", padding:"clamp(40px, 5vw, 64px) 0", borderTop:"1px solid rgba(10,31,26,0.07)" }}>
+      <div className="ayyad-container">
+        <div style={{ textAlign:"center", marginBottom:"clamp(24px, 4vw, 44px)" }}>
+          <span className="ayyad-eyebrow">{fr ? "Pourquoi AYYAD ?" : "Why AYYAD?"}</span>
+          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.7rem, 3.2vw, 2.6rem)", marginTop: 14, marginBottom: 10 }}>
+            {fr
+              ? <>La confiance ne se promet pas.<br/><em>Elle se démontre.</em></>
+              : <>Trust is not promised.<br/><em>It is demonstrated.</em></>}
+          </h2>
+          <p style={{ color:"var(--ink-500)", fontSize:15, maxWidth:540, margin:"0 auto", lineHeight:1.6 }}>
+            {fr
+              ? "Avant de faire confiance à une plateforme, vous avez le droit de savoir comment elle fonctionne réellement."
+              : "Before trusting a platform, you have the right to know how it really works."}
+          </p>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap:"clamp(12px, 2vw, 20px)" }}>
+          {pillars.map((p, i) => (
+            <div key={i} style={{
+              padding:"clamp(20px, 3vw, 32px)",
+              background:"linear-gradient(135deg, #f7fcf9 0%, #f0fdf4 100%)",
+              borderRadius: 20,
+              border:"1.5px solid rgba(13,92,46,0.09)",
+              borderLeft:"4px solid var(--ayyad-accent)",
+              display:"flex", flexDirection:"column", gap: 10,
+            }}>
+              <div style={{ fontSize: 36 }}>{p.icon}</div>
+              <div style={{ fontWeight:900, fontSize:"clamp(14px,1.8vw,16px)", color:"var(--ayyad-deep)", lineHeight:1.3 }}>{p.title}</div>
+              <div style={{ fontSize:"clamp(12px,1.5vw,14px)", color:"var(--ink-500)", lineHeight:1.7 }}>{p.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ── DjanaSuccessSection — Histoire de Djana (preuve de succès réel) ──────────
+// ─────────────────────────────────────────────────────────────────────────────
+const DjanaSuccessSection = ({ lang, setPage }) => {
+  const fr = lang === "fr";
+  return (
+    <section style={{
+      background:"linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 60%, #f7fcf9 100%)",
+      padding:"clamp(40px, 5vw, 64px) 0",
+      borderTop:"1px solid rgba(16,185,129,0.12)",
+    }}>
+      <div className="ayyad-container">
+        <div style={{ textAlign:"center", marginBottom:"clamp(20px, 3vw, 32px)" }}>
+          <span className="ayyad-eyebrow" style={{ color:"#10b981" }}>
+            {fr ? "✅ Première vie sauvée" : "✅ First life saved"}
+          </span>
+          <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.6rem, 3vw, 2.4rem)", marginTop: 12, marginBottom: 10 }}>
+            {fr
+              ? <>Djana est libre. <em>Grâce à vous.</em></>
+              : <>Djana is free. <em>Thanks to you.</em></>}
+          </h2>
+          <p style={{ color:"var(--ink-500)", fontSize:15, maxWidth:520, margin:"0 auto", lineHeight:1.6 }}>
+            {fr
+              ? "AYYAD a financé sa première opération en juin 2026. Voici comment ça s'est passé."
+              : "AYYAD funded its first surgery in June 2026. Here's how it happened."}
+          </p>
+        </div>
+
+        <div style={{
+          maxWidth: 780, margin:"0 auto",
+          background:"#fff",
+          borderRadius: 28,
+          padding:"clamp(20px, 4vw, 40px)",
+          boxShadow:"0 8px 32px rgba(0,0,0,0.07)",
+          border:"1px solid rgba(16,185,129,0.12)",
+        }}>
+          {/* Header patient */}
+          <div style={{ display:"flex", gap:"clamp(14px, 3vw, 24px)", alignItems:"flex-start", flexWrap:"wrap", marginBottom: 24 }}>
+            <img
+              src="/djana_photo.jpg"
+              alt="Djana Coulibaly"
+              style={{ width:90, height:90, borderRadius:16, objectFit:"cover", flexShrink:0, border:"3px solid #10b981" }}
+              onError={e => { e.target.style.display='none'; }}
+            />
+            <div style={{ flex:1, minWidth: 0 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" }}>
+                <span style={{ background:"linear-gradient(90deg,#10b981,#059669)", color:"#fff", fontSize:11, fontWeight:800, padding:"4px 12px", borderRadius:99, letterSpacing:"0.3px" }}>
+                  ✅ {fr ? "DOSSIER FINANCÉ" : "FULLY FUNDED"}
+                </span>
+                <span style={{ fontSize:12, color:"var(--ink-400)", fontWeight:600 }}>AYD-2026-06-001</span>
+              </div>
+              <h3 style={{ fontSize:"clamp(15px, 2.5vw, 19px)", fontWeight:900, color:"var(--ayyad-deep)", margin:"0 0 8px", lineHeight:1.3 }}>
+                {fr ? "Djana Coulibaly, 5 ans — Bouaké, Côte d'Ivoire" : "Djana Coulibaly, 5 years old — Bouaké, Côte d'Ivoire"}
+              </h3>
+              <p style={{ fontSize:"clamp(13px, 1.6vw, 15px)", color:"var(--ink-500)", lineHeight:1.75, margin:0 }}>
+                {fr
+                  ? "Djana vivait depuis des mois avec une stomie après une opération d'urgence au CHU de Bouaké. Sa sœur aînée avait contracté 540 000 FCFA de dettes pour financer sa première chirurgie. AYYAD a vérifié le dossier avec l'Hôpital Jean-Baptiste Vatelot et a financé l'intégralité de son opération de rétablissement."
+                  : "Djana had been living for months with a stoma after emergency surgery at Bouaké's CHU. Her older sister had taken on 540,000 FCFA in debt to fund her first surgery. AYYAD verified the case with Jean-Baptiste Vatelot Hospital and fully funded her restorative surgery."}
+              </p>
+            </div>
+          </div>
+
+          {/* Metrics */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:12, padding:"16px 20px", background:"#f0fdf4", borderRadius:16, marginBottom:20 }}>
+            {[
+              { v:"540 000 FCFA", l: fr ? "collectés" : "raised" },
+              { v:"48h", l: fr ? "vérification" : "verification" },
+              { v:"100%", l: fr ? "financé" : "funded" },
+            ].map((s, i) => (
+              <div key={i} style={{ textAlign:"center" }}>
+                <div style={{ fontWeight:900, fontSize:"clamp(14px, 2.5vw, 20px)", color:"#059669", lineHeight:1.1 }}>{s.v}</div>
+                <div style={{ fontSize:11, color:"var(--ink-400)", textTransform:"uppercase", letterSpacing:"0.5px", marginTop:3 }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Témoignage */}
+          <blockquote style={{
+            fontFamily:"var(--font-serif)", fontStyle:"italic",
+            fontSize:"clamp(13px, 1.7vw, 15px)", color:"var(--ink-700)",
+            borderLeft:"4px solid var(--ayyad-accent)", paddingLeft:18,
+            margin:0, lineHeight:1.75,
+          }}>
+            {fr
+              ? "\"Aujourd'hui, Djana peut courir, jouer et être une petite fille comme les autres. Nous ne remercierons jamais assez tous ceux qui ont contribué.\""
+              : "\"Today, Djana can run, play and be a little girl like the others. We will never be able to thank enough everyone who contributed.\""}
+          </blockquote>
+        </div>
+
+        <div style={{ textAlign:"center", marginTop:"clamp(20px, 3vw, 32px)" }}>
+          <button
+            onClick={() => setPage("collectesactives")}
+            style={{ background:"var(--ayyad-deep)", color:"#fff", fontWeight:800, fontSize:15, padding:"14px 36px", borderRadius:99, border:"none", cursor:"pointer", boxShadow:"0 4px 20px rgba(13,92,46,0.25)" }}
+          >
+            {fr ? "Soutenir les patients actuels →" : "Support current patients →"}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ── VisionSection — Notre vision (split image + texte émotionnel) ───────────
 // ─────────────────────────────────────────────────────────────────────────────
 const VisionSection = ({ lang, setPage }) => {
@@ -3734,6 +3937,10 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
         <p style={{fontSize:11,color:"rgba(255,255,255,0.5)",textAlign:"center",margin:"12px 0 0",letterSpacing:"0.2px"}}>🔒 {lang==="fr" ? "Fonds versés directement à l'hôpital · Aucuns frais" : "Funds sent directly to hospital · No fees"}</p>
       </div>
       <div className="hidden lg:block"><HeroSlider lang={lang} setPage={setPage} t={t} heroStats={heroStats} /></div>
+
+      {/* ── ProcessStrip — Comment fonctionne AYYAD (visible sur tous les écrans) ── */}
+      <ProcessStrip lang={lang} setPage={setPage} />
+
       {/* Ancienne section gradient supprimée — son contenu a été intégré dans HeroSlider */}
       <div className="hidden">
         <div className="max-w-7xl mx-auto px-4 py-16 sm:py-20 text-center">
@@ -3783,11 +3990,17 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       {/* ── Ticker derniers dons ── */}
       <DonationTicker lang={lang} />
 
-      {/* ── Section Notre Vision — émotionnelle, place juste apres le hero ── */}
-      <div className="hidden lg:block"><VisionSection lang={lang} setPage={setPage} /></div>
+      {/* ── Section Notre Vision — émotionnelle, visible sur tous les écrans ── */}
+      <Reveal><VisionSection lang={lang} setPage={setPage} /></Reveal>
 
       {/* ── Section Impact (compteurs animés + confiance financière) ── */}
-      <div className="hidden lg:block"><Reveal><ImpactSection lang={lang} heroStats={heroStats} setPage={setPage} /></Reveal></div>
+      <Reveal><ImpactSection lang={lang} heroStats={heroStats} setPage={setPage} /></Reveal>
+
+      {/* ── Section Pourquoi AYYAD ? — 4 piliers de confiance ── */}
+      <Reveal><WhyAyyadSection lang={lang} /></Reveal>
+
+      {/* ── Section Djana — preuve de succès réel (avant les campagnes) ── */}
+      <Reveal><DjanaSuccessSection lang={lang} setPage={setPage} /></Reveal>
 
       {/* Urgent Cases Banner — interventions critiques sous 72h */}
       <div className="hidden lg:block"><Reveal><UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} /></Reveal></div>
