@@ -3020,8 +3020,9 @@ const TestimonialsCarousel = ({ lang }) => {
   const videoRef = useRef(null);
   const [isMuted, setIsMuted] = useState(true);
   const [videoError, setVideoError] = useState(false);
+  const [selectedBenef, setSelectedBenef] = useState(null); // null = premier du tableau
 
-  // Entrées permanentes Djana — avant ET après opération (hébergées sur Vercel — même domaine, zéro CORS)
+  // Entrées permanentes Djana — seule la vidéo de demande existe dans /public
   const DJANA_ENTRIES = [
     {
       id: "djana-static-avant",
@@ -3030,52 +3031,7 @@ const TestimonialsCarousel = ({ lang }) => {
       file_url: "/videos/djana_coulibaly.mp4",
       file_type: "video",
       status: "approved",
-      label: { fr: "🎤 Demande d'aide", en: "🎤 Request for help" },
-    },
-    {
-      id: "djana-static-avant-1",
-      beneficiary_name: "Djana Coulibaly",
-      case_tracking_id: "AYD-2026-06-001",
-      file_url: "/djana_avant1.jpg",
-      file_type: "photo",
-      status: "approved",
-      label: { fr: "🎤 Avant l'opération", en: "🎤 Before the operation" },
-    },
-    {
-      id: "djana-static-apres-video",
-      beneficiary_name: "Djana Coulibaly",
-      case_tracking_id: "AYD-2026-06-001",
-      file_url: "/videos/djana_apres.mp4",
-      file_type: "video",
-      status: "approved",
-      label: { fr: "✅ Après l'opération", en: "✅ After the operation" },
-    },
-    {
-      id: "djana-static-apres-1",
-      beneficiary_name: "Djana Coulibaly",
-      case_tracking_id: "AYD-2026-06-001",
-      file_url: "/djana_apres1.jpg",
-      file_type: "photo",
-      status: "approved",
-      label: { fr: "✅ Après l'opération", en: "✅ After the operation" },
-    },
-    {
-      id: "djana-static-apres-2",
-      beneficiary_name: "Djana Coulibaly",
-      case_tracking_id: "AYD-2026-06-001",
-      file_url: "/djana_apres2.jpg",
-      file_type: "photo",
-      status: "approved",
-      label: { fr: "✅ Djana guérie", en: "✅ Djana healed" },
-    },
-    {
-      id: "djana-static-apres-3",
-      beneficiary_name: "Djana Coulibaly",
-      case_tracking_id: "AYD-2026-06-001",
-      file_url: "/djana_apres3.jpg",
-      file_type: "photo",
-      status: "approved",
-      label: { fr: "✅ Guérie et heureuse", en: "✅ Healed and happy" },
+      label: { fr: "🎤 Demande d'aide (avant)", en: "🎤 Request for help (before)" },
     },
   ];
 
@@ -3198,17 +3154,23 @@ const TestimonialsCarousel = ({ lang }) => {
             </div>
           ) : (
             <div>
-              {/* Grouper par bénéficiaire et afficher avant/après */}
+              {/* Grouper par bénéficiaire, navigation par onglets */}
               {(()=>{
                 const groups = {};
+                const groupOrder = [];
                 medias.forEach(m => {
                   const key = m.case_tracking_id || m.beneficiary_name || "x";
-                  if (!groups[key]) groups[key] = { name: m.beneficiary_name, trackingId: m.case_tracking_id, avant: [], apres: [] };
+                  if (!groups[key]) { groups[key] = { name: m.beneficiary_name, trackingId: m.case_tracking_id, avant: [], apres: [] }; groupOrder.push(key); }
                   const lbl = ((m.label && (m.label.fr || m.label.en)) || "").toLowerCase();
                   const isApres = lbl.includes("après") || lbl.includes("apres") || lbl.includes("guér") || lbl.startsWith("✅") || (typeof m.id === "string" && m.id.includes("apres"));
                   if (isApres) groups[key].apres.push(m);
                   else groups[key].avant.push(m);
                 });
+
+                const keys = groupOrder.filter(k => groups[k]);
+                const activeKey = (selectedBenef && groups[selectedBenef]) ? selectedBenef : keys[0];
+                const g = groups[activeKey];
+                if (!g) return null;
 
                 const renderMedia = (m) => {
                   const isVideo = m.file_type === "video";
@@ -3222,78 +3184,120 @@ const TestimonialsCarousel = ({ lang }) => {
                   return <img key={m.id} src={m.file_url} alt={m.beneficiary_name} style={{ width:"100%", borderRadius:12, display:"block", objectFit:"cover", maxHeight:260 }} />;
                 };
 
-                return Object.values(groups).map((g, gi, arr) => (
-                  <div key={gi} style={{ marginBottom: gi < arr.length - 1 ? 48 : 0 }}>
-                    {/* Nom bénéficiaire */}
-                    <div style={{ textAlign:"center", marginBottom:20 }}>
-                      <span style={{ fontWeight:800, fontSize:18, color:"#fff" }}>{g.name}</span>
-                      {g.trackingId && <span style={{ color:"rgba(255,255,255,0.45)", fontSize:12, marginLeft:10 }}>• Dossier {g.trackingId}</span>}
-                    </div>
+                return (
+                  <>
+                    {/* ── Onglets bénéficiaires (si plusieurs) ── */}
+                    {keys.length > 1 && (
+                      <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap", marginBottom:28 }}>
+                        {keys.map(k => (
+                          <button key={k} onClick={() => setSelectedBenef(k)} style={{
+                            padding:"9px 18px", borderRadius:999, fontWeight:700, fontSize:13,
+                            cursor:"pointer", transition:"all .2s", border:"none",
+                            background: activeKey === k ? "#e9d59a" : "rgba(255,255,255,0.10)",
+                            color: activeKey === k ? "#0a3d2e" : "rgba(255,255,255,0.75)",
+                            boxShadow: activeKey === k ? "0 2px 12px rgba(233,213,154,0.35)" : "none",
+                          }}>
+                            {groups[k].name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
-                    {/* 2 colonnes AVANT / APRÈS */}
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, alignItems:"start" }}>
-
-                      {/* ── AVANT AIDE ── */}
-                      <div>
-                        <div style={{
-                          background:"rgba(239,68,68,0.15)", border:"1px solid rgba(239,68,68,0.35)",
-                          borderRadius:10, padding:"7px 14px", marginBottom:12,
-                          display:"flex", alignItems:"center", gap:7,
-                        }}>
-                          <span style={{ fontSize:15 }}>🔴</span>
-                          <span style={{ fontWeight:800, fontSize:12, color:"#fca5a5", letterSpacing:1 }}>
-                            {fr ? "AVANT AIDE" : "BEFORE HELP"}
-                          </span>
-                        </div>
-                        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                          {g.avant.length > 0
-                            ? g.avant.map(m => (
-                                <div key={m.id} style={{ borderRadius:12, overflow:"hidden", background:"rgba(0,0,0,0.4)" }}>
-                                  {renderMedia(m)}
-                                  {m.label && (
-                                    <div style={{ padding:"6px 10px", fontSize:11, color:"rgba(255,255,255,0.6)", fontWeight:600 }}>
-                                      {m.label[fr ? "fr" : "en"]}
-                                    </div>
-                                  )}
-                                </div>
-                              ))
-                            : <div style={{ color:"rgba(255,255,255,0.30)", fontSize:13, padding:"16px 0", textAlign:"center" }}>—</div>
-                          }
-                        </div>
+                    {/* ── Contenu du bénéficiaire sélectionné ── */}
+                    <div>
+                      {/* En-tête */}
+                      <div style={{ textAlign:"center", marginBottom:20 }}>
+                        <span style={{ fontWeight:800, fontSize:18, color:"#fff" }}>{g.name}</span>
+                        {g.trackingId && <span style={{ color:"rgba(255,255,255,0.45)", fontSize:12, marginLeft:10 }}>• Dossier {g.trackingId}</span>}
                       </div>
 
-                      {/* ── APRÈS AIDE ── */}
-                      <div>
-                        <div style={{
-                          background:"rgba(16,185,129,0.15)", border:"1px solid rgba(16,185,129,0.35)",
-                          borderRadius:10, padding:"7px 14px", marginBottom:12,
-                          display:"flex", alignItems:"center", gap:7,
-                        }}>
-                          <span style={{ fontSize:15 }}>✅</span>
-                          <span style={{ fontWeight:800, fontSize:12, color:"#6ee7b7", letterSpacing:1 }}>
-                            {fr ? "APRÈS AIDE" : "AFTER HELP"}
-                          </span>
+                      {/* 2 colonnes AVANT / APRÈS */}
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, alignItems:"start" }}>
+
+                        {/* ── AVANT AIDE ── */}
+                        <div>
+                          <div style={{
+                            background:"rgba(239,68,68,0.15)", border:"1px solid rgba(239,68,68,0.35)",
+                            borderRadius:10, padding:"7px 14px", marginBottom:12,
+                            display:"flex", alignItems:"center", gap:7,
+                          }}>
+                            <span style={{ fontSize:15 }}>🔴</span>
+                            <span style={{ fontWeight:800, fontSize:12, color:"#fca5a5", letterSpacing:1 }}>
+                              {fr ? "AVANT AIDE" : "BEFORE HELP"}
+                            </span>
+                          </div>
+                          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                            {g.avant.length > 0
+                              ? g.avant.map(m => (
+                                  <div key={m.id} style={{ borderRadius:12, overflow:"hidden", background:"rgba(0,0,0,0.4)" }}>
+                                    {renderMedia(m)}
+                                    {m.label && (
+                                      <div style={{ padding:"6px 10px", fontSize:11, color:"rgba(255,255,255,0.6)", fontWeight:600 }}>
+                                        {m.label[fr ? "fr" : "en"]}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))
+                              : <div style={{ color:"rgba(255,255,255,0.30)", fontSize:13, padding:"20px 0", textAlign:"center" }}>—</div>
+                            }
+                          </div>
                         </div>
-                        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                          {g.apres.length > 0
-                            ? g.apres.map(m => (
-                                <div key={m.id} style={{ borderRadius:12, overflow:"hidden", background:"rgba(0,0,0,0.4)" }}>
-                                  {renderMedia(m)}
-                                  {m.label && (
-                                    <div style={{ padding:"6px 10px", fontSize:11, color:"rgba(255,255,255,0.6)", fontWeight:600 }}>
-                                      {m.label[fr ? "fr" : "en"]}
-                                    </div>
-                                  )}
+
+                        {/* ── APRÈS AIDE ── */}
+                        <div>
+                          <div style={{
+                            background:"rgba(16,185,129,0.15)", border:"1px solid rgba(16,185,129,0.35)",
+                            borderRadius:10, padding:"7px 14px", marginBottom:12,
+                            display:"flex", alignItems:"center", gap:7,
+                          }}>
+                            <span style={{ fontSize:15 }}>✅</span>
+                            <span style={{ fontWeight:800, fontSize:12, color:"#6ee7b7", letterSpacing:1 }}>
+                              {fr ? "APRÈS AIDE" : "AFTER HELP"}
+                            </span>
+                          </div>
+                          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                            {g.apres.length > 0
+                              ? g.apres.map(m => (
+                                  <div key={m.id} style={{ borderRadius:12, overflow:"hidden", background:"rgba(0,0,0,0.4)" }}>
+                                    {renderMedia(m)}
+                                    {m.label && (
+                                      <div style={{ padding:"6px 10px", fontSize:11, color:"rgba(255,255,255,0.6)", fontWeight:600 }}>
+                                        {m.label[fr ? "fr" : "en"]}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))
+                              : (
+                                <div style={{ color:"rgba(255,255,255,0.25)", fontSize:13, padding:"20px 12px", textAlign:"center",
+                                  background:"rgba(255,255,255,0.04)", borderRadius:12, border:"1px dashed rgba(255,255,255,0.12)" }}>
+                                  {fr ? "Photos/vidéos après aide à venir" : "Post-help photos/videos coming soon"}
                                 </div>
-                              ))
-                            : <div style={{ color:"rgba(255,255,255,0.30)", fontSize:13, padding:"16px 0", textAlign:"center" }}>—</div>
-                          }
+                              )
+                            }
+                          </div>
                         </div>
+
                       </div>
 
+                      {/* Flèches de navigation entre bénéficiaires */}
+                      {keys.length > 1 && (
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:28 }}>
+                          <button
+                            onClick={() => { const i = keys.indexOf(activeKey); setSelectedBenef(keys[(i - 1 + keys.length) % keys.length]); }}
+                            style={{ background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:999, padding:"8px 18px", color:"rgba(255,255,255,0.7)", fontWeight:700, fontSize:13, cursor:"pointer" }}
+                          >‹ {fr ? "Précédent" : "Previous"}</button>
+                          <span style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>
+                            {keys.indexOf(activeKey) + 1} / {keys.length}
+                          </span>
+                          <button
+                            onClick={() => { const i = keys.indexOf(activeKey); setSelectedBenef(keys[(i + 1) % keys.length]); }}
+                            style={{ background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:999, padding:"8px 18px", color:"rgba(255,255,255,0.7)", fontWeight:700, fontSize:13, cursor:"pointer" }}
+                          >{fr ? "Suivant" : "Next"} ›</button>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ));
+                  </>
+                );
               })()}
 
               {/* Bouton soumettre */}
