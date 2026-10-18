@@ -1133,7 +1133,18 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
     if (ytShort) return "https://www.youtube.com/embed/" + ytShort[1];
     return url;
   };
-  const rawVideoUrls = c.video_urls && c.video_urls.length > 0 ? c.video_urls : (c.video_url || c.videoUrl ? [c.video_url || c.videoUrl] : []);
+  // Normalise video_url : gère les tableaux JSON encodés en string
+  const parseVideoField = (val) => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    if (typeof val === "string" && val.trim().startsWith("[")) {
+      try { const parsed = JSON.parse(val); return Array.isArray(parsed) ? parsed : [val]; } catch { return [val]; }
+    }
+    return [val];
+  };
+  const rawVideoUrls = c.video_urls && c.video_urls.length > 0
+    ? c.video_urls
+    : parseVideoField(c.video_url || c.videoUrl);
   const videoUrls = rawVideoUrls.map(toEmbed).filter(Boolean);
   const hasMedia = photos.length > 0 || videoUrls.length > 0;
   if (!hasMedia) return (
@@ -1245,6 +1256,7 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
       {/* Vidéos */}
       {videoUrls.map((videoUrl, vidIdx) => {
         const isTikTok = videoUrl.includes("tiktok.com");
+        const isRawVideo = videoUrl.includes("supabase.co/storage") || /\.(mp4|webm|mov|ogg|avi)(\?|$)/i.test(videoUrl);
         return (
           <div key={vidIdx}>
             {(photos.length > 0 || vidIdx > 0) && <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-2 text-sm font-semibold text-gray-700"><span>{isTikTok ? "♪" : "🎥"}</span>{isTikTok ? "TikTok" : t.video.title}{videoUrls.length > 1 ? ` ${vidIdx+1}` : ""}</div>}
@@ -1252,6 +1264,12 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
             {isTikTok ? (
               <div className="flex justify-center bg-black">
                 <iframe src={videoUrl} className="w-full max-w-xs" style={{height:"560px"}} allowFullScreen allow="autoplay" title={"TikTok video " + (vidIdx+1)} />
+              </div>
+            ) : isRawVideo ? (
+              <div className="relative w-full bg-black">
+                <video controls className="w-full" style={{maxHeight:"400px",display:"block"}} src={videoUrl} title={"Patient video " + (vidIdx+1)}>
+                  {lang==="fr"?"Votre navigateur ne supporte pas la lecture vidéo.":"Your browser does not support video playback."}
+                </video>
               </div>
             ) : (
               <div className="relative w-full" style={{paddingBottom:"56.25%"}}>
@@ -4053,7 +4071,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   const CI_PROVIDERS  = [{id:"WAVE",label:"Wave CI",emoji:"〰️"},{id:"OM",label:"Orange Money",emoji:"🟠"},{id:"MTN",label:"MTN MoMo",emoji:"🟡"}];
   const INT_PROVIDERS = [{id:"SENDWAVE",label:"Sendwave",emoji:"💸"},{id:"TAPTAP",label:"TapTap Send",emoji:"✈️"}];
   const SOON_PROVIDERS= [{id:"CB",label:fr?"Carte bancaire":"Credit Card",emoji:"💳",soon:true}];
-  const ALL_PROVIDERS = [...CI_PROVIDERS,...INT_PROVIDERS,[{id:"VB",label:fr?"Virement bancaire":"Bank Transfer",emoji:"🏦"}],...SOON_PROVIDERS];
+  const ALL_PROVIDERS = [...CI_PROVIDERS,...INT_PROVIDERS,...SOON_PROVIDERS];
 
   return (
     <>
@@ -4135,14 +4153,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                 </span>
                 <span style={{fontSize:12}}>›</span>
               </button>
-              {/* Virement bancaire */}
-              <button onClick={()=>setProvider(provider==="VB"?null:"VB")}
-                style={{display:"flex",alignItems:"center",gap:10,padding:"13px 12px",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .15s",
-                  background:provider==="VB"?"#f0f9ff":"#f9fafb",
-                  border:provider==="VB"?"2px solid #0369a1":"2px solid #e5e7eb",
-                  color:provider==="VB"?"#0369a1":"#374151"}}>
-                <span style={{fontSize:22}}>🏦</span><span>{fr?"Virement bancaire":"Bank Transfer"}</span>
-              </button>
+
             </div>
 
             {/* ── Bientôt : Carte bancaire uniquement ── */}
