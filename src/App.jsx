@@ -404,22 +404,12 @@ const MOCK_CASES = [
   { id:10, _isDemo:true, trackingId:"AYD-2025-010", title:{fr:"Dialyse pédiatrique pour Bintou",en:"Pediatric dialysis for Bintou"}, beneficiary:"Bintou Koné", age:8, city:"Abidjan", hospital:"CHU de Yopougon", category:{fr:"Pédiatrie",en:"Pediatrics"}, required:1200000, collected:310000, donors:27, daysLeft:5, image:"👶", urgent:true, videoUrl:null, photos:["https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop&crop=faces"], desc:{fr:"Bintou, 8 ans, est en insuffisance rénale aiguë. Elle nécessite une dialyse d'urgence pour survivre. Chaque heure compte pour cette petite fille.",en:"Bintou, 8, is in acute kidney failure. She needs emergency dialysis to survive. Every hour counts for this little girl."}, status:"COLLECTING" },
 ];
 
+// TEMOIGNAGES — uniquement les vrais témoignages confirmés
 const TEMOIGNAGES = [
-  { id:1, _isDemo:true, name:"Ibrahim Coulibaly", age:19, city:"Daloa", category:{fr:"Orthopédie",en:"Orthopedics"}, image:"🦾", amount:620000, hospital:"CHR de Daloa",
-    message:{fr:"Grâce à Ayyad et à tous les donateurs, j'ai reçu ma prothèse en moins d'un mois. Aujourd'hui je marche à nouveau et j'ai repris mes études. Je ne sais pas comment vous remercier. Que Dieu vous bénisse tous.", en:"Thanks to Ayyad and all the donors, I received my prosthesis in less than a month. Today I walk again and I've resumed my studies. I don't know how to thank you. God bless you all."},
-    date:"Janvier 2025", stars:5 },
-  { id:2, _isDemo:true, name:"Aya Traoré", age:31, city:"Abidjan", category:{fr:"Cardiologie",en:"Cardiology"}, image:"🫀", amount:1500000, hospital:"CHU de Cocody",
-    message:{fr:"Mon mari pleurait chaque nuit parce qu'il ne pouvait pas payer l'opération. Ayyad nous a sauvé la vie. L'opération s'est très bien passée, je suis en pleine forme. Merci du fond du cœur à chaque donateur.", en:"My husband cried every night because he couldn't pay for the operation. Ayyad saved our lives. The operation went very well, I'm in great shape. Thank you from the bottom of my heart to every donor."},
-    date:"Novembre 2024", stars:5 },
-  { id:3, _isDemo:true, name:"Moussa Bamba", age:58, city:"Bouaké", category:{fr:"Néphrologie",en:"Nephrology"}, image:"🫘", amount:950000, hospital:"CHU de Bouaké",
-    message:{fr:"Mes 3 séances de dialyse par semaine coûtaient une fortune. Ma famille était épuisée financièrement. Ayyad a tout changé. Je suis en attente de greffe maintenant, avec espoir.", en:"My 3 dialysis sessions per week were costing a fortune. My family was financially exhausted. Ayyad changed everything. I'm now awaiting a transplant, with hope."},
-    date:"Décembre 2024", stars:5 },
-  { id:4, _isDemo:true, name:"Fatou Konaté", age:24, city:"Abidjan", category:{fr:"Oncologie",en:"Oncology"}, image:"🎗️", amount:2100000, hospital:"Institut National d'Oncologie",
-    message:{fr:"J'ai terminé mes 6 cycles de chimiothérapie. Les médecins sont optimistes. Ma petite fille de 2 ans aura sa maman. Merci à tous ceux qui ont donné, vous avez choisi la vie.", en:"I finished my 6 chemotherapy cycles. Doctors are optimistic. My 2-year-old daughter will have her mom. Thank you to all who donated, you chose life."},
-    date:"Février 2025", stars:5 },
-  { id:5, _isDemo:true, name:"Yves Kouamé", age:45, city:"Yamoussoukro", category:{fr:"Neurologie",en:"Neurology"}, image:"🧠", amount:780000, hospital:"CHR de Yamoussoukro",
-    message:{fr:"Suite à mon AVC, j'avais perdu l'usage de mon bras droit. La rééducation financée par Ayyad m'a permis de récupérer 80% de mes capacités. Je retravaille depuis 2 mois.", en:"After my stroke, I had lost the use of my right arm. The rehabilitation funded by Ayyad allowed me to recover 80% of my abilities. I've been back at work for 2 months."},
-    date:"Mars 2025", stars:5 },
+  // Djana Coulibaly — premier vrai cas financé par AYYAD (juin 2026)
+  { id:1, name:"Djana Coulibaly", age:5, city:"Bouaké", category:{fr:"Chirurgie digestive",en:"Digestive surgery"}, image:"/djana_avant1.jpg", amount:540000, hospital:"Hôpital Jean-Baptiste Vatelot",
+    message:{fr:"Djana vivait depuis des mois avec une stomie après une opération d'urgence au CHU de Bouaké. Sa sœur aînée avait contracté 540 000 FCFA de dettes. AYYAD a vérifié le dossier et a financé intégralement son opération de rétablissement.", en:"Djana had been living for months with a stoma after emergency surgery. Her older sister had taken on 540,000 FCFA in debt. AYYAD verified the case and fully funded her restorative surgery."},
+    date:"Juin 2026", stars:5 },
 ];
 
 const MOCK_ALERTS = [
@@ -3742,11 +3732,11 @@ const CollectesPage = ({ setPage, lang }) => {
         <div className="text-5xl mb-4">💚</div>
         <h1 className="text-3xl font-black mb-3">{lang==="fr" ? "Vies transformées par Ayyad" : "Lives transformed by Ayyad"}</h1>
         <p className="text-emerald-100 max-w-xl mx-auto">{lang==="fr" ? "Ces personnes ont reçu les soins dont elles avaient besoin grâce à votre générosité." : "These people received the care they needed thanks to your generosity."}</p>
-        {/* Stats */}
+        {/* Stats — uniquement données réelles */}
         <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mt-8">
-          {[[TEMOIGNAGES.length+"", lang==="fr"?"Vies aidées":"Lives helped"],
-            [(TEMOIGNAGES.reduce((s,t)=>s+t.amount,0)/1000000).toFixed(1)+"M", "FCFA "+( lang==="fr"?"versés":"paid")],
-            ["100%", lang==="fr"?"Directs hôpital":"Direct hospital"]
+          {[["1", lang==="fr"?"Vie aidée":"Life helped"],
+            ["540k", "FCFA "+(lang==="fr"?"versés":"paid")],
+            ["100%", lang==="fr"?"Direct hôpital":"Direct hospital"]
           ].map(([v,l]) => (
             <div key={l} className="bg-white/10 rounded-2xl p-4">
               <div className="text-2xl font-black">{v}</div>
@@ -3772,8 +3762,9 @@ const CollectesPage = ({ setPage, lang }) => {
           <div className="space-y-6">
             {(dbTestimonials.length > 0 ? dbTestimonials : TEMOIGNAGES.map(t=>({
               id: t.id, beneficiary: t.name, age: t.age, city: t.city, hospital: t.hospital,
-              category_fr: t.category.fr, category_en: t.category.en, amount: t.amount,
-              message_fr: t.message.fr, message_en: t.message.en, stars: t.stars,
+              category_fr: t.category?.fr, category_en: t.category?.en, amount: t.amount,
+              message_fr: t.message?.fr, message_en: t.message?.en, stars: t.stars,
+              photo_url: t.image?.startsWith("/") ? t.image : null,
               created_at: t.date
             }))).map(t => (
               <div key={t.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
