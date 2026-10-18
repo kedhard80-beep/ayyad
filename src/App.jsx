@@ -3012,8 +3012,9 @@ const TestimonialsCarousel = ({ lang }) => {
   const [videoError, setVideoError] = useState(false);
   const [selectedBenef, setSelectedBenef] = useState(null); // null = premier du tableau
 
-  // Entrées permanentes Djana — vidéo + photos avant opération (stomie)
+  // Entrées permanentes Djana — vidéo + photos avant + photos après opération
   const DJANA_ENTRIES = [
+    // ── AVANT ──────────────────────────────────────────────────
     {
       id: "djana-static-avant",
       beneficiary_name: "Djana Coulibaly",
@@ -3040,6 +3041,43 @@ const TestimonialsCarousel = ({ lang }) => {
       file_type: "photo",
       status: "approved",
       label: { fr: "🔴 Djana avec sa stomie", en: "🔴 Djana with her stoma" },
+    },
+    // ── APRÈS ──────────────────────────────────────────────────
+    {
+      id: "djana-static-apres-video",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: "/videos/djana_apres.mp4",
+      file_type: "video",
+      status: "approved",
+      label: { fr: "✅ Djana après son opération — guérie !", en: "✅ Djana after surgery — healed!" },
+    },
+    {
+      id: "djana-static-apres-1",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: "/djana_apres1.jpg",
+      file_type: "photo",
+      status: "approved",
+      label: { fr: "✅ Djana guérie — plus de stomie", en: "✅ Djana healed — stoma-free" },
+    },
+    {
+      id: "djana-static-apres-2",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: "/djana_apres2.jpg",
+      file_type: "photo",
+      status: "approved",
+      label: { fr: "✅ Djana à la clinique, en pleine santé", en: "✅ Djana at the clinic, in good health" },
+    },
+    {
+      id: "djana-static-apres-3",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: "/djana_apres3.jpg",
+      file_type: "photo",
+      status: "approved",
+      label: { fr: "✅ Djana et sa famille — merci à vous", en: "✅ Djana and her family — thank you" },
     },
   ];
 
