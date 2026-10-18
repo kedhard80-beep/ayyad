@@ -3022,7 +3022,7 @@ const TestimonialsCarousel = ({ lang }) => {
   const [videoError, setVideoError] = useState(false);
   const [selectedBenef, setSelectedBenef] = useState(null); // null = premier du tableau
 
-  // Entrées permanentes Djana — seule la vidéo de demande existe dans /public
+  // Entrées permanentes Djana — vidéo + photos avant opération (stomie)
   const DJANA_ENTRIES = [
     {
       id: "djana-static-avant",
@@ -3031,7 +3031,25 @@ const TestimonialsCarousel = ({ lang }) => {
       file_url: "/videos/djana_coulibaly.mp4",
       file_type: "video",
       status: "approved",
-      label: { fr: "🎤 Demande d'aide (avant)", en: "🎤 Request for help (before)" },
+      label: { fr: "🎤 Djana demande de l'aide", en: "🎤 Djana asks for help" },
+    },
+    {
+      id: "djana-static-avant-1",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: "/djana_avant1.jpg",
+      file_type: "photo",
+      status: "approved",
+      label: { fr: "🔴 Stomie — avant l'opération", en: "🔴 Stoma — before surgery" },
+    },
+    {
+      id: "djana-static-avant-2",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: "/djana_avant2.jpg",
+      file_type: "photo",
+      status: "approved",
+      label: { fr: "🔴 Djana avec sa stomie", en: "🔴 Djana with her stoma" },
     },
   ];
 
