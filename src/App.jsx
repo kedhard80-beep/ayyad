@@ -3041,9 +3041,11 @@ const TestimonialsCarousel = ({ lang }) => {
       .select("*").eq("status", "approved")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        // Filtrer les doublons Djana depuis la DB (on utilise toujours les statiques)
-        const dbItems = (data || []).filter(m => m.case_tracking_id !== "AYD-2026-06-001");
-        setMedias([...DJANA_ENTRIES, ...dbItems]);
+        // Inclure TOUS les médias approuvés — les statiques Djana s'ajoutent uniquement si pas déjà en DB
+        const dbItems = data || [];
+        const djanaInDb = dbItems.some(m => m.case_tracking_id === "AYD-2026-06-001");
+        const base = djanaInDb ? [] : DJANA_ENTRIES;
+        setMedias([...base, ...dbItems]);
       });
   }, []);
 
@@ -4034,9 +4036,6 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       {/* ── Section Pourquoi AYYAD ? — 4 piliers de confiance ── */}
       <Reveal><WhyAyyadSection lang={lang} /></Reveal>
 
-      {/* ── Section Djana — preuve de succès réel (avant les campagnes) ── */}
-      <Reveal><DjanaSuccessSection lang={lang} setPage={setPage} /></Reveal>
-
       {/* Urgent Cases Banner — interventions critiques sous 72h */}
       <div className="hidden lg:block"><Reveal><UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} /></Reveal></div>
 
@@ -4156,6 +4155,9 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 
       {/* ── Bandeau hôpitaux partenaires — directement après les campagnes ── */}
       <Reveal><PartnersBanner lang={lang} /></Reveal>
+
+      {/* ── Section Djana — preuve de succès réel (après les campagnes actives) ── */}
+      <Reveal><DjanaSuccessSection lang={lang} setPage={setPage} /></Reveal>
 
       {/* ── Carrousel Témoignages — voix bénéficiaires ── */}
       <TestimonialsCarousel lang={lang} />
