@@ -2662,6 +2662,54 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ── ProcessStrip — Comment fonctionne AYYAD (visible sur tous les écrans) ───
+// ─────────────────────────────────────────────────────────────────────────────
+const ProcessStrip = ({ lang, setPage }) => {
+  const fr = lang === "fr";
+  const steps = fr ? [
+    { n:"01", icon:"📋", title:"Dossier soumis & vérifié", desc:"Le patient soumet son dossier médical. Notre équipe le vérifie avec un hôpital partenaire en 48h." },
+    { n:"02", icon:"💚", title:"Campagne lancée publiquement", desc:"La collecte est publiée sur la plateforme. Chaque centime reçu est tracé en temps réel." },
+    { n:"03", icon:"🏥", title:"Fonds versés à l'hôpital", desc:"L'argent va directement à l'hôpital. Zéro intermédiaire. Zéro frais cachés." },
+  ] : [
+    { n:"01", icon:"📋", title:"Case submitted & verified", desc:"The patient submits their medical file. Our team verifies it with a partner hospital within 48h." },
+    { n:"02", icon:"💚", title:"Campaign launched publicly", desc:"The campaign is published on the platform. Every cent received is tracked in real time." },
+    { n:"03", icon:"🏥", title:"Funds sent to hospital", desc:"Money goes directly to the hospital. Zero intermediary. Zero hidden fees." },
+  ];
+  return (
+    <section style={{ background:"#fff", padding:"clamp(28px,4vw,52px) 0", borderBottom:"1px solid rgba(10,31,26,0.06)" }}>
+      <div className="ayyad-container">
+        <div style={{ textAlign:"center", marginBottom:"clamp(18px,3vw,36px)" }}>
+          <span className="ayyad-eyebrow">{fr ? "Notre fonctionnement" : "How we work"}</span>
+          <h2 style={{ fontFamily:"var(--font-serif)", fontSize:"clamp(1.5rem,2.8vw,2.3rem)", fontWeight:800, color:"var(--ayyad-deep)", margin:"10px 0 6px", lineHeight:1.2 }}>
+            {fr ? <>3 étapes. 0 intermédiaire. <span style={{color:"var(--ayyad-accent)"}}>100% transparent.</span></> : <>3 steps. 0 intermediary. <span style={{color:"var(--ayyad-accent)"}}>100% transparent.</span></>}
+          </h2>
+          <p style={{ color:"var(--ink-500)", fontSize:"clamp(13px,1.6vw,15px)", maxWidth:540, margin:"0 auto", lineHeight:1.6 }}>
+            {fr ? "AYYAD connecte directement le donateur à l'hôpital. Ici, votre argent ne se perd jamais." : "AYYAD connects donors directly to hospitals. Here, your money is never lost."}
+          </p>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(min(280px,100%), 1fr))", gap:"clamp(12px,2vw,24px)", marginBottom:28 }}>
+          {steps.map((s, i) => (
+            <div key={i} style={{ position:"relative", padding:"clamp(18px,2.5vw,28px)", background:"linear-gradient(135deg,#f7fcf9 0%,#f0f9f4 100%)", borderRadius:20, border:"1.5px solid rgba(13,92,46,0.09)" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+                <span style={{ fontSize:10, fontWeight:900, color:"var(--ayyad-accent)", letterSpacing:"2px", background:"rgba(13,92,46,0.07)", borderRadius:99, padding:"3px 10px" }}>{s.n}</span>
+                <span style={{ fontSize:26 }}>{s.icon}</span>
+              </div>
+              <div style={{ fontWeight:800, fontSize:"clamp(14px,1.8vw,16px)", color:"var(--ayyad-deep)", marginBottom:8, lineHeight:1.3 }}>{s.title}</div>
+              <div style={{ fontSize:"clamp(12px,1.5vw,14px)", color:"var(--ink-500)", lineHeight:1.65 }}>{s.desc}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign:"center" }}>
+          <button onClick={()=>setPage("how")} style={{ background:"transparent", border:"1.5px solid rgba(13,92,46,0.22)", color:"var(--ayyad-deep)", fontWeight:700, fontSize:14, padding:"12px 28px", borderRadius:9999, cursor:"pointer", transition:"all .2s" }}>
+            {fr ? "En savoir plus sur notre démarche →" : "Learn more about our approach →"}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ── VisionSection — Notre vision (split image + texte émotionnel) ───────────
 // ─────────────────────────────────────────────────────────────────────────────
 const VisionSection = ({ lang, setPage }) => {
@@ -3734,6 +3782,10 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
         <p style={{fontSize:11,color:"rgba(255,255,255,0.5)",textAlign:"center",margin:"12px 0 0",letterSpacing:"0.2px"}}>🔒 {lang==="fr" ? "Fonds versés directement à l'hôpital · Aucuns frais" : "Funds sent directly to hospital · No fees"}</p>
       </div>
       <div className="hidden lg:block"><HeroSlider lang={lang} setPage={setPage} t={t} heroStats={heroStats} /></div>
+
+      {/* ── ProcessStrip — Comment fonctionne AYYAD (visible sur tous les écrans) ── */}
+      <ProcessStrip lang={lang} setPage={setPage} />
+
       {/* Ancienne section gradient supprimée — son contenu a été intégré dans HeroSlider */}
       <div className="hidden">
         <div className="max-w-7xl mx-auto px-4 py-16 sm:py-20 text-center">
@@ -3783,11 +3835,11 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       {/* ── Ticker derniers dons ── */}
       <DonationTicker lang={lang} />
 
-      {/* ── Section Notre Vision — émotionnelle, place juste apres le hero ── */}
-      <div className="hidden lg:block"><VisionSection lang={lang} setPage={setPage} /></div>
+      {/* ── Section Notre Vision — émotionnelle, visible sur tous les écrans ── */}
+      <Reveal><VisionSection lang={lang} setPage={setPage} /></Reveal>
 
       {/* ── Section Impact (compteurs animés + confiance financière) ── */}
-      <div className="hidden lg:block"><Reveal><ImpactSection lang={lang} heroStats={heroStats} setPage={setPage} /></Reveal></div>
+      <Reveal><ImpactSection lang={lang} heroStats={heroStats} setPage={setPage} /></Reveal>
 
       {/* Urgent Cases Banner — interventions critiques sous 72h */}
       <div className="hidden lg:block"><Reveal><UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} /></Reveal></div>
