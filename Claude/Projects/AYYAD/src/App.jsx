@@ -3003,26 +3003,73 @@ const TestimonialsCarousel = ({ lang }) => {
   const [isMuted, setIsMuted] = useState(true);
   const [videoError, setVideoError] = useState(false);
 
-  // Entrée permanente Djana (hébergée sur Vercel — même domaine, zéro CORS)
-  const DJANA_ENTRY = {
-    id: "djana-static",
-    beneficiary_name: "Djana Coulibaly",
-    case_tracking_id: "AYD-2026-06-001",
-    file_url: "/videos/djana_coulibaly.mp4",
-    file_type: "video",
-    status: "approved",
-  };
+  // Entrées permanentes Djana — avant ET après opération (hébergées sur Vercel — même domaine, zéro CORS)
+  const DJANA_ENTRIES = [
+    {
+      id: "djana-static-avant",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: "/videos/djana_coulibaly.mp4",
+      file_type: "video",
+      status: "approved",
+      label: { fr: "🎤 Demande d'aide", en: "🎤 Request for help" },
+    },
+    {
+      id: "djana-static-avant-1",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: "/djana_avant1.jpg",
+      file_type: "photo",
+      status: "approved",
+      label: { fr: "🎤 Avant l'opération", en: "🎤 Before the operation" },
+    },
+    {
+      id: "djana-static-apres-video",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: "/videos/djana_apres.mp4",
+      file_type: "video",
+      status: "approved",
+      label: { fr: "✅ Après l'opération", en: "✅ After the operation" },
+    },
+    {
+      id: "djana-static-apres-1",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: "/djana_apres1.jpg",
+      file_type: "photo",
+      status: "approved",
+      label: { fr: "✅ Après l'opération", en: "✅ After the operation" },
+    },
+    {
+      id: "djana-static-apres-2",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: "/djana_apres2.jpg",
+      file_type: "photo",
+      status: "approved",
+      label: { fr: "✅ Djana guérie", en: "✅ Djana healed" },
+    },
+    {
+      id: "djana-static-apres-3",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: "/djana_apres3.jpg",
+      file_type: "photo",
+      status: "approved",
+      label: { fr: "✅ Guérie et heureuse", en: "✅ Healed and happy" },
+    },
+  ];
 
-  // Charge les médias depuis la DB + ajoute Djana si absente
+  // Charge les médias depuis la DB + toujours inclure Djana en premier
   useEffect(() => {
     supabase.from("testimonial_media")
       .select("*").eq("status", "approved")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        const dbItems = data || [];
-        // Toujours inclure Djana (hébergée localement) en premier
-        const hasDjana = dbItems.some(m => m.case_tracking_id === "AYD-2026-06-001");
-        setMedias(hasDjana ? dbItems : [DJANA_ENTRY, ...dbItems]);
+        // Filtrer les doublons Djana depuis la DB (on utilise toujours les statiques)
+        const dbItems = (data || []).filter(m => m.case_tracking_id !== "AYD-2026-06-001");
+        setMedias([...DJANA_ENTRIES, ...dbItems]);
       });
   }, []);
 
@@ -3224,9 +3271,19 @@ const TestimonialsCarousel = ({ lang }) => {
                 {cur && (
                   <div style={{
                     position:"absolute", bottom:0, left:0, right:0,
-                    background:"linear-gradient(transparent, rgba(0,0,0,0.75))",
-                    padding:"24px 20px 16px",
+                    background:"linear-gradient(transparent, rgba(0,0,0,0.85))",
+                    padding:"32px 20px 16px",
                   }}>
+                    {cur.label && (
+                      <div style={{
+                        display:"inline-block",
+                        background: cur.label[fr ? "fr" : "en"]?.startsWith("✅") ? "rgba(16,185,129,0.85)" : "rgba(201,168,76,0.85)",
+                        borderRadius:999, padding:"3px 12px", fontSize:11, fontWeight:800,
+                        color:"#fff", marginBottom:6, backdropFilter:"blur(4px)",
+                      }}>
+                        {cur.label[fr ? "fr" : "en"]}
+                      </div>
+                    )}
                     <div style={{ fontWeight:800, fontSize:17, color:"#fff" }}>
                       {cur.beneficiary_name}
                     </div>
