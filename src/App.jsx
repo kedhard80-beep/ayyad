@@ -3873,6 +3873,60 @@ const DonationTicker = ({ lang }) => {
   );
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ── MissionPage — Qui est AYYAD ? Notre mission, vision, comment ça marche ───
+// ─────────────────────────────────────────────────────────────────────────────
+const MissionPage = ({ lang, setPage }) => (
+  <div>
+    <div style={{ background:"linear-gradient(135deg,#064e3b,#047857)", padding:"clamp(40px,5vw,72px) clamp(20px,4vw,40px) clamp(32px,4vw,56px)", textAlign:"center", color:"#fff" }}>
+      <button onClick={()=>setPage("home")} style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:999, padding:"7px 16px", color:"rgba(255,255,255,0.85)", fontWeight:600, fontSize:13, cursor:"pointer", marginBottom:24, display:"inline-flex", alignItems:"center", gap:6 }}>← {lang==="fr" ? "Retour" : "Back"}</button>
+      <h1 style={{ fontSize:"clamp(2rem,4vw,3rem)", fontWeight:900, margin:"0 0 14px", lineHeight:1.15 }}>
+        {lang==="fr" ? "Notre mission" : "Our mission"}
+      </h1>
+      <p style={{ color:"rgba(255,255,255,0.80)", fontSize:17, maxWidth:640, margin:"0 auto", lineHeight:1.65 }}>
+        {lang==="fr"
+          ? "AYYAD connecte des patients ivoiriens qui n'ont pas les moyens de payer leurs soins à des donateurs du monde entier — sans intermédiaire, sans cash, avec 100% de traçabilité."
+          : "AYYAD connects Ivorian patients who cannot afford their healthcare to donors worldwide — no intermediary, no cash, 100% traceable."}
+      </p>
+    </div>
+    <Reveal><VisionSection lang={lang} setPage={setPage} /></Reveal>
+    <Reveal><WhyAyyadSection lang={lang} /></Reveal>
+    <Reveal><ProcessStrip lang={lang} setPage={setPage} /></Reveal>
+    <Reveal><ImpactSection lang={lang} heroStats={{ patients:"4", collected:"167k", hospitals:"18", funded:"1" }} setPage={setPage} /></Reveal>
+    <div style={{ textAlign:"center", padding:"40px 20px" }}>
+      <button onClick={()=>setPage("home")} style={{ background:"var(--ayyad-deep)", color:"#fff", border:"none", borderRadius:999, padding:"14px 32px", fontWeight:800, fontSize:15, cursor:"pointer" }}>
+        💚 {lang==="fr" ? "Voir les campagnes actives" : "See active campaigns"}
+      </button>
+    </div>
+  </div>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ── TemoignagesPage — Avant / Après aide — photos et vidéos réelles ──────────
+// ─────────────────────────────────────────────────────────────────────────────
+const TemoignagesPage = ({ lang, setPage }) => (
+  <div>
+    <div style={{ background:"linear-gradient(135deg,#064e3b,#047857)", padding:"clamp(40px,5vw,72px) clamp(20px,4vw,40px) clamp(32px,4vw,56px)", textAlign:"center", color:"#fff" }}>
+      <button onClick={()=>setPage("home")} style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:999, padding:"7px 16px", color:"rgba(255,255,255,0.85)", fontWeight:600, fontSize:13, cursor:"pointer", marginBottom:24, display:"inline-flex", alignItems:"center", gap:6 }}>← {lang==="fr" ? "Retour" : "Back"}</button>
+      <h1 style={{ fontSize:"clamp(2rem,4vw,3rem)", fontWeight:900, margin:"0 0 14px", lineHeight:1.15 }}>
+        {lang==="fr" ? "Témoignages" : "Testimonials"}
+      </h1>
+      <p style={{ color:"rgba(255,255,255,0.80)", fontSize:17, maxWidth:640, margin:"0 auto", lineHeight:1.65 }}>
+        {lang==="fr"
+          ? "Avant l'aide et après. En photos, en vidéos. Ce sont de vraies personnes dont des donateurs ont changé la vie."
+          : "Before help and after. In photos, in videos. These are real people whose lives donors changed."}
+      </p>
+    </div>
+    <DjanaSuccessSection lang={lang} setPage={setPage} />
+    <TestimonialsCarousel lang={lang} />
+    <div style={{ textAlign:"center", padding:"40px 20px" }}>
+      <button onClick={()=>setPage("home")} style={{ background:"var(--ayyad-deep)", color:"#fff", border:"none", borderRadius:999, padding:"14px 32px", fontWeight:800, fontSize:15, cursor:"pointer" }}>
+        💚 {lang==="fr" ? "Voir les campagnes actives" : "See active campaigns"}
+      </button>
+    </div>
+  </div>
+);
+
 const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -3975,9 +4029,6 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       </div>
       <div className="hidden lg:block"><HeroSlider lang={lang} setPage={setPage} t={t} heroStats={heroStats} /></div>
 
-      {/* ── ProcessStrip — Comment fonctionne AYYAD (visible sur tous les écrans) ── */}
-      <ProcessStrip lang={lang} setPage={setPage} />
-
       {/* Ancienne section gradient supprimée — son contenu a été intégré dans HeroSlider */}
       <div className="hidden">
         <div className="max-w-7xl mx-auto px-4 py-16 sm:py-20 text-center">
@@ -4027,14 +4078,38 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       {/* ── Ticker derniers dons ── */}
       <DonationTicker lang={lang} />
 
-      {/* ── Section Notre Vision — émotionnelle, visible sur tous les écrans ── */}
-      <Reveal><VisionSection lang={lang} setPage={setPage} /></Reveal>
-
-      {/* ── Section Impact (compteurs animés + confiance financière) ── */}
-      <Reveal><ImpactSection lang={lang} heroStats={heroStats} setPage={setPage} /></Reveal>
-
-      {/* ── Section Pourquoi AYYAD ? — 4 piliers de confiance ── */}
-      <Reveal><WhyAyyadSection lang={lang} /></Reveal>
+      {/* ── Section Découverte — 4 cartes rapides vers les sous-pages ── */}
+      <section style={{ background:"var(--paper)", padding:"clamp(24px,4vw,48px) clamp(16px,4vw,40px)" }}>
+        <div style={{ maxWidth:900, margin:"0 auto" }}>
+          <p style={{ textAlign:"center", fontWeight:700, fontSize:11, letterSpacing:2, color:"var(--ink-400)", textTransform:"uppercase", marginBottom:20 }}>
+            {lang==="fr" ? "En savoir plus sur AYYAD" : "Learn more about AYYAD"}
+          </p>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:12 }}>
+            {[
+              { icon:"🌍", title: lang==="fr" ? "Notre mission" : "Our mission", sub: lang==="fr" ? "Qui sommes-nous et pourquoi AYYAD existe" : "Who we are and why AYYAD exists", page:"mission" },
+              { icon:"🔒", title: lang==="fr" ? "Pourquoi nous faire confiance ?" : "Why trust us?", sub: lang==="fr" ? "Transparence, zéro intermédiaire, audit public" : "Transparency, zero intermediary, public audit", page:"how" },
+              { icon:"💚", title: lang==="fr" ? "Cas financés" : "Funded cases", sub: lang==="fr" ? "Les vies que nous avons sauvées ensemble" : "Lives we saved together", page:"collectes" },
+              { icon:"🎤", title: lang==="fr" ? "Témoignages" : "Testimonials", sub: lang==="fr" ? "Avant et après l'aide — en photos et vidéos" : "Before and after help — in photos & videos", page:"temoignages" },
+            ].map(c => (
+              <button key={c.page} onClick={()=>setPage(c.page)} style={{
+                display:"flex", alignItems:"flex-start", gap:12, padding:"16px 18px",
+                background:"#fff", border:"1px solid rgba(10,31,26,0.08)", borderRadius:16,
+                cursor:"pointer", textAlign:"left", transition:"all .18s",
+                boxShadow:"0 1px 4px rgba(10,31,26,0.04)",
+              }}
+              onMouseEnter={e=>{ e.currentTarget.style.borderColor="var(--ayyad-emerald)"; e.currentTarget.style.boxShadow="0 4px 16px rgba(13,92,46,0.12)"; }}
+              onMouseLeave={e=>{ e.currentTarget.style.borderColor="rgba(10,31,26,0.08)"; e.currentTarget.style.boxShadow="0 1px 4px rgba(10,31,26,0.04)"; }}
+              >
+                <span style={{ fontSize:22, flexShrink:0, marginTop:1 }}>{c.icon}</span>
+                <div>
+                  <div style={{ fontWeight:800, fontSize:14, color:"var(--ayyad-deep)", marginBottom:3 }}>{c.title}</div>
+                  <div style={{ fontSize:12, color:"var(--ink-400)", lineHeight:1.45 }}>{c.sub}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Urgent Cases Banner — interventions critiques sous 72h */}
       <div className="hidden lg:block"><Reveal><UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} /></Reveal></div>
@@ -4155,12 +4230,6 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 
       {/* ── Bandeau hôpitaux partenaires — directement après les campagnes ── */}
       <Reveal><PartnersBanner lang={lang} /></Reveal>
-
-      {/* ── Section Djana — preuve de succès réel (après les campagnes actives) ── */}
-      <Reveal><DjanaSuccessSection lang={lang} setPage={setPage} /></Reveal>
-
-      {/* ── Carrousel Témoignages — voix bénéficiaires ── */}
-      <TestimonialsCarousel lang={lang} />
 
       {/* ── CTA Soutenir Ayyad — élégant, pas envahissant ── */}
       <section style={{
@@ -13091,8 +13160,8 @@ export default function AyyadApp() {
   // ─────────────────────────────────────────────────────────────────
 
   // Mapping chemin propre → nom de page interne
-  const _PATH_TO_PAGE = { "/":"home","/how":"how","/comment-ca-marche":"how","/donate":"donate","/urgents":"urgents","/collectes":"collectesactives","/historique":"collectes","/specialite":"specialite","/soumettre":"submit","/suivi":"tracking","/admin":"admin","/connexion":"login","/profil":"profile","/inscription":"register","/nouveau-mot-de-passe":"change-password","/soutenir":"support-ayyad","/impact":"impact","/bceao":"bceao","/hopitaux":"hopitaux","/mon-impact":"monimpact","/mentions-legales":"legal","/remboursement":"refund","/faq":"faq","/politique-admission":"politique-admission","/retour":"dunya-return" };
-  const _PAGE_TO_PATH = { home:"/",how:"/how",donate:"/donate",urgents:"/urgents",collectesactives:"/collectes",collectes:"/historique",specialite:"/specialite",submit:"/soumettre",tracking:"/suivi",track:"/suivi",admin:"/admin",login:"/connexion",profile:"/profil",register:"/inscription","change-password":"/nouveau-mot-de-passe","support-ayyad":"/soutenir",impact:"/impact",bceao:"/bceao",hopitaux:"/hopitaux",monimpact:"/mon-impact",legal:"/mentions-legales",refund:"/remboursement",faq:"/faq","politique-admission":"/politique-admission","dunya-return":"/retour" };
+  const _PATH_TO_PAGE = { "/":"home","/how":"how","/comment-ca-marche":"how","/donate":"donate","/urgents":"urgents","/collectes":"collectesactives","/historique":"collectes","/specialite":"specialite","/soumettre":"submit","/suivi":"tracking","/admin":"admin","/connexion":"login","/profil":"profile","/inscription":"register","/nouveau-mot-de-passe":"change-password","/soutenir":"support-ayyad","/impact":"impact","/bceao":"bceao","/hopitaux":"hopitaux","/mon-impact":"monimpact","/mentions-legales":"legal","/remboursement":"refund","/faq":"faq","/politique-admission":"politique-admission","/retour":"dunya-return","/mission":"mission","/temoignages":"temoignages" };
+  const _PAGE_TO_PATH = { home:"/",how:"/how",donate:"/donate",urgents:"/urgents",collectesactives:"/collectes",collectes:"/historique",specialite:"/specialite",submit:"/soumettre",tracking:"/suivi",track:"/suivi",admin:"/admin",login:"/connexion",profile:"/profil",register:"/inscription","change-password":"/nouveau-mot-de-passe","support-ayyad":"/soutenir",impact:"/impact",bceao:"/bceao",hopitaux:"/hopitaux",monimpact:"/mon-impact",legal:"/mentions-legales",refund:"/remboursement",faq:"/faq","politique-admission":"/politique-admission","dunya-return":"/retour",mission:"/mission",temoignages:"/temoignages" };
 
   // Lire l'ID de dossier depuis l'URL MAINTENANT (avant que pushState ne l'écrase)
   const _initialCaseId = useRef((() => {
@@ -13109,7 +13178,7 @@ export default function AyyadApp() {
     if (_PATH_TO_PAGE[path]) return _PATH_TO_PAGE[path];
     // Compat ancienne URL ?p=
     const oldP = new URLSearchParams(window.location.search).get("p");
-    const valid = ["home","admin","login","collectes","collectesactives","profile","register","case","track","change-password","urgents","specialite","how","refund","legal","impact","bceao","hopitaux","monimpact","submit","tracking","changepassword","faq","politique-admission","dunya-return","support-ayyad","donate"];
+    const valid = ["home","admin","login","collectes","collectesactives","profile","register","case","track","change-password","urgents","specialite","how","refund","legal","impact","bceao","hopitaux","monimpact","submit","tracking","changepassword","faq","politique-admission","dunya-return","support-ayyad","donate","mission","temoignages"];
     return (oldP && valid.includes(oldP)) ? oldP : "home";
   });
   // ── IMPORTANT: declare all state BEFORE any useEffect that references them ──
@@ -13300,6 +13369,8 @@ export default function AyyadApp() {
         {page==="case"&&!selectedCase&&_initialCaseId&&<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center"><div className="text-4xl mb-4 animate-spin">⏳</div><p className="text-gray-500 font-semibold">Chargement du dossier…</p></div></div>}
         {page==="donate"&&<DonatePage c={selectedCase||null} lang={lang} user={user} setPage={setPage} />}
         {page==="how"&&<HowPage lang={lang} setPage={setPage} />}
+        {page==="mission"&&<MissionPage lang={lang} setPage={setPage} />}
+        {page==="temoignages"&&<TemoignagesPage lang={lang} setPage={setPage} />}
         {page==="refund"&&<RefundPage lang={lang} setPage={setPage} />}
         {page==="legal"&&<LegalPage lang={lang} setPage={setPage} />}
         {page==="impact"&&<ImpactPage lang={lang} setPage={setPage} />}
