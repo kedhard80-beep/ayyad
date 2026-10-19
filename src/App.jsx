@@ -4125,39 +4125,6 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       {/* ── Ticker derniers dons ── */}
       <DonationTicker lang={lang} />
 
-      {/* ── Section Découverte — 4 cartes rapides vers les sous-pages ── */}
-      <section style={{ background:"var(--paper)", padding:"clamp(24px,4vw,48px) clamp(16px,4vw,40px)" }}>
-        <div style={{ maxWidth:900, margin:"0 auto" }}>
-          <p style={{ textAlign:"center", fontWeight:700, fontSize:11, letterSpacing:2, color:"var(--ink-400)", textTransform:"uppercase", marginBottom:20 }}>
-            {lang==="fr" ? "En savoir plus sur AYYAD" : "Learn more about AYYAD"}
-          </p>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:12 }}>
-            {[
-              { icon:"🌍", title: lang==="fr" ? "Notre mission" : "Our mission", sub: lang==="fr" ? "Qui sommes-nous et pourquoi AYYAD existe" : "Who we are and why AYYAD exists", page:"mission" },
-              { icon:"🔒", title: lang==="fr" ? "Pourquoi nous faire confiance ?" : "Why trust us?", sub: lang==="fr" ? "Transparence, zéro intermédiaire, audit public" : "Transparency, zero intermediary, public audit", page:"how" },
-              { icon:"💚", title: lang==="fr" ? "Cas financés" : "Funded cases", sub: lang==="fr" ? "Les vies que nous avons sauvées ensemble" : "Lives we saved together", page:"collectes" },
-              { icon:"🎤", title: lang==="fr" ? "Témoignages" : "Testimonials", sub: lang==="fr" ? "Avant et après l'aide — en photos et vidéos" : "Before and after help — in photos & videos", page:"temoignages" },
-            ].map(c => (
-              <button key={c.page} onClick={()=>setPage(c.page)} style={{
-                display:"flex", alignItems:"flex-start", gap:12, padding:"16px 18px",
-                background:"#fff", border:"1px solid rgba(10,31,26,0.08)", borderRadius:16,
-                cursor:"pointer", textAlign:"left", transition:"all .18s",
-                boxShadow:"0 1px 4px rgba(10,31,26,0.04)",
-              }}
-              onMouseEnter={e=>{ e.currentTarget.style.borderColor="var(--ayyad-emerald)"; e.currentTarget.style.boxShadow="0 4px 16px rgba(13,92,46,0.12)"; }}
-              onMouseLeave={e=>{ e.currentTarget.style.borderColor="rgba(10,31,26,0.08)"; e.currentTarget.style.boxShadow="0 1px 4px rgba(10,31,26,0.04)"; }}
-              >
-                <span style={{ fontSize:22, flexShrink:0, marginTop:1 }}>{c.icon}</span>
-                <div>
-                  <div style={{ fontWeight:800, fontSize:14, color:"var(--ayyad-deep)", marginBottom:3 }}>{c.title}</div>
-                  <div style={{ fontSize:12, color:"var(--ink-400)", lineHeight:1.45 }}>{c.sub}</div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Urgent Cases Banner — interventions critiques sous 72h */}
       <div className="hidden lg:block"><Reveal><UrgentBanner cases={getDisplayCases()} setSelectedCase={setSelectedCase} setPage={setPage} lang={lang} /></Reveal></div>
 
@@ -4277,6 +4244,39 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 
       {/* ── Bandeau hôpitaux partenaires — directement après les campagnes ── */}
       <Reveal><PartnersBanner lang={lang} /></Reveal>
+
+      {/* ── Section Découverte — 4 cartes rapides vers les sous-pages ── */}
+      <section style={{ background:"var(--paper)", padding:"clamp(24px,4vw,48px) clamp(16px,4vw,40px)" }}>
+        <div style={{ maxWidth:900, margin:"0 auto" }}>
+          <p style={{ textAlign:"center", fontWeight:700, fontSize:11, letterSpacing:2, color:"var(--ink-400)", textTransform:"uppercase", marginBottom:20 }}>
+            {lang==="fr" ? "En savoir plus sur AYYAD" : "Learn more about AYYAD"}
+          </p>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:12 }}>
+            {[
+              { icon:"🌍", title: lang==="fr" ? "Notre mission" : "Our mission", sub: lang==="fr" ? "Qui sommes-nous et pourquoi AYYAD existe" : "Who we are and why AYYAD exists", page:"mission" },
+              { icon:"🔒", title: lang==="fr" ? "Pourquoi nous faire confiance ?" : "Why trust us?", sub: lang==="fr" ? "Transparence, zéro intermédiaire, audit public" : "Transparency, zero intermediary, public audit", page:"how" },
+              { icon:"💚", title: lang==="fr" ? "Cas financés" : "Funded cases", sub: lang==="fr" ? "Les vies que nous avons sauvées ensemble" : "Lives we saved together", page:"collectes" },
+              { icon:"🎤", title: lang==="fr" ? "Témoignages" : "Testimonials", sub: lang==="fr" ? "Avant et après l'aide — en photos et vidéos" : "Before and after help — in photos & videos", page:"temoignages" },
+            ].map(c => (
+              <button key={c.page} onClick={()=>setPage(c.page)} style={{
+                display:"flex", alignItems:"flex-start", gap:12, padding:"16px 18px",
+                background:"#fff", border:"1px solid rgba(10,31,26,0.08)", borderRadius:16,
+                cursor:"pointer", textAlign:"left", transition:"all .18s",
+                boxShadow:"0 1px 4px rgba(10,31,26,0.04)",
+              }}
+              onMouseEnter={e=>{ e.currentTarget.style.borderColor="var(--ayyad-emerald)"; e.currentTarget.style.boxShadow="0 4px 16px rgba(13,92,46,0.12)"; }}
+              onMouseLeave={e=>{ e.currentTarget.style.borderColor="rgba(10,31,26,0.08)"; e.currentTarget.style.boxShadow="0 1px 4px rgba(10,31,26,0.04)"; }}
+              >
+                <span style={{ fontSize:22, flexShrink:0, marginTop:1 }}>{c.icon}</span>
+                <div>
+                  <div style={{ fontWeight:800, fontSize:14, color:"var(--ayyad-deep)", marginBottom:3 }}>{c.title}</div>
+                  <div style={{ fontSize:12, color:"var(--ink-400)", lineHeight:1.45 }}>{c.sub}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ── CTA Soutenir Ayyad — élégant, pas envahissant ── */}
       <section style={{
