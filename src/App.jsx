@@ -6917,11 +6917,21 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
                     <div className="text-[11px] text-blue-600 font-mono mb-1">📂 {d.reference}</div>
                   )}
                   {/* Ligne 3 : donateur */}
-                  <div className="text-xs text-gray-500">
-                    {d.donor_name
-                      ? <><span className="font-semibold text-gray-700">{d.donor_name}</span>{d.donor_email && ` · ${d.donor_email}`}</>
+                  <div className="text-xs text-gray-500 flex items-center gap-2 flex-wrap">
+                    {(d.donor_name && !d.donor_name.includes("@"))
+                      ? <span className="font-semibold text-gray-700">{d.donor_name}</span>
                       : <span className="italic text-gray-400">{fr?"Donateur anonyme":"Anonymous donor"}</span>
                     }
+                    {(d.donor_name || d.donor_email) && (
+                      <button
+                        onClick={async () => {
+                          await supabase.from("donations").update({donor_name:null,donor_email:null}).eq("id",d.id);
+                          fetchDonations();
+                        }}
+                        className="text-[10px] bg-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-500 px-1.5 py-0.5 rounded transition-colors"
+                        title="Anonymiser ce don"
+                      >🕵️ Anonymiser</button>
+                    )}
                   </div>
                   {/* Message */}
                   {d.message && <div className="text-[11px] text-emerald-600 italic mt-1">"{d.message}"</div>}
