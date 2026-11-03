@@ -1469,22 +1469,22 @@ if (step === "qr" && provider === "CARD") return (
         <div className="text-xs text-gray-500 mb-1">{lang==="fr" ? "Montant à envoyer" : "Amount to send"}</div>
         <div className="font-black text-3xl text-emerald-700">{amountFmt}</div>
         <div className="text-sm text-emerald-600 font-bold">FCFA</div>
-        <div className="text-xs text-gray-400 mt-1">{lang==="fr" ? "Pour : " : "For: "}<span className="font-semibold">{caseData?.beneficiary}</span></div>
+        <div className="text-xs text-gray-400 mt-1">{lang==="fr" ? "Pour : " : lang==="ar" ? "لـ: " : "For: "}<span className="font-semibold">{caseData?.beneficiary}</span></div>
       </div>
 
       {/* QR Code / Deeplink Wave */}
       <div className="bg-white border-2 border-gray-100 rounded-2xl p-4 text-center space-y-3">
-        <div className="text-xs font-bold text-gray-600">📱 {lang==="fr" ? "Payer via " : "Pay via "}{pv?.label}</div>
+        <div className="text-xs font-bold text-gray-600">📱 {lang==="fr" ? "الدفع عبر " : lang==="ar" ? "الدفع عبر " : "Pay via "}{pv?.label}</div>
         {pv?.qrData ? (
           <WaveQRCode data={pv.qrData} size={176} />
         ) : (
           <div className="text-gray-400 text-sm py-4">
-            {lang==="fr" ? "Ouvrez votre application de paiement" : "Open your payment application"}
+            {lang==="fr" ? "Ouvrez votre application de paiement" : lang==="ar" ? "افتح تطبيق الدفع" : "Open your payment application"}
           </div>
         )}
-        <div className="text-[10px] text-gray-400">{lang==="fr" ? "Ouvrez " : "Open "}
+        <div className="text-[10px] text-gray-400">{lang==="fr" ? "Ouvrez " : lang==="ar" ? "افتح " : "Open "}
           <span className="font-bold">{pv?.label}</span>
-          {lang==="fr" ? " → Payer → Confirmez" : " → Pay → Confirm"}
+          {lang==="fr" ? " → Payer → Confirmez" : lang==="ar" ? " ← ادفع ← أكّد" : " → Pay → Confirm"}
         </div>
       </div>
 
@@ -3671,6 +3671,29 @@ const CATS_AR = {
   "Autre": "أخرى", "Other": "أخرى",
 };
 
+// Traductions arabes des dossiers patients (fallback si DB ne contient pas de champ ar)
+const AR_CASE_TITLES = {
+  "AYD-2026-CC6091": "أكيسي تكافح سرطان البنكرياس — ساعدها في مواصلة علاجها الكيميائي",
+  "AYD-2026-10-003": "كواميه كوادجو سيرافان — جراحة قلب انتقائية لإنقاذ حياته",
+  "AYD-2026-10-004": "ناوا فوفونا — تحتاج إلى تمويل عاجل لمتابعة علاجها الطبي",
+};
+const AR_CASE_DESCRIPTIONS = {
+  "AYD-2026-CC6091": "أكيسي جورجيت مصابة بسرطان البنكرياس الذي امتد إلى كبدها. أنفقت عائلتها كل مدخراتها على الفحوصات والاستشفاء. اليوم يحتاجون إلى تمويل جلسات العلاج الكيميائي. ابنها الوحيد يكافح بكل قوته لتمكينها من مواصلة العلاج. كل تبرع مهم لهذه الأم الشجاعة.",
+  "AYD-2026-10-003": "يعاني كواميه كوادجو سيرافان من مرض قلبي خطير يستوجب تدخلاً جراحياً عاجلاً. عائلته غير قادرة على تحمّل تكاليف العملية وحدها. كل تبرع يقربه خطوة من استعادة حياته الطبيعية.",
+  "AYD-2026-10-004": "ناوا فوفونا تحتاج إلى رعاية طبية عاجلة. عائلتها تطلب مساعدتك لتغطية تكاليف علاجها. تبرعك اليوم يمنحها فرصة للشفاء.",
+};
+// Helper: retourne le titre arabe si disponible
+function getArTitle(c, lang) {
+  if (lang !== "ar") return null;
+  const tid = c.tracking_id || c.id;
+  return AR_CASE_TITLES[tid] || null;
+}
+function getArDesc(c, lang) {
+  if (lang !== "ar") return null;
+  const tid = c.tracking_id || c.id;
+  return AR_CASE_DESCRIPTIONS[tid] || null;
+}
+
 
 // Page spécialité — collectes d'une seule spécialité
 const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
@@ -4461,7 +4484,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   const [initiating, setInitiating] = useState(false);
 
   const finalAmt = custom ? (parseInt(custom)||0) : preset;
-  const caseTitle = c.title?.[lang] || c.title?.fr || getField(c,"title",lang) || "";
+  const caseTitle = getArTitle(c, lang) || c.title?.[lang] || c.title?.fr || getField(c,"title",lang) || "";
 
   // ── Appelle /api/initiate — crée le don en base et obtient les URLs de paiement
   const initiatePayment = async () => {
@@ -5557,7 +5580,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             {funded && <span className="bg-emerald-400/90 text-white text-xs font-bold px-3 py-1 rounded-full">✓ {t.badges.funded}</span>}
             {c.urgent && <span className="bg-red-500/90 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">🚨 {t.badges.urgent}</span>}
           </div>
-          <h1 className="text-2xl md:text-4xl font-black text-white leading-tight mb-3" style={{textShadow:"0 2px 12px rgba(0,0,0,0.5)"}}>{(c.title?.[lang] || c.title?.fr || getField(c,"title",lang) || "")}</h1>
+          <h1 className="text-2xl md:text-4xl font-black text-white leading-tight mb-3" style={{textShadow:"0 2px 12px rgba(0,0,0,0.5)"}}>{getArTitle(c, lang) || c.title?.[lang] || c.title?.fr || getField(c,"title",lang) || ""}</h1>
           <div className="flex flex-wrap gap-x-5 gap-y-1 text-white/80 text-sm">
             <span>🏥 {c.hospital}</span>
             <span>📍 {c.city}</span>
@@ -5708,20 +5731,20 @@ const CasePage = ({ c, setPage, lang, user }) => {
               <div style={{display:"flex",justifyContent:"space-around",alignItems:"center"}}>
                 <div style={{textAlign:"center"}}>
                   <div style={{fontSize:22}}>🔒</div>
-                  <div style={{fontSize:11,fontWeight:800,color:"#047857",marginTop:2}}>{lang==="fr"?"0% frais":"0% fees"}</div>
-                  <div style={{fontSize:10,color:"#9ca3af"}}>{lang==="fr"?"sur votre don":"on your gift"}</div>
+                  <div style={{fontSize:11,fontWeight:800,color:"#047857",marginTop:2}}>{lang==="fr"?"0% frais":lang==="ar"?"0% رسوم":"0% fees"}</div>
+                  <div style={{fontSize:10,color:"#9ca3af"}}>{lang==="fr"?"sur votre don":lang==="ar"?"على تبرعك":"on your gift"}</div>
                 </div>
                 <div style={{width:1,height:38,background:"#e5e7eb"}} />
                 <div style={{textAlign:"center"}}>
                   <div style={{fontSize:22}}>✅</div>
-                  <div style={{fontSize:11,fontWeight:800,color:"#047857",marginTop:2}}>{lang==="fr"?"Vérifié":"Verified"}</div>
-                  <div style={{fontSize:10,color:"#9ca3af"}}>{lang==="fr"?"par Ayyad":"by Ayyad"}</div>
+                  <div style={{fontSize:11,fontWeight:800,color:"#047857",marginTop:2}}>{lang==="fr"?"Vérifié":lang==="ar"?"موثّق":"Verified"}</div>
+                  <div style={{fontSize:10,color:"#9ca3af"}}>{lang==="fr"?"par Ayyad":lang==="ar"?"بواسطة أياد":"by Ayyad"}</div>
                 </div>
                 <div style={{width:1,height:38,background:"#e5e7eb"}} />
                 <div style={{textAlign:"center"}}>
                   <div style={{fontSize:22}}>🏥</div>
-                  <div style={{fontSize:11,fontWeight:800,color:"#047857",marginTop:2}}>{lang==="fr"?"Direct hôpital":"To hospital"}</div>
-                  <div style={{fontSize:10,color:"#9ca3af"}}>{lang==="fr"?"fonds sécurisés":"secured funds"}</div>
+                  <div style={{fontSize:11,fontWeight:800,color:"#047857",marginTop:2}}>{lang==="fr"?"Direct hôpital":lang==="ar"?"للمستشفى":"To hospital"}</div>
+                  <div style={{fontSize:10,color:"#9ca3af"}}>{lang==="fr"?"fonds sécurisés":lang==="ar"?"أموال مؤمّنة":"secured funds"}</div>
                 </div>
               </div>
             </div>
@@ -5731,7 +5754,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
               <h2 className="text-lg font-black text-gray-900 mb-4">{lang==="fr"?"L'histoire de ce patient":lang==="ar"?"قصة هذا المريض":"This patient's story"}</h2>
               {/* Mobile : collapsible — PATCH W.3 */}
               <div style={{position:"relative",overflow:"hidden",maxHeight:descExpanded?"none":"88px"}} className="lg:!max-h-none">
-                {(c.desc?.[lang] || c.desc?.fr || c.desc || "").split(/\n\n+/).map((para, i) => (
+                {(getArDesc(c, lang) || c.desc?.[lang] || c.desc?.fr || c.desc || "").split(/\n\n+/).map((para, i) => (
                   <p key={i} className="text-gray-700 leading-relaxed text-base mb-4 last:mb-0" style={{whiteSpace:"pre-line"}}>
                     {para.trim()}
                   </p>
@@ -6112,7 +6135,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   ))}
                 </div>
                 <input type="number" value={amount} onChange={e=>setAmount(e.target.value)}
-                  placeholder={currency==="FCFA"?(lang==="fr"?"Autre montant (FCFA)":lang==="ar"?"مبلغ آخر (FCFA)":"Custom amount (FCFA)"):`Amount in ${currency}`}
+                  placeholder={currency==="FCFA"?(lang==="fr"?"Autre montant (FCFA)":lang==="ar"?"مبلغ آخر (FCFA)":"Custom amount (FCFA)"):lang==="ar" ? `المبلغ بالـ${currency}` : `Amount in ${currency}`}
                   style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:9,border:"1.5px solid #E5E7EB",fontSize:13,fontWeight:600,marginBottom:12,outline:"none"}} />
                 {currency!=="FCFA"&&parseInt(amount)>0&&<div style={{fontSize:11,color:"#6B7280",textAlign:"center",marginBottom:8}}>≈ {Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1)).toLocaleString("fr-FR")} FCFA</div>}
 
