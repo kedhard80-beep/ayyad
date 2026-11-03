@@ -1926,7 +1926,7 @@ const CardPayForm = ({ amountDisplay, lang, onSuccess, onCancel, darkMode = fals
 const SupportAyyadSection = ({ lang }) => {
   const fr = lang === "fr";
   const ar = lang === "ar";
-  const [currency, setCurrency] = useState("FCFA");
+  const [currency, setCurrency] = useState(lang === "ar" || lang === "en" ? "USD" : "FCFA");
   const [amount,   setAmount]   = useState("");
   const [donorMessage, setDonorMessage] = useState(""); // message libre du donateur à Ayyad
   const [step,     setStep]     = useState("form"); // form | wave_qr
@@ -5032,7 +5032,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const CasePage = ({ c, setPage, lang, user }) => {
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState(lang === "en" ? "USD" : "FCFA");
+  const [currency, setCurrency] = useState(lang === "en" || lang === "ar" ? "USD" : "FCFA");
   // PayDunya en attente d'activation — pour l'instant on retombe sur Wave (QR statique du marchand)
   const [provider, setProvider] = useState("WAVE");
   const [anonymous, setAnonymous] = useState(false);
@@ -5650,7 +5650,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     <span className="text-2xl">🌟</span>
                     <div>
                       <div className="font-black text-amber-800 text-sm">{lang==="fr"?"Soyez le premier à donner !":lang==="ar"?"كن أول المتبرعين!":"Be the first to donate!"}</div>
-                      <div className="text-xs text-amber-600">{lang==="fr"?"Votre don lance la collecte et encourage d'autres personnes.":"Your donation starts the campaign and encourages others."}</div>
+                      <div className="text-xs text-amber-600">{lang==="fr"?"Votre don lance la collecte et encourage d'autres personnes.":lang==="ar"?"تبرعك يُطلق الحملة ويشجّع الآخرين.":"Your donation starts the campaign and encourages others."}</div>
                     </div>
                   </div>
                 )}
@@ -6057,7 +6057,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
               {/* Stats */}
               <div style={{padding:"14px 18px 0",borderBottom:"1px solid #F3F4F6"}}>
                 <div style={{fontWeight:900,fontSize:20,color:"#111827"}}>{fmtCurrency(liveCollected||0)}</div>
-                <div style={{fontSize:12,color:"#6B7280",margin:"2px 0 8px"}}>{lang==="fr"?"collectés sur":"of"} {fmtCurrency(c.amount||0)}</div>
+                <div style={{fontSize:12,color:"#6B7280",margin:"2px 0 8px"}}>{lang==="fr"?"collectés sur":lang==="ar"?"من أصل":"of"} {fmtCurrency(c.amount||0)}</div>
                 <div style={{height:5,borderRadius:99,background:"#E5E7EB",marginBottom:4}}>
                   <div style={{height:"100%",borderRadius:99,background:"#059669",transition:"width 0.5s",width:Math.min(100,Math.round(((liveCollected||0)/(c.amount||1))*100))+"%"}} />
                 </div>
