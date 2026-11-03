@@ -67,6 +67,7 @@ function buildPaymentRef(caseObj) {
 // donnée brute pour pouvoir matcher avec les notifs Wave Business.
 function publicDonorName(rawName, lang) {
   const fr = lang !== "en";
+  const ar = lang === "ar";
   if (!rawName) return fr ? "Anonyme" : "Anonymous";
   const s = String(rawName).trim();
   if (!s) return fr ? "Anonyme" : "Anonymous";
@@ -511,6 +512,7 @@ const LangToggle = ({ lang, setLang }) => (
 // ── Navbar avec dropdowns — logo gauche, navigation condensée ─────────────────
 const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -549,7 +551,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
     { icon:"❓", label: fr?"Comment ça marche":"How it works", sub: fr?"Processus transparent":"Transparent process", page:"how" },
   ];
   const aproposItems = [
-    { icon:"🌍", label: fr?"Notre mission":"Our mission", sub: fr?"Solidarité médicale africaine":"African medical solidarity", page:"home" },
+    { icon:"🌍", label: fr?"Notre mission":ar?"مهمتنا":"Our mission", sub: fr?"Solidarité médicale africaine":"African medical solidarity", page:"home" },
     { icon:"💰", label: fr?"Transparence":"Transparency", sub: fr?"Chaque virement est audité":"Every transfer audited", page:"how" },
     { icon:"🤝", label: fr?"Soutenir Ayyad":"Support Ayyad", sub: fr?"Aidez la plateforme":"Help the platform", page:"support-ayyad" },
   ];
@@ -648,6 +650,8 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
             <button onClick={()=>setLang("fr")} style={{ background:"transparent", border:"none", cursor:"pointer", fontSize:12, fontWeight:lang==="fr"?700:400, color:lang==="fr"?"var(--ayyad-deep)":"var(--ink-400)", padding:"4px 6px" }}>FR</button>
             <span style={{ color:"rgba(10,31,26,0.2)", fontSize:12 }}>|</span>
             <button onClick={()=>setLang("en")} style={{ background:"transparent", border:"none", cursor:"pointer", fontSize:12, fontWeight:lang==="en"?700:400, color:lang==="en"?"var(--ayyad-deep)":"var(--ink-400)", padding:"4px 6px" }}>EN</button>
+            <span style={{ color:"rgba(10,31,26,0.2)", fontSize:12 }}>|</span>
+            <button onClick={()=>setLang("ar")} style={{ background:"transparent", border:"none", cursor:"pointer", fontSize:12, fontWeight:lang==="ar"?700:400, color:lang==="ar"?"var(--ayyad-deep)":"var(--ink-400)", padding:"4px 6px" }}>ع</button>
           </div>
           <div style={{ width:1, height:18, background:"rgba(10,31,26,0.1)" }} />
           {user ? (
@@ -656,7 +660,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
                 style={{ width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#0d5c2e,#10b981)", color:"#fff", fontWeight:800, fontSize:13, border:"2px solid #fff", boxShadow:"0 2px 8px rgba(13,92,46,0.25)", cursor:"pointer", flexShrink:0 }}
                 title={user.name||user.email}
               >{(user.name||user.email||"U")[0].toUpperCase()}</button>
-              <button onClick={handleLogout} style={{ background:"transparent", border:"none", cursor:"pointer", fontSize:12, color:"var(--ink-400)", padding:"4px 8px", whiteSpace:"nowrap" }}>{fr?"Déconnexion":"Logout"}</button>
+              <button onClick={handleLogout} style={{ background:"transparent", border:"none", cursor:"pointer", fontSize:12, color:"var(--ink-400)", padding:"4px 8px", whiteSpace:"nowrap" }}>{fr?"Déconnexion":ar?"تسجيل الخروج":"Logout"}</button>
             </div>
           ) : (
             <button onClick={()=>setPage("login")}
@@ -666,7 +670,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
           <button onClick={()=>setPage("collectesactives")}
             className="ayyad-btn-primary"
             style={{ fontSize:13, padding:"9px 18px", whiteSpace:"nowrap", flexShrink:0 }}
-          >💚 {fr?"Faire un don":"Donate"}</button>
+          >💚 {fr?"Faire un don":ar?"تبرع":"Donate"}</button>
           {user?.isAdmin && (
             <button onClick={()=>setPage("admin")} style={{ background:"rgba(201,168,76,0.10)", border:"1px solid rgba(201,168,76,0.30)", borderRadius:8, padding:"7px 12px", fontSize:12, fontWeight:700, color:"var(--ayyad-gold-deep)", cursor:"pointer" }}>⚙</button>
           )}
@@ -710,6 +714,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
           <div style={{ display:"flex", gap:8, marginTop:12 }}>
             <button onClick={()=>setLang("fr")} style={{ flex:1, padding:"8px", borderRadius:8, border:"1px solid rgba(10,31,26,0.12)", background:lang==="fr"?"var(--ayyad-deep)":"#fff", color:lang==="fr"?"#fff":"var(--ink-700)", fontWeight:700, fontSize:12, cursor:"pointer" }}>🇫🇷 FR</button>
             <button onClick={()=>setLang("en")} style={{ flex:1, padding:"8px", borderRadius:8, border:"1px solid rgba(10,31,26,0.12)", background:lang==="en"?"var(--ayyad-deep)":"#fff", color:lang==="en"?"#fff":"var(--ink-700)", fontWeight:700, fontSize:12, cursor:"pointer" }}>🇬🇧 EN</button>
+            <button onClick={()=>setLang("ar")} style={{ flex:1, padding:"8px", borderRadius:8, border:"1px solid rgba(10,31,26,0.12)", background:lang==="ar"?"var(--ayyad-deep)":"#fff", color:lang==="ar"?"#fff":"var(--ink-700)", fontWeight:700, fontSize:12, cursor:"pointer" }}>🌙 AR</button>
           </div>
           {!user && (
             <button onClick={()=>{ setPage("login"); setMobileOpen(false); }}
@@ -719,7 +724,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
           {user && (
             <button onClick={()=>{ handleLogout(); setMobileOpen(false); }}
               style={{ width:"100%", marginTop:8, background:"transparent", border:"1px solid rgba(10,31,26,0.12)", borderRadius:10, padding:"10px", fontSize:13, color:"var(--ink-500)", cursor:"pointer" }}
-            >{fr?"Déconnexion":"Logout"}</button>
+            >{fr?"Déconnexion":ar?"تسجيل الخروج":"Logout"}</button>
           )}
         </div>
       )}
@@ -744,6 +749,7 @@ const CaseCard = ({ c, lang, t, onClick }) => {
   const percent = pct(c.collected, Math.round((c.required||0) * TARGET_MULTIPLIER));
   const funded = c.status==="FUNDED";
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const tc = t.card;
   const photo = c.photo_url || (c.photos && c.photos[0]) || null;
   const title = typeof c.title === "object" ? ((c.title?.[lang] || c.title?.fr || c.title || "") || c.title.fr) : c.title;
@@ -1532,6 +1538,7 @@ const Confetti = ({ active }) => {
 // ── Certificat de don HTML print ────────────────────────────
 const printDonationCertificate = ({ donorName, amount, beneficiary, caseTitle, trackingId, date, lang }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const html = `<!DOCTYPE html><html lang="${lang}"><head><meta charset="UTF-8">
 <title>Certificat de don — Ayyad</title>
 <style>
@@ -1771,6 +1778,7 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
 // ── Formulaire carte bancaire (démo — agrégateur à intégrer) ──
 const CardPayForm = ({ amountDisplay, lang, onSuccess, onCancel, darkMode = false }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const [cardNum,  setCardNum]  = useState("");
   const [cardName, setCardName] = useState("");
   const [expiry,   setExpiry]   = useState("");
@@ -1860,6 +1868,7 @@ const CardPayForm = ({ amountDisplay, lang, onSuccess, onCancel, darkMode = fals
 
 const SupportAyyadSection = ({ lang }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const [currency, setCurrency] = useState("FCFA");
   const [amount,   setAmount]   = useState("");
   const [donorMessage, setDonorMessage] = useState(""); // message libre du donateur à Ayyad
@@ -2108,6 +2117,7 @@ const Reveal = ({ children, delay = 0, as: As = "div", className = "" }) => {
 // renforce la confiance financière. Indicateur scroll-down élégant en bas.
 const HeroSlider = ({ lang, setPage, t, heroStats }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
 
   // Contenu narratif des 4 slides — chaque slide = un angle de la mission
   const slides = [
@@ -2388,6 +2398,7 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
 // un partenariat finalisé. Style : cards blanches sobres avec nom de l'établissement.
 const PartnersBanner = ({ lang }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const partners = [
     { name: "CHU de Bouaké", full: "Centre Hospitalier Universitaire de Bouaké", city: "Bouaké" },
     { name: "Hôpital Jean-Baptiste Vatelot", full: "Hôpital Jean-Baptiste Vatelot", city: "Bouaké" },
@@ -2519,6 +2530,7 @@ const AnimatedNumber = ({ value, suffix = "", visible }) => {
 
 const ImpactSection = ({ lang, heroStats, setPage }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -2674,6 +2686,7 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const ProcessStrip = ({ lang, setPage }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const steps = fr ? [
     { n:"01", icon:"📋", title:"Dossier soumis & vérifié", desc:"Le patient soumet son dossier médical. Notre équipe le vérifie avec un hôpital partenaire en 48h." },
     { n:"02", icon:"💚", title:"Campagne lancée publiquement", desc:"La collecte est publiée sur la plateforme. Chaque centime reçu est tracé en temps réel." },
@@ -2722,6 +2735,7 @@ const ProcessStrip = ({ lang, setPage }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const WhyAyyadSection = ({ lang }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const pillars = fr ? [
     { icon:"🏥", title:"Vérification médicale en 48h", desc:"Chaque dossier est examiné par notre équipe ET confirmé par un hôpital partenaire. Aucune collecte ne démarre sans validation hospitalière." },
     { icon:"🔒", title:"Zéro intermédiaire. Vraiment.", desc:"L'argent va DIRECTEMENT à l'hôpital partenaire. Aucun cash ne transite par nos mains. Le virement est documenté et public." },
@@ -2775,6 +2789,7 @@ const WhyAyyadSection = ({ lang }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const DjanaSuccessSection = ({ lang, setPage }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   return (
     <section style={{
       background:"linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 60%, #f7fcf9 100%)",
@@ -2877,6 +2892,7 @@ const DjanaSuccessSection = ({ lang, setPage }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const VisionSection = ({ lang, setPage }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   return (
     <section style={{
       background:"linear-gradient(180deg, #fdfcfa 0%, #f7f6f2 100%)",
@@ -3000,6 +3016,7 @@ const VisionSection = ({ lang, setPage }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const TestimonialsCarousel = ({ lang }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const [medias, setMedias] = useState([]);
   const [idx, setIdx] = useState(0);
   const [showUpload, setShowUpload] = useState(false);
@@ -4341,6 +4358,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   const MTN_TEL= "+2250501855991";   // MTN MoMo
   const MTN_NUM= "+225 05 01 85 59 91";
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const [preset, setPreset] = useState(1000);
   const [custom, setCustom] = useState("");
   const [provider, setProvider] = useState("WAVE");
@@ -4444,7 +4462,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
         {/* Header */}
         <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 20px 14px",borderBottom:"1px solid #f3f4f6"}}>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:10,fontWeight:800,color:"#059669",textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:2}}>💚 {fr?"Faire un don":"Donate"}</div>
+            <div style={{fontSize:10,fontWeight:800,color:"#059669",textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:2}}>💚 {fr?"Faire un don":ar?"تبرع":"Donate"}</div>
             <div style={{fontWeight:700,fontSize:13,color:"#111827",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{caseTitle}</div>
           </div>
           <button onClick={onClose} style={{background:"#f3f4f6",border:"none",borderRadius:"50%",width:34,height:34,fontSize:16,cursor:"pointer",flexShrink:0}}>✕</button>
@@ -4481,7 +4499,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
               value={custom} onChange={e=>{setCustom(e.target.value);setPreset(0);}}
               style={{width:"100%",border:"2px solid",borderColor:custom?"#047857":"#e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,fontWeight:600,outline:"none",boxSizing:"border-box",marginBottom:14}} />
 
-            <p style={{fontSize:12,fontWeight:700,color:"#374151",margin:"0 0 8px"}}>{fr?"Payer via":"Pay via"}</p>
+            <p style={{fontSize:12,fontWeight:700,color:"#374151",margin:"0 0 8px"}}>{fr?"Payer via":ar?"الدفع عبر":"Pay via"}</p>
 
             {/* ── Grille 2×2 : Wave / OM / MTN / Depuis l'étranger ── */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
@@ -4519,7 +4537,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                 <span style={{flex:1,lineHeight:1.3}}>
                   {(provider==="SENDWAVE"||provider==="TAPTAP")
                     ? INT_PROVIDERS.find(p=>p.id===provider)?.label
-                    : (fr?"Depuis l'étranger":"From abroad")}
+                    : (fr?"Depuis l'étranger":ar?"من الخارج":"From abroad")}
                 </span>
                 <span style={{fontSize:12}}>›</span>
               </button>
@@ -4620,7 +4638,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                   <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
                     <div style={{width:36,height:4,borderRadius:2,background:"#d1d5db"}} />
                   </div>
-                  <div style={{fontWeight:800,fontSize:15,color:"#1e3a5f",marginBottom:4}}>🌍 {fr?"Depuis l'étranger":"From abroad"}</div>
+                  <div style={{fontWeight:800,fontSize:15,color:"#1e3a5f",marginBottom:4}}>🌍 {fr?"Depuis l'étranger":ar?"من الخارج":"From abroad"}</div>
                   <div style={{fontSize:12,color:"#6b7280",marginBottom:14}}>{fr?"Choisissez votre appli de transfert :":"Choose your transfer app:"}</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
                     {INT_PROVIDERS.map(m=>(
@@ -4672,7 +4690,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                   )}
                   <div style={{display:"grid",gridTemplateColumns:intlSel?"1fr 1fr":"1fr",gap:8}}>
                     <button onClick={()=>{setIntlOpen(false);setIntlSel(null);}} style={{padding:"12px",background:"#f3f4f6",border:"none",borderRadius:12,fontWeight:700,fontSize:13,color:"#6b7280",cursor:"pointer"}}>
-                      {fr?"Annuler":"Cancel"}
+                      {fr?"Annuler":ar?"إلغاء":"Cancel"}
                     </button>
                     {intlSel&&(
                       <button onClick={()=>{setProvider(intlSel);setIntlOpen(false);setIntlSel(null);setStep("pay");}}
@@ -4693,8 +4711,8 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                   <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
                     <div style={{width:36,height:4,borderRadius:2,background:"#d1d5db"}} />
                   </div>
-                  <div style={{fontWeight:800,fontSize:15,color:"#4c1d95",marginBottom:4}}>₿ {fr?"Don en cryptomonnaie":"Cryptocurrency donation"}</div>
-                  <div style={{fontSize:12,color:"#6b7280",marginBottom:14}}>{fr?"Choisissez votre crypto :":"Choose your crypto:"}</div>
+                  <div style={{fontWeight:800,fontSize:15,color:"#4c1d95",marginBottom:4}}>₿ {fr?"Don en cryptomonnaie":ar?"تبرع بالعملة المشفرة":"Cryptocurrency donation"}</div>
+                  <div style={{fontSize:12,color:"#6b7280",marginBottom:14}}>{fr?"Choisissez votre crypto :":ar?"اختر عملتك المشفرة:":"Choose your crypto:"}</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
                     {CRYPTO_LIST.map(c=>(
                       <button key={c.id} onClick={()=>setCryptoSel(c.id)}
@@ -4739,7 +4757,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                   })()}
                   <div style={{display:"grid",gridTemplateColumns:cryptoSel?"1fr 1fr":"1fr",gap:8}}>
                     <button onClick={()=>{setCryptoOpen(false);setCryptoSel(null);}} style={{padding:"12px",background:"#f3f4f6",border:"none",borderRadius:12,fontWeight:700,fontSize:13,color:"#6b7280",cursor:"pointer"}}>
-                      {fr?"Annuler":"Cancel"}
+                      {fr?"Annuler":ar?"إلغاء":"Cancel"}
                     </button>
                     {cryptoSel&&(
                       <button onClick={()=>{setProvider("CRYPTO");setCryptoOpen(false);setStep("pay");}}
@@ -4767,7 +4785,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                   background:finalAmt>=500?"#fff":"#e5e7eb",
                   color:finalAmt>=500?"#047857":"#9ca3af",
                   boxShadow:finalAmt>=500?"0 4px 16px rgba(4,120,87,0.2)":"none"}}>
-                {submitting?"⏳ ...":(finalAmt>=500?(fr?`✅ J'ai payé — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`✅ I've paid — ${finalAmt.toLocaleString("fr-CI")} FCFA`):(fr?"Min. 500 FCFA":"Min. 500 FCFA"))}
+                {submitting?"⏳ ...":(finalAmt>=500?(fr?`✅ J'ai payé — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`✅ I've paid — ${finalAmt.toLocaleString("fr-CI")} FCFA`):(fr?"Min. 500 FCFA":ar?"الحد الأدنى 500 فرنك":"Min. 500 FCFA"))}
               </button>
             ):provider==="VB"?(
               <button disabled={finalAmt<500||submitting} onClick={async()=>{if(finalAmt>=500)await confirmPayment();}}
@@ -4775,7 +4793,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                   background:finalAmt>=500?"#fff":"#e5e7eb",
                   color:finalAmt>=500?"#0369a1":"#9ca3af",
                   boxShadow:finalAmt>=500?"0 4px 16px rgba(3,105,161,0.2)":"none"}}>
-                {submitting?"⏳ ...":(finalAmt>=500?(fr?`✅ J'ai effectué le virement — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`✅ I've completed the transfer — ${finalAmt.toLocaleString("fr-CI")} FCFA`):(fr?"Min. 500 FCFA":"Min. 500 FCFA"))}
+                {submitting?"⏳ ...":(finalAmt>=500?(fr?`✅ J'ai effectué le virement — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`✅ I've completed the transfer — ${finalAmt.toLocaleString("fr-CI")} FCFA`):(fr?"Min. 500 FCFA":ar?"الحد الأدنى 500 فرنك":"Min. 500 FCFA"))}
               </button>
             ):(
               <button disabled={finalAmt<500||initiating} onClick={initiatePayment}
@@ -4918,13 +4936,13 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             {provider!=="VB"&&(
             <button onClick={confirmPayment} disabled={submitting}
               style={{width:"100%",padding:"14px",borderRadius:14,border:"2px solid #059669",background:"#fff",color:"#047857",fontWeight:800,fontSize:14,cursor:submitting?"wait":"pointer",marginBottom:8}}>
-              {submitting?"⏳ ...":`✅ ${fr?"J'ai effectué le paiement":"I've completed the payment"}`}
+              {submitting?"⏳ ...":`✅ ${fr?"J'ai effectué le paiement":ar?"أتممت الدفع":"I've completed the payment"}`}
             </button>
             )}
             {provider==="VB"&&(
             <button onClick={()=>setStep("success")}
               style={{width:"100%",padding:"14px",borderRadius:14,border:"2px solid #0369a1",background:"#fff",color:"#0369a1",fontWeight:800,fontSize:14,cursor:"pointer",marginBottom:8}}>
-              ✅ {fr?"J'ai effectué le virement":"I've completed the transfer"}
+              ✅ {fr?"J'ai effectué le virement":ar?"أتممت التحويل":"I've completed the transfer"}
             </button>
             )}
             <p style={{textAlign:"center",fontSize:11,color:"#9ca3af",margin:0}}>
@@ -4938,7 +4956,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
           <div style={{padding:"40px 20px",textAlign:"center"}}>
             <div style={{fontSize:72,marginBottom:16}}>🎉</div>
             <div style={{fontWeight:900,fontSize:22,color:"#047857",marginBottom:10}}>
-              {fr?"Merci pour votre générosité !":"Thank you for your generosity!"}
+              {fr?"Merci pour votre générosité !":ar?"شكراً لكرمك!":"Thank you for your generosity!"}
             </div>
             <p style={{fontSize:14,color:"#6b7280",lineHeight:1.6,marginBottom:28}}>
               {fr?"Votre paiement va être vérifié sous 24h et le montant crédité au dossier. Vous faites une vraie différence.":"Your payment will be verified within 24h and credited to this campaign. You're making a real difference."}
@@ -6338,7 +6356,7 @@ const StaffRow = ({ m, fr, paid, onPay, onDelete, onUpdate, fmt }) => {
             ✓ {fr?"Enregistrer":"Save"}
           </button>
           <button onClick={()=>setEditing(false)} className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-200">
-            {fr?"Annuler":"Cancel"}
+            {fr?"Annuler":ar?"إلغاء":"Cancel"}
           </button>
         </div>
       </div>
@@ -6384,6 +6402,7 @@ const StaffRow = ({ m, fr, paid, onPay, onDelete, onUpdate, fmt }) => {
 // adminCases: liste des cases déjà chargée par AdminPage (utilisée pour le sélecteur du don manuel)
 const AdminDonationsTab = ({ lang, adminCases = [] }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -6706,7 +6725,7 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
                 disabled={manualSaving}
                 onClick={() => setManualOpen(false)}
                 className="border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl text-sm disabled:opacity-50"
-              >{fr?"Annuler":"Cancel"}</button>
+              >{fr?"Annuler":ar?"إلغاء":"Cancel"}</button>
               <button
                 disabled={manualSaving}
                 onClick={submitManualDonation}
@@ -6747,7 +6766,7 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
         {["all","pending","confirmed","cancelled"].map(s => (
           <button key={s} onClick={()=>setFilterStatus(s)}
             className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${filterStatus===s?"bg-emerald-600 text-white border-emerald-600":"bg-white text-gray-500 border-gray-200 hover:border-emerald-400"}`}>
-            {s==="all"?(fr?"Tous":"All"):s==="pending"?(fr?"En attente":"Pending"):s==="confirmed"?(fr?"Confirmés":"Confirmed"):(fr?"Annulés":"Cancelled")}
+            {s==="all"?(fr?"Tous":ar?"الكل":"All"):s==="pending"?(fr?"En attente":"Pending"):s==="confirmed"?(fr?"Confirmés":"Confirmed"):(fr?"Annulés":"Cancelled")}
           </button>
         ))}
       </div>
@@ -6791,11 +6810,11 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
                   <div className="flex flex-col gap-1.5 flex-shrink-0">
                     <button onClick={() => confirm(d.id)}
                       className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-colors">
-                      ✓ {fr?"Confirmer":"Confirm"}
+                      ✓ {fr?"Confirmer":ar?"تأكيد":"Confirm"}
                     </button>
                     <button onClick={() => cancel(d.id)}
                       className="border border-red-200 text-red-500 hover:bg-red-50 text-xs font-bold px-3 py-1.5 rounded-xl transition-colors">
-                      ✕ {fr?"Annuler":"Cancel"}
+                      ✕ {fr?"Annuler":ar?"إلغاء":"Cancel"}
                     </button>
                   </div>
                 )}
@@ -6811,6 +6830,7 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
 // ── Composant Gestion des comptes Admin ──────────────────────────────
 const AdminAccountsTab = ({ lang, user: currentUser }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -6950,7 +6970,7 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
 
       {/* Filters + Search */}
       <div className="flex flex-wrap gap-2">
-        {[["all", fr?"Tous":"All"],["regular",fr?"Standard":"Regular"],["admin","Admin"],["banned",fr?"Bannis":"Banned"]].map(([id,lbl]) => (
+        {[["all", fr?"Tous":ar?"الكل":"All"],["regular",fr?"Standard":"Regular"],["admin","Admin"],["banned",fr?"Bannis":"Banned"]].map(([id,lbl]) => (
           <button key={id} onClick={() => setFilter(id)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filter===id ? "bg-emerald-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>{lbl}</button>
         ))}
         <input
@@ -7039,9 +7059,9 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
               />
             )}
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => { setActionModal(null); setBanReason(""); }} className="border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl text-sm">{fr?"Annuler":"Cancel"}</button>
+              <button onClick={() => { setActionModal(null); setBanReason(""); }} className="border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl text-sm">{fr?"Annuler":ar?"إلغاء":"Cancel"}</button>
               <button onClick={doAction} disabled={saving} className={`font-bold py-2.5 rounded-xl text-sm text-white shadow-md ${actionModal.action==="ban"?"bg-red-600":actionModal.action==="promote"?"bg-purple-600":"bg-emerald-600"}`}>
-                {saving ? "..." : (fr?"Confirmer":"Confirm")}
+                {saving ? "..." : (fr?"Confirmer":ar?"تأكيد":"Confirm")}
               </button>
             </div>
           </div>
@@ -7053,6 +7073,7 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
 
 const AdminVisitorsTab = ({ lang }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const [visitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -7151,6 +7172,7 @@ const AdminVisitorsTab = ({ lang }) => {
 // ── Composant Gestion Médias Témoignages Admin ───────────────────────────────
 const AdminTestimonialsTab = ({ lang, user }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const [medias, setMedias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("pending");
@@ -7410,6 +7432,7 @@ const AdminTestimonialsTab = ({ lang, user }) => {
 // ── AdminExportTab — super_admin uniquement ───────────────────
 const AdminExportTab = ({ lang, user }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const fmtN = n => (n||0).toLocaleString("fr-FR");
 
   // État
@@ -7836,7 +7859,7 @@ ${sheets.join("\n")}
           className="flex items-center justify-center gap-3 bg-emerald-700 hover:bg-emerald-800 disabled:bg-gray-300 text-white font-black py-4 rounded-2xl shadow-md transition-all text-base">
           <span className="text-2xl">📊</span>
           <div className="text-left">
-            <div>{loading ? (fr?"Chargement...":"Loading...") : (fr?"Exporter Excel":"Export Excel")}</div>
+            <div>{loading ? (fr?"Chargement...":ar?"جار التحميل...":"Loading...") : (fr?"Exporter Excel":"Export Excel")}</div>
             <div className="text-xs text-emerald-200 font-normal">{fr?"Fichier .xls (compatible Excel & LibreOffice)":".xls file (Excel & LibreOffice)"}</div>
           </div>
         </button>
@@ -7845,7 +7868,7 @@ ${sheets.join("\n")}
           className="flex items-center justify-center gap-3 bg-gray-800 hover:bg-gray-900 disabled:bg-gray-300 text-white font-black py-4 rounded-2xl shadow-md transition-all text-base">
           <span className="text-2xl">📄</span>
           <div className="text-left">
-            <div>{loading ? (fr?"Chargement...":"Loading...") : (fr?"Exporter PDF":"Export PDF")}</div>
+            <div>{loading ? (fr?"Chargement...":ar?"جار التحميل...":"Loading...") : (fr?"Exporter PDF":"Export PDF")}</div>
             <div className="text-xs text-gray-400 font-normal">{fr?"Impression → Enregistrer en PDF":"Print → Save as PDF"}</div>
           </div>
         </button>
@@ -8100,6 +8123,7 @@ const RegisterPage = ({ setPage, setUser, lang }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const PolitiqueAdmissionPage = ({ setPage, lang }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   return (
     <div style={{ background:"var(--paper)", minHeight:"100vh" }}>
       {/* Header */}
@@ -10898,13 +10922,13 @@ const AdminPage = ({ user, setPage, lang }) => {
                     </div>
                     <div className="flex gap-2">
                       <button onClick={addStaffMember} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700">{fr?"Enregistrer":"Save"}</button>
-                      <button onClick={()=>setShowAddStaff(false)} className="border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-sm">{fr?"Annuler":"Cancel"}</button>
+                      <button onClick={()=>setShowAddStaff(false)} className="border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-sm">{fr?"Annuler":ar?"إلغاء":"Cancel"}</button>
                     </div>
                   </div>
                 )}
 
                 {loadingFinance ? (
-                  <div className="p-8 text-center text-gray-400 text-sm">{fr?"Chargement...":"Loading..."}</div>
+                  <div className="p-8 text-center text-gray-400 text-sm">{fr?"Chargement...":ar?"جار التحميل...":"Loading..."}</div>
                 ) : staffMembers.length === 0 ? (
                   <div className="p-8 text-center text-gray-400 text-sm">{fr?"Aucun employé enregistré.":"No staff members yet."}</div>
                 ) : (
@@ -11193,6 +11217,7 @@ const AdminPage = ({ user, setPage, lang }) => {
 // ── Mon Impact (historique dons donateur) ────────────────────
 const MonImpactPage = ({ user, setPage, lang }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notifPref, setNotifPref] = useState(null);
@@ -11250,7 +11275,7 @@ const MonImpactPage = ({ user, setPage, lang }) => {
         </div>
 
         {loading ? (
-          <div className="text-center py-10 text-gray-400">{fr?"Chargement...":"Loading..."}</div>
+          <div className="text-center py-10 text-gray-400">{fr?"Chargement...":ar?"جار التحميل...":"Loading..."}</div>
         ) : donations.length === 0 ? (
           <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-10 text-center">
             <div className="text-4xl mb-3">💚</div>
@@ -11313,6 +11338,7 @@ const MonImpactPage = ({ user, setPage, lang }) => {
 // ── Page Hôpitaux Partenaires ─────────────────────────────────
 const HospitauxPage = ({ setPage, lang }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const hospitals = [
     { name:"CHU de Cocody",        city:"Abidjan",       spec:fr?"Cardiologie, Neurologie":"Cardiology, Neurology",       cases:12, icon:"🏥", verified:true },
     { name:"CHU de Yopougon",      city:"Abidjan",       spec:fr?"Pédiatrie, Gynécologie":"Pediatrics, Gynecology",       cases:9,  icon:"🏥", verified:true },
@@ -11327,7 +11353,7 @@ const HospitauxPage = ({ setPage, lang }) => {
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-3xl mx-auto">
-        <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">← {fr?"Retour":"Back"}</button>
+        <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">← {fr?"Retour":ar?"رجوع":"Back"}</button>
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-2xl text-3xl mb-4">🏥</div>
           <h1 className="text-2xl font-black text-gray-900">{fr?"Hôpitaux partenaires vérifiés":"Verified Partner Hospitals"}</h1>
@@ -11391,6 +11417,7 @@ const HospitauxPage = ({ setPage, lang }) => {
 // ── Refund Policy Page ────────────────────────────────────────
 const RefundPage = ({ setPage, lang }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const Section = ({ icon, title, children }) => (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
       <div className="flex items-center gap-3">
@@ -11578,6 +11605,7 @@ const RefundPage = ({ setPage, lang }) => {
 const LegalPage = ({ setPage, lang }) => {
   const [tab, setTab] = useState("mentions");
   const fr = lang === "fr";
+  const ar = lang === "ar";
 
   const Heading = ({ children }) => (
     <h3 className="font-black text-gray-900 text-sm mt-6 mb-2">{children}</h3>
@@ -11737,6 +11765,7 @@ const LegalPage = ({ setPage, lang }) => {
 // ── Rapport d'impact ─────────────────────────────────────────
 const ImpactPage = ({ setPage, lang }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const Block = ({ icon, title, value, sub }) => (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center">
       <div className="text-3xl mb-2">{icon}</div>
@@ -11900,6 +11929,7 @@ const ImpactPage = ({ setPage, lang }) => {
 // ── Conformité BCEAO ──────────────────────────────────────────
 const BCEAOPage = ({ setPage, lang }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const Section = ({ icon, title, children }) => (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
       <div className="flex items-center gap-3 mb-4">
@@ -12054,6 +12084,7 @@ const ChatWidget = ({ lang }) => {
   const [open, setOpen] = useState(false);
   const [tawkReady, setTawkReady] = useState(false);
   const fr = lang === "fr";
+  const ar = lang === "ar";
 
   // Injection paresseuse du script Tawk.to la première fois qu'on en a besoin
   const ensureTawkLoaded = () => {
@@ -12549,6 +12580,7 @@ const TrackingPage = ({ setPage, setSelectedCase, lang }) => {
 // On poll /api/dunya/status pour suivre l'évolution (le webhook met du temps).
 const DunyaReturnPage = ({ setPage, lang }) => {
   const fr = lang !== "en";
+  const ar = lang === "ar";
   const [status, setStatus] = useState("loading"); // loading | confirmed | pending | cancelled | error
   const [amount, setAmount] = useState(null);
   const [pollCount, setPollCount] = useState(0);
@@ -13272,6 +13304,7 @@ const DjanaUrgencyBadges = ({ lang }) => {
 // ── DonatePage v5 — ultra-minimale GoFundMe style ──────────────────────────
 const DonatePage = ({ c, lang, user, setPage }) => {
   const fr = lang === "fr";
+  const ar = lang === "ar";
   const WAVE_LINK = "https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/";
   const [currency, setCurrency] = React.useState(fr ? "FCFA" : "USD");
   const DONATE_RATES = { FCFA: 1, EUR: 655.957, USD: 600, GBP: 787 };
@@ -13478,6 +13511,12 @@ export default function AyyadApp() {
   });
   // ── IMPORTANT: declare all state BEFORE any useEffect that references them ──
   const [lang, setLang] = useState(sessionStorage.getItem("ayyadLang") || "fr");
+
+  // ── RTL pour l'arabe ──
+  React.useEffect(()=>{
+    document.documentElement.dir = lang==="ar" ? "rtl" : "ltr";
+    document.documentElement.lang = lang;
+  }, [lang]);
   const [user, setUser] = useState(null);
   const [selectedCase, setSelectedCase] = useState(null);
   const [specialite, setSpecialite] = useState("");
