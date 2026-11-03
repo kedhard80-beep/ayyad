@@ -6314,14 +6314,23 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       const amtFcfa = currency==="FCFA"?parseInt(amount):Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1));
                       try {
                         if(c.id&&!c._isDemo){
-                          const {error:_sbErr} = await supabaseAdmin.from("donations").insert({
-                            case_id:c.id, donor_name:null, amount_fcfa:amtFcfa, amount:amtFcfa,
-                            payment_method:sbProvider, status:"pending", reference:sbPayRef,
-                            created_at:new Date().toISOString(),
+                          // Route via /api/initiate (server-side) — fiable + visible dans admin
+                          const provMap = {"OM":"OM","MTN":"MTN","WAVE":"WAVE","VB":"VB"};
+                          const r = await fetch("/api/initiate",{
+                            method:"POST",
+                            headers:{"Content-Type":"application/json"},
+                            body:JSON.stringify({case_id:c.id,tracking_id:c.tracking_id||c.trackingId,amount:amtFcfa,provider:provMap[sbProvider]||sbProvider,anonymous:true}),
                           });
-                          if(_sbErr) console.error("[sidebar don]",_sbErr);
+                          if(!r.ok){
+                            // Fallback direct si API indisponible
+                            await supabaseAdmin.from("donations").insert({
+                              case_id:c.id,donor_name:null,amount_fcfa:amtFcfa,amount:amtFcfa,
+                              payment_method:sbProvider,status:"pending",reference:sbPayRef,
+                              created_at:new Date().toISOString(),
+                            });
+                          }
                         }
-                      } catch(e){}
+                      } catch(e){ console.error("[sidebar don]",e); }
                       setSbSubmitting(false);
                       setSbSuccess(true);
                     }}
@@ -6337,14 +6346,20 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       const amtFcfa = currency==="FCFA"?parseInt(amount):Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1));
                       try {
                         if(c.id&&!c._isDemo){
-                          const {error:_sbErr2} = await supabaseAdmin.from("donations").insert({
-                            case_id:c.id, donor_name:null, amount_fcfa:amtFcfa, amount:amtFcfa,
-                            payment_method:"SENDWAVE", status:"pending", reference:sbPayRef,
-                            created_at:new Date().toISOString(),
+                          const r2 = await fetch("/api/initiate",{
+                            method:"POST",
+                            headers:{"Content-Type":"application/json"},
+                            body:JSON.stringify({case_id:c.id,tracking_id:c.tracking_id||c.trackingId,amount:amtFcfa,provider:"SENDWAVE",anonymous:true}),
                           });
-                          if(_sbErr2) console.error("[sidebar don INTL]",_sbErr2);
+                          if(!r2.ok){
+                            await supabaseAdmin.from("donations").insert({
+                              case_id:c.id,donor_name:null,amount_fcfa:amtFcfa,amount:amtFcfa,
+                              payment_method:"SENDWAVE",status:"pending",reference:sbPayRef,
+                              created_at:new Date().toISOString(),
+                            });
+                          }
                         }
-                      } catch(e){}
+                      } catch(e){ console.error("[sidebar don INTL]",e); }
                       setSbSubmitting(false);
                       setSbSuccess(true);
                     }}
