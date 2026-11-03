@@ -4073,7 +4073,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           {lang==="fr" ? "100% vérifié · 0% frais" : "100% verified · 0% fees"}
         </div>
         <h1 style={{fontSize:28,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,textAlign:"left"}}>
-          {lang==="fr" ? "Financer la santé" : "Fund healthcare"}<br/>
+          {lang==="fr" ? "Financer la santé" : lang==="ar" ? "تمويل الصحة" : "Fund healthcare"}<br/>
           <span style={{color:"#a7f3d0"}}>{lang==="fr" ? "c'est sauver une vie." : "means saving a life."}</span>
         </h1>
         <p style={{fontSize:13,color:"rgba(255,255,255,0.82)",margin:"0 0 18px",lineHeight:1.55,textAlign:"left"}}>
@@ -4156,7 +4156,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
             <div style={{ textAlign:"center" }}>
               <span className="ayyad-eyebrow">{lang==="fr" ? "Campagnes vérifiées" : "Verified campaigns"}</span>
               <h2 className="ayyad-h-display" style={{ fontSize:"clamp(2rem, 3.6vw, 3rem)", marginTop: 18, marginBottom: 14 }}>
-                {lang==="fr" ? <>Soutenez des patients <em>aujourd'hui.</em></> : <>Support patients <em>today.</em></>}
+                {lang==="fr" ? <>Soutenez des patients <em>aujourd'hui.</em></> : lang==="ar" ? <>ادعم المرضى <em>اليوم.</em></> : <>Support patients <em>today.</em></>}
               </h2>
               <p style={{ color:"var(--ink-500)", fontSize:16, maxWidth: 620, margin:"0 auto", lineHeight:1.65 }}>
                 {lang==="fr"
@@ -4307,7 +4307,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
             gap:"clamp(20px, 3vw, 32px)", alignItems:"center",
           }}>
             <div>
-              <span className="ayyad-eyebrow">{lang==="fr" ? "Soutenir la plateforme" : "Support the platform"}</span>
+              <span className="ayyad-eyebrow">{lang==="fr" ? "Soutenir la plateforme" : lang==="ar" ? "دعم المنصة" : "Support the platform"}</span>
               <h3 className="ayyad-h-display" style={{ fontSize:"clamp(1.6rem, 2.6vw, 2.2rem)", marginTop: 14, marginBottom: 14 }}>
                 {lang==="fr" ? <>Aider Ayyad à <em>grandir.</em></> : <>Help Ayyad <em>grow.</em></>}
               </h3>
@@ -5183,7 +5183,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
     <div className="space-y-4">
       <div className="text-center mb-2">
         <div className="text-3xl mb-2">💚</div>
-        <h3 className="font-black text-gray-900 text-lg">{lang==="fr" ? "Faire un don" : "Make a donation"}</h3>
+        <h3 className="font-black text-gray-900 text-lg">{lang==="fr" ? "Faire un don" : lang==="ar" ? "تبرع" : "Make a donation"}</h3>
         <p className="text-xs text-gray-500 mt-1">{lang==="fr" ? "Choisissez comment vous souhaitez donner" : "Choose how you want to donate"}</p>
       </div>
 
@@ -5440,7 +5440,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             <button
               onClick={() => setShowModal(true)}
               style={{flexShrink:0,padding:"11px 16px",borderRadius:50,border:"none",background:"#059669",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 3px 12px rgba(5,150,105,0.4)"}}>
-              💚 {lang==="fr"?"Faire un don":"Donate"}
+              💚 {lang==="fr"?"Faire un don":lang==="ar"?"تبرع":"Donate"}
             </button>
           </>);
         })()}
@@ -5527,7 +5527,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
               <button
                 onClick={() => setShowModal(true)}
                 style={{padding:"14px 0",borderRadius:50,border:"none",background:"#059669",color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",boxShadow:"0 4px 14px rgba(5,150,105,0.38)"}}>
-                💚 {lang==="fr"?"Faire un don":"Donate now"}
+                💚 {lang==="fr"?"Faire un don":lang==="ar"?"تبرع":"Donate now"}
               </button>
               <button
                 onClick={()=>{try{if(navigator.share){navigator.share({title:(c.title?.[lang]||"AYYAD"),url:window.location.href})}else{navigator.clipboard.writeText(window.location.href)}}catch(e){}}}
@@ -5644,7 +5644,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
 
             {/* Description */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8">
-              <h2 className="text-lg font-black text-gray-900 mb-4">{lang==="fr"?"L'histoire de ce patient":"This patient's story"}</h2>
+              <h2 className="text-lg font-black text-gray-900 mb-4">{lang==="fr"?"L'histoire de ce patient":lang==="ar"?"قصة هذا المريض":"This patient's story"}</h2>
               {/* Mobile : collapsible — PATCH W.3 */}
               <div style={{position:"relative",overflow:"hidden",maxHeight:descExpanded?"none":"88px"}} className="lg:!max-h-none">
                 {(c.desc?.[lang] || c.desc?.fr || c.desc || "").split(/\n\n+/).map((para, i) => (
@@ -5666,7 +5666,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             {recentDonations.length > 0 && (
               <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-                  <h2 className="font-black text-gray-900">{lang==="fr"?"Derniers donateurs":"Recent donors"}</h2>
+                  <h2 className="font-black text-gray-900">{lang==="fr"?"Derniers donateurs":lang==="ar"?"آخر المتبرعين":"Recent donors"}</h2>
                   <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>Live
                   </span>
@@ -5980,10 +5980,10 @@ const CasePage = ({ c, setPage, lang, user }) => {
             {sbSuccess?(
               <div style={{background:"#f0fdf4",borderRadius:20,padding:"32px 20px",textAlign:"center",boxShadow:"0 4px 24px rgba(0,0,0,0.10)",border:"1.5px solid #bbf7d0"}}>
                 <div style={{fontSize:56,marginBottom:12}}>🎉</div>
-                <div style={{fontWeight:900,fontSize:18,color:"#047857",marginBottom:8}}>{lang==="fr"?"Merci pour votre générosité !":"Thank you for your generosity!"}</div>
+                <div style={{fontWeight:900,fontSize:18,color:"#047857",marginBottom:8}}>{lang==="fr"?"Merci pour votre générosité !":lang==="ar"?"شكراً لكرمك!":"Thank you for your generosity!"}</div>
                 <p style={{fontSize:13,color:"#6b7280",lineHeight:1.6,marginBottom:20}}>{lang==="fr"?"Votre paiement sera vérifié sous 24h et crédité au dossier. Vous faites une vraie différence 💚":"Your payment will be verified within 24h and credited to the campaign."}</p>
                 <button onClick={()=>{setSbSuccess(false);setSbProvider(null);}} style={{background:"#059669",color:"#fff",border:"none",borderRadius:12,padding:"12px 24px",fontWeight:800,fontSize:14,cursor:"pointer"}}>
-                  {lang==="fr"?"← Retour au dossier":"← Back to campaign"}
+                  {lang==="fr"?"← Retour au dossier":lang==="ar"?"رجوع إلى الملف ←":"← Back to campaign"}
                 </button>
               </div>
             ):(
@@ -5992,8 +5992,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
               <div style={{background:"linear-gradient(135deg,#047857,#059669)",padding:"14px 18px",display:"flex",alignItems:"center",gap:10}}>
                 <span style={{fontSize:22}}>💚</span>
                 <div>
-                  <div style={{fontWeight:900,fontSize:15,color:"#fff"}}>{lang==="fr"?"Faire un don":"Donate"}</div>
-                  <div style={{fontSize:11,color:"rgba(255,255,255,0.8)"}}>🔒 {lang==="fr"?"Sécurisé · 0 frais cachés":"Secure · No hidden fees"}</div>
+                  <div style={{fontWeight:900,fontSize:15,color:"#fff"}}>{lang==="fr"?"Faire un don":lang==="ar"?"تبرع":"Donate"}</div>
+                  <div style={{fontSize:11,color:"rgba(255,255,255,0.8)"}}>🔒 {lang==="fr"?"Sécurisé · 0 frais cachés":lang==="ar"?"آمن · بدون رسوم خفية":"Secure · No hidden fees"}</div>
                 </div>
               </div>
 
@@ -6033,7 +6033,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 {currency!=="FCFA"&&parseInt(amount)>0&&<div style={{fontSize:11,color:"#6B7280",textAlign:"center",marginBottom:8}}>≈ {Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1)).toLocaleString("fr-FR")} FCFA</div>}
 
                 {/* ── Sélection du moyen de paiement ── */}
-                <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:8}}>{lang==="fr"?"Payer via :":"Pay via:"}</div>
+                <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:8}}>{lang==="fr"?"Payer via :":lang==="ar"?"الدفع عبر:":"Pay via:"}</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:6}}>
                   {[
                     {id:"WAVE",label:"Wave CI",emoji:"〰️"},
@@ -6249,12 +6249,12 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     onClick={() => setShowModal(true)}
                     disabled={!amount||parseInt(amount)<1}
                     style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:(!amount||parseInt(amount)<1)?"#9CA3AF":"#059669",color:"#fff",fontWeight:800,fontSize:15,cursor:(!amount||parseInt(amount)<1)?"not-allowed":"pointer",boxShadow:(!amount||parseInt(amount)<1)?"none":"0 4px 14px rgba(5,150,105,0.32)",transition:"all 0.2s",marginBottom:8}}>
-                    💚 {lang==="fr"?"Faire un don":"Donate"}
+                    💚 {lang==="fr"?"Faire un don":lang==="ar"?"تبرع":"Donate"}
                   </button>
                 )}
 
                 <div style={{textAlign:"center",fontSize:11,color:"#9CA3AF",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                  🔒 {lang==="fr"?"Sécurisé · 0 frais cachés":"Secure · No hidden fees"}
+                  🔒 {lang==="fr"?"Sécurisé · 0 frais cachés":lang==="ar"?"آمن · بدون رسوم خفية":"Secure · No hidden fees"}
                 </div>
               </div>
             </div>
@@ -6268,7 +6268,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             {recentDonations.length > 0 && (
               <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-                  <h2 className="font-black text-gray-900">{lang==="fr"?"Derniers donateurs":"Recent donors"}</h2>
+                  <h2 className="font-black text-gray-900">{lang==="fr"?"Derniers donateurs":lang==="ar"?"آخر المتبرعين":"Recent donors"}</h2>
                   <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>Live
                   </span>
@@ -11754,7 +11754,7 @@ const LegalPage = ({ setPage, lang }) => {
             {fr ? "→ Politique de remboursement" : "→ Refund policy"}
           </button>
           <button onClick={() => setPage("home")} className="block mx-auto text-sm text-gray-400 hover:text-emerald-600">
-            {fr ? "← Retour à l'accueil" : "← Back to home"}
+            {fr ? "← Retour à l'accueil" : ar ? "رجوع إلى الرئيسية ←" : "← Back to home"}
           </button>
         </div>
       </div>
@@ -11919,7 +11919,7 @@ const ImpactPage = ({ setPage, lang }) => {
 
         <div className="text-center mt-4">
           <p className="text-xs text-gray-400 mb-4">{fr ? "Pour toute question sur nos rapports : " : "For any questions about our reports: "}<a href="mailto:impact@ayyadci.com" className="text-emerald-600 font-bold">impact@ayyadci.com</a></p>
-          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">{fr ? "← Retour à l'accueil" : "← Back to home"}</button>
+          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">{fr ? "← Retour à l'accueil" : ar ? "رجوع إلى الرئيسية ←" : "← Back to home"}</button>
         </div>
       </div>
     </div>
@@ -12063,7 +12063,7 @@ const BCEAOPage = ({ setPage, lang }) => {
         </div>
 
         <div className="text-center">
-          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">{fr ? "← Retour à l'accueil" : "← Back to home"}</button>
+          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">{fr ? "← Retour à l'accueil" : ar ? "رجوع إلى الرئيسية ←" : "← Back to home"}</button>
         </div>
       </div>
     </div>
@@ -12659,7 +12659,7 @@ const DunyaReturnPage = ({ setPage, lang }) => {
               : "A confirmation email has just been sent to you. The funds will be transferred directly to the partner hospital."}
           </p>
           <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
-            {fr ? "← Retour à l'accueil" : "← Back to home"}
+            {fr ? "← Retour à l'accueil" : ar ? "رجوع إلى الرئيسية ←" : "← Back to home"}
           </button>
         </div>
       )}
@@ -12677,7 +12677,7 @@ const DunyaReturnPage = ({ setPage, lang }) => {
             {fr ? "Vous recevrez un email dès que c'est validé." : "You'll receive an email as soon as it's validated."}
           </p>
           <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
-            {fr ? "← Retour à l'accueil" : "← Back to home"}
+            {fr ? "← Retour à l'accueil" : ar ? "رجوع إلى الرئيسية ←" : "← Back to home"}
           </button>
         </div>
       )}
@@ -12690,7 +12690,7 @@ const DunyaReturnPage = ({ setPage, lang }) => {
             {fr ? "Le paiement n'a pas été effectué. Vous n'avez pas été débité." : "The payment was not completed. You have not been charged."}
           </p>
           <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
-            {fr ? "← Retour à l'accueil" : "← Back to home"}
+            {fr ? "← Retour à l'accueil" : ar ? "رجوع إلى الرئيسية ←" : "← Back to home"}
           </button>
         </div>
       )}
@@ -12705,7 +12705,7 @@ const DunyaReturnPage = ({ setPage, lang }) => {
               : "Unable to verify payment status. If you were charged, contact us at contact@ayyadci.com"}
           </p>
           <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
-            {fr ? "← Retour à l'accueil" : "← Back to home"}
+            {fr ? "← Retour à l'accueil" : ar ? "رجوع إلى الرئيسية ←" : "← Back to home"}
           </button>
         </div>
       )}
