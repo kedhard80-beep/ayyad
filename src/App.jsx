@@ -2186,6 +2186,7 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
       titleEm: fr ? "agissons ensemble." : ar ? "نتحرك معاً." : "we act together.",
       sub: fr
         ? "Derrière chaque collecte, un patient dont la santé dépend de notre solidarité. Un don. Un hôpital. Un espoir."
+        : ar ? "خلف كل حملة مريض تعتمد صحته على تضامننا. تبرع واحد. مستشفى واحد. أمل واحد."
         : "Behind every campaign, a patient whose health depends on our solidarity. One donation. One hospital. One hope.",
       cta: { label: fr ? "Faire un don maintenant" : ar ? "تبرع الآن" : "Donate now", action: () => setPage("collectesactives") },
     },
@@ -2212,8 +2213,8 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
     {
       img: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=1920&q=85",
       eyebrow: fr ? "Impact mesurable" : ar ? "تأثير قابل للقياس" : "Measurable impact",
-      titlePre: fr ? "Chaque contribution" : "Every contribution",
-      titleEm: fr ? "peut sauver une vie." : "can save a life.",
+      titlePre: fr ? "Chaque contribution" : ar ? "كل مساهمة" : "Every contribution",
+      titleEm: fr ? "peut sauver une vie." : ar ? "قد تُنقذ حياة." : "can save a life.",
       sub: fr
         ? "Rejoignez une communauté de donateurs engagés à offrir un accès aux soins à ceux qui en ont le plus besoin en Côte d'Ivoire."
         : ar ? "انضم إلى مجتمع من المتبرعين الملتزمين بتوفير الرعاية الصحية لمن يحتاجها في كوت ديفوار." : "Join a community of donors committed to providing healthcare access to those who need it most in Côte d'Ivoire.",
