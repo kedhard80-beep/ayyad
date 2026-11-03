@@ -383,6 +383,8 @@ const T = {
     howPage: { title: "How does Ayyad work?", sub: "Transparent, secure, built for Africa", forDonors: { icon:"💚",title:"For donors",steps:["Browse verified active campaigns","Freely choose your amount","Pay via Wave CI or card","You are charged exactly the amount you chose","The money goes directly to the hospital"] }, forBenef: { icon:"🏥",title:"For beneficiaries",steps:["Create an account and submit your medical case","Upload medical report, quote, identity document","Our team verifies with the partner hospital","Your campaign goes live within 48h","Funds are transferred directly to the hospital"] }, feeTitle: "The 5% rule — Built into the goal", feeSub: "Ayyad includes its 5% fee directly in the campaign goal. You give 10,000 FCFA, the hospital receives 10,000 FCFA. Nothing is deducted from your donation.", youGive: "You give", collectReceives: "Hospital receives", ayyadFee: "Ayyad fee (included in goal)" },
   }
 };
+// Arabe : fallback sur FR pour les clés T[] — les textes arabes sont gérés inline via ar?"..."
+T.ar = T.fr;
 
 // ── Demo cases visibility (admin can toggle via dashboard) ───
 // true = campagnes fictives visibles sur la plateforme publique
