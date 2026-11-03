@@ -6189,11 +6189,12 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       const amtFcfa = currency==="FCFA"?parseInt(amount):Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1));
                       try {
                         if(c.id&&!c._isDemo){
-                          await supabaseAdmin.from("donations").insert({
+                          const {error:_sbErr} = await supabaseAdmin.from("donations").insert({
                             case_id:c.id, donor_name:null, amount_fcfa:amtFcfa, amount:amtFcfa,
-                            provider:sbProvider, status:"pending", reference:sbPayRef,
+                            payment_method:sbProvider, status:"pending", reference:sbPayRef,
                             created_at:new Date().toISOString(),
                           });
+                          if(_sbErr) console.error("[sidebar don]",_sbErr);
                         }
                       } catch(e){}
                       setSbSubmitting(false);
@@ -6211,11 +6212,12 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       const amtFcfa = currency==="FCFA"?parseInt(amount):Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1));
                       try {
                         if(c.id&&!c._isDemo){
-                          await supabaseAdmin.from("donations").insert({
+                          const {error:_sbErr2} = await supabaseAdmin.from("donations").insert({
                             case_id:c.id, donor_name:null, amount_fcfa:amtFcfa, amount:amtFcfa,
-                            provider:"SENDWAVE", status:"pending", reference:sbPayRef,
+                            payment_method:"SENDWAVE", status:"pending", reference:sbPayRef,
                             created_at:new Date().toISOString(),
                           });
+                          if(_sbErr2) console.error("[sidebar don INTL]",_sbErr2);
                         }
                       } catch(e){}
                       setSbSubmitting(false);
