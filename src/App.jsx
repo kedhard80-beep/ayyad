@@ -1423,7 +1423,7 @@ const MobilePayWidget = ({ amount, caseData, lang, onSuccess }) => {
           <span className="ml-auto text-white/70 text-xs">{amountFmt} →</span>
         </button>
       ))}
-      <p className="text-center text-[10px] text-gray-400 pt-1">🔒 {lang==="fr" ? "Paiement sécurisé · Aucuns frais cachés" : "Secure payment · No hidden fees"}</p>
+      <p className="text-center text-[10px] text-gray-400 pt-1">🔒 {lang==="fr" ? "Paiement sécurisé · Aucuns frais cachés" : lang==="ar" ? "دفع آمن · بدون رسوم خفية" : "Secure payment · No hidden fees"}</p>
     </div>
   );
 
@@ -2196,28 +2196,28 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
       titleEm: fr ? "changer une vie." : ar ? "لنغيّر حياة." : "changing a life.",
       sub: fr
         ? "Vos dons sont versés directement à l'hôpital partenaire. Chaque virement est audité. Aucune intermédiation cash."
-        : "Your donations go directly to the partner hospital. Every transfer is audited. No cash intermediation.",
+        : ar ? "تذهب تبرعاتك مباشرة إلى المستشفى الشريك. كل تحويل يخضع للتدقيق. بدون وسيط نقدي." : "Your donations go directly to the partner hospital. Every transfer is audited. No cash intermediation.",
       cta: { label: fr ? "Découvrir les campagnes" : ar ? "استكشف الحملات" : "Explore campaigns", action: () => setPage("collectesactives") },
     },
     {
       img: "https://images.unsplash.com/photo-1666214280557-f1b5022eb634?w=1920&q=85",
-      eyebrow: fr ? "Pour les patients" : "For patients",
-      titlePre: fr ? "Une plateforme humaine," : "A platform built on humanity,",
-      titleEm: fr ? "construite pour vous." : "built for you.",
+      eyebrow: fr ? "Pour les patients" : ar ? "للمرضى" : "For patients",
+      titlePre: fr ? "Une plateforme humaine," : ar ? "منصة إنسانية،" : "A platform built on humanity,",
+      titleEm: fr ? "construite pour vous." : ar ? "مبنية لأجلك." : "built for you.",
       sub: fr
         ? "Soumettez votre dossier médical, notre équipe le vérifie sous 48h avec un hôpital partenaire. Mise en ligne rapide, suivi personnalisé."
-        : "Submit your medical case, our team verifies it within 48h with a partner hospital. Fast online launch, personal follow-up.",
-      cta: { label: fr ? "Soumettre un dossier" : "Submit a case", action: () => setPage("submit") },
+        : ar ? "قدّم ملفك الطبي، يتحقق فريقنا منه خلال 48 ساعة مع مستشفى شريك. نشر سريع، متابعة شخصية." : "Submit your medical case, our team verifies it within 48h with a partner hospital. Fast online launch, personal follow-up.",
+      cta: { label: fr ? "Soumettre un dossier" : ar ? "قدّم ملفاً" : "Submit a case", action: () => setPage("submit") },
     },
     {
       img: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=1920&q=85",
-      eyebrow: fr ? "Impact mesurable" : "Measurable impact",
+      eyebrow: fr ? "Impact mesurable" : ar ? "تأثير قابل للقياس" : "Measurable impact",
       titlePre: fr ? "Chaque contribution" : "Every contribution",
       titleEm: fr ? "peut sauver une vie." : "can save a life.",
       sub: fr
         ? "Rejoignez une communauté de donateurs engagés à offrir un accès aux soins à ceux qui en ont le plus besoin en Côte d'Ivoire."
-        : "Join a community of donors committed to providing healthcare access to those who need it most in Côte d'Ivoire.",
-      cta: { label: fr ? "Voir les histoires" : "Read the stories", action: () => setPage("collectes") },
+        : ar ? "انضم إلى مجتمع من المتبرعين الملتزمين بتوفير الرعاية الصحية لمن يحتاجها في كوت ديفوار." : "Join a community of donors committed to providing healthcare access to those who need it most in Côte d'Ivoire.",
+      cta: { label: fr ? "Voir les histoires" : ar ? "اقرأ القصص" : "Read the stories", action: () => setPage("collectes") },
     },
   ];
 
@@ -2328,20 +2328,20 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
               {current.cta.label} →
             </button>
             <button onClick={() => setPage("submit")} className="ayyad-btn-ghost" style={{ fontSize:14 }}>
-              {fr ? "Lancer une campagne" : "Start a campaign"}
+              {fr ? "Lancer une campagne" : ar ? "أطلق حملة" : "Start a campaign"}
             </button>
             <button onClick={() => setPage("how")} className="ayyad-btn-ghost" style={{ fontSize:14 }}>
-              {fr ? "Comment ça marche" : "How it works"}
+              {fr ? "Comment ça marche" : ar ? "كيف تعمل" : "How it works"}
             </button>
           </div>
 
           {/* Trust pills */}
           <div style={{ display:"flex", flexWrap:"wrap", gap:10, marginTop: 36 }}>
             <span className="ayyad-trust-pill" style={{ background:"rgba(255,255,255,0.10)", color:"#fff", border:"1px solid rgba(255,255,255,0.22)" }}>
-              <span style={{ color:"#e9d59a" }}>🔒</span> {fr ? "Paiement sécurisé" : "Secure payment"}
+              <span style={{ color:"#e9d59a" }}>🔒</span> {fr ? "Paiement sécurisé" : ar ? "دفع آمن" : "Secure payment"}
             </span>
             <span className="ayyad-trust-pill" style={{ background:"rgba(255,255,255,0.10)", color:"#fff", border:"1px solid rgba(255,255,255,0.22)" }}>
-              <span style={{ color:"#e9d59a" }}>✓</span> {fr ? "100% transparent" : "100% transparent"}
+              <span style={{ color:"#e9d59a" }}>✓</span> {fr ? "100% transparent" : ar ? "شفافية 100%" : "transparent 100%"}
             </span>
             <span className="ayyad-trust-pill" style={{ background:"rgba(255,255,255,0.10)", color:"#fff", border:"1px solid rgba(255,255,255,0.22)" }}>
               <span style={{ color:"#e9d59a" }}>🏥</span> {fr ? "Hôpitaux partenaires" : ar ? "مستشفيات شريكة" : "Partner hospitals"}
@@ -2375,7 +2375,7 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
             { v: heroStats?.patients || "—", l: fr ? "Patients aidés" : ar ? "مرضى تمت مساعدتهم" : "Patients helped", icon:"💚" },
             { v: heroStats?.collected || "—", l: fr ? "FCFA collectés" : ar ? "دولار مُجمَّع" : "$ raised", icon:"📈" },
             { v: heroStats?.hospitals || "18", l: fr ? "Hôpitaux partenaires" : ar ? "مستشفيات شريكة" : "Partner hospitals", icon:"🏥" },
-            { v: "48h", l: fr ? "Vérification dossier" : "Case verification", icon:"⚡" },
+            { v: "48h", l: fr ? "Vérification dossier" : ar ? "التحقق من الملفات" : "Case verification", icon:"⚡" },
           ].map((k, i) => (
             <div key={i} style={{
               padding:"clamp(6px, 1.5vw, 12px) clamp(10px, 2vw, 18px)",
@@ -4180,7 +4180,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           <div className="flex flex-wrap justify-center gap-3">
             <button onClick={() => setPage("collectes")} className="bg-white text-emerald-700 font-bold px-5 py-3 rounded-xl hover:bg-emerald-50 shadow-lg text-sm">{t.hero.cta1} →</button>
             <button onClick={() => setPage("submit")} className="bg-emerald-500/40 hover:bg-emerald-500/60 border border-white/30 text-white font-semibold px-5 py-3 rounded-xl text-sm">{t.hero.cta2}</button>
-            <button onClick={() => setPage("how")} className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-5 py-3 rounded-xl text-sm">{lang==="fr" ? "Comment ça marche" : "How it works"}</button>
+            <button onClick={() => setPage("how")} className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-5 py-3 rounded-xl text-sm">{lang==="fr" ? "Comment ça marche" : lang==="ar" ? "كيف تعمل" : "How it works"}</button>
             {/* Je soutiens dropdown */}
             <div className="relative" onClick={e => e.stopPropagation()}>
               <button onClick={() => setHeroMenu(!heroMenu)} className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-5 py-3 rounded-xl text-sm flex items-center gap-1">
@@ -5326,7 +5326,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
         </div>
       </button>
 
-      <p className="text-center text-[10px] text-gray-400">🔒 {lang==="fr" ? "Paiement sécurisé · Aucuns frais cachés" : "Secure payment · No hidden fees"}</p>
+      <p className="text-center text-[10px] text-gray-400">🔒 {lang==="fr" ? "Paiement sécurisé · Aucuns frais cachés" : lang==="ar" ? "دفع آمن · بدون رسوم خفية" : "Secure payment · No hidden fees"}</p>
     </div>
   );
 
@@ -8373,7 +8373,7 @@ const PolitiqueAdmissionPage = ({ setPage, lang }) => {
             fontWeight:700, fontSize:14,
             padding:"13px 26px", borderRadius:9999, cursor:"pointer",
           }}>
-            {fr ? "Comment ça marche" : "How it works"}
+            {fr ? "Comment ça marche" : ar ? "كيف تعمل" : "How it works"}
           </button>
         </div>
 
