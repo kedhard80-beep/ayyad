@@ -4322,6 +4322,14 @@ const QR_WAVE = "iVBORw0KGgoAAAANSUhEUgAAALkAAAC5AQAAAABc1qPxAAACHElEQVR4nOWYQW7
 const QR_MTN  = "iVBORw0KGgoAAAANSUhEUgAAAJEAAACRAQAAAADro2eOAAABSklEQVR4nN2WTWrjUBCEv3IE8k6+wfNFxvK1AgErjA+mJ19EuoHfTgY5NQvNKg7ZxA3D9KZ5taiiqf55Mp/jffMAwb+PZUnbvGNiKJI2ERqyzQEScLL7kNqK9lyud92O3LX9Od9DVGv6pbf0FL7vsKai6eM0Go9cJmfgxXOIhiUB9xZ4l44RfrTrFFaTwT/m+xobSofa3RvAme0Q44fkHtKt1TI9ge8x/AHUtkfaK9TZ3fM18hXcN3bdN/bcRmjYdv3BaeTAyQ6oYwOcmS/u1nfELtmQd0xbOKcZ7oqZwfb62s7WMtW/XZtDRF/1vIwcmo4ZIMKP1XNnL2mWl4QiPM+StsDU9KUj5katd7BUCZruCXxfYkV7nJxvrSpux7gbVTpquyOir/5iA+dUjjARsHdxtl3bHmd5SXZEX1kSQ9EeSkVEHfpP/qJ/AJt2o99l3f/cAAAAAElFTkSuQmCC";
 const QR_OM   = "iVBORw0KGgoAAAANSUhEUgAAAJEAAACRAQAAAADro2eOAAABYUlEQVR4nN1WMW7cMBCcORE4djzAD6B+kBdYSmW/x6UBx+HlDPhbJ+YjUudS7CjgdJMiceODq9wCQbYhMcUMF5jhLoWPtd9cQMC/jw0kfS7fWuRCcmOhQUlAcJPv8F06mvRW2EI8jDVjpf97votyv48uPPRvtVzlzZ9p/Jx22F6D7xMsaEQXEgA0qiYaIolcThEZe/KrhUYvqd5GB3RB0tlCI2NPboqGpd+trUU+oHM4xdrPjYBwgqRk0Edxk1dcWvRTArKRr6QfJQEIB1lkcAPOKz3CYYCYYOFdB/EJ5X5e+3oX2L5Vm7/4JfqMZvQoGoqJr4a5Ue3nJ2w1I24HC18hJHgEFwt3mK7Ad1mSJB3RqFKnaJOPgaQHHhmOJRnlg5LA+XWsCAnozOYgACw9nUkf7v3y2Gr4cjOSZ6td5TZux+U5LLwS30csaATntYV2iDYaf+ZgAnJxsNh9+J/sor8AR3SgNRC0s8MAAAAASUVORK5CYII=";
 
+const CRYPTO_LIST = [
+  {id:"BTC",  label:"Bitcoin",   network:"Bitcoin",   emoji:"₿",  color:"#F7931A", addr:"16Ty7EEMu77FmS27b7KtjTZ3AACTCmvhPJ"},
+  {id:"ETH",  label:"Ethereum",  network:"ERC20",     emoji:"Ξ",  color:"#627EEA", addr:"0x7df7c7934c90ed5607664dd36759ddb9c366625c"},
+  {id:"USDT", label:"USDT",      network:"TRC20",     emoji:"₮",  color:"#26A17B", addr:"TNRcAGAWPtd8HXAEmYsq4EwAZUUQu6LkDv"},
+  {id:"USDC", label:"USDC",      network:"BEP20/BSC", emoji:"◎",  color:"#2775CA", addr:"0x7df7c7934c90ed5607664dd36759ddb9c366625c"},
+  {id:"BNB",  label:"BNB",       network:"BEP20/BSC", emoji:"⬡",  color:"#F3BA2F", addr:"0x7df7c7934c90ed5607664dd36759ddb9c366625c"},
+];
+
 // ─── DonateModal — bottom sheet GoFundMe style ───────────────────────────────
 const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   const WAVE_LINK  = "https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/";
@@ -4419,13 +4427,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
 
   const CI_PROVIDERS  = [{id:"WAVE",label:"Wave CI",emoji:"〰️"},{id:"OM",label:"Orange Money",emoji:"🟠"},{id:"MTN",label:"MTN MoMo",emoji:"🟡"}];
   const INT_PROVIDERS = [{id:"SENDWAVE",label:"Sendwave",emoji:"💸"},{id:"TAPTAP",label:"TapTap Send",emoji:"✈️"}];
-  const CRYPTO_LIST = [
-    {id:"BTC",  label:"Bitcoin",   network:"Bitcoin",   emoji:"₿",  color:"#F7931A", addr:"16Ty7EEMu77FmS27b7KtjTZ3AACTCmvhPJ"},
-    {id:"ETH",  label:"Ethereum",  network:"ERC20",     emoji:"Ξ",  color:"#627EEA", addr:"0x7df7c7934c90ed5607664dd36759ddb9c366625c"},
-    {id:"USDT", label:"USDT",      network:"TRC20",     emoji:"₮",  color:"#26A17B", addr:"TNRcAGAWPtd8HXAEmYsq4EwAZUUQu6LkDv"},
-    {id:"USDC", label:"USDC",      network:"BEP20/BSC", emoji:"◎",  color:"#2775CA", addr:"0x7df7c7934c90ed5607664dd36759ddb9c366625c"},
-    {id:"BNB",  label:"BNB",       network:"BEP20/BSC", emoji:"⬡",  color:"#F3BA2F", addr:"0x7df7c7934c90ed5607664dd36759ddb9c366625c"},
-  ];
+  // CRYPTO_LIST défini au niveau module
   const SOON_PROVIDERS= [{id:"CB",label:fr?"Carte bancaire":"Credit Card",emoji:"💳",soon:true}];
   const ALL_PROVIDERS = [...CI_PROVIDERS,...INT_PROVIDERS,...SOON_PROVIDERS];
 
@@ -4993,6 +4995,9 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [sbSubmitting, setSbSubmitting] = useState(false);
   const [sbSuccess, setSbSuccess] = useState(false);
   const [sbPayRef] = useState(()=>"AYD-"+Date.now().toString(36).toUpperCase().slice(-5)+"-"+Math.random().toString(36).substr(2,4).toUpperCase());
+  const [sbCryptoOpen, setSbCryptoOpen] = useState(false);
+  const [sbCryptoSel, setSbCryptoSel] = useState(null);
+  const [sbCryptoCopied, setSbCryptoCopied] = useState(null);
 
   // Si l'utilisateur se connecte/déconnecte pendant qu'il est sur la page, on resynchronise
   useEffect(() => {
@@ -6028,7 +6033,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   ))}
                 </div>
                 {/* Crypto */}
-                <button onClick={()=>setSbCryptoOpen&&setSbCryptoOpen(true)}
+                <button onClick={()=>setSbCryptoOpen(true)}
                   style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",borderRadius:12,fontWeight:700,fontSize:12,cursor:"pointer",width:"100%",marginBottom:12,boxSizing:"border-box",
                     background:sbProvider==="CRYPTO"?"#fdf4ff":"#faf5ff",
                     border:sbProvider==="CRYPTO"?"2px solid #9333ea":"2px solid #e9d5ff",
@@ -6038,6 +6043,54 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   <span style={{fontSize:12}}>›</span>
                 </button>
 
+
+                {/* ── Overlay Crypto Sidebar ── */}
+                {sbCryptoOpen&&(
+                  <>
+                    <div onClick={()=>{setSbCryptoOpen(false);setSbCryptoSel(null);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",zIndex:20000}} />
+                    <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:20001,background:"#fff",borderRadius:"20px 20px 0 0",padding:"20px",boxShadow:"0 -8px 32px rgba(0,0,0,0.18)",maxHeight:"92vh",overflowY:"auto"}}>
+                      <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
+                        <div style={{width:36,height:4,borderRadius:2,background:"#d1d5db"}} />
+                      </div>
+                      <div style={{fontWeight:800,fontSize:15,color:"#4c1d95",marginBottom:4}}>₿ {lang==="fr"?"Don en cryptomonnaie":"Cryptocurrency donation"}</div>
+                      <div style={{fontSize:12,color:"#6b7280",marginBottom:14}}>{lang==="fr"?"Choisissez votre crypto :":"Choose your crypto:"}</div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
+                        {CRYPTO_LIST.map(c=>(
+                          <button key={c.id} onClick={()=>setSbCryptoSel(c.id)}
+                            style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"12px 6px",borderRadius:14,fontWeight:800,fontSize:12,cursor:"pointer",transition:"all .15s",
+                              background:sbCryptoSel===c.id?"#fdf4ff":"#f9fafb",
+                              border:sbCryptoSel===c.id?`2px solid ${c.color}`:"2px solid #e5e7eb",
+                              color:sbCryptoSel===c.id?c.color:"#374151"}}>
+                            <span style={{fontSize:22,color:c.color}}>{c.emoji}</span>
+                            <span>{c.label}</span>
+                            <span style={{fontSize:9,color:"#9ca3af",fontWeight:600}}>{c.network}</span>
+                          </button>
+                        ))}
+                      </div>
+                      {sbCryptoSel&&(()=>{
+                        const cc=CRYPTO_LIST.find(x=>x.id===sbCryptoSel);
+                        const qrUrl=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(cc.addr)}&color=000000&bgcolor=FFFFFF`;
+                        return(
+                          <div style={{background:"#faf5ff",border:`1.5px solid ${cc.color}`,borderRadius:14,padding:"16px",marginBottom:14}}>
+                            <div style={{fontWeight:800,fontSize:13,marginBottom:12,color:cc.color,textAlign:"center"}}>{cc.emoji} {cc.label} — {cc.network}</div>
+                            <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
+                              <img src={qrUrl} alt={`QR ${cc.label}`} width={160} height={160} style={{borderRadius:12,border:`3px solid ${cc.color}`,padding:4,background:"#fff"}} />
+                            </div>
+                            <div style={{background:"#f3f4f6",borderRadius:10,padding:"10px 12px",marginBottom:10,wordBreak:"break-all",fontFamily:"monospace",fontSize:11,color:"#1f2937",lineHeight:1.6,textAlign:"center"}}>{cc.addr}</div>
+                            <button onClick={()=>{navigator.clipboard.writeText(cc.addr).then(()=>{setSbCryptoCopied(cc.id);setTimeout(()=>setSbCryptoCopied(null),2500);});}}
+                              style={{width:"100%",padding:"12px",background:sbCryptoCopied===cc.id?"#d1fae5":"#fff",border:`2px solid ${sbCryptoCopied===cc.id?"#10b981":cc.color}`,borderRadius:12,fontWeight:800,fontSize:13,color:sbCryptoCopied===cc.id?"#065f46":cc.color,cursor:"pointer",marginBottom:8}}>
+                              {sbCryptoCopied===cc.id?(lang==="fr"?"✅ Adresse copiée !":"✅ Address copied!"):(lang==="fr"?"📋 Copier l'adresse":"📋 Copy address")}
+                            </button>
+                            <div style={{fontSize:10,color:"#9ca3af",textAlign:"center"}}>⚠️ Envoyer uniquement du <strong>{cc.label}</strong> sur le réseau <strong>{cc.network}</strong>.</div>
+                          </div>
+                        );
+                      })()}
+                      <button onClick={()=>{setSbCryptoOpen(false);setSbCryptoSel(null);}} style={{width:"100%",padding:"12px",background:"#f3f4f6",border:"none",borderRadius:12,fontWeight:700,fontSize:13,color:"#6b7280",cursor:"pointer"}}>
+                        {lang==="fr"?"Fermer":"Close"}
+                      </button>
+                    </div>
+                  </>
+                )}
                 {/* ── Instructions inline CI ── */}
                 {(()=>{const sbAmtFcfa=(currency==="FCFA"?parseInt(amount)||0:Math.round((parseInt(amount)||0)*({EUR:655.957,USD:600,GBP:787}[currency]||1)));return(<>
                 {sbProvider==="WAVE"&&(
