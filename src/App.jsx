@@ -406,8 +406,40 @@ const T = {
     howPage: { title: "How does Ayyad work?", sub: "Transparent, secure, built for Africa", forDonors: { icon:"💚",title:"For donors",steps:["Browse verified active campaigns","Freely choose your amount","Pay via Wave CI or card","You are charged exactly the amount you chose","The money goes directly to the hospital"] }, forBenef: { icon:"🏥",title:"For beneficiaries",steps:["Create an account and submit your medical case","Upload medical report, quote, identity document","Our team verifies with the partner hospital","Your campaign goes live within 48h","Funds are transferred directly to the hospital"] }, feeTitle: "The 5% rule — Built into the goal", feeSub: "Ayyad includes its 5% fee directly in the campaign goal. You give 10,000 FCFA, the hospital receives 10,000 FCFA. Nothing is deducted from your donation.", youGive: "You give", collectReceives: "Hospital receives", ayyadFee: "Ayyad fee (included in goal)" },
   }
 };
-// Arabe : fallback sur FR pour les clés T[] — les textes arabes sont gérés inline via ar?"..."
-T.ar = T.fr;
+T.ar = {
+  nav: { collections: "الحملات", how: "كيف تعمل", admin: "الإدارة", login: "تسجيل الدخول", start: "ابدأ الآن", logout: "تسجيل الخروج", medicalFinancing: "التمويل الطبي" },
+  hero: { badge: "منصة موثّقة وآمنة", title1: "حين لا ينتظر،", title2: "نتحرك.", sub: "خلف كل حملة مريض تعتمد صحته على تضامننا. تبرع واحد. مستشفى واحد. أمل واحد.", cta1: "الحملات المكتملة والشهادات", cta2: "تقديم ملف طبي" },
+  stats: { patients: "مريض تم مساعدته", collected: "فرنك أفريقي جُمع", hospitals: "مستشفى شريك" },
+  collections: { title: "الحملات الجارية", sub: "ملفات موثّقة نشطة" },
+  card: { donors: "متبرع", daysLeft: "أيام متبقية", funded: "تم بلوغ الهدف!", on: "من أصل" },
+  how: { title: "كيف تعمل أياد؟", sub: "بسيطة، آمنة، مصمّمة لأفريقيا", steps: [{ n:"1",icon:"📋",title:"تقديم الملف",desc:"يقدّم المريض تقريره الطبي وعرض سعر المستشفى" },{ n:"2",icon:"🔍",title:"التحقق",desc:"يتحقق فريقنا مع المستشفى الشريك خلال 48 ساعة" },{ n:"3",icon:"💚",title:"تبرع مباشر",desc:"تدفع بالضبط المبلغ الذي اخترته. بدون رسوم خفية." },{ n:"4",icon:"🏥",title:"تحويل للمستشفى",desc:"تُحوَّل الأموال مباشرة إلى المؤسسة الصحية" }] },
+  donate: { title: "تبرّع الآن", sub: "سيتم خصم المبلغ الذي اخترته بالضبط.", amount: "المبلغ (فرنك أفريقي)", custom: "مبلغ آخر", payment: "طريقة الدفع", anonymous: "تبرع مجهول", message: "اترك رسالة...", btnFunded: "الحملة مغلقة", btn: "تبرّع", secure: "دفع آمن · بدون رسوم خفية", confirm: "تأكيد", verifyDon: "مراجعة تبرعك", debited: "المبلغ المخصوم", beneficiary: "المستفيد", via: "عبر", anonymity: "الهوية", active: "✓ مفعّل", modify: "تعديل", confirmBtn: "تأكيد ✓", thanks: "شكراً جزيلاً!", thanksSub: "تم تسجيل تبرعك بنجاح.", impact: "ما فعلته للتو:", impactSub: "اقتربت", impactEnd: "من حياة أفضل.", again: "تبرّع مجدداً" },
+  guarantee: { title: "ضمان أياد", desc: "تُحوَّل الأموال مباشرة إلى المستشفى الشريك. ليس نقدًا. كل تحويل يخضع للتدقيق." },
+  submit: { title: "تقديم ملف طبي", steps: ["المعلومات","الوثائق","التأكيد"], infoTitle: "صف وضعك الطبي", titleField: "عنوان الحملة *", descField: "الوصف *", hospitalField: "المستشفى *", cityField: "المدينة *", amountField: "مبلغ العرض (فرنك أفريقي) *", categoryField: "التخصص", cats: ["أمراض القلب","الأورام","الأعصاب","العظام","طب الأطفال","أمراض النساء","أخرى"], next: "متابعة ←", docsTitle: "الوثائق المطلوبة", docsSub: "جميع الوثائق مشفّرة (AES-256).", docs: [{ key:"medical",icon:"📄",title:"التقرير الطبي",desc:"تقرير الطبيب أو الوصفة الطبية" },{ key:"quote",icon:"🏥",title:"عرض سعر المستشفى",desc:"عرض سعر رسمي موقّع من المؤسسة" },{ key:"id",icon:"🪪",title:"وثيقة الهوية",desc:"بطاقة هوية سارية أو جواز سفر" },{ key:"consent",icon:"✍️",title:"موافقة البيانات",desc:"نموذج موافقة أياد" }], upload: "اختر ملفاً", uploading: "جارٍ الرفع...", uploaded: "✓ تم الرفع", error: "خطأ، أعد المحاولة", warning: "جميع الوثائق مطلوبة للتحقق.", back: "← رجوع", submit: "إرسال →", successTitle: "تم تقديم الملف!", successSub: "ملفك قيد المراجعة.", processSteps: ["تم استلام الملف وترقيمه","مراجعة فريق أياد (< 48 ساعة)","التواصل مع المستشفى للتحقق","نشر الحملة"], backHome: "العودة للرئيسية", loginRequired: "يجب تسجيل الدخول لتقديم ملف.", loginBtn: "تسجيل الدخول" },
+  login: { title: "تسجيل الدخول إلى أياد", sub: "مرحباً! سجّل دخولك إلى حسابك.", email: "البريد الإلكتروني", password: "كلمة المرور", btn: "تسجيل الدخول ←", noAccount: "ليس لديك حساب؟", register: "إنشاء حساب", error: "البريد الإلكتروني أو كلمة المرور غير صحيحة." },
+  register: { title: "إنشاء حساب", roleQ: "أريد...", roles: [{ id:"donor",icon:"💚",title:"التبرع",desc:"مساعدة المرضى المحتاجين" },{ id:"beneficiary",icon:"🏥",title:"تلقي الرعاية",desc:"تمويل تدخل طبي" }], fields: [{ key:"name",label:"الاسم الكامل",p:"أمينتا كوني",type:"text" },{ key:"email",label:"البريد الإلكتروني",p:"you@example.ci",type:"email" },{ key:"phone",label:"رقم Wave CI",p:"+225 07 XX XX XX XX",type:"tel" },{ key:"password",label:"كلمة المرور (6 أحرف على الأقل)",p:"••••••••",type:"password" }], terms: "أوافق على", termsLink: "شروط الاستخدام", and: "و", privacyLink: "سياسة الخصوصية", btn: "إنشاء حسابي", continue: "متابعة ←", back: "← رجوع", hasAccount: "لديك حساب بالفعل؟", signin: "تسجيل الدخول", error: "خطأ في إنشاء الحساب." },
+  admin: {
+    title: "إدارة أياد", sub: "لوحة التحكم التشغيلية", status: "النظام يعمل",
+    tabs: [{ id:"overview",label:"نظرة عامة",icon:"📊" },{ id:"cases",label:"الملفات",icon:"📋" },{ id:"donations",label:"التبرعات",icon:"💚" },{ id:"fraud",label:"الاحتيال",icon:"🔍" },{ id:"payouts",label:"التحويلات",icon:"🏦" },{ id:"finance",label:"المالية",icon:"💰" },{ id:"salary",label:"الرواتب",icon:"👔" },{ id:"audit",label:"التدقيق",icon:"📝" },{ id:"bilan",label:"التقارير",icon:"📈" },{ id:"testimonials",label:"الشهادات",icon:"💬" },{ id:"visitors",label:"الزوار",icon:"👁️" },{ id:"accounts",label:"الحسابات",icon:"👤" },{ id:"team",label:"الفريق",icon:"👥" },{ id:"export",label:"تصدير",icon:"📤",superAdminOnly:true }],
+    stats: [{ label:"الملفات النشطة",v:"—",icon:"📋" },{ label:"التبرعات هذا الشهر",v:"—",icon:"💚" },{ label:"المرضى المساعَدون",v:"—",icon:"🏥" }],
+    recentTitle: "الملفات الأخيرة", revenueTitle: "الإيرادات التشغيلية (7%)",
+    months: [{ month:"مارس 2025",dons:"24.8M",fees:"1 240 000 FCFA" },{ month:"فبراير 2025",dons:"19.2M",fees:"960 000 FCFA" },{ month:"يناير 2025",dons:"15.1M",fees:"755 000 FCFA" }],
+    pendingTitle: "الملفات في انتظار الموافقة", pending: "في الانتظار", empty: "لا توجد ملفات معلّقة", loading: "جارٍ التحميل...",
+    risk: "المخاطر", reject: "رفض", approve: "موافقة ✓", rejectConfirm: "سبب الرفض:", rejectBtn: "تأكيد الرفض",
+    fraudTitle: "تنبيهات الاحتيال", fraudLabels: [{ label:"حرجة",sev:"critical",c:"red" },{ label:"عالية",sev:"high",c:"amber" },{ label:"محلولة",sev:null,c:"emerald" }],
+    resolve: "حل", resolved: "محلول", payoutsTitle: "تحويلات المستشفيات", payoutsPending: "في الانتظار", validate: "تحقق →", active2: "نشط", funded: "مموّل",
+    statusLabels: { PENDING:"في الانتظار", APPROVED:"موافَق عليه", REJECTED:"مرفوض", COLLECTING:"جارٍ الجمع", FUNDED:"مموّل" },
+    noAdmin: "الوصول مقتصر على المسؤولين."
+  },
+  badges: { verified: "✓ ملف موثّق", collecting: "نشط", funded: "✓ مموّل", urgent: "🚨 عاجل" },
+  urgent: { title: "🚨 الحالات العاجلة", sub: "هؤلاء المرضى بحاجة لمساعدة فورية — تدخل حرج خلال 72 ساعة", alert: "⚠️ تدخل مطلوب خلال 72 ساعة" },
+  supportAyyad: { title: "ادعم أياد مباشرة", sub: "تبرعك يساعد في تمويل عمليات المنصة: التحقق من الملفات، الشراكات مع المستشفيات، ودعم المرضى.", wave: "🌊 الدفع عبر Wave", number: "+225 07 48 05 61 28", copied: "✓ تم نسخ الرقم!", copy: "نسخ الرقم", thanks: "شكراً لدعمك!", thanksSub: "كل مساهمة تساعد أياد على البقاء مجانياً للمرضى.", directDonation: "تبرع مباشر لأياد" },
+  video: { title: "رسالة المريض", watch: "▶ مشاهدة الفيديو", noVideo: "لا يوجد فيديو متاح لهذا الملف." },
+  progress: { collected: "جُمع من أصل", donors: "متبرع", daysLeft: "أيام متبقية", intervention: "✓ تم تحديد موعد التدخل", progressTitle: "تقدم الحملة", of: "من الهدف" },
+  back: "← العودة إلى الحملات",
+  footer: { tagline: "تمويل الرعاية الصحية للجميع في أفريقيا.", platform: "المنصة", trust: "الثقة", legal: "قانوني", platformLinks: ["الحملات النشطة","كيف تعمل","تقديم ملف"], trustLinks: ["التحقق من الملفات","المستشفيات الشريكة","تقرير التأثير"], legalLinks: ["الإشعار القانوني","سياسة الخصوصية","الامتثال BCEAO"], rights: "© 2025 Ayyad CI — جميع الحقوق محفوظة" },
+  howPage: { title: "كيف تعمل أياد؟", sub: "شفافة، آمنة، مصمّمة لأفريقيا", forDonors: { icon:"💚",title:"للمتبرعين",steps:["تصفّح الحملات الموثّقة النشطة","اختر مبلغك بحرية","ادفع عبر Wave CI أو بطاقة","سيتم خصم المبلغ الذي اخترته بالضبط","المال يذهب مباشرة إلى المستشفى"] }, forBenef: { icon:"🏥",title:"للمستفيدين",steps:["أنشئ حساباً وقدّم ملفك الطبي","ارفع التقرير الطبي وعرض السعر وبطاقة الهوية","يتحقق فريقنا مع المستشفى الشريك","تُنشر حملتك خلال 48 ساعة","تُحوَّل الأموال مباشرة إلى المستشفى"] }, feeTitle: "قاعدة 5% — مدرجة في الهدف", feeSub: "تدرج أياد عمولتها البالغة 5% مباشرة في هدف الحملة. تتبرع بـ 10,000 فرنك، يستلم المستشفى 10,000 فرنك. لا يُخصم شيء من تبرعك.", youGive: "تتبرع بـ", collectReceives: "يستلم المستشفى", ayyadFee: "رسوم أياد (مدرجة في الهدف)" },
+};
 
 // ── Demo cases visibility (admin can toggle via dashboard) ───
 // true = campagnes fictives visibles sur la plateforme publique
@@ -1095,7 +1127,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
                             </span>
                           </div>
                           <div style={{display:"flex", gap:12, alignItems:"center"}}>
-                            <span style={{color:"rgba(255,255,255,0.80)", fontSize:"11px"}}>👥 {c.donors || 0} {lang==="fr"?"dons":"donors"}</span>
+                            <span style={{color:"rgba(255,255,255,0.80)", fontSize:"11px"}}>👥 {c.donors || 0} {lang==="fr"?"dons":lang==="ar"?"تبرعات":"donors"}</span>
                             <span style={{background:"#ef4444", color:"#fff", fontWeight:900, fontSize:"13px", padding:"3px 10px", borderRadius:"999px"}}>
                               {percent}%
                             </span>
@@ -1205,7 +1237,7 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
       <div className="p-4 border-b border-gray-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xl">📸</span>
-          <span className="font-bold text-gray-900">{lang==="fr" ? "Photos & vidéo du patient" : "Patient photos & video"}</span>
+          <span className="font-bold text-gray-900">{lang==="fr" ? "Photos & vidéo du patient" : lang==="ar" ? "صور وفيديو المريض" : "Patient photos & video"}</span>
         </div>
         <div className="flex gap-1 text-xs font-semibold text-gray-600 items-center">
           {photos.length > 0 && <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">📷 {photos.length}</span>}
@@ -1244,7 +1276,7 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30">
                 <button onClick={() => setRevealedPhotos(s => new Set([...s, activePhoto]))} className="flex flex-col items-center gap-1.5 text-white hover:text-emerald-300 transition-colors">
                   <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center text-2xl hover:bg-white/30 transition-colors">👁</div>
-                  <span className="text-xs font-semibold bg-black/40 px-3 py-1 rounded-full">{lang==="fr" ? "Image sensible — cliquer pour voir" : "Sensitive image — click to reveal"}</span>
+                  <span className="text-xs font-semibold bg-black/40 px-3 py-1 rounded-full">{lang==="fr" ? "Image sensible — cliquer pour voir" : lang==="ar" ? "صورة حساسة — انقر للعرض" : "Sensitive image — click to reveal"}</span>
                 </button>
               </div>
             )}
@@ -1713,7 +1745,7 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
           ? "text-xs px-2.5 py-1.5 border-gray-200 text-gray-600 hover:border-emerald-400 hover:text-emerald-700 bg-white"
           : "text-sm px-4 py-2.5 border-gray-200 text-gray-600 hover:border-emerald-400 hover:text-emerald-700 bg-white shadow-sm"}`}>
         <span>📤</span>
-        <span>{lang === "fr" ? "Partager" : "Share"}</span>
+        <span>{lang === "fr" ? "Partager" : lang === "ar" ? "مشاركة" : "Share"}</span>
       </button>
 
       {open && createPortal(
@@ -1730,7 +1762,7 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
           }}
           onClick={e => e.stopPropagation()}
         >
-          <div className="text-[10px] text-gray-400 font-semibold mb-2 uppercase tracking-wide">{lang === "fr" ? "Partager ce dossier" : "Share this campaign"}</div>
+          <div className="text-[10px] text-gray-400 font-semibold mb-2 uppercase tracking-wide">{lang === "fr" ? "Partager ce dossier" : lang === "ar" ? "مشاركة هذا الملف" : "Share this campaign"}</div>
 
           {/* WhatsApp */}
           <a href={"https://wa.me/?text=" + msgWA} target="_blank" rel="noreferrer"
@@ -2076,7 +2108,7 @@ const SupportAyyadSection = ({ lang }) => {
               {/* Sendwave : pour la diaspora */}
               <details className="w-full bg-white/10 rounded-xl border border-white/20 text-left">
                 <summary className="cursor-pointer px-3 py-2 text-xs font-bold text-white select-none">
-                  🌍 {fr ? "Vous êtes à l'étranger ? Utilisez Sendwave" : "From abroad? Use Sendwave"}
+                  🌍 {fr ? "Vous êtes à l'étranger ? Utilisez Sendwave" : ar ? "من الخارج؟ استخدم Sendwave" : "From abroad? Use Sendwave"}
                 </summary>
                 <div className="px-3 pb-3 text-[11px] text-emerald-100 leading-relaxed space-y-1.5">
                   <p>
@@ -3397,7 +3429,7 @@ const TestimonialsCarousel = ({ lang }) => {
                   border:"1px solid rgba(233,213,154,0.40)",
                   borderRadius:999, padding:"10px 24px", fontWeight:700, fontSize:14, cursor:"pointer",
                 }}>
-                  {fr ? "📤 Partager votre témoignage" : "📤 Share your testimonial"}
+                  {fr ? "📤 Partager votre témoignage" : ar ? "📤 مشاركة شهادتك" : "📤 Share your testimonial"}
                 </button>
               </div>
             </div>
@@ -3420,7 +3452,7 @@ const TestimonialsCarousel = ({ lang }) => {
                 background:"none", border:"none", fontSize:22, cursor:"pointer", color:"#666",
               }}>✕</button>
               <h3 style={{ fontWeight:900, fontSize:20, color:"#0a3d2e", marginBottom:6 }}>
-                {fr ? "Partager votre témoignage" : "Share your testimonial"}
+                {fr ? "Partager votre témoignage" : ar ? "مشاركة شهادتك" : "Share your testimonial"}
               </h3>
               <p style={{ color:"#6B7280", fontSize:13, marginBottom:20 }}>
                 {fr ? "Votre vidéo ou photo sera examinée avant publication."
@@ -3857,7 +3889,7 @@ const CollectesPage = ({ setPage, lang }) => {
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div>
                           <div className="font-black text-gray-900">{t.beneficiary}</div>
-                          <div className="text-xs text-gray-400">{t.age && `${t.age} ${lang==="fr"?"ans":"years old"}`}{t.city && ` · ${t.city}`}{t.hospital && ` · ${t.hospital}`}</div>
+                          <div className="text-xs text-gray-400">{t.age && `${t.age} ${lang==="fr"?"ans":lang==="ar"?"سنة":"years old"}`}{t.city && ` · ${t.city}`}{t.hospital && ` · ${t.hospital}`}</div>
                         </div>
                         <div className="text-right">
                           {t.amount && <div className="text-emerald-600 font-bold text-sm">{Number(t.amount).toLocaleString()} FCFA</div>}
@@ -3910,7 +3942,7 @@ const CollectesPage = ({ setPage, lang }) => {
                 <div className="text-center flex-shrink-0">
                   <div className="text-2xl">✅</div>
                   <div className="text-xs text-emerald-600 font-bold mt-1">{lang==="fr"?"Financé":"Funded"}</div>
-                  <div className="text-xs text-gray-400">{c.donors} {lang==="fr"?"donateurs":"donors"}</div>
+                  <div className="text-xs text-gray-400">{c.donors} {lang==="fr"?"donateurs":lang==="ar"?"متبرع":"donors"}</div>
                 </div>
               </div>
             ))}
@@ -4105,7 +4137,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           {lang==="fr" ? "Chaque don va directement à l'hôpital partenaire. Zéro intermédiaire." : "Every donation goes directly to the partner hospital. Zero intermediary."}
         </p>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:1,marginBottom:20,background:"rgba(0,0,0,0.18)",borderRadius:14,overflow:"hidden"}}>
-          {[{v:heroStats.collected||"0",l:lang==="fr"?"FCFA collectés":"FCFA raised"},{v:heroStats.patients||"0",l:lang==="fr"?"Patients aidés":"Patients helped"},{v:heroStats.hospitals||"18",l:lang==="fr"?"Hôpitaux":"Hospitals"}].map((s,i)=>(
+          {[{v:heroStats.collected||"0",l:lang==="fr"?"FCFA collectés":lang==="ar"?"فرنك أفريقي جُمع":"FCFA raised"},{v:heroStats.patients||"0",l:lang==="fr"?"Patients aidés":lang==="ar"?"مريض تم مساعدته":"Patients helped"},{v:heroStats.hospitals||"18",l:lang==="fr"?"Hôpitaux":lang==="ar"?"مستشفيات":"Hospitals"}].map((s,i)=>(
             <div key={i} style={{textAlign:"center",padding:"10px 4px",background:"rgba(255,255,255,0.06)"}}>
               <div style={{fontWeight:900,fontSize:18,lineHeight:1}}>{s.v}</div>
               <div style={{fontSize:9,color:"rgba(255,255,255,0.65)",textTransform:"uppercase",letterSpacing:"0.4px",marginTop:3}}>{s.l}</div>
@@ -4586,11 +4618,11 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             {/* ── Instructions inline CI — apparaissent immédiatement au choix du provider ── */}
             {provider==="WAVE"&&finalAmt>=500&&(
               <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:14,padding:"14px",marginBottom:12}}>
-                <div style={{fontWeight:800,fontSize:13,color:"#1d4ed8",marginBottom:10}}>〰️ {fr?"Comment payer via Wave :":"How to pay via Wave:"}</div>
+                <div style={{fontWeight:800,fontSize:13,color:"#1d4ed8",marginBottom:10}}>〰️ {fr?"Comment payer via Wave :":lang==="ar"?"كيفية الدفع عبر Wave:":"How to pay via Wave:"}</div>
                 <div style={{background:"#dbeafe",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
                   <img src={`data:image/png;base64,${QR_WAVE}`} alt="QR Wave" style={{width:80,height:80,flexShrink:0,borderRadius:8,border:"2px solid #bfdbfe"}} />
                   <div>
-                    <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:4}}>{fr?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
+                    <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:4}}>{fr?"Numéro Wave AYYAD :":lang==="ar"?"رقم Wave لـ AYYAD:":"AYYAD Wave number:"}</div>
                     <div style={{fontWeight:900,fontSize:17,color:"#1d4ed8",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
                     <div style={{fontSize:10,color:"#6366f1",marginTop:5}}>📷 {fr?"Scannez le QR ou entrez le numéro":"Scan QR or enter the number"}</div>
                   </div>
@@ -4603,35 +4635,35 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             )}
             {provider==="OM"&&finalAmt>=500&&(
               <div style={{background:"#fff7ed",border:"1.5px solid #fdba74",borderRadius:14,padding:"14px",marginBottom:12}}>
-                <div style={{fontWeight:800,fontSize:13,color:"#c2410c",marginBottom:10}}>🟠 {fr?"Comment payer via Orange Money :":"How to pay via Orange Money:"}</div>
+                <div style={{fontWeight:800,fontSize:13,color:"#c2410c",marginBottom:10}}>🟠 {fr?"Comment payer via Orange Money :":lang==="ar"?"كيفية الدفع عبر Orange Money:":"How to pay via Orange Money:"}</div>
                 <div style={{background:"#ffedd5",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
                   <img src={`data:image/png;base64,${QR_OM}`} alt="QR Orange Money" style={{width:80,height:80,flexShrink:0,borderRadius:8,border:"2px solid #fdba74"}} />
                   <div>
-                    <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:4}}>{fr?"Numéro Orange Money AYYAD :":"AYYAD Orange Money number:"}</div>
+                    <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:4}}>{fr?"Numéro Orange Money AYYAD :":lang==="ar"?"رقم Orange Money لـ AYYAD:":"AYYAD Orange Money number:"}</div>
                     <div style={{fontWeight:900,fontSize:17,color:"#c2410c",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
                     <div style={{fontSize:10,color:"#ea580c",marginTop:5}}>📷 {fr?"Scannez le QR ou entrez le numéro":"Scan QR or enter the number"}</div>
                   </div>
                 </div>
                 <div style={{fontSize:11,color:"#9a3412",lineHeight:1.9}}>
                   {fr?<>1. App <strong>Orange Money</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>#144#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
-                    :<>1. <strong>Orange Money</strong> → Send → scan QR or enter number<br/>2. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>#144#</strong><br/>4. Come back → "I've completed payment"</>}
+                    :ar?<>١. <strong>Orange Money</strong> ← أرسل ← امسح أو أدخل الرقم<br/>٢. المبلغ: <strong>{finalAmt.toLocaleString("ar")} FCFA</strong><br/>٣. أو اتصل بـ <strong>#144#</strong><br/>٤. عد وانقر على "أتممت الدفع"</>:<>1. <strong>Orange Money</strong> → Send → scan QR or enter number<br/>2. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>#144#</strong><br/>4. Come back → "I've completed payment"</>}
                 </div>
               </div>
             )}
             {provider==="MTN"&&finalAmt>=500&&(
               <div style={{background:"#fefce8",border:"1.5px solid #fde047",borderRadius:14,padding:"14px",marginBottom:12}}>
-                <div style={{fontWeight:800,fontSize:13,color:"#854d0e",marginBottom:10}}>🟡 {fr?"Comment payer via MTN MoMo :":"How to pay via MTN MoMo:"}</div>
+                <div style={{fontWeight:800,fontSize:13,color:"#854d0e",marginBottom:10}}>🟡 {fr?"Comment payer via MTN MoMo :":lang==="ar"?"كيفية الدفع عبر MTN MoMo:":"How to pay via MTN MoMo:"}</div>
                 <div style={{background:"#fef9c3",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
                   <img src={`data:image/png;base64,${QR_MTN}`} alt="QR MTN MoMo" style={{width:80,height:80,flexShrink:0,borderRadius:8,border:"2px solid #fde047"}} />
                   <div>
-                    <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:4}}>{fr?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
+                    <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:4}}>{fr?"Numéro MTN MoMo AYYAD :":lang==="ar"?"رقم MTN MoMo لـ AYYAD:":"AYYAD MTN MoMo number:"}</div>
                     <div style={{fontWeight:900,fontSize:17,color:"#ca8a04",fontFamily:"monospace",letterSpacing:"1px"}}>+225 05 01 85 59 91</div>
                     <div style={{fontSize:10,color:"#854d0e",marginTop:5}}>📷 {fr?"Scannez le QR ou entrez le numéro":"Scan QR or enter the number"}</div>
                   </div>
                 </div>
                 <div style={{fontSize:11,color:"#713f12",lineHeight:1.9}}>
                   {fr?<>1. App <strong>MTN MoMo</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>*133#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
-                    :<>1. <strong>MTN MoMo</strong> → Send → scan QR or enter number<br/>2. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>*133#</strong><br/>4. Come back → "I've completed payment"</>}
+                    :ar?<>١. <strong>MTN MoMo</strong> ← أرسل ← امسح أو أدخل الرقم<br/>٢. المبلغ: <strong>{finalAmt.toLocaleString("ar")} FCFA</strong><br/>٣. أو اتصل بـ <strong>*133#</strong><br/>٤. عد وانقر على "أتممت الدفع"</>:<>1. <strong>MTN MoMo</strong> → Send → scan QR or enter number<br/>2. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>*133#</strong><br/>4. Come back → "I've completed payment"</>}
                 </div>
               </div>
             )}
@@ -4650,7 +4682,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                 </div>
                 <div style={{fontSize:11,color:"#0369a1",lineHeight:1.8}}>
                   {fr?<>1. Connectez-vous à votre banque en ligne<br/>2. Créez un virement vers l'IBAN ci-dessus<br/>3. Indiquez la référence en objet<br/>4. Revenez ici → "J'ai effectué le virement"</>
-                    :<>1. Log into your online banking<br/>2. Create a transfer to the IBAN above<br/>3. Add the reference in the subject<br/>4. Come back → "I've completed the transfer"</>}
+                    :ar?<>١. سجّل دخولك إلى حسابك البنكي<br/>٢. أنشئ تحويلاً إلى IBAN أعلاه<br/>٣. أضف المرجع في الموضوع<br/>٤. عد وانقر على "أتممت التحويل"</>:<>1. Log into your online banking<br/>2. Create a transfer to the IBAN above<br/>3. Add the reference in the subject<br/>4. Come back → "I've completed the transfer"</>}
                 </div>
               </div>
             )}
@@ -4685,8 +4717,8 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                         :<>✈️ {fr?"Comment envoyer via TapTap Send :":ar?"كيفية الإرسال عبر TapTap Send:":"How to send via TapTap Send:"}</>}
                       </div>
                       <div style={{background:"#e0e7ff",borderRadius:10,padding:"10px 14px",marginBottom:10,fontFamily:"monospace",lineHeight:2.2}}>
-                        {fr?"Nom destinataire":"Recipient name"} : <strong style={{fontSize:14}}>AyyadCI</strong><br/>
-                        {fr?"Numéro":"Number"} : <strong style={{fontSize:14}}>+225 07 48 05 61 28</strong><br/>
+                        {fr?"Nom destinataire":ar?"اسم المستلم":"Recipient name"} : <strong style={{fontSize:14}}>AyyadCI</strong><br/>
+                        {fr?"Numéro":ar?"الرقم":"Number"} : <strong style={{fontSize:14}}>+225 07 48 05 61 28</strong><br/>
                         {fr?"Pays":ar?"الدولة":"Country"} : <strong>Côte d'Ivoire 🇨🇮</strong>
                       </div>
                       <div style={{fontSize:11,color:"#6366f1",marginBottom:10,lineHeight:1.7}}>
@@ -4818,7 +4850,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                   background:finalAmt>=500?"#fff":"#e5e7eb",
                   color:finalAmt>=500?"#0369a1":"#9ca3af",
                   boxShadow:finalAmt>=500?"0 4px 16px rgba(3,105,161,0.2)":"none"}}>
-                {submitting?"⏳ ...":(finalAmt>=500?(fr?`✅ J'ai effectué le virement — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`✅ I've completed the transfer — ${finalAmt.toLocaleString("fr-CI")} FCFA`):(fr?"Min. 500 FCFA":ar?"الحد الأدنى 500 فرنك":"Min. 500 FCFA"))}
+                {submitting?"⏳ ...":(finalAmt>=500?(fr?`✅ J'ai effectué le virement — ${finalAmt.toLocaleString("fr-CI")} FCFA`:ar?`✅ أتممت التحويل — ${finalAmt.toLocaleString("ar")} FCFA`:`✅ I've completed the transfer — ${finalAmt.toLocaleString("fr-CI")} FCFA`):(fr?"Min. 500 FCFA":ar?"الحد الأدنى 500 فرنك":"Min. 500 FCFA"))}
               </button>
             ):(
               <button disabled={finalAmt<500||initiating} onClick={initiatePayment}
@@ -4888,7 +4920,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                 </a>
                 <div style={{fontSize:11,color:"#9a3412",textAlign:"center"}}>
                   {fr?"Ouvrez l'app Orange Money → Envoyer de l'argent → entrez ce numéro":"Open Orange Money app → Send money → enter this number"}
-                  <br/>{fr?"Ou composez ":"Or dial "}<strong>#144#</strong>
+                  <br/>{fr?"Ou composez ":ar?"أو اتصل بـ ":"Or dial "}<strong>#144#</strong>
                 </div>
               </div>
             )}
@@ -4926,12 +4958,12 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             {(provider==="SENDWAVE"||provider==="TAPTAP")&&(
               <div style={{background:"#f0f4ff",borderRadius:14,padding:"16px",marginBottom:14,fontSize:12,color:"#4338ca",lineHeight:1.8}}>
                 <div style={{fontWeight:800,fontSize:13,marginBottom:10,color:"#312e81"}}>
-                  {provider==="SENDWAVE"?"💸 Sendwave":"✈️ TapTap Send"} — {fr?"envoi depuis l'étranger":"send from abroad"}
+                  {provider==="SENDWAVE"?"💸 Sendwave":"✈️ TapTap Send"} — {fr?"envoi depuis l'étranger":ar?"إرسال من الخارج":"send from abroad"}
                 </div>
                 {fr?<>Envoyez <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> à :</>:<>Send <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> to:</>}
                 <div style={{background:"#e0e7ff",borderRadius:10,padding:"10px 14px",margin:"8px 0",fontFamily:"monospace",fontSize:13,lineHeight:2.2}}>
-                  {fr?"Nom":"Name"} : <strong style={{fontSize:15}}>AyyadCI</strong><br/>
-                  {fr?"Numéro":"Number"} : <strong style={{fontSize:15}}>{SW_NUM}</strong>
+                  {fr?"Nom":ar?"الاسم":"Name"} : <strong style={{fontSize:15}}>AyyadCI</strong><br/>
+                  {fr?"Numéro":ar?"الرقم":"Number"} : <strong style={{fontSize:15}}>{SW_NUM}</strong>
                 </div>
                 <div style={{fontSize:11,color:"#6366f1"}}>
                   {fr?"Pays destinataire : Côte d'Ivoire 🇨🇮":"Destination country: Côte d'Ivoire 🇨🇮"}
@@ -5455,12 +5487,12 @@ const CasePage = ({ c, setPage, lang, user }) => {
               <div style={{fontWeight:800,fontSize:12,color:"#111827",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
                 {fmtCurrency(liveCollected||0)}
               </div>
-              <div style={{fontSize:10,color:"#6B7280",whiteSpace:"nowrap"}}>{liveDonors||0} {lang==="fr"?"dons":"donors"}</div>
+              <div style={{fontSize:10,color:"#6B7280",whiteSpace:"nowrap"}}>{liveDonors||0} {lang==="fr"?"dons":lang==="ar"?"تبرعات":"donors"}</div>
             </div>
             <button
               onClick={()=>{try{if(navigator.share){navigator.share({title:(c.title?.[lang]||"AYYAD"),url:window.location.href})}else{navigator.clipboard.writeText(window.location.href)}}catch(e){}}}
               style={{flexShrink:0,padding:"9px 11px",borderRadius:50,border:"2px solid #E5E7EB",background:"#fff",fontSize:11,fontWeight:700,color:"#374151",cursor:"pointer",whiteSpace:"nowrap"}}>
-              📤 {lang==="fr"?"Partager":"Share"}
+              📤 {lang==="fr"?"Partager":lang==="ar"?"مشاركة":"Share"}
             </button>
             <button
               onClick={() => setShowModal(true)}
@@ -5502,7 +5534,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
           <div className="flex flex-wrap gap-x-5 gap-y-1 text-white/80 text-sm">
             <span>🏥 {c.hospital}</span>
             <span>📍 {c.city}</span>
-            <span>👤 {c.age} {lang==="fr"?"ans":"years"}</span>
+            <span>👤 {c.age} {lang==="fr"?"ans":lang==="ar"?"سنة":"years"}</span>
             {c.trackingId && <span className="font-mono text-emerald-300">#{c.trackingId}</span>}
           </div>
         </div>
@@ -5535,7 +5567,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   {fmtCurrency(liveCollected||0)}
                 </div>
                 <div style={{fontSize:12,color:"#6B7280",margin:"3px 0 4px"}}>
-                  {lang==="fr"?"collectés sur":"raised of"} {fmtCurrency(c.required||c.amount||0)}
+                  {lang==="fr"?"collectés sur":lang==="ar"?"جُمع من أصل":"raised of"} {fmtCurrency(c.required||c.amount||0)}
                 </div>
                 <div style={{fontSize:11,color:"#059669",display:"flex",alignItems:"center",gap:5}}>
                   <span style={{display:"inline-block",width:7,height:7,borderRadius:"50%",background:"#059669",animation:"pulse 1.5s infinite"}}/>
@@ -5544,7 +5576,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
               </div>
               <div style={{textAlign:"center",flexShrink:0,background:"#F0FDF4",borderRadius:12,padding:"8px 12px"}}>
                 <div style={{fontWeight:900,fontSize:18,color:"#059669"}}>{liveDonors||0}</div>
-                <div style={{fontSize:10,color:"#6B7280",fontWeight:600}}>{lang==="fr"?"dons":"donors"}</div>
+                <div style={{fontSize:10,color:"#6B7280",fontWeight:600}}>{lang==="fr"?"dons":lang==="ar"?"تبرعات":"donors"}</div>
               </div>
             </div>
             {/* Ligne 2 : boutons */}
@@ -5557,7 +5589,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
               <button
                 onClick={()=>{try{if(navigator.share){navigator.share({title:(c.title?.[lang]||"AYYAD"),url:window.location.href})}else{navigator.clipboard.writeText(window.location.href)}}catch(e){}}}
                 style={{padding:"14px 0",borderRadius:50,border:"2px solid #E5E7EB",background:"#fff",color:"#374151",fontWeight:700,fontSize:14,cursor:"pointer"}}>
-                📤 {lang==="fr"?"Partager":"Share"}
+                📤 {lang==="fr"?"Partager":lang==="ar"?"مشاركة":"Share"}
               </button>
             </div>
           </div>
@@ -5580,7 +5612,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   <h2 className="text-base font-black text-gray-800 uppercase tracking-wider">{t.progress.progressTitle}</h2>
                   <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-200">
                     <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"/>
-                    {lang==="fr"?"Mis à jour en direct":"Updated live"}
+                    {lang==="fr"?"Mis à jour en direct":lang==="ar"?"تحديث مباشر":"Updated live"}
                   </div>
                 </div>
                 {/* Chiffres principaux */}
@@ -5617,7 +5649,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   <div className="mt-3 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
                     <span className="text-2xl">🌟</span>
                     <div>
-                      <div className="font-black text-amber-800 text-sm">{lang==="fr"?"Soyez le premier à donner !":"Be the first to donate!"}</div>
+                      <div className="font-black text-amber-800 text-sm">{lang==="fr"?"Soyez le premier à donner !":lang==="ar"?"كن أول المتبرعين!":"Be the first to donate!"}</div>
                       <div className="text-xs text-amber-600">{lang==="fr"?"Votre don lance la collecte et encourage d'autres personnes.":"Your donation starts the campaign and encourages others."}</div>
                     </div>
                   </div>
@@ -5740,7 +5772,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     <textarea
                       value={newUpdate}
                       onChange={e=>setNewUpdate(e.target.value)}
-                      placeholder={lang==="fr"?"Partager une mise à jour avec les donateurs...":"Share an update with donors..."}
+                      placeholder={lang==="fr"?"Partager une mise à jour avec les donateurs...":lang==="ar" ? "شارك تحديثاً مع المتبرعين..." : "Share an update with donors..."}
                       rows={3}
                       className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
                     />
@@ -6029,7 +6061,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 <div style={{height:5,borderRadius:99,background:"#E5E7EB",marginBottom:4}}>
                   <div style={{height:"100%",borderRadius:99,background:"#059669",transition:"width 0.5s",width:Math.min(100,Math.round(((liveCollected||0)/(c.amount||1))*100))+"%"}} />
                 </div>
-                <div style={{fontSize:11,color:"#6B7280",marginBottom:12}}>{liveDonors||0} {lang==="fr"?"donateurs":"donors"}</div>
+                <div style={{fontSize:11,color:"#6B7280",marginBottom:12}}>{liveDonors||0} {lang==="fr"?"donateurs":lang==="ar"?"متبرع":"donors"}</div>
               </div>
 
               <div style={{padding:"16px 18px"}}>
@@ -6053,7 +6085,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   ))}
                 </div>
                 <input type="number" value={amount} onChange={e=>setAmount(e.target.value)}
-                  placeholder={currency==="FCFA"?(lang==="fr"?"Autre montant (FCFA)":"Custom amount (FCFA)"):`Amount in ${currency}`}
+                  placeholder={currency==="FCFA"?(lang==="fr"?"Autre montant (FCFA)":lang==="ar"?"مبلغ آخر (FCFA)":"Custom amount (FCFA)"):`Amount in ${currency}`}
                   style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:9,border:"1.5px solid #E5E7EB",fontSize:13,fontWeight:600,marginBottom:12,outline:"none"}} />
                 {currency!=="FCFA"&&parseInt(amount)>0&&<div style={{fontSize:11,color:"#6B7280",textAlign:"center",marginBottom:8}}>≈ {Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1)).toLocaleString("fr-FR")} FCFA</div>}
 
@@ -6064,7 +6096,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     {id:"WAVE",label:"Wave CI",emoji:"〰️"},
                     {id:"OM",label:"Orange Money",emoji:"🟠"},
                     {id:"MTN",label:"MTN MoMo",emoji:"🟡"},
-                    {id:"INTL",label:lang==="fr"?"Depuis l'étranger":"From abroad",emoji:"🌍"},
+                    {id:"INTL",label:lang==="fr"?"Depuis l'étranger":lang==="ar"?"من الخارج":"From abroad",emoji:"🌍"},
                   ].map(p=>(
                     <button key={p.id} onClick={()=>setSbProvider(p.id===sbProvider?null:p.id)}
                       style={{display:"flex",alignItems:"center",gap:7,padding:"10px 10px",borderRadius:12,fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s",textAlign:"left",
@@ -6095,8 +6127,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
                         <div style={{width:36,height:4,borderRadius:2,background:"#d1d5db"}} />
                       </div>
-                      <div style={{fontWeight:800,fontSize:15,color:"#4c1d95",marginBottom:4}}>₿ {lang==="fr"?"Don en cryptomonnaie":"Cryptocurrency donation"}</div>
-                      <div style={{fontSize:12,color:"#6b7280",marginBottom:14}}>{lang==="fr"?"Choisissez votre crypto :":"Choose your crypto:"}</div>
+                      <div style={{fontWeight:800,fontSize:15,color:"#4c1d95",marginBottom:4}}>₿ {lang==="fr"?"Don en cryptomonnaie":lang==="ar"?"تبرع بالعملة المشفرة":"Cryptocurrency donation"}</div>
+                      <div style={{fontSize:12,color:"#6b7280",marginBottom:14}}>{lang==="fr"?"Choisissez votre crypto :":lang==="ar"?"اختر عملتك المشفرة:":"Choose your crypto:"}</div>
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
                         {CRYPTO_LIST.map(c=>(
                           <button key={c.id} onClick={()=>setSbCryptoSel(c.id)}
@@ -6122,7 +6154,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                             <div style={{background:"#f3f4f6",borderRadius:10,padding:"10px 12px",marginBottom:10,wordBreak:"break-all",fontFamily:"monospace",fontSize:11,color:"#1f2937",lineHeight:1.6,textAlign:"center"}}>{cc.addr}</div>
 <button onClick={()=>{const el=document.createElement('input');el.value=cc.addr;el.style.cssText='position:fixed;top:50%;left:50%;width:2px;height:2px;opacity:0.01;border:none;outline:none;z-index:99999';document.body.appendChild(el);el.focus();el.select();el.setSelectionRange(0,99999);let ok=false;try{ok=document.execCommand('copy');}catch(e){}document.body.removeChild(el);if(ok){setSbCryptoCopied(cc.id);setTimeout(()=>setSbCryptoCopied(null),2500);}else if(navigator.clipboard){navigator.clipboard.writeText(cc.addr).then(()=>{setSbCryptoCopied(cc.id);setTimeout(()=>setSbCryptoCopied(null),2500);}).catch(()=>{});}}}
                               style={{width:"100%",padding:"12px",background:sbCryptoCopied===cc.id?"#d1fae5":"#fff",border:`2px solid ${sbCryptoCopied===cc.id?"#10b981":cc.color}`,borderRadius:12,fontWeight:800,fontSize:13,color:sbCryptoCopied===cc.id?"#065f46":cc.color,cursor:"pointer",marginBottom:8}}>
-                              {sbCryptoCopied===cc.id?(lang==="fr"?"✅ Adresse copiée !":"✅ Address copied!"):(lang==="fr"?"📋 Copier l'adresse":"📋 Copy address")}
+                              {sbCryptoCopied===cc.id?(lang==="fr"?"✅ Adresse copiée !":lang==="ar"?"✅ تم النسخ!":"✅ Address copied!"):(lang==="fr"?"📋 Copier l'adresse":lang==="ar"?"📋 نسخ العنوان":"📋 Copy address")}
                             </button>
                             <div style={{fontSize:10,color:"#9ca3af",textAlign:"center"}}>⚠️ Envoyer uniquement du <strong>{cc.label}</strong> sur le réseau <strong>{cc.network}</strong>.</div>
                           </div>
@@ -6138,13 +6170,13 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 {(()=>{const sbAmtFcfa=(currency==="FCFA"?parseInt(amount)||0:Math.round((parseInt(amount)||0)*({EUR:655.957,USD:600,GBP:787}[currency]||1)));return(<>
                 {sbProvider==="WAVE"&&(
                   <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:14,padding:"14px",marginBottom:12}}>
-                    <div style={{fontWeight:800,fontSize:12,color:"#1d4ed8",marginBottom:10}}>〰️ {lang==="fr"?"Comment payer via Wave :":"How to pay via Wave:"}</div>
+                    <div style={{fontWeight:800,fontSize:12,color:"#1d4ed8",marginBottom:10}}>〰️ {lang==="fr"?"Comment payer via Wave :":lang==="ar"?"كيفية الدفع عبر Wave:":"How to pay via Wave:"}</div>
                     <div style={{background:"#dbeafe",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
                       <img src={`data:image/png;base64,${QR_WAVE}`} alt="QR Wave" style={{width:76,height:76,flexShrink:0,borderRadius:8,border:"2px solid #bfdbfe"}} />
                       <div>
-                        <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
+                        <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro Wave AYYAD :":lang==="ar"?"رقم Wave لـ AYYAD:":"AYYAD Wave number:"}</div>
                         <div style={{fontWeight:900,fontSize:16,color:"#1d4ed8",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
-                        <div style={{fontSize:10,color:"#6366f1",marginTop:4}}>📷 {lang==="fr"?"Scannez ou entrez le numéro":"Scan or enter number"}</div>
+                        <div style={{fontSize:10,color:"#6366f1",marginTop:4}}>📷 {lang==="fr"?"Scannez ou entrez le numéro":lang==="ar"?"امسح أو أدخل الرقم":"Scan or enter number"}</div>
                       </div>
                     </div>
                     <div style={{fontSize:11,color:"#3730a3",lineHeight:1.9}}>
@@ -6155,49 +6187,49 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 )}
                 {sbProvider==="OM"&&(
                   <div style={{background:"#fff7ed",border:"1.5px solid #fdba74",borderRadius:14,padding:"14px",marginBottom:12}}>
-                    <div style={{fontWeight:800,fontSize:12,color:"#c2410c",marginBottom:10}}>🟠 {lang==="fr"?"Comment payer via Orange Money :":"How to pay via Orange Money:"}</div>
+                    <div style={{fontWeight:800,fontSize:12,color:"#c2410c",marginBottom:10}}>🟠 {lang==="fr"?"Comment payer via Orange Money :":lang==="ar"?"كيفية الدفع عبر Orange Money:":"How to pay via Orange Money:"}</div>
                     <div style={{background:"#ffedd5",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
                       <img src={`data:image/png;base64,${QR_OM}`} alt="QR Orange Money" style={{width:76,height:76,flexShrink:0,borderRadius:8,border:"2px solid #fdba74"}} />
                       <div>
-                        <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro Orange Money AYYAD :":"AYYAD Orange Money number:"}</div>
+                        <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro Orange Money AYYAD :":lang==="ar"?"رقم Orange Money لـ AYYAD:":"AYYAD Orange Money number:"}</div>
                         <div style={{fontWeight:900,fontSize:16,color:"#c2410c",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
-                        <div style={{fontSize:10,color:"#ea580c",marginTop:4}}>📷 {lang==="fr"?"Scannez ou entrez le numéro":"Scan or enter number"}</div>
+                        <div style={{fontSize:10,color:"#ea580c",marginTop:4}}>📷 {lang==="fr"?"Scannez ou entrez le numéro":lang==="ar"?"امسح أو أدخل الرقم":"Scan or enter number"}</div>
                       </div>
                     </div>
                     <div style={{fontSize:11,color:"#9a3412",lineHeight:1.9}}>
                       {lang==="fr"?<>1. App <strong>Orange Money</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>#144#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
-                        :<>1. <strong>Orange Money</strong> → Send → scan or enter number<br/>2. Amount: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>#144#</strong><br/>4. Come back → "I've completed payment"</>}
+                        :lang==="ar"?<>١. <strong>Orange Money</strong> ← أرسل ← امسح أو أدخل الرقم<br/>٢. المبلغ: <strong>{sbAmtFcfa.toLocaleString("ar")} FCFA</strong><br/>٣. أو اتصل بـ <strong>#144#</strong><br/>٤. عد وانقر على "أتممت الدفع"</>:<>1. <strong>Orange Money</strong> → Send → scan or enter number<br/>2. Amount: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>#144#</strong><br/>4. Come back → "I've completed payment"</>}
                     </div>
                   </div>
                 )}
                 {sbProvider==="MTN"&&(
                   <div style={{background:"#fefce8",border:"1.5px solid #fde047",borderRadius:14,padding:"14px",marginBottom:12}}>
-                    <div style={{fontWeight:800,fontSize:12,color:"#854d0e",marginBottom:10}}>🟡 {lang==="fr"?"Comment payer via MTN MoMo :":"How to pay via MTN MoMo:"}</div>
+                    <div style={{fontWeight:800,fontSize:12,color:"#854d0e",marginBottom:10}}>🟡 {lang==="fr"?"Comment payer via MTN MoMo :":lang==="ar"?"كيفية الدفع عبر MTN MoMo:":"How to pay via MTN MoMo:"}</div>
                     <div style={{background:"#fef9c3",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
                       <img src={`data:image/png;base64,${QR_MTN}`} alt="QR MTN MoMo" style={{width:76,height:76,flexShrink:0,borderRadius:8,border:"2px solid #fde047"}} />
                       <div>
-                        <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
+                        <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro MTN MoMo AYYAD :":lang==="ar"?"رقم MTN MoMo لـ AYYAD:":"AYYAD MTN MoMo number:"}</div>
                         <div style={{fontWeight:900,fontSize:16,color:"#ca8a04",fontFamily:"monospace",letterSpacing:"1px"}}>+225 05 01 85 59 91</div>
-                        <div style={{fontSize:10,color:"#854d0e",marginTop:4}}>📷 {lang==="fr"?"Scannez ou entrez le numéro":"Scan or enter number"}</div>
+                        <div style={{fontSize:10,color:"#854d0e",marginTop:4}}>📷 {lang==="fr"?"Scannez ou entrez le numéro":lang==="ar"?"امسح أو أدخل الرقم":"Scan or enter number"}</div>
                       </div>
                     </div>
                     <div style={{fontSize:11,color:"#713f12",lineHeight:1.9}}>
                       {lang==="fr"?<>1. App <strong>MTN MoMo</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>*133#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
-                        :<>1. <strong>MTN MoMo</strong> → Send → scan or enter number<br/>2. Amount: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>*133#</strong><br/>4. Come back → "I've completed payment"</>}
+                        :lang==="ar"?<>١. <strong>MTN MoMo</strong> ← أرسل ← امسح أو أدخل الرقم<br/>٢. المبلغ: <strong>{sbAmtFcfa.toLocaleString("ar")} FCFA</strong><br/>٣. أو اتصل بـ <strong>*133#</strong><br/>٤. عد وانقر على "أتممت الدفع"</>:<>1. <strong>MTN MoMo</strong> → Send → scan or enter number<br/>2. Amount: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>*133#</strong><br/>4. Come back → "I've completed payment"</>}
                     </div>
                   </div>
                 )}
                 </>);})()}
                 {sbProvider==="INTL"&&(
                   <div style={{background:"#eff6ff",border:"1.5px solid #a5b4fc",borderRadius:14,padding:"14px",marginBottom:12}}>
-                    <div style={{fontWeight:800,fontSize:12,color:"#4338ca",marginBottom:8}}>🌍 {lang==="fr"?"Depuis l'étranger (Sendwave / TapTap)":"From abroad (Sendwave / TapTap)"}</div>
+                    <div style={{fontWeight:800,fontSize:12,color:"#4338ca",marginBottom:8}}>🌍 {lang==="fr"?"Depuis l'étranger (Sendwave / TapTap)":lang==="ar"?"من الخارج (Sendwave / TapTap)":"From abroad (Sendwave / TapTap)"}</div>
                     <div style={{background:"#e0e7ff",borderRadius:10,padding:"10px 12px",marginBottom:8,fontFamily:"monospace",fontSize:12,lineHeight:2.1}}>
                       {lang==="fr"?"Nom":"Name"} : <strong>AyyadCI</strong><br/>
                       {lang==="fr"?"Numéro":"Number"} : <strong>+225 07 48 05 61 28</strong><br/>
                       {lang==="fr"?"Pays":"Country"} : <strong>Côte d'Ivoire 🇨🇮</strong>
                     </div>
                     <div style={{fontSize:11,color:"#4338ca",lineHeight:1.8}}>
-                      {lang==="fr"?"Applis compatibles : Sendwave · TapTap Send · WorldRemit":"Compatible apps: Sendwave · TapTap Send · WorldRemit"}
+                      {lang==="fr"?"Applis compatibles : Sendwave · TapTap Send · WorldRemit":lang==="ar"?"التطبيقات المتوافقة: Sendwave · TapTap Send · WorldRemit":"Compatible apps: Sendwave · TapTap Send · WorldRemit"}
                     </div>
                   </div>
                 )}
@@ -6244,7 +6276,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       setSbSuccess(true);
                     }}
                     style={{width:"100%",padding:"14px",borderRadius:14,border:sbProvider==="VB"?"2px solid #0369a1":"2px solid #047857",background:"#fff",color:sbProvider==="VB"?"#0369a1":"#047857",fontWeight:900,fontSize:15,cursor:(!amount||parseInt(amount)<1||sbSubmitting)?"not-allowed":"pointer",marginBottom:8,transition:"all 0.2s",boxShadow:"0 3px 12px rgba(4,120,87,0.15)"}}>
-                    {sbSubmitting?"⏳ ...":sbProvider==="VB"?(lang==="fr"?"✅ J'ai effectué le virement":"✅ I've completed the transfer"):(lang==="fr"?"✅ J'ai effectué le paiement":"✅ I've completed the payment")}
+                    {sbSubmitting?"⏳ ...":sbProvider==="VB"?(lang==="fr"?"✅ J'ai effectué le virement":lang==="ar"?"✅ أتممت التحويل":"✅ I've completed the transfer"):(lang==="fr"?"✅ J'ai effectué le paiement":lang==="ar"?"✅ أتممت الدفع":"✅ I've completed the payment")}
                   </button>
                 ):(sbProvider==="INTL")?(
                   <button
@@ -6267,7 +6299,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       setSbSuccess(true);
                     }}
                     style={{width:"100%",padding:"14px",borderRadius:14,border:"2px solid #4f46e5",background:"#fff",color:"#4f46e5",fontWeight:900,fontSize:15,cursor:(!amount||parseInt(amount)<1||sbSubmitting)?"not-allowed":"pointer",marginBottom:8,boxShadow:"0 3px 12px rgba(79,70,229,0.15)"}}>
-                    {sbSubmitting?"⏳ ...":(lang==="fr"?"✅ J'ai effectué le transfert":"✅ I've completed the transfer")}
+                    {sbSubmitting?"⏳ ...":(lang==="fr"?"✅ J'ai effectué le transfert":lang==="ar"?"✅ أتممت التحويل":"✅ I've completed the transfer")}
                   </button>
                 ):(
                   <button
@@ -8911,7 +8943,7 @@ const HowPage = ({ lang, setPage }) => {
               <span className="text-white font-bold">10 500 FCFA</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-gray-400">{lang==="fr" ? "dont devis hôpital" : "of which hospital quote"}</span>
+              <span className="text-gray-400">{lang==="fr" ? "dont devis hôpital" : lang==="ar" ? "منها عرض سعر المستشفى" : "of which hospital quote"}</span>
               <span className="text-emerald-400 font-bold">10 000 FCFA</span>
             </div>
             <div className="flex justify-between text-xs">
@@ -12441,7 +12473,7 @@ const TrackingPage = ({ setPage, setSelectedCase, lang }) => {
                     </div>
                     <div className="text-right">
                       <span className="text-xl font-black text-gray-900">{pct}%</span>
-                      <div className="text-[10px] text-gray-400">{lang==="fr" ? "de l'objectif" : "of goal"}</div>
+                      <div className="text-[10px] text-gray-400">{lang==="fr" ? "de l'objectif" : lang==="ar" ? "من الهدف" : "of goal"}</div>
                     </div>
                   </div>
                   <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
@@ -13420,7 +13452,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
               </button>
             ))}
           </div>
-          <input type="number" placeholder={currency==="FCFA"?(fr?"Autre montant (FCFA)":"Custom amount (FCFA)"):`Custom amount (${currency})`} value={amount} onChange={e=>setAmount(e.target.value)}
+          <input type="number" placeholder={currency==="FCFA"?(fr?"Autre montant (FCFA)":ar?"مبلغ آخر (FCFA)":"Custom amount (FCFA)"):`Custom amount (${currency})`} value={amount} onChange={e=>setAmount(e.target.value)}
             style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:10,border:"1.5px solid #E5E7EB",fontSize:14,fontWeight:600,outline:"none"}} />
           {currency!=="FCFA"&&amountNum>0&&<div style={{fontSize:11,color:"#6B7280",marginTop:4,textAlign:"center"}}>≈ {amountInFcfa.toLocaleString("fr-FR")} FCFA envoyés à l'hôpital</div>}
         </div>
