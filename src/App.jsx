@@ -4726,7 +4726,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                           {cc.addr}
                         </div>
                         <button
-                          onClick={()=>{navigator.clipboard.writeText(cc.addr).then(()=>{setCryptoCopied(cc.id);setTimeout(()=>setCryptoCopied(null),2500);});}}
+                          onClick={()=>{const _cp=(txt,fn)=>{if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(txt).then(fn).catch(()=>{const e=document.createElement('textarea');e.value=txt;e.style.cssText='position:fixed;opacity:0';document.body.appendChild(e);e.select();document.execCommand('copy');document.body.removeChild(e);fn();});}else{const e=document.createElement('textarea');e.value=txt;e.style.cssText='position:fixed;opacity:0';document.body.appendChild(e);e.select();document.execCommand('copy');document.body.removeChild(e);fn();}};_cp(cc.addr,()=>{setCryptoCopied(cc.id);setTimeout(()=>setCryptoCopied(null),2500);});}}
                           style={{width:"100%",padding:"12px",background:cryptoCopied===cc.id?"#d1fae5":"#fff",border:`2px solid ${cryptoCopied===cc.id?"#10b981":cc.color}`,borderRadius:12,fontWeight:800,fontSize:13,color:cryptoCopied===cc.id?"#065f46":cc.color,cursor:"pointer",marginBottom:8,transition:"all .2s"}}>
                           {cryptoCopied===cc.id?(fr?"✅ Adresse copiée !":"✅ Address copied!"):(fr?"📋 Copier l'adresse":"📋 Copy address")}
                         </button>
@@ -6077,7 +6077,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                               <img src={qrUrl} alt={`QR ${cc.label}`} width={160} height={160} style={{borderRadius:12,border:`3px solid ${cc.color}`,padding:4,background:"#fff"}} />
                             </div>
                             <div style={{background:"#f3f4f6",borderRadius:10,padding:"10px 12px",marginBottom:10,wordBreak:"break-all",fontFamily:"monospace",fontSize:11,color:"#1f2937",lineHeight:1.6,textAlign:"center"}}>{cc.addr}</div>
-                            <button onClick={()=>{navigator.clipboard.writeText(cc.addr).then(()=>{setSbCryptoCopied(cc.id);setTimeout(()=>setSbCryptoCopied(null),2500);});}}
+                            <button onClick={()=>{const _cp=(txt,fn)=>{if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(txt).then(fn).catch(()=>{const e=document.createElement('textarea');e.value=txt;e.style.cssText='position:fixed;opacity:0';document.body.appendChild(e);e.select();document.execCommand('copy');document.body.removeChild(e);fn();});}else{const e=document.createElement('textarea');e.value=txt;e.style.cssText='position:fixed;opacity:0';document.body.appendChild(e);e.select();document.execCommand('copy');document.body.removeChild(e);fn();}};_cp(cc.addr,()=>{setSbCryptoCopied(cc.id);setTimeout(()=>setSbCryptoCopied(null),2500);});}}
                               style={{width:"100%",padding:"12px",background:sbCryptoCopied===cc.id?"#d1fae5":"#fff",border:`2px solid ${sbCryptoCopied===cc.id?"#10b981":cc.color}`,borderRadius:12,fontWeight:800,fontSize:13,color:sbCryptoCopied===cc.id?"#065f46":cc.color,cursor:"pointer",marginBottom:8}}>
                               {sbCryptoCopied===cc.id?(lang==="fr"?"✅ Adresse copiée !":"✅ Address copied!"):(lang==="fr"?"📋 Copier l'adresse":"📋 Copy address")}
                             </button>
