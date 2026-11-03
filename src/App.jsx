@@ -542,18 +542,18 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
   const closeDrop = () => setActiveDropdown(null);
 
   const soutienirItems = [
-    { icon:"🚨", label: fr?"Cas urgents":"Urgent cases", sub: fr?"Interventions critiques <72h":"Critical <72h", page:"urgents" },
-    { icon:"💚", label: fr?"Collectes actives":"Active campaigns", sub: fr?"Tous les dossiers vérifiés":"All verified cases", page:"collectesactives" },
-    { icon:"🔍", label: fr?"Suivre une collecte":"Track a campaign", sub: fr?"Entrez votre ID de suivi":"Enter tracking ID", page:"tracking" },
+    { icon:"🚨", label: fr?"Cas urgents":ar?"حالات عاجلة":"Urgent cases", sub: fr?"Interventions critiques <72h":ar?"تدخلات حرجة <72 ساعة":"Critical <72h", page:"urgents" },
+    { icon:"💚", label: fr?"Collectes actives":ar?"حملات نشطة":"Active campaigns", sub: fr?"Tous les dossiers vérifiés":ar?"جميع الملفات موثقة":"All verified cases", page:"collectesactives" },
+    { icon:"🔍", label: fr?"Suivre une collecte":ar?"تتبع حملة":"Track a campaign", sub: fr?"Entrez votre ID de suivi":ar?"أدخل رقم التتبع":"Enter tracking ID", page:"tracking" },
   ];
   const soumettreItems = [
-    { icon:"📋", label: fr?"Soumettre un dossier":"Submit a case", sub: fr?"Lancez votre collecte en 48h":"Launch in 48h", page:"submit" },
-    { icon:"❓", label: fr?"Comment ça marche":"How it works", sub: fr?"Processus transparent":"Transparent process", page:"how" },
+    { icon:"📋", label: fr?"Soumettre un dossier":ar?"تقديم ملف":"Submit a case", sub: fr?"Lancez votre collecte en 48h":ar?"أطلق حملتك في 48 ساعة":"Launch in 48h", page:"submit" },
+    { icon:"❓", label: fr?"Comment ça marche":ar?"كيف يعمل":"How it works", sub: fr?"Processus transparent":ar?"عملية شفافة":"Transparent process", page:"how" },
   ];
   const aproposItems = [
-    { icon:"🌍", label: fr?"Notre mission":ar?"مهمتنا":"Our mission", sub: fr?"Solidarité médicale africaine":"African medical solidarity", page:"home" },
-    { icon:"💰", label: fr?"Transparence":"Transparency", sub: fr?"Chaque virement est audité":"Every transfer audited", page:"how" },
-    { icon:"🤝", label: fr?"Soutenir Ayyad":"Support Ayyad", sub: fr?"Aidez la plateforme":"Help the platform", page:"support-ayyad" },
+    { icon:"🌍", label: fr?"Notre mission":ar?"مهمتنا":"Our mission", sub: fr?"Solidarité médicale africaine":ar?"تضامن طبي أفريقي":"African medical solidarity", page:"home" },
+    { icon:"💰", label: fr?"Transparence":ar?"شفافية":"Transparency", sub: fr?"Chaque virement est audité":ar?"كل تحويل مراجعة":"Every transfer audited", page:"how" },
+    { icon:"🤝", label: fr?"Soutenir Ayyad":ar?"دعم أيّاد":"Support Ayyad", sub: fr?"Aidez la plateforme":ar?"ساعد المنصة":"Help the platform", page:"support-ayyad" },
   ];
 
   const DropMenu = ({ items }) => (
@@ -632,16 +632,16 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
           <div style={{ textAlign:"left" }} className="hidden sm:block">
             <div style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:20, color:"var(--ayyad-deep)", letterSpacing:1.5, lineHeight:1 }}>AYYAD CI</div>
             <div style={{ fontSize:9, color:"var(--ayyad-gold-deep)", letterSpacing:1.4, fontWeight:700, marginTop:2, textTransform:"uppercase" }}>
-              {fr?"Financement médical solidaire":"Medical crowdfunding"}
+              {fr?"Financement médical solidaire":ar?"تمويل طبي تضامني":"Medical crowdfunding"}
             </div>
           </div>
         </button>
 
         {/* Navigation dropdowns — desktop */}
         <div className="hidden lg:flex" style={{ alignItems:"center", gap:0, flex:1 }} onClick={e=>e.stopPropagation()}>
-          <NavDrop label={fr?"Soutenir ▾":"Support ▾"} dropKey="soutenir" items={soutienirItems} />
-          <NavDrop label={fr?"Soumettre ▾":"Submit ▾"} dropKey="soumettre" items={soumettreItems} />
-          <NavDrop label={fr?"À propos ▾":"About ▾"} dropKey="apropos" items={aproposItems} />
+          <NavDrop label={fr?"Soutenir ▾":ar?"دعم ▾":"Support ▾"} dropKey="soutenir" items={soutienirItems} />
+          <NavDrop label={fr?"Soumettre ▾":ar?"تقديم ▾":"Submit ▾"} dropKey="soumettre" items={soumettreItems} />
+          <NavDrop label={fr?"À propos ▾":ar?"عن المنصة ▾":"About ▾"} dropKey="apropos" items={aproposItems} />
         </div>
 
         {/* Droite — langue + login + CTA */}
@@ -665,7 +665,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
           ) : (
             <button onClick={()=>setPage("login")}
               style={{ background:"transparent", border:"none", cursor:"pointer", fontSize:13, fontWeight:600, color:"var(--ink-700)", padding:"8px 10px", whiteSpace:"nowrap" }}
-            >{fr?"Se connecter":"Log in"}</button>
+            >{fr?"Se connecter":ar?"تسجيل الدخول":"Log in"}</button>
           )}
           <button onClick={()=>setPage("collectesactives")}
             className="ayyad-btn-primary"
@@ -679,7 +679,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
         {/* Mobile — CTA + burger */}
         <div className="flex lg:hidden" style={{ marginLeft:"auto", alignItems:"center", gap:8 }}>
           <button onClick={()=>setPage("collectesactives")} className="ayyad-btn-primary" style={{ fontSize:12, padding:"7px 14px", flexShrink:0 }}>
-            💚 {fr?"Don":"Give"}
+            💚 {fr?"Don":ar?"تبرع":"Give"}
           </button>
           <button onClick={e=>{ e.stopPropagation(); setMobileOpen(o=>!o); }}
             style={{ background:"transparent", border:"1px solid rgba(10,31,26,0.12)", padding:"8px 10px", borderRadius:10, cursor:"pointer", color:"var(--ayyad-deep)", fontSize:16, flexShrink:0 }}
@@ -693,11 +693,11 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
           style={{ background:"#fff", borderTop:"1px solid rgba(10,31,26,0.06)", boxShadow:"0 12px 32px rgba(10,31,26,0.10)", padding:"16px 20px 24px" }}
         >
           {[
-            { icon:"🚨", label:fr?"Cas urgents":"Urgent cases", page:"urgents" },
-            { icon:"💚", label:fr?"Collectes actives":"Active campaigns", page:"collectesactives" },
-            { icon:"📋", label:fr?"Soumettre un dossier":"Submit a case", page:"submit" },
-            { icon:"❓", label:fr?"Comment ça marche":"How it works", page:"how" },
-            { icon:"🤝", label:fr?"Soutenir Ayyad":"Support Ayyad", page:"support-ayyad" },
+            { icon:"🚨", label:fr?"Cas urgents":ar?"حالات عاجلة":"Urgent cases", page:"urgents" },
+            { icon:"💚", label:fr?"Collectes actives":ar?"حملات نشطة":"Active campaigns", page:"collectesactives" },
+            { icon:"📋", label:fr?"Soumettre un dossier":ar?"تقديم ملف":"Submit a case", page:"submit" },
+            { icon:"❓", label:fr?"Comment ça marche":ar?"كيف يعمل":"How it works", page:"how" },
+            { icon:"🤝", label:fr?"Soutenir Ayyad":ar?"دعم أيّاد":"Support Ayyad", page:"support-ayyad" },
             { icon:"🔍", label:fr?"Suivre une collecte":"Track campaign", page:"tracking" },
           ].map(l=>(
             <button key={l.page} onClick={()=>{ setPage(l.page); setMobileOpen(false); }}
@@ -719,7 +719,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
           {!user && (
             <button onClick={()=>{ setPage("login"); setMobileOpen(false); }}
               style={{ width:"100%", marginTop:8, background:"transparent", border:"1px solid rgba(10,31,26,0.15)", borderRadius:10, padding:"10px", fontSize:13, fontWeight:600, color:"var(--ayyad-deep)", cursor:"pointer" }}
-            >{fr?"Se connecter":"Log in"}</button>
+            >{fr?"Se connecter":ar?"تسجيل الدخول":"Log in"}</button>
           )}
           {user && (
             <button onClick={()=>{ handleLogout(); setMobileOpen(false); }}
@@ -1970,7 +1970,7 @@ const SupportAyyadSection = ({ lang }) => {
                 ? (fr ? "Saisir un montant" : "Enter an amount")
                 : !isValid
                 ? `Min. ${curInfo.min} ${curInfo.code}`
-                : `🌊 ${fr?"Payer":"Pay"} ${displayAmount} →`}
+                : `🌊 ${fr?"Payer":ar?"دفع":"Pay"} ${displayAmount} →`}
             </button>
 
             {/* Encart Sendwave/diaspora — visible immédiatement dès la saisie du montant.
@@ -2034,7 +2034,7 @@ const SupportAyyadSection = ({ lang }) => {
               </div>
               <div className="w-full bg-white rounded-xl p-3 text-gray-900">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500">{fr?"Montant à envoyer :":"Amount to send:"}</span>
+                  <span className="text-xs text-gray-500">{fr?"Montant à envoyer :":ar?"المبلغ المراد إرساله:":"Amount to send:"}</span>
                   <span className="font-mono font-black text-blue-700 text-base">
                     {currency === "FCFA"
                       ? `${amountFCFA.toLocaleString("fr-FR")} FCFA`
@@ -4446,7 +4446,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   const CI_PROVIDERS  = [{id:"WAVE",label:"Wave CI",emoji:"〰️"},{id:"OM",label:"Orange Money",emoji:"🟠"},{id:"MTN",label:"MTN MoMo",emoji:"🟡"}];
   const INT_PROVIDERS = [{id:"SENDWAVE",label:"Sendwave",emoji:"💸"},{id:"TAPTAP",label:"TapTap Send",emoji:"✈️"}];
   // CRYPTO_LIST défini au niveau module
-  const SOON_PROVIDERS= [{id:"CB",label:fr?"Carte bancaire":"Credit Card",emoji:"💳",soon:true}];
+  const SOON_PROVIDERS= [{id:"CB",label:fr?"Carte bancaire":ar?"بطاقة مصرفية":"Credit Card",emoji:"💳",soon:true}];
   const ALL_PROVIDERS = [...CI_PROVIDERS,...INT_PROVIDERS,...SOON_PROVIDERS];
 
   return (
@@ -4473,11 +4473,11 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
           <div style={{padding:"20px",boxSizing:"border-box",width:"100%"}}>
             {/* Bandeau urgence */}
             {c.urgent&&<div style={{background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"#fff",borderRadius:12,padding:"10px 14px",marginBottom:14,fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:8}}>
-              🚨 {fr?"Cas urgent — chaque heure compte":"Urgent case — every hour matters"}
+              🚨 {fr?"Cas urgent — chaque heure compte":ar?"حالة عاجلة — كل ساعة مهمة":"Urgent case — every hour matters"}
             </div>}
             {/* Impact par montant */}
             <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:12,padding:"10px 14px",marginBottom:14,fontSize:11,color:"#065f46",lineHeight:1.8}}>
-              💚 {fr?"Votre impact :":"Your impact:"}
+              💚 {fr?"Votre impact :":ar?"تأثيرك:":"Your impact:"}
               {fr
                 ? <> <strong>500 F</strong> = 1 jour de médicaments · <strong>1 000 F</strong> = analyses · <strong>2 000 F</strong> = consultation · <strong>5 000 F</strong> = soins d'une semaine</>
                 : <> <strong>500 F</strong> = 1 day of medication · <strong>1,000 F</strong> = lab tests · <strong>2,000 F</strong> = consultation · <strong>5,000 F</strong> = a week of care</>}
@@ -4495,7 +4495,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                 </button>
               ))}
             </div>
-            <input type="number" min="500" placeholder={fr?"Autre montant (min. 500 FCFA)":"Other amount (min. 500 FCFA)"}
+            <input type="number" min="500" placeholder={fr?"Autre montant (min. 500 FCFA)":ar?"مبلغ آخر (الحد الأدنى 500 فرنك)":"Other amount (min. 500 FCFA)"}
               value={custom} onChange={e=>{setCustom(e.target.value);setPreset(0);}}
               style={{width:"100%",border:"2px solid",borderColor:custom?"#047857":"#e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,fontWeight:600,outline:"none",boxSizing:"border-box",marginBottom:14}} />
 
@@ -4551,7 +4551,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                 <span style={{flex:1,lineHeight:1.3}}>
                   {provider==="CRYPTO" && cryptoSel
                     ? CRYPTO_LIST.find(c=>c.id===cryptoSel)?.label+" ("+CRYPTO_LIST.find(c=>c.id===cryptoSel)?.network+")"
-                    : (fr?"Crypto (BTC/ETH/USDT…)":"Crypto (BTC/ETH/USDT…)")}
+                    : (fr?"Crypto (BTC/ETH/USDT…)":ar?"تشفير (BTC/ETH/USDT…)":"Crypto (BTC/ETH/USDT…)")}
                 </span>
                 <span style={{fontSize:12}}>›</span>
               </button>
@@ -4614,13 +4614,13 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
               <div style={{background:"#f0f9ff",border:"1.5px solid #7dd3fc",borderRadius:14,padding:"14px",marginBottom:12}}>
                 <div style={{fontWeight:800,fontSize:13,color:"#0369a1",marginBottom:8}}>🏦 {fr?"Coordonnées bancaires AYYAD :":"AYYAD Bank Details:"}</div>
                 <div style={{background:"#e0f2fe",borderRadius:10,padding:"12px 14px",marginBottom:10,fontFamily:"monospace",fontSize:12,lineHeight:2.2}}>
-                  {fr?"Banque":"Bank"} : <strong>SGBCI (Société Générale CI)</strong><br/>
-                  {fr?"Titulaire":"Account holder"} : <strong>AYYAD SARLU</strong><br/>
+                  {fr?"Banque":ar?"البنك":"Bank"} : <strong>SGBCI (Société Générale CI)</strong><br/>
+                  {fr?"Titulaire":ar?"صاحب الحساب":"Account holder"} : <strong>AYYAD SARLU</strong><br/>
                   IBAN : <strong style={{letterSpacing:"0.5px"}}>CI93 CI01 0310 0000 0000 0123 456</strong><br/>
                   BIC : <strong>SGCICIAB</strong>
                 </div>
                 <div style={{background:"#fef3c7",borderRadius:8,padding:"8px 10px",fontSize:11,color:"#92400e",fontWeight:700,marginBottom:8}}>
-                  ⚠️ {fr?"Mentionnez en objet : ":"Add reference in transfer subject: "}
+                  ⚠️ {fr?"Mentionnez en objet : ":ar?"اذكر المرجع في موضوع التحويل: ":"Add reference in transfer subject: "}
                   <span style={{fontFamily:"monospace",color:"#111"}}>{payRef}</span>
                 </div>
                 <div style={{fontSize:11,color:"#0369a1",lineHeight:1.8}}>
@@ -4656,13 +4656,13 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                   {intlSel&&(
                     <div style={{background:"#f0f4ff",borderRadius:14,padding:"14px",marginBottom:14,fontSize:12,color:"#4338ca",lineHeight:1.9}}>
                       <div style={{fontWeight:800,fontSize:13,marginBottom:8,color:"#312e81"}}>
-                        {intlSel==="SENDWAVE"?<>💸 {fr?"Comment envoyer via Sendwave :":"How to send via Sendwave:"}</>
-                        :<>✈️ {fr?"Comment envoyer via TapTap Send :":"How to send via TapTap Send:"}</>}
+                        {intlSel==="SENDWAVE"?<>💸 {fr?"Comment envoyer via Sendwave :":ar?"كيفية الإرسال عبر Sendwave:":"How to send via Sendwave:"}</>
+                        :<>✈️ {fr?"Comment envoyer via TapTap Send :":ar?"كيفية الإرسال عبر TapTap Send:":"How to send via TapTap Send:"}</>}
                       </div>
                       <div style={{background:"#e0e7ff",borderRadius:10,padding:"10px 14px",marginBottom:10,fontFamily:"monospace",lineHeight:2.2}}>
                         {fr?"Nom destinataire":"Recipient name"} : <strong style={{fontSize:14}}>AyyadCI</strong><br/>
                         {fr?"Numéro":"Number"} : <strong style={{fontSize:14}}>+225 07 48 05 61 28</strong><br/>
-                        {fr?"Pays":"Country"} : <strong>Côte d'Ivoire 🇨🇮</strong>
+                        {fr?"Pays":ar?"الدولة":"Country"} : <strong>Côte d'Ivoire 🇨🇮</strong>
                       </div>
                       <div style={{fontSize:11,color:"#6366f1",marginBottom:10,lineHeight:1.7}}>
                         {fr?<>
@@ -4681,10 +4681,10 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                       </div>
                       <a href={intlSel==="SENDWAVE"?"https://sendwave.com":"https://www.taptapsend.com"} target="_blank" rel="noreferrer"
                         style={{display:"block",textAlign:"center",background:"#4f46e5",color:"#fff",fontWeight:800,fontSize:14,padding:"12px",borderRadius:12,textDecoration:"none",marginBottom:6}}>
-                        🔗 {fr?`Ouvrir ${intlSel==="SENDWAVE"?"Sendwave":"TapTap Send"}`:`Open ${intlSel==="SENDWAVE"?"Sendwave":"TapTap Send"}`}
+                        🔗 {fr?`Ouvrir ${intlSel==="SENDWAVE"?"Sendwave":"TapTap Send"}`:ar?`فتح ${intlSel==="SENDWAVE"?"Sendwave":"TapTap Send"}`:`Open ${intlSel==="SENDWAVE"?"Sendwave":"TapTap Send"}`}
                       </a>
                       <div style={{fontSize:10,color:"#9ca3af",textAlign:"center"}}>
-                        {fr?"Disponible depuis France, Canada, USA, UK, Belgique, Suisse…":"Available from France, Canada, USA, UK, Belgium, Switzerland…"}
+                        {fr?"Disponible depuis France, Canada, USA, UK, Belgique, Suisse…":ar?"متاح من فرنسا وكندا والولايات المتحدة والمملكة المتحدة وبلجيكا وسويسرا…":"Available from France, Canada, USA, UK, Belgium, Switzerland…"}
                       </div>
                     </div>
                   )}
@@ -4695,7 +4695,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                     {intlSel&&(
                       <button onClick={()=>{setProvider(intlSel);setIntlOpen(false);setIntlSel(null);setStep("pay");}}
                         style={{padding:"12px",background:"linear-gradient(135deg,#4f46e5,#6366f1)",border:"none",borderRadius:12,fontWeight:800,fontSize:13,color:"#fff",cursor:"pointer"}}>
-                        {fr?"J'ai payé ✓":"I've paid ✓"}
+                        {fr?"J'ai payé ✓":ar?"دفعت ✓":"I've paid ✓"}
                       </button>
                     )}
                   </div>
@@ -4746,7 +4746,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                         <button
                           onClick={()=>{const el=document.createElement('input');el.value=cc.addr;el.style.cssText='position:fixed;top:50%;left:50%;width:2px;height:2px;opacity:0.01;border:none;outline:none;z-index:99999';document.body.appendChild(el);el.focus();el.select();el.setSelectionRange(0,99999);let ok=false;try{ok=document.execCommand('copy');}catch(e){}document.body.removeChild(el);if(ok){setCryptoCopied(cc.id);setTimeout(()=>setCryptoCopied(null),2500);}else if(navigator.clipboard){navigator.clipboard.writeText(cc.addr).then(()=>{setCryptoCopied(cc.id);setTimeout(()=>setCryptoCopied(null),2500);}).catch(()=>{});}}}
                           style={{width:"100%",padding:"12px",background:cryptoCopied===cc.id?"#d1fae5":"#fff",border:`2px solid ${cryptoCopied===cc.id?"#10b981":cc.color}`,borderRadius:12,fontWeight:800,fontSize:13,color:cryptoCopied===cc.id?"#065f46":cc.color,cursor:"pointer",marginBottom:8,transition:"all .2s"}}>
-                          {cryptoCopied===cc.id?(fr?"✅ Adresse copiée !":"✅ Address copied!"):(fr?"📋 Copier l'adresse":"📋 Copy address")}
+                          {cryptoCopied===cc.id?(fr?"✅ Adresse copiée !":ar?"✅ تم النسخ!":"✅ Address copied!"):(fr?"📋 Copier l'adresse":ar?"📋 نسخ العنوان":"📋 Copy address")}
                         </button>
                         <div style={{fontSize:10,color:"#9ca3af",textAlign:"center",lineHeight:1.5}}>
                           {fr?<>⚠️ Envoyer uniquement du <strong>{cc.label}</strong> sur le réseau <strong>{cc.network}</strong>. Tout autre réseau = fonds perdus.</>
@@ -4762,7 +4762,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                     {cryptoSel&&(
                       <button onClick={()=>{setProvider("CRYPTO");setCryptoOpen(false);setStep("pay");}}
                         style={{padding:"12px",background:"linear-gradient(135deg,#7c3aed,#9333ea)",border:"none",borderRadius:12,fontWeight:800,fontSize:13,color:"#fff",cursor:"pointer"}}>
-                        {fr?"J'ai envoyé ✓":"I've sent ✓"}
+                        {fr?"J'ai envoyé ✓":ar?"أرسلت ✓":"I've sent ✓"}
                       </button>
                     )}
                   </div>
@@ -4770,12 +4770,12 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
               </>
             )}
 
-            {!anon&&(<input type="text" placeholder={fr?"Votre prénom (optionnel)":"Your name (optional)"}
+            {!anon&&(<input type="text" placeholder={fr?"Votre prénom (optionnel)":ar?"اسمك (اختياري)":"Your name (optional)"}
               value={donorName} onChange={e=>setDonorName(e.target.value)}
               style={{width:"100%",border:"2px solid #e5e7eb",borderRadius:12,padding:"10px 14px",fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:8}} />)}
             <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#6b7280",marginBottom:18,cursor:"pointer"}}>
               <input type="checkbox" checked={anon} onChange={e=>setAnon(e.target.checked)} style={{width:16,height:16}} />
-              {fr?"Donner anonymement":"Donate anonymously"}
+              {fr?"Donner anonymement":ar?"التبرع مجهولاً":"Donate anonymously"}
             </label>
 
             {/* CTA adaptatif : "J'ai payé/viré" pour CI+VB, "Continuer" pour intl/sans sélection */}
@@ -4917,8 +4917,8 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
               <div style={{background:"#f0f9ff",borderRadius:12,padding:"14px",marginBottom:14,fontSize:12,color:"#0369a1",lineHeight:1.8}}>
                 <div style={{fontWeight:800,fontSize:13,marginBottom:6}}>🏦 {fr?"Virement bancaire":"Bank Transfer"}</div>
                 <div style={{background:"#e0f2fe",borderRadius:8,padding:"10px 12px",marginBottom:8,fontFamily:"monospace",fontSize:11,lineHeight:2}}>
-                  {fr?"Banque":"Bank"} : <strong>SGBCI (Société Générale CI)</strong><br/>
-                  {fr?"Titulaire":"Account holder"} : <strong>AYYAD SARLU</strong><br/>
+                  {fr?"Banque":ar?"البنك":"Bank"} : <strong>SGBCI (Société Générale CI)</strong><br/>
+                  {fr?"Titulaire":ar?"صاحب الحساب":"Account holder"} : <strong>AYYAD SARLU</strong><br/>
                   IBAN : <strong style={{letterSpacing:"0.5px"}}>CI93 CI01 0310 0000 0000 0123 456</strong><br/>
                   BIC : <strong>SGCICIAB</strong>
                 </div>
