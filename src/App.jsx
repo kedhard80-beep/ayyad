@@ -12,12 +12,26 @@ const supabase = createClient(
 // de la page d'accueil (inclut les dossiers FUNDED invisibles via RLS anon).
 const _SU = "https://xodgubvgvsnbpheusggm.supabase.co";
 const _SK = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvZGd1YnZndnNuYnBoZXVzZ2dtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDczMTQ0MiwiZXhwIjoyMDg2MzA3NDQyfQ.mv87f39hCqC7foF4FlBaMAHpsWQU5kZAoZUW4lLd5k4";
-// Helper multilingue — retourne le champ dans la langue active ou fallback FR
+// Helper multilingue — gère jsonb {fr,en,ar}, text JSON '{"fr":"..."}', et colonnes séparées
 function getField(obj, field, lang) {
   if (!obj) return "";
+  // 1. Colonnes séparées (ex: title_ar, title_en) — priorité si renseignées
   if (lang === "ar" && obj[field + "_ar"]) return obj[field + "_ar"];
   if (lang === "en" && obj[field + "_en"]) return obj[field + "_en"];
-  return obj[field] || "";
+  const raw = obj[field];
+  if (!raw && raw !== 0) return "";
+  // 2. Jsonb retourné comme objet JS par Supabase
+  if (typeof raw === "object" && !Array.isArray(raw)) {
+    return raw[lang] || raw.fr || raw.en || "";
+  }
+  // 3. Text stocké en JSON '{"fr":"...","en":"..."}'
+  if (typeof raw === "string" && raw.trim().startsWith("{")) {
+    try {
+      const p = JSON.parse(raw);
+      return p[lang] || p.fr || p.en || raw;
+    } catch(e) {}
+  }
+  return raw || "";
 }
 
 const supabaseAdmin = createClient(_SU, _SK);
