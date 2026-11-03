@@ -614,7 +614,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
 
   const DropMenu = ({ items }) => (
     <div style={{
-      position:"absolute", top:"calc(100% + 8px)", left:0,
+      position:"absolute", top:"calc(100% + 0px)", left:0,
       background:"#fff", borderRadius:16,
       border:"1px solid rgba(10,31,26,0.08)",
       boxShadow:"0 16px 48px rgba(10,31,26,0.12)",
@@ -641,10 +641,18 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
     </div>
   );
 
-  const NavDrop = ({ label, dropKey, items }) => (
-    <div style={{ position:"relative" }} onMouseLeave={closeDrop}>
+  const NavDrop = ({ label, dropKey, items }) => {
+    const closeTimer = React.useRef(null);
+    const handleMouseEnter = () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+      setActiveDropdown(dropKey);
+    };
+    const handleMouseLeave = () => {
+      closeTimer.current = setTimeout(() => setActiveDropdown(v => v===dropKey ? null : v), 200);
+    };
+    return (
+    <div style={{ position:"relative" }} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <button
-        onMouseEnter={()=>setActiveDropdown(dropKey)}
         onClick={()=>setActiveDropdown(v => v===dropKey ? null : dropKey)}
         style={{
           display:"inline-flex", alignItems:"center", gap:5,
@@ -653,8 +661,6 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
           color: activeDropdown===dropKey ? "var(--ayyad-deep)" : "var(--ink-700)",
           transition:"color .15s", whiteSpace:"nowrap",
         }}
-        onMouseEnter={(e)=>{ e.currentTarget.style.color="var(--ayyad-deep)"; setActiveDropdown(dropKey); }}
-        onMouseLeave={(e)=>{ e.currentTarget.style.color=activeDropdown===dropKey?"var(--ayyad-deep)":"var(--ink-700)"; }}
       >
         {label}
         <svg width="11" height="11" viewBox="0 0 12 12" fill="none"
@@ -664,7 +670,8 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
       </button>
       {activeDropdown === dropKey && <DropMenu items={items} />}
     </div>
-  );
+    );
+  };
 
   return (
     <nav
