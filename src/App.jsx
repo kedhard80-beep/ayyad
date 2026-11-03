@@ -810,7 +810,8 @@ const CaseCard = ({ c, lang, t, onClick }) => {
   const tc = t.card;
   const photo = c.photo_url || (c.photos && c.photos[0]) || null;
   const title = typeof c.title === "object" ? ((c.title?.[lang] || c.title?.fr || getField(c,"title",lang) || "") || c.title.fr) : c.title;
-  const category = typeof c.category === "object" ? ((c.category?.[lang] || c.category?.fr || c.category || "") || c.category.fr) : c.category;
+  const _catRaw = typeof c.category === "object" ? (c.category?.[lang] || c.category?.fr || c.category?.en || "") : (c.category || "");
+  const category = lang === "ar" ? (CATS_AR[_catRaw] || _catRaw) : _catRaw;
 
   return (
     <div
@@ -3645,6 +3646,24 @@ const CAT_ICONS = {
   "Autre": "🏥", "Other": "🏥",
 };
 
+const CATS_AR = {
+  "Cardiologie": "أمراض القلب", "Cardiology": "أمراض القلب",
+  "Oncologie": "الأورام", "Oncology": "الأورام",
+  "Chimiothérapie": "العلاج الكيميائي", "Chemotherapy": "العلاج الكيميائي",
+  "chimiothérapie": "العلاج الكيميائي",
+  "Neurologie": "الأعصاب", "Neurology": "الأعصاب",
+  "Orthopédie": "العظام", "Orthopedics": "العظام",
+  "Pédiatrie": "طب الأطفال", "Pediatrics": "طب الأطفال",
+  "Gynécologie": "أمراض النساء", "Gynecology": "أمراض النساء",
+  "Néphrologie": "الكلى", "Nephrology": "الكلى",
+  "Gastroentérologie": "الجهاز الهضمي", "Gastroenterology": "الجهاز الهضمي",
+  "Ophtalmologie": "طب العيون", "Ophthalmology": "طب العيون",
+  "Dermatologie": "الأمراض الجلدية", "Dermatology": "الأمراض الجلدية",
+  "Traumatologie": "الصدمات", "Traumatology": "الصدمات",
+  "Autre": "أخرى", "Other": "أخرى",
+};
+
+
 // Page spécialité — collectes d'une seule spécialité
 const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
   const [dbCases, setDbCases] = useState([]);
@@ -3788,7 +3807,7 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
     <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-br from-emerald-700 to-teal-600 text-white py-12 px-4">
         <div className="max-w-5xl mx-auto">
-          <button onClick={() => setPage("home")} className="flex items-center gap-1 text-emerald-200 hover:text-white text-sm mb-6">← {lang==="fr" ? "Retour" : "Back"}</button>
+          <button onClick={() => setPage("home")} className="flex items-center gap-1 text-emerald-200 hover:text-white text-sm mb-6">← {lang==="fr" ? "Retour" : lang==="ar" ? "رجوع" : "Back"}</button>
           <h1 className="text-3xl font-black mb-2">🏥 {lang==="fr" ? "Collectes actives" : "Active campaigns"}</h1>
           <p className="text-emerald-100 text-sm">{active.length} {lang==="fr" ? "dossiers vérifiés — choisissez une spécialité" : "verified cases — choose a specialty"}</p>
           <div className="flex gap-4 mt-6 flex-wrap">
@@ -4000,7 +4019,7 @@ const DonationTicker = ({ lang }) => {
 const MissionPage = ({ lang, setPage }) => (
   <div>
     <div style={{ background:"linear-gradient(135deg,#064e3b,#047857)", padding:"clamp(40px,5vw,72px) clamp(20px,4vw,40px) clamp(32px,4vw,56px)", textAlign:"center", color:"#fff" }}>
-      <button onClick={()=>setPage("home")} style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:999, padding:"7px 16px", color:"rgba(255,255,255,0.85)", fontWeight:600, fontSize:13, cursor:"pointer", marginBottom:24, display:"inline-flex", alignItems:"center", gap:6 }}>← {lang==="fr" ? "Retour" : "Back"}</button>
+      <button onClick={()=>setPage("home")} style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:999, padding:"7px 16px", color:"rgba(255,255,255,0.85)", fontWeight:600, fontSize:13, cursor:"pointer", marginBottom:24, display:"inline-flex", alignItems:"center", gap:6 }}>← {lang==="fr" ? "Retour" : lang==="ar" ? "رجوع" : "Back"}</button>
       <h1 style={{ fontSize:"clamp(2rem,4vw,3rem)", fontWeight:900, margin:"0 0 14px", lineHeight:1.15 }}>
         {lang==="fr" ? "Notre mission" : "Our mission"}
       </h1>
@@ -4028,7 +4047,7 @@ const MissionPage = ({ lang, setPage }) => (
 const TemoignagesPage = ({ lang, setPage }) => (
   <div>
     <div style={{ background:"linear-gradient(135deg,#064e3b,#047857)", padding:"clamp(40px,5vw,72px) clamp(20px,4vw,40px) clamp(32px,4vw,56px)", textAlign:"center", color:"#fff" }}>
-      <button onClick={()=>setPage("home")} style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:999, padding:"7px 16px", color:"rgba(255,255,255,0.85)", fontWeight:600, fontSize:13, cursor:"pointer", marginBottom:24, display:"inline-flex", alignItems:"center", gap:6 }}>← {lang==="fr" ? "Retour" : "Back"}</button>
+      <button onClick={()=>setPage("home")} style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:999, padding:"7px 16px", color:"rgba(255,255,255,0.85)", fontWeight:600, fontSize:13, cursor:"pointer", marginBottom:24, display:"inline-flex", alignItems:"center", gap:6 }}>← {lang==="fr" ? "Retour" : lang==="ar" ? "رجوع" : "Back"}</button>
       <h1 style={{ fontSize:"clamp(2rem,4vw,3rem)", fontWeight:900, margin:"0 0 14px", lineHeight:1.15 }}>
         {lang==="fr" ? "Témoignages" : "Testimonials"}
       </h1>
@@ -5518,14 +5537,14 @@ const CasePage = ({ c, setPage, lang, user }) => {
             onClick={() => setPage("home")}
             className="flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white text-sm font-semibold px-4 py-2 rounded-full border border-white/30 hover:bg-white/30 transition-all"
           >
-            ← {lang==="fr" ? "Retour" : "Back"}
+            ← {lang==="fr" ? "Retour" : lang==="ar" ? "رجوع" : "Back"}
           </button>
         </div>
         {/* Contenu hero en bas */}
         <div className="absolute bottom-0 left-0 right-0 z-10 px-5 pb-7 max-w-6xl mx-auto" style={{left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"72rem"}}>
           {/* Badges */}
           <div className="flex flex-wrap gap-2 mb-3">
-            <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">{(c.category?.[lang] || c.category?.fr || c.category || "")}</span>
+            <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">{lang==="ar" ? (CATS_AR[c.category?.[lang] || c.category?.fr || c.category || ""] || c.category?.[lang] || c.category?.fr || c.category || "") : (c.category?.[lang] || c.category?.fr || c.category || "")}</span>
             <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm border border-white/30">✓ {t.badges.verified}</span>
             {funded && <span className="bg-emerald-400/90 text-white text-xs font-bold px-3 py-1 rounded-full">✓ {t.badges.funded}</span>}
             {c.urgent && <span className="bg-red-500/90 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">🚨 {t.badges.urgent}</span>}
@@ -11650,7 +11669,7 @@ const RefundPage = ({ setPage, lang }) => {
 
           <div className="text-center pt-2">
             <button onClick={() => setPage("how")} className="text-sm text-gray-400 hover:text-emerald-600">
-              {fr ? "← Retour à Comment ça marche" : "← Back to How it works"}
+              {fr ? "← Retour à Comment ça marche" : ar ? "رجوع إلى كيف تعمل ←" : "← Back to How it works"}
             </button>
           </div>
         </div>
@@ -12624,7 +12643,7 @@ const TrackingPage = ({ setPage, setSelectedCase, lang }) => {
 
         <div className="text-center mt-8">
           <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">
-            {lang==="fr" ? "← Retour à l'accueil" : "← Back to home"}
+            {lang==="fr" ? "← Retour à l'accueil" : lang==="ar" ? "رجوع إلى الرئيسية ←" : "← Back to home"}
           </button>
         </div>
       </div>
@@ -12815,7 +12834,7 @@ const FAQPage = ({ setPage, lang }) => {
         </div>
         <div className="text-center mt-8 space-y-2">
           <button onClick={() => setPage("how")} className="block mx-auto text-sm text-gray-400 hover:text-emerald-600">{lang==="fr" ? "→ Comment ça marche" : "→ How it works"}</button>
-          <button onClick={() => setPage("home")} className="block mx-auto text-sm text-gray-400 hover:text-emerald-600">{lang==="fr" ? "← Retour à l'accueil" : "← Back to home"}</button>
+          <button onClick={() => setPage("home")} className="block mx-auto text-sm text-gray-400 hover:text-emerald-600">{lang==="fr" ? "← Retour à l'accueil" : lang==="ar" ? "رجوع إلى الرئيسية ←" : "← Back to home"}</button>
         </div>
       </div>
     </div>
