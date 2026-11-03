@@ -12,6 +12,14 @@ const supabase = createClient(
 // de la page d'accueil (inclut les dossiers FUNDED invisibles via RLS anon).
 const _SU = "https://xodgubvgvsnbpheusggm.supabase.co";
 const _SK = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvZGd1YnZndnNuYnBoZXVzZ2dtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDczMTQ0MiwiZXhwIjoyMDg2MzA3NDQyfQ.mv87f39hCqC7foF4FlBaMAHpsWQU5kZAoZUW4lLd5k4";
+// Helper multilingue — retourne le champ dans la langue active ou fallback FR
+function getField(obj, field, lang) {
+  if (!obj) return "";
+  if (lang === "ar" && obj[field + "_ar"]) return obj[field + "_ar"];
+  if (lang === "en" && obj[field + "_en"]) return obj[field + "_en"];
+  return obj[field] || "";
+}
+
 const supabaseAdmin = createClient(_SU, _SK);
 // ── Helper : calcule le total collecté + nb de donateurs par case_id ─────────
 // Lit les dons CONFIRMÉS pour les ids passés en paramètre et retourne
@@ -752,7 +760,7 @@ const CaseCard = ({ c, lang, t, onClick }) => {
   const ar = lang === "ar";
   const tc = t.card;
   const photo = c.photo_url || (c.photos && c.photos[0]) || null;
-  const title = typeof c.title === "object" ? ((c.title?.[lang] || c.title?.fr || c.title || "") || c.title.fr) : c.title;
+  const title = typeof c.title === "object" ? ((c.title?.[lang] || c.title?.fr || getField(c,"title",lang) || "") || c.title.fr) : c.title;
   const category = typeof c.category === "object" ? ((c.category?.[lang] || c.category?.fr || c.category || "") || c.category.fr) : c.category;
 
   return (
@@ -1048,7 +1056,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
                       <div style={{position:"absolute", bottom:0, left:0, right:0, padding:"24px 20px 20px"}}>
                         <div style={{fontSize:"19px", fontWeight:900, color:"#fff", lineHeight:1.25, marginBottom:6,
                           textShadow:"0 1px 4px rgba(0,0,0,0.4)"}}>
-                          {(c.title?.[lang] || c.title?.fr || c.title || "")}
+                          {(c.title?.[lang] || c.title?.fr || getField(c,"title",lang) || "")}
                         </div>
                         <div style={{fontSize:"12px", color:"rgba(255,255,255,0.80)", marginBottom:14}}>
                           🏥 {c.hospital} · 📍 {c.city}
@@ -3546,7 +3554,7 @@ const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
                   <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">🚨 URGENT</span>
                   {/* délai retiré */}
                 </div>
-                <h3 className="font-black text-gray-900">{(c.title?.[lang] || c.title?.fr || c.title || "")}</h3>
+                <h3 className="font-black text-gray-900">{(c.title?.[lang] || c.title?.fr || getField(c,"title",lang) || "")}</h3>
                 <p className="text-xs text-gray-400 mt-0.5">{c.hospital} · {c.city}</p>
                 <p className="text-sm text-gray-600 mt-2 line-clamp-2">{(c.desc?.[lang]  || c.desc?.fr  || c.desc  || "")}</p>
                 <div className="mt-3">
@@ -3658,7 +3666,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
                     {c.urgent && <span className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">🚨 URGENT</span>}
                   </div>
                   <div className="p-4">
-                    <div className="font-bold text-gray-900 text-sm leading-snug group-hover:text-emerald-700 mb-1">{(c.title?.[lang] || c.title?.fr || c.title || "")}</div>
+                    <div className="font-bold text-gray-900 text-sm leading-snug group-hover:text-emerald-700 mb-1">{(c.title?.[lang] || c.title?.fr || getField(c,"title",lang) || "")}</div>
                     <div className="text-xs text-gray-400 mb-3">🏥 {c.hospital} · 📍 {c.city}</div>
                     <div className="flex justify-between text-xs text-gray-500 mb-1">
                       <span className="font-semibold text-gray-800">{fmt(c.collected)}</span>
@@ -3871,7 +3879,7 @@ const CollectesPage = ({ setPage, lang }) => {
               <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-5">
                 <div className="text-4xl overflow-hidden">{c.image && (c.image.startsWith("http") ? <img src={c.image} alt="" className="w-full h-full object-cover rounded-t-2xl" /> : c.image)}</div>
                 <div className="flex-1">
-                  <div className="font-bold text-gray-900">{(c.title?.[lang] || c.title?.fr || c.title || "")}</div>
+                  <div className="font-bold text-gray-900">{(c.title?.[lang] || c.title?.fr || getField(c,"title",lang) || "")}</div>
                   <div className="text-xs text-gray-400 mt-0.5">{c.hospital} · {c.city}</div>
                   <div className="mt-2">
                     <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -4286,7 +4294,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
               >
                 <span style={{ fontSize:22, flexShrink:0, marginTop:1 }}>{c.icon}</span>
                 <div>
-                  <div style={{ fontWeight:800, fontSize:14, color:"var(--ayyad-deep)", marginBottom:3 }}>{c.title}</div>
+                  <div style={{ fontWeight:800, fontSize:14, color:"var(--ayyad-deep)", marginBottom:3 }}>{getField(c,"title",lang)}</div>
                   <div style={{ fontSize:12, color:"var(--ink-400)", lineHeight:1.45 }}>{c.sub}</div>
                 </div>
               </button>
@@ -4377,7 +4385,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   const [initiating, setInitiating] = useState(false);
 
   const finalAmt = custom ? (parseInt(custom)||0) : preset;
-  const caseTitle = c.title?.[lang] || c.title?.fr || c.title || "";
+  const caseTitle = c.title?.[lang] || c.title?.fr || getField(c,"title",lang) || "";
 
   // ── Appelle /api/initiate — crée le don en base et obtient les URLs de paiement
   const initiatePayment = async () => {
@@ -5473,7 +5481,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             {funded && <span className="bg-emerald-400/90 text-white text-xs font-bold px-3 py-1 rounded-full">✓ {t.badges.funded}</span>}
             {c.urgent && <span className="bg-red-500/90 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">🚨 {t.badges.urgent}</span>}
           </div>
-          <h1 className="text-2xl md:text-4xl font-black text-white leading-tight mb-3" style={{textShadow:"0 2px 12px rgba(0,0,0,0.5)"}}>{(c.title?.[lang] || c.title?.fr || c.title || "")}</h1>
+          <h1 className="text-2xl md:text-4xl font-black text-white leading-tight mb-3" style={{textShadow:"0 2px 12px rgba(0,0,0,0.5)"}}>{(c.title?.[lang] || c.title?.fr || getField(c,"title",lang) || "")}</h1>
           <div className="flex flex-wrap gap-x-5 gap-y-1 text-white/80 text-sm">
             <span>🏥 {c.hospital}</span>
             <span>📍 {c.city}</span>
@@ -9506,8 +9514,8 @@ const AdminPage = ({ user, setPage, lang }) => {
       // Email notification au bénéficiaire + admin (avec le NOUVEAU tracking_id)
       if (c) {
         emailCaseApproved({ beneficiaryEmail: c.email || null, beneficiaryName: c.full_name || c.beneficiary, caseTitle: c.title, trackingId: newTrackingId });
-        emailNewCase({ caseTitle: "✅ APPROUVÉ — " + (c.title || id) + " (" + newTrackingId + ")", hospital: c.hospital, city: c.city, amount: c.amount });
-        auditLog(user, "CASE_APPROVED", c.title || id, "PENDING", "COLLECTING");
+        emailNewCase({ caseTitle: "✅ APPROUVÉ — " + (getField(c,"title",lang) || id) + " (" + newTrackingId + ")", hospital: c.hospital, city: c.city, amount: c.amount });
+        auditLog(user, "CASE_APPROVED", getField(c,"title",lang) || id, "PENDING", "COLLECTING");
         notifyDonors({ caseTitle: c.title, hospital: c.hospital, city: c.city, amount: c.amount, trackingId: newTrackingId, beneficiary: c.full_name || c.beneficiary, urgent: c.urgent || false });
       }
     }
@@ -9524,8 +9532,8 @@ const AdminPage = ({ user, setPage, lang }) => {
       setCases(prev => prev.map(x => x.id===id ? {...x, status:"REJECTED"} : x));
       if (c) {
         emailCaseRejected({ beneficiaryEmail: c.email || null, beneficiaryName: c.full_name || c.beneficiary, caseTitle: c.title, reason: rejectReason });
-        emailNewCase({ caseTitle: "❌ REJETÉ — " + (c.title || id) + " — " + rejectReason, hospital: c.hospital, city: c.city, amount: c.amount });
-        auditLog(user, "CASE_REJECTED", c.title || id, "PENDING", { status:"REJECTED", reason: rejectReason });
+        emailNewCase({ caseTitle: "❌ REJETÉ — " + (getField(c,"title",lang) || id) + " — " + rejectReason, hospital: c.hospital, city: c.city, amount: c.amount });
+        auditLog(user, "CASE_REJECTED", getField(c,"title",lang) || id, "PENDING", { status:"REJECTED", reason: rejectReason });
       }
       setRejectModal(null);
       setRejectReason("");
@@ -9545,7 +9553,7 @@ const AdminPage = ({ user, setPage, lang }) => {
     const totalCollected = confirmedDons.reduce((s, d) => s + Number(d.amount_fcfa || d.amount || 0), 0);
     setDeleteModal({
       id,
-      title: typeof c.title === "object" ? (c.title.fr || c.title.en) : (c.title || id),
+      title: typeof c.title === "object" ? (c.title.fr || c.title.en) : (getField(c,"title",lang) || id),
       tracking: c.tracking_id || id.slice(0, 8),
       donationsCount: (dons || []).length,
       collected: totalCollected,
@@ -9770,7 +9778,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                         {(c.full_name||c.title||"?")[0].toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-gray-900 truncate">{c.title || c.full_name || (lang==="fr" ? "Sans titre" : "Untitled")}</div>
+                        <div className="text-sm font-semibold text-gray-900 truncate">{getField(c,"title",lang) || c.full_name || (lang==="fr" ? "Sans titre" : "Untitled")}</div>
                         <div className="text-xs text-gray-500 truncate">🏥 {c.hospital||"—"} · 💰 {c.amount?fmt(c.amount):"—"}</div>
                       </div>
                       <Badge color={statusColor(c.status)}>{t.statusLabels[c.status]||c.status}</Badge>
@@ -9806,14 +9814,14 @@ const AdminPage = ({ user, setPage, lang }) => {
                   <div key={c.id} className="p-5">
                     <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-gray-900 mb-1">{c.title || (lang==="fr" ? "Sans titre" : "Untitled")}</div>
+                        <div className="font-bold text-gray-900 mb-1">{getField(c,"title",lang) || (lang==="fr" ? "Sans titre" : "Untitled")}</div>
                         <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-2">
                           <span>👤 {c.full_name||"—"}</span>
                           <span>🏥 {c.hospital||"—"}</span>
                           <span>📍 {c.city||"—"}</span>
                           <span>💰 {c.amount?fmt(c.amount):"—"}</span>
                         </div>
-                        {c.description&&<p className="text-xs text-gray-600 line-clamp-2 mb-2">{c.description}</p>}
+                        {c.description&&<p className="text-xs text-gray-600 line-clamp-2 mb-2">{getField(c,"description",lang)}</p>}
                         {c.photo_url&&<a href={c.photo_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline font-medium">📷 Photo</a>}
                               {c.document_urls?.medical && <SecureDocLink value={c.document_urls.medical} caseId={c.id} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">🏥 Rapport médical</SecureDocLink>}
                               {c.document_urls?.quote && <SecureDocLink value={c.document_urls.quote} caseId={c.id} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium">💊 Devis</SecureDocLink>}
@@ -9852,7 +9860,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                               const newUrgent = !c.urgent;
                               await supabase.from("cases").update({ urgent: newUrgent }).eq("id", c.id);
                               setCases(prev => prev.map(x => x.id === c.id ? {...x, urgent: newUrgent} : x));
-                              auditLog(user, newUrgent ? "CASE_MARKED_URGENT" : "CASE_UNMARK_URGENT", c.title || c.id);
+                              auditLog(user, newUrgent ? "CASE_MARKED_URGENT" : "CASE_UNMARK_URGENT", getField(c,"title",lang) || c.id);
                             }}
                             className={`text-xs px-2.5 py-1 rounded-full font-bold border transition-all flex-shrink-0 ${c.urgent ? "bg-red-100 text-red-600 border-red-200 hover:bg-red-200" : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200"}`}>
                             {c.urgent ? "🔕 Retirer urgent" : "🚨 Marquer urgent"}
@@ -9900,7 +9908,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                                   if (Object.keys(updates).length === 0) return;
                                   await supabase.from("cases").update(updates).eq("id", c.id);
                                   setCases(prev => prev.map(x => x.id === c.id ? {...x, ...updates} : x));
-                                  auditLog(user, "CASE_UPDATED", c.title || c.id);
+                                  auditLog(user, "CASE_UPDATED", getField(c,"title",lang) || c.id);
                                   setEditAmountId(null);
                                 }}
                                 className="flex-1 text-xs px-2 py-1 rounded-lg font-bold bg-emerald-600 text-white hover:bg-emerald-700">
@@ -9938,7 +9946,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                                 await supabase.from("cases").update({ video_url: url || null }).eq("id", c.id);
                                 setCases(prev => prev.map(x => x.id === c.id ? {...x, video_url: url} : x));
                                 setEditVideoUrl(prev => { const n = {...prev}; delete n[c.id]; return n; });
-                                auditLog(user, "CASE_VIDEO_UPDATED", c.title || c.id);
+                                auditLog(user, "CASE_VIDEO_UPDATED", getField(c,"title",lang) || c.id);
                               }}
                               className="text-xs px-2 py-1 rounded-lg font-bold bg-blue-600 text-white hover:bg-blue-700">✓</button>
                             <button onClick={() => setEditVideoUrl(prev => { const n = {...prev}; delete n[c.id]; return n; })} className="text-xs px-2 py-1 rounded-lg font-bold bg-gray-100 text-gray-600 hover:bg-gray-200">✕</button>
@@ -9968,7 +9976,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                                 : `Close the campaign? It will be marked as Funded and removed from active collections.`)) return;
                               await supabase.from("cases").update({ status: "FUNDED" }).eq("id", c.id);
                               setCases(prev => prev.map(x => x.id === c.id ? {...x, status: "FUNDED"} : x));
-                              auditLog(user, "CASE_CLOSED", c.title || c.id, "COLLECTING", "FUNDED");
+                              auditLog(user, "CASE_CLOSED", getField(c,"title",lang) || c.id, "COLLECTING", "FUNDED");
                             }}
                             title={lang==="fr"?"Clôturer la campagne (patient traité)":"Close campaign (patient treated)"}
                             className="text-xs px-2.5 py-1 rounded-full font-bold border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-all flex-shrink-0"
@@ -10035,7 +10043,7 @@ const AdminPage = ({ user, setPage, lang }) => {
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
                 <div>
                   <div style={{fontWeight:800,fontSize:15,color:"#111827"}}>📷 Photos du dossier</div>
-                  <div style={{fontSize:12,color:"#6b7280",marginTop:2}}>{(() => { try { const t = typeof photoMgmt.c.title==="string" && photoMgmt.c.title.startsWith("{") ? JSON.parse(photoMgmt.c.title) : photoMgmt.c.title; return t?.fr || t?.en || photoMgmt.c.title || photoMgmt.c.full_name || "—"; } catch { return photoMgmt.c.title || "—"; } })()}</div>
+                  <div style={{fontSize:12,color:"#6b7280",marginTop:2}}>{(() => { try { const t = typeof photoMgmt.c.title==="string" && photoMgmt.c.title.startsWith("{") ? JSON.parse(photoMgmt.c.title) : photoMgmt.c.title; return t?.fr || t?.en || photoMgmt.getField(c,"title",lang) || photoMgmt.c.full_name || "—"; } catch { return photoMgmt.getField(c,"title",lang) || "—"; } })()}</div>
                 </div>
                 <button onClick={() => setPhotoMgmt(null)} style={{background:"#f3f4f6",border:"none",borderRadius:"50%",width:32,height:32,fontSize:16,cursor:"pointer"}}>✕</button>
               </div>
@@ -10471,7 +10479,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                             <div key={c.id} className="p-4 space-y-3">
                               <div className="flex items-center justify-between flex-wrap gap-2">
                                 <div>
-                                  <div className="font-semibold text-gray-900 text-sm">{c.title}</div>
+                                  <div className="font-semibold text-gray-900 text-sm">{getField(c,"title",lang)}</div>
                                   <div className="text-xs text-gray-400 mt-0.5">🏥 {c.hospital} · Via {c.payout_method==="WAVE"?"🌊 Wave":c.payout_method==="CARD"?"💳 Carte bancaire":"🏦 Banque"}</div>
                                 </div>
                                 <div className="text-right">
@@ -10552,7 +10560,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                           return (
                             <div key={c.id} className="p-4 flex items-center justify-between gap-4">
                               <div className="flex-1 min-w-0">
-                                <div className="font-semibold text-gray-900 text-sm truncate">{c.title}</div>
+                                <div className="font-semibold text-gray-900 text-sm truncate">{getField(c,"title",lang)}</div>
                                 <div className="text-xs text-gray-400 mt-0.5">🏥 {c.hospital} · {c.payout_method==="WAVE"?"🌊 Wave":"🏦 Banque"}</div>
                                 {c.payout_receipt && <a href={c.payout_receipt} target="_blank" rel="noreferrer" className="text-xs text-emerald-600 underline">📄 Reçu</a>}
                               </div>
@@ -12285,7 +12293,7 @@ const TrackingPage = ({ setPage, setSelectedCase, lang }) => {
 
   const fmt = n => (n||0).toLocaleString("fr-FR");
 
-  const getTitle = (c) => typeof c.title === "object" ? (c.title?.[lang] || c.title?.fr || c.title || "") : (c.title || "—");
+  const getTitle = (c) => typeof c.title === "object" ? (c.title?.[lang] || c.title?.fr || getField(c,"title",lang) || "") : (getField(c,"title",lang) || "—");
   const getDesc  = (c) => typeof c.desc === "object"  ? (c.desc?.[lang]  || c.desc?.fr  || c.desc  || "")  : (c.description || "");
 
   const required   = caseData ? (caseData.required || caseData.amount || 0) : 0;
@@ -12826,7 +12834,7 @@ const ProfilePage = ({ user, lang, setPage }) => {
       descEn = parsed.en || "";
     } catch { descFr = c.description || ""; descEn = ""; }
     setEditForm({
-      title: c.title || "",
+      title: getField(c,"title",lang) || "",
       description_fr: descFr,
       description_en: descEn,
       video_url: c.video_url || "",
@@ -12956,7 +12964,7 @@ const ProfilePage = ({ user, lang, setPage }) => {
             <div key={c.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="p-4 flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-900 text-sm truncate">{c.title || "—"}</div>
+                  <div className="font-medium text-gray-900 text-sm truncate">{getField(c,"title",lang) || "—"}</div>
                   <div className="text-xs text-gray-500 mt-0.5">
                     🏥 {c.hospital || "—"} · 💰 {c.amount ? c.amount.toLocaleString() + " FCFA" : "—"}
                   </div>
