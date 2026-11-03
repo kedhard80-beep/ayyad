@@ -628,9 +628,9 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
         >
           <AyyadLogo />
           <div style={{ textAlign:"left" }} className="hidden sm:block">
-            <div style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:20, color:"var(--ayyad-deep)", letterSpacing:1.5, lineHeight:1 }}>AYYAD</div>
+            <div style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:20, color:"var(--ayyad-deep)", letterSpacing:1.5, lineHeight:1 }}>AYYAD CI</div>
             <div style={{ fontSize:9, color:"var(--ayyad-gold-deep)", letterSpacing:1.4, fontWeight:700, marginTop:2, textTransform:"uppercase" }}>
-              {fr?"Solidarité médicale":"Medical solidarity"}
+              {fr?"Financement médical solidaire":"Medical crowdfunding"}
             </div>
           </div>
         </button>
@@ -4342,6 +4342,9 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   const [submitting, setSubmitting] = useState(false);
   const [intlOpen, setIntlOpen] = useState(false);
   const [intlSel, setIntlSel] = useState(null);
+  const [cryptoOpen, setCryptoOpen] = useState(false);
+  const [cryptoSel, setCryptoSel] = useState(null);
+  const [cryptoCopied, setCryptoCopied] = useState(null);
   const [payRef,  setPayRef]  = useState("");
   const [donationId, setDonationId] = useState(null);
   const [payUrls,    setPayUrls]    = useState({ wave_url: null, mtn_url: null });
@@ -4416,6 +4419,13 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
 
   const CI_PROVIDERS  = [{id:"WAVE",label:"Wave CI",emoji:"〰️"},{id:"OM",label:"Orange Money",emoji:"🟠"},{id:"MTN",label:"MTN MoMo",emoji:"🟡"}];
   const INT_PROVIDERS = [{id:"SENDWAVE",label:"Sendwave",emoji:"💸"},{id:"TAPTAP",label:"TapTap Send",emoji:"✈️"}];
+  const CRYPTO_LIST = [
+    {id:"BTC",  label:"Bitcoin",   network:"Bitcoin",   emoji:"₿",  color:"#F7931A", addr:"16Ty7EEMu77FmS27b7KtjTZ3AACTCmvhPJ"},
+    {id:"ETH",  label:"Ethereum",  network:"ERC20",     emoji:"Ξ",  color:"#627EEA", addr:"0x7df7c7934c90ed5607664dd36759ddb9c366625c"},
+    {id:"USDT", label:"USDT",      network:"TRC20",     emoji:"₮",  color:"#26A17B", addr:"TNRcAGAWPtd8HXAEmYsq4EwAZUUQu6LkDv"},
+    {id:"USDC", label:"USDC",      network:"BEP20/BSC", emoji:"◎",  color:"#2775CA", addr:"0x7df7c7934c90ed5607664dd36759ddb9c366625c"},
+    {id:"BNB",  label:"BNB",       network:"BEP20/BSC", emoji:"⬡",  color:"#F3BA2F", addr:"0x7df7c7934c90ed5607664dd36759ddb9c366625c"},
+  ];
   const SOON_PROVIDERS= [{id:"CB",label:fr?"Carte bancaire":"Credit Card",emoji:"💳",soon:true}];
   const ALL_PROVIDERS = [...CI_PROVIDERS,...INT_PROVIDERS,...SOON_PROVIDERS];
 
@@ -4506,25 +4516,27 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                 <span style={{fontSize:20}}>🌍</span>
                 <span style={{flex:1,lineHeight:1.3}}>
                   {(provider==="SENDWAVE"||provider==="TAPTAP")
-                    ? ALL_PROVIDERS.find(p=>p.id===provider)?.label
+                    ? INT_PROVIDERS.find(p=>p.id===provider)?.label
                     : (fr?"Depuis l'étranger":"From abroad")}
+                </span>
+                <span style={{fontSize:12}}>›</span>
+              </button>
+              {/* Crypto — ouvre l'overlay crypto */}
+              <button onClick={()=>setCryptoOpen(true)}
+                style={{display:"flex",alignItems:"center",gap:10,padding:"13px 12px",borderRadius:14,fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s",
+                  background:provider==="CRYPTO"?"#fdf4ff":"#faf5ff",
+                  border:provider==="CRYPTO"?"2px solid #9333ea":"2px solid #e9d5ff",
+                  color:provider==="CRYPTO"?"#7e22ce":"#9333ea"}}>
+                <span style={{fontSize:20}}>₿</span>
+                <span style={{flex:1,lineHeight:1.3}}>
+                  {provider==="CRYPTO" && cryptoSel
+                    ? CRYPTO_LIST.find(c=>c.id===cryptoSel)?.label+" ("+CRYPTO_LIST.find(c=>c.id===cryptoSel)?.network+")"
+                    : (fr?"Crypto (BTC/ETH/USDT…)":"Crypto (BTC/ETH/USDT…)")}
                 </span>
                 <span style={{fontSize:12}}>›</span>
               </button>
             </div>
 
-            {/* ── Bientôt : Carte bancaire uniquement ── */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8,marginBottom:14}}>
-              {SOON_PROVIDERS.map(m=>(
-                <div key={m.id}
-                  style={{display:"flex",alignItems:"center",gap:8,padding:"11px 10px",borderRadius:14,fontWeight:700,fontSize:11,opacity:0.5,
-                    background:"#f9fafb",border:"2px dashed #e5e7eb",color:"#6b7280"}}>
-                  <span style={{fontSize:18}}>{m.emoji}</span>
-                  <span style={{flex:1,lineHeight:1.3}}>{m.label}</span>
-                  <span style={{fontSize:9,background:"#fef3c7",color:"#92400e",padding:"2px 5px",borderRadius:20,fontWeight:800,flexShrink:0}}>{fr?"Bientôt":"Soon"}</span>
-                </div>
-              ))}
-            </div>
 
             {/* ── Instructions inline CI — apparaissent immédiatement au choix du provider ── */}
             {provider==="WAVE"&&finalAmt>=500&&(
@@ -4624,7 +4636,8 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                   {intlSel&&(
                     <div style={{background:"#f0f4ff",borderRadius:14,padding:"14px",marginBottom:14,fontSize:12,color:"#4338ca",lineHeight:1.9}}>
                       <div style={{fontWeight:800,fontSize:13,marginBottom:8,color:"#312e81"}}>
-                        {intlSel==="SENDWAVE"?<>💸 {fr?"Comment envoyer via Sendwave :":"How to send via Sendwave:"}</>:<>✈️ {fr?"Comment envoyer via TapTap Send :":"How to send via TapTap Send:"}</>}
+                        {intlSel==="SENDWAVE"?<>💸 {fr?"Comment envoyer via Sendwave :":"How to send via Sendwave:"}</>
+                        :<>✈️ {fr?"Comment envoyer via TapTap Send :":"How to send via TapTap Send:"}</>}
                       </div>
                       <div style={{background:"#e0e7ff",borderRadius:10,padding:"10px 14px",marginBottom:10,fontFamily:"monospace",lineHeight:2.2}}>
                         {fr?"Nom destinataire":"Recipient name"} : <strong style={{fontSize:14}}>AyyadCI</strong><br/>
@@ -4663,6 +4676,73 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                       <button onClick={()=>{setProvider(intlSel);setIntlOpen(false);setIntlSel(null);setStep("pay");}}
                         style={{padding:"12px",background:"linear-gradient(135deg,#4f46e5,#6366f1)",border:"none",borderRadius:12,fontWeight:800,fontSize:13,color:"#fff",cursor:"pointer"}}>
                         {fr?"J'ai payé ✓":"I've paid ✓"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ── Overlay Crypto ── */}
+            {cryptoOpen&&(
+              <>
+                <div onClick={()=>{setCryptoOpen(false);setCryptoSel(null);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",zIndex:20000}} />
+                <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:20001,background:"#fff",borderRadius:"20px 20px 0 0",padding:"20px",boxShadow:"0 -8px 32px rgba(0,0,0,0.18)",maxHeight:"92vh",overflowY:"auto"}}>
+                  <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
+                    <div style={{width:36,height:4,borderRadius:2,background:"#d1d5db"}} />
+                  </div>
+                  <div style={{fontWeight:800,fontSize:15,color:"#4c1d95",marginBottom:4}}>₿ {fr?"Don en cryptomonnaie":"Cryptocurrency donation"}</div>
+                  <div style={{fontSize:12,color:"#6b7280",marginBottom:14}}>{fr?"Choisissez votre crypto :":"Choose your crypto:"}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
+                    {CRYPTO_LIST.map(c=>(
+                      <button key={c.id} onClick={()=>setCryptoSel(c.id)}
+                        disabled={!c.addr}
+                        style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"12px 6px",borderRadius:14,fontWeight:800,fontSize:12,cursor:c.addr?"pointer":"not-allowed",transition:"all .15s",opacity:c.addr?1:0.4,
+                          background:cryptoSel===c.id?"#fdf4ff":"#f9fafb",
+                          border:cryptoSel===c.id?`2px solid ${c.color}`:"2px solid #e5e7eb",
+                          color:cryptoSel===c.id?c.color:"#374151"}}>
+                        <span style={{fontSize:22,color:c.color}}>{c.emoji}</span>
+                        <span>{c.label}</span>
+                        <span style={{fontSize:9,color:"#9ca3af",fontWeight:600}}>{c.network}</span>
+                        {!c.addr&&<span style={{fontSize:8,background:"#fef3c7",color:"#92400e",padding:"1px 4px",borderRadius:8,fontWeight:800}}>{fr?"Bientôt":"Soon"}</span>}
+                      </button>
+                    ))}
+                  </div>
+                  {cryptoSel&&(()=>{
+                    const cc = CRYPTO_LIST.find(c=>c.id===cryptoSel);
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(cc.addr)}&color=000000&bgcolor=FFFFFF`;
+                    return (
+                      <div style={{background:"#faf5ff",border:`1.5px solid ${cc.color}`,borderRadius:14,padding:"16px",marginBottom:14}}>
+                        <div style={{fontWeight:800,fontSize:13,marginBottom:12,color:cc.color,textAlign:"center"}}>
+                          {cc.emoji} {cc.label} — {cc.network}
+                        </div>
+                        <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
+                          <img src={qrUrl} alt={`QR ${cc.label}`} width={160} height={160}
+                            style={{borderRadius:12,border:`3px solid ${cc.color}`,padding:4,background:"#fff"}} />
+                        </div>
+                        <div style={{background:"#f3f4f6",borderRadius:10,padding:"10px 12px",marginBottom:10,wordBreak:"break-all",fontFamily:"monospace",fontSize:11,color:"#1f2937",lineHeight:1.6,textAlign:"center"}}>
+                          {cc.addr}
+                        </div>
+                        <button
+                          onClick={()=>{navigator.clipboard.writeText(cc.addr).then(()=>{setCryptoCopied(cc.id);setTimeout(()=>setCryptoCopied(null),2500);});}}
+                          style={{width:"100%",padding:"12px",background:cryptoCopied===cc.id?"#d1fae5":"#fff",border:`2px solid ${cryptoCopied===cc.id?"#10b981":cc.color}`,borderRadius:12,fontWeight:800,fontSize:13,color:cryptoCopied===cc.id?"#065f46":cc.color,cursor:"pointer",marginBottom:8,transition:"all .2s"}}>
+                          {cryptoCopied===cc.id?(fr?"✅ Adresse copiée !":"✅ Address copied!"):(fr?"📋 Copier l'adresse":"📋 Copy address")}
+                        </button>
+                        <div style={{fontSize:10,color:"#9ca3af",textAlign:"center",lineHeight:1.5}}>
+                          {fr?<>⚠️ Envoyer uniquement du <strong>{cc.label}</strong> sur le réseau <strong>{cc.network}</strong>. Tout autre réseau = fonds perdus.</>
+                            :<>⚠️ Send only <strong>{cc.label}</strong> on the <strong>{cc.network}</strong> network. Wrong network = lost funds.</>}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  <div style={{display:"grid",gridTemplateColumns:cryptoSel?"1fr 1fr":"1fr",gap:8}}>
+                    <button onClick={()=>{setCryptoOpen(false);setCryptoSel(null);}} style={{padding:"12px",background:"#f3f4f6",border:"none",borderRadius:12,fontWeight:700,fontSize:13,color:"#6b7280",cursor:"pointer"}}>
+                      {fr?"Annuler":"Cancel"}
+                    </button>
+                    {cryptoSel&&(
+                      <button onClick={()=>{setProvider("CRYPTO");setCryptoOpen(false);setStep("pay");}}
+                        style={{padding:"12px",background:"linear-gradient(135deg,#7c3aed,#9333ea)",border:"none",borderRadius:12,fontWeight:800,fontSize:13,color:"#fff",cursor:"pointer"}}>
+                        {fr?"J'ai envoyé ✓":"I've sent ✓"}
                       </button>
                     )}
                   </div>
@@ -5947,14 +6027,16 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     </button>
                   ))}
                 </div>
-                {/* Virement bancaire — désactivé (compte bancaire en cours d'ouverture) */}
-                <div
-                  style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",borderRadius:12,fontWeight:700,fontSize:12,cursor:"not-allowed",width:"100%",marginBottom:12,
-                    background:"#f9fafb",border:"2px dashed #e5e7eb",color:"#9ca3af",opacity:0.6,boxSizing:"border-box"}}>
-                  <span style={{fontSize:18}}>🏦</span>
-                  <span style={{flex:1}}>{lang==="fr"?"Virement bancaire":"Bank Transfer"}</span>
-                  <span style={{fontSize:9,background:"#fef3c7",color:"#92400e",padding:"2px 6px",borderRadius:20,fontWeight:800,flexShrink:0}}>{lang==="fr"?"Bientôt":"Soon"}</span>
-                </div>
+                {/* Crypto */}
+                <button onClick={()=>setSbCryptoOpen&&setSbCryptoOpen(true)}
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",borderRadius:12,fontWeight:700,fontSize:12,cursor:"pointer",width:"100%",marginBottom:12,boxSizing:"border-box",
+                    background:sbProvider==="CRYPTO"?"#fdf4ff":"#faf5ff",
+                    border:sbProvider==="CRYPTO"?"2px solid #9333ea":"2px solid #e9d5ff",
+                    color:sbProvider==="CRYPTO"?"#7e22ce":"#9333ea"}}>
+                  <span style={{fontSize:18}}>₿</span>
+                  <span style={{flex:1}}>{lang==="fr"?"Crypto (BTC/ETH/USDT…)":"Crypto (BTC/ETH/USDT…)"}</span>
+                  <span style={{fontSize:12}}>›</span>
+                </button>
 
                 {/* ── Instructions inline CI ── */}
                 {(()=>{const sbAmtFcfa=(currency==="FCFA"?parseInt(amount)||0:Math.round((parseInt(amount)||0)*({EUR:655.957,USD:600,GBP:787}[currency]||1)));return(<>
