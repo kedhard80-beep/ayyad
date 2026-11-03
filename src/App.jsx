@@ -84,15 +84,15 @@ function buildPaymentRef(caseObj) {
 // Affichage public d'un nom de donateur — masque les emails par RGPD.
 // "kedhard80@gmail.com" → "kedhard80"
 // "John Doe"            → "John Doe"
-// null/""               → "Anonyme" / "Anonymous" (selon lang)
+// null/""               → lang==="ar"?"مجهول":lang==="fr"?"Anonyme":"Anonymous" / "Anonymous" (selon lang)
 // Utilisé sur les surfaces publiques (ticker, fiche collecte). L'admin voit la
 // donnée brute pour pouvoir matcher avec les notifs Wave Business.
 function publicDonorName(rawName, lang) {
   const fr = lang !== "en";
   const ar = lang === "ar";
-  if (!rawName) return fr ? "Anonyme" : "Anonymous";
+  if (!rawName) return fr ? lang==="ar"?"مجهول":lang==="fr"?"Anonyme":"Anonymous" : "Anonymous";
   const s = String(rawName).trim();
-  if (!s) return fr ? "Anonyme" : "Anonymous";
+  if (!s) return fr ? lang==="ar"?"مجهول":lang==="fr"?"Anonyme":"Anonymous" : "Anonymous";
   // Si ça ressemble à un email, on garde juste la partie avant @
   if (s.includes("@")) return s.split("@")[0];
   return s;
@@ -372,7 +372,7 @@ const T = {
     howPage: { title: "Comment fonctionne Ayyad ?", sub: "Transparent, sécurisé, conçu pour l'Afrique", forDonors: { icon:"💚",title:"Pour les donateurs",steps:["Parcourez les collectes vérifiées actives","Choisissez librement votre montant","Payez via Wave CI ou carte bancaire","Vous êtes débité exactement du montant choisi","L'argent arrive directement à l'hôpital"] }, forBenef: { icon:"🏥",title:"Pour les bénéficiaires",steps:["Créez un compte et soumettez votre dossier médical","Téléchargez rapport médical, devis, pièce d'identité","Notre équipe vérifie avec l'hôpital partenaire","Votre collecte est mise en ligne sous 48h","Les fonds sont versés directement à l'hôpital"] }, feeTitle: "La règle des 5% — Incluse dans l'objectif", feeSub: "Ayyad intègre sa commission de 5% directement dans l'objectif de collecte. Vous donnez 10 000 FCFA, l'hôpital reçoit 10 000 FCFA. Rien n'est prélevé sur votre don.", youGive: "Vous donnez", collectReceives: "L'hôpital reçoit", ayyadFee: "Frais Ayyad (inclus dans l'objectif)" },
   },
   en: {
-    nav: { collections: "Campaigns", how: "How it works", admin: "Administration", login: "Login", start: "Get started", logout: "Logout", medicalFinancing: "Medical funding" },
+    nav: { collections: lang==="ar"?"الحملات":"Campaigns", how: "How it works", admin: "Administration", login: "Login", start: "Get started", logout: "Logout", medicalFinancing: "Medical funding" },
     hero: { badge: "Verified & secure platform", title1: "When life can't wait,", title2: "we act.", sub: "Behind every campaign, a patient whose health depends on our solidarity. One donation. One hospital. One hope.", cta1: "Completed campaigns & testimonials", cta2: "Submit a case" },
     stats: { patients: "Patients helped", collected: "FCFA raised", hospitals: "Partner hospitals" },
     collections: { title: "Active campaigns", sub: "verified active cases" },
@@ -398,7 +398,7 @@ const T = {
     },
     badges: { verified: "✓ Case verified", collecting: "Active", funded: "✓ Funded", urgent: "🚨 URGENT" },
     urgent: { title: "🚨 Urgent cases", sub: "These patients need immediate help — critical intervention within 72h", alert: "⚠️ Intervention required within 72h" },
-    supportAyyad: { title: "Support Ayyad directly", sub: "Your donation helps fund platform operations: case verification, hospital partnerships, and patient support.", wave: "🌊 Pay via Wave", number: "+225 07 48 05 61 28", copied: "✓ Number copied!", copy: "Copy number", thanks: "Thank you for your support!", thanksSub: "Every contribution helps Ayyad stay free for patients.", directDonation: "Direct donation to Ayyad" },
+    supportAyyad: { title: "ادعم أياد مباشرة", sub: "Your donation helps fund platform operations: case verification, hospital partnerships, and patient support.", wave: "🌊 Pay via Wave", number: "+225 07 48 05 61 28", copied: "✓ Number copied!", copy: "Copy number", thanks: "Thank you for your support!", thanksSub: "Every contribution helps Ayyad stay free for patients.", directDonation: "Direct donation to Ayyad" },
     video: { title: "Patient's message", watch: "▶ Watch video", noVideo: "No video available for this case." },
     progress: { collected: "raised out of", donors: "donors", daysLeft: "days left", intervention: "✓ Procedure scheduled", progressTitle: "Campaign progress", of: "of goal" },
     back: "← Back to campaigns",
@@ -1150,7 +1150,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
                         {lang==="fr" ? "Ces patients ont besoin d'aide immédiate — intervention critique sous 72h" : "These patients need immediate help — critical intervention within 72h"}
                       </span>
                       <span style={{background:"#dc2626", color:"#fff", fontSize:"12px", fontWeight:700, padding:"6px 14px", borderRadius:"999px", whiteSpace:"nowrap"}}>
-                        {lang==="fr" ? "Aider →" : "Help →"}
+                        {lang==="fr" ? "Aider →" : lang==="ar" ? "← دعم" : "Help →"}
                       </span>
                     </div>
                   </button>
@@ -1968,7 +1968,7 @@ const SupportAyyadSection = ({ lang }) => {
         <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 mb-5 text-sm font-medium">
           <span>💚</span> {fr ? "Don direct à Ayyad" : "Direct donation to Ayyad"}
         </div>
-        <h2 className="text-3xl font-black mb-3">{fr ? "Soutenir Ayyad directement" : "Support Ayyad directly"}</h2>
+        <h2 className="text-3xl font-black mb-3">{fr ? "Soutenir Ayyad directement" : ar ? "ادعم أياد مباشرة" : "ادعم أياد مباشرة"}</h2>
         <p className="text-emerald-200 text-sm max-w-lg mx-auto mb-8 leading-relaxed">
           {fr
             ? "Votre don aide à financer les opérations de la plateforme : vérification des dossiers, partenariats hospitaliers, et accompagnement des patients."
@@ -1980,7 +1980,7 @@ const SupportAyyadSection = ({ lang }) => {
           {/* ── ÉTAPE 1: formulaire montant ── */}
           {step === "form" && (<>
             <div>
-              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Devise" : "Currency"}</div>
+              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Devise" : ar ? "العملة" : "Currency"}</div>
               <div className="flex gap-2">
                 {CURRENCIES.map(c => (
                   <button key={c.code} onClick={() => { setCurrency(c.code); setAmount(""); }}
@@ -2011,7 +2011,7 @@ const SupportAyyadSection = ({ lang }) => {
             {/* Message libre du donateur — optionnel mais encourageant */}
             <div>
               <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">
-                {fr ? "Votre message à Ayyad (optionnel)" : "Your message to Ayyad (optional)"}
+                {fr ? "Votre message à Ayyad (optionnel)" : ar ? "رسالتك إلى أياد (اختياري)" : "Your message to Ayyad (optional)"}
               </div>
               <textarea
                 value={donorMessage}
@@ -2019,7 +2019,7 @@ const SupportAyyadSection = ({ lang }) => {
                 rows={3}
                 placeholder={fr
                   ? "Un mot d'encouragement, un témoignage, une suggestion…"
-                  : "A word of encouragement, a testimonial, a suggestion…"}
+                  : ar ? "كلمة تشجيع، شهادة، اقتراح..." : "A word of encouragement, a testimonial, a suggestion…"}
                 className="w-full text-gray-900 text-sm px-4 py-2.5 rounded-xl outline-none bg-white resize-none border border-white/20 focus:border-emerald-400"
               />
               <div className="mt-1 text-[10px] text-emerald-300/70 text-right">
@@ -2032,7 +2032,7 @@ const SupportAyyadSection = ({ lang }) => {
               disabled={!isValid}
               className={`w-full py-3.5 rounded-xl font-black text-sm transition-all ${isValid ? "bg-white text-emerald-900 hover:bg-emerald-100 shadow-lg" : "bg-white/20 text-white/40 cursor-not-allowed"}`}>
               {!amount || numericAmount===0
-                ? (fr ? "Saisir un montant" : "Enter an amount")
+                ? (fr ? "Saisir un montant" : ar ? "أدخل مبلغاً" : "Enter an amount")
                 : !isValid
                 ? `Min. ${curInfo.min} ${curInfo.code}`
                 : `🌊 ${fr?"Payer":ar?"دفع":"Pay"} ${displayAmount} →`}
@@ -2044,7 +2044,7 @@ const SupportAyyadSection = ({ lang }) => {
             <details className="w-full bg-white/8 rounded-xl border border-white/20 text-left group">
               <summary className="cursor-pointer list-none flex items-center justify-between gap-2 px-3 py-2.5 select-none hover:bg-white/5 rounded-xl transition-colors">
                 <span className="flex items-center gap-2 text-xs font-bold text-white">
-                  🌍 {fr ? "Vous êtes à l'étranger ?" : "Donating from abroad?"}
+                  🌍 {fr ? "Vous êtes à l'étranger ?" : ar ? "تتبرع من الخارج؟" : "Donating from abroad?"}
                 </span>
                 <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-200">
                   <span>Sendwave</span>
@@ -2076,7 +2076,7 @@ const SupportAyyadSection = ({ lang }) => {
             </details>
 
             <p className="text-emerald-400 text-[10px]">
-              {fr ? "Paiement sécurisé · 100% de votre don va à Ayyad" : "Secure payment · 100% of your donation goes to Ayyad"}
+              {fr ? "Paiement sécurisé · 100% de votre don va à Ayyad" : ar ? "دفع آمن · 100% من تبرعك يذهب إلى أياد" : "Secure payment · 100% of your donation goes to Ayyad"}
             </p>
           </>)}
 
@@ -3590,10 +3590,10 @@ const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-br from-red-700 to-red-500 text-white py-16 px-4 text-center">
         <div className="text-5xl mb-4">🚨</div>
-        <h1 className="text-3xl font-black mb-3">{lang==="fr" ? "Cas urgents" : "Urgent cases"}</h1>
-        <p className="text-red-100 max-w-xl mx-auto">{lang==="fr" ? "Ces patients ont besoin d'aide immédiate. Chaque heure compte." : "These patients need immediate help. Every hour counts."}</p>
+        <h1 className="text-3xl font-black mb-3">{lang==="fr" ? "Cas urgents" : lang==="ar" ? "الحالات العاجلة" : "Urgent cases"}</h1>
+        <p className="text-red-100 max-w-xl mx-auto">{lang==="fr" ? "Ces patients ont besoin d'aide immédiate. Chaque heure compte." : lang==="ar" ? "هؤلاء المرضى بحاجة إلى مساعدة فورية. كل ساعة مهمة." : "These patients need immediate help. Every hour counts."}</p>
         <div className="bg-red-800/40 rounded-2xl px-6 py-3 inline-block mt-4 text-sm font-semibold">
-          ⏱️ {lang==="fr" ? "Intervention critique sous 72h" : "Critical intervention within 72h"}
+          ⏱️ {lang==="fr" ? "Intervention critique sous 72h" : lang==="ar" ? "تدخل حرج خلال 72 ساعة" : "Critical intervention within 72h"}
         </div>
       </div>
       <div className="max-w-4xl mx-auto px-4 py-10 space-y-4">
@@ -3627,13 +3627,13 @@ const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
                 </div>
               </div>
               <button className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex-shrink-0">
-                {lang==="fr" ? "Aider →" : "Help →"}
+                {lang==="fr" ? "Aider →" : lang==="ar" ? "← دعم" : "Help →"}
               </button>
             </div>
           </div>
         ))}
         <div className="text-center mt-6">
-          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-red-600">← {lang==="fr"?"Retour à l'accueil":"Back to home"}</button>
+          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-red-600">← {lang==="fr"?"Retour à l'accueil":lang==="ar"?"العودة إلى الرئيسية":lang==="ar"?"العودة إلى الرئيسية":"Back to home"}</button>
         </div>
       </div>
     </div>
@@ -3742,7 +3742,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
             <span className="text-4xl">{CAT_ICONS[specialite] || "🏥"}</span>
             <div>
               <h1 className="text-3xl font-black">{specialite}</h1>
-              <p className="text-emerald-200 text-sm">{cases.length} {lang==="fr" ? "collecte(s) active(s)" : "active campaign(s)"}</p>
+              <p className="text-emerald-200 text-sm">{cases.length} {lang==="fr" ? "collecte(s) active(s)" : lang==="ar" ? "حملة نشطة" : "active campaign(s)"}</p>
             </div>
           </div>
         </div>
@@ -3839,12 +3839,12 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
       <div className="bg-gradient-to-br from-emerald-700 to-teal-600 text-white py-12 px-4">
         <div className="max-w-5xl mx-auto">
           <button onClick={() => setPage("home")} className="flex items-center gap-1 text-emerald-200 hover:text-white text-sm mb-6">← {lang==="fr" ? "Retour" : lang==="ar" ? "رجوع" : "Back"}</button>
-          <h1 className="text-3xl font-black mb-2">🏥 {lang==="fr" ? "Collectes actives" : "Active campaigns"}</h1>
-          <p className="text-emerald-100 text-sm">{active.length} {lang==="fr" ? "dossiers vérifiés — choisissez une spécialité" : "verified cases — choose a specialty"}</p>
+          <h1 className="text-3xl font-black mb-2">🏥 {lang==="fr" ? "Collectes actives" : lang==="ar" ? "الحملات النشطة" : "Active campaigns"}</h1>
+          <p className="text-emerald-100 text-sm">{active.length} {lang==="fr" ? "dossiers vérifiés — choisissez une spécialité" : lang==="ar" ? "ملفات موثّقة — اختر تخصصاً" : "verified cases — choose a specialty"}</p>
           <div className="flex gap-4 mt-6 flex-wrap">
-            {[[active.length+"", lang==="fr"?"Collectes":"Campaigns"],
-              [Object.keys(groups).length+"", lang==="fr"?"Spécialités":"Specialties"],
-              [active.reduce((s,c)=>s+c.donors,0)+"", lang==="fr"?"Donateurs":"Donors"]
+            {[[active.length+"", lang==="fr"?"Collectes":lang==="ar"?"الحملات":"Campaigns"],
+              [Object.keys(groups).length+"", lang==="fr"?"Spécialités":lang==="ar"?"التخصصات":"Specialties"],
+              [active.reduce((s,c)=>s+c.donors,0)+"", lang==="fr"?"Donateurs":lang==="ar"?"المتبرعون":"Donors"]
             ].map(([v,l]) => (
               <div key={l} className="bg-white/10 rounded-xl px-4 py-2 text-center">
                 <div className="text-xl font-black">{v}</div>
@@ -3857,7 +3857,7 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
 
       {/* Grille des spécialités */}
       <div className="max-w-5xl mx-auto px-4 py-10">
-        <h2 className="text-lg font-black text-gray-900 mb-6">{lang==="fr" ? "Choisissez une spécialité" : "Choose a specialty"}</h2>
+        <h2 className="text-lg font-black text-gray-900 mb-6">{lang==="fr" ? "Choisissez une spécialité" : lang==="ar" ? "اختر تخصصاً" : "Choose a specialty"}</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {Object.values(groups).map(group => (
             <button key={group.label}
@@ -3865,7 +3865,7 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
               className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-400 p-6 text-center transition-all group">
               <div className="text-4xl mb-3">{CAT_ICONS[group.label] || "🏥"}</div>
               <div className="font-bold text-gray-900 text-sm group-hover:text-emerald-700">{group.label}</div>
-              <div className="text-xs text-gray-400 mt-1">{group.cases.length} {lang==="fr" ? "collecte(s)" : "campaign(s)"}</div>
+              <div className="text-xs text-gray-400 mt-1">{group.cases.length} {lang==="fr" ? "collecte(s)" : lang==="ar"?"حملة":"campaign(s)"}</div>
               {group.cases.some(c => c.urgent) && (
                 <div className="mt-2 bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full inline-block">🚨 Urgent</div>
               )}
@@ -4000,7 +4000,7 @@ const CollectesPage = ({ setPage, lang }) => {
         )}
 
         <div className="text-center mt-10">
-          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">← {lang==="fr"?"Retour à l'accueil":"Back to home"}</button>
+          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">← {lang==="fr"?"Retour à l'accueil":lang==="ar"?"العودة إلى الرئيسية":lang==="ar"?"العودة إلى الرئيسية":"Back to home"}</button>
         </div>
       </div>
     </div>
@@ -4220,12 +4220,12 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
               {heroMenu && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 z-50">
                   <button onClick={() => { setPage("collectesactives"); setHeroMenu(false); }} className="w-full text-left px-3 py-3 rounded-xl hover:bg-emerald-50 transition-colors group">
-                    <div className="font-semibold text-gray-900 text-sm group-hover:text-emerald-700">🏥 {lang==="fr" ? "Collectes actives" : "Active campaigns"}</div>
+                    <div className="font-semibold text-gray-900 text-sm group-hover:text-emerald-700">🏥 {lang==="fr" ? "Collectes actives" : lang==="ar" ? "الحملات النشطة" : "Active campaigns"}</div>
                     <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Parcourir toutes les collectes médicales" : "Browse all medical campaigns"}</div>
                   </button>
                   <button onClick={() => { setPage("urgents"); setHeroMenu(false); }} className="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 transition-colors group">
-                    <div className="font-semibold text-gray-900 text-sm group-hover:text-red-700">🚨 {lang==="fr" ? "Cas urgents" : "Urgent cases"}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Interventions critiques sous 72h" : "Critical interventions within 72h"}</div>
+                    <div className="font-semibold text-gray-900 text-sm group-hover:text-red-700">🚨 {lang==="fr" ? "Cas urgents" : lang==="ar" ? "الحالات العاجلة" : "Urgent cases"}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Interventions critiques sous 72h" : lang==="ar" ? "تدخلات حرجة خلال 72 ساعة" : "Critical interventions within 72h"}</div>
                   </button>
                   <button onClick={() => { setPage("how"); setHeroMenu(false); }} className="w-full text-left px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors group">
                     <div className="font-semibold text-gray-900 text-sm">🔒 {lang==="fr" ? "Garantie Ayyad" : "Ayyad guarantee"}</div>
@@ -4913,7 +4913,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                   ? (fr?"⏳ Préparation...":"⏳ Preparing...")
                   : finalAmt>=500
                     ? (fr ? `💚 Donner ${finalAmt.toLocaleString("fr-CI")} FCFA maintenant →` : `💚 Donate ${finalAmt.toLocaleString("fr-CI")} FCFA now →`)
-                    : (fr ? "Entrez un montant" : "Enter an amount")}
+                    : (fr ? "Entrez un montant" : ar ? "أدخل مبلغاً" : "Enter an amount")}
               </button>
             )}
             <p style={{textAlign:"center",fontSize:11,color:"#9ca3af",margin:0}}>🔒 {fr?"Fonds versés directement à l'hôpital · 0% frais":"Funds sent directly to hospital · 0% fees"}</p>
@@ -5450,7 +5450,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
         <details className="mt-2 group">
           <summary className="cursor-pointer list-none flex items-center justify-between gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 rounded-xl px-3 py-2.5 transition-colors pay-pulse-indigo">
             <span className="flex items-center gap-2 text-xs font-bold text-blue-800">
-              🌍 {lang==="fr" ? "Vous êtes à l'étranger ?" : "Donating from abroad?"}
+              🌍 {lang==="fr" ? "Vous êtes à l'étranger ?" : lang==="ar" ? "تتبرع من الخارج؟" : "Donating from abroad?"}
             </span>
             <span className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600">
               <span>Sendwave</span>
@@ -5500,7 +5500,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
           </button>
       ) : (
         <button disabled className="w-full bg-gray-200 text-gray-400 font-bold py-3.5 rounded-xl text-sm">
-          {lang==="fr" ? "Entrez un montant ≥ 500 FCFA" : "Enter an amount ≥ 500 FCFA"}
+          {lang==="fr" ? "Entrez un montant ≥ 500 FCFA" : lang==="ar" ? "أدخل مبلغاً ≥ 500 فرنك" : "Enter an amount ≥ 500 FCFA"}
         </button>
       )}
     </>
@@ -5597,7 +5597,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
         const _md = Math.round(_mp*_mc/100);
         const _ld = recentDonations[0];
         const _tick = _ld
-          ? ((_ld.donor_name&&_ld.donor_name!=="null"&&_ld.donor_name!==null?_ld.donor_name:(lang==="fr"?"Anonyme":"Anonymous"))+" · "+((_ld.amount_fcfa||_ld.amount||0)).toLocaleString("fr-CI")+" FCFA")
+          ? ((_ld.donor_name&&_ld.donor_name!=="null"&&_ld.donor_name!==null?_ld.donor_name:(lang==="fr"?lang==="ar"?"مجهول":lang==="fr"?"Anonyme":"Anonymous":"Anonymous"))+" · "+((_ld.amount_fcfa||_ld.amount||0)).toLocaleString("fr-CI")+" FCFA")
           : (lang==="fr"?"Soyez le premier à donner 💚":"Be the first to give 💚");
         return (
           <div className="lg:hidden" style={{background:"#fff",borderBottom:"1px solid #F3F4F6",padding:"16px 16px 14px"}}>
@@ -5775,7 +5775,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
                   <h2 className="font-black text-gray-900">{lang==="fr"?"Derniers donateurs":lang==="ar"?"آخر المتبرعين":"Recent donors"}</h2>
                   <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>Live
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>{lang==="ar"?"مباشر":"Live"}
                   </span>
                 </div>
                 <div className="divide-y divide-gray-50">
@@ -6392,7 +6392,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
                   <h2 className="font-black text-gray-900">{lang==="fr"?"Derniers donateurs":lang==="ar"?"آخر المتبرعين":"Recent donors"}</h2>
                   <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>Live
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>{lang==="ar"?"مباشر":"Live"}
                   </span>
                 </div>
                 <div className="divide-y divide-gray-50">
@@ -7658,8 +7658,8 @@ ${dataRows}
 
       if (sections.dossiers && d.cases) {
         const headers = fr
-          ? ["Ref","Titre","Bénéficiaire","Hôpital","Ville","Catégorie","Objectif","Collecté","Donateurs","Statut","Urgent","Date"]
-          : ["Ref","Title","Beneficiary","Hospital","City","Category","Goal","Collected","Donors","Status","Urgent","Date"];
+          ? ["Ref","Titre","Bénéficiaire","Hôpital","Ville","Catégorie","Objectif","Collecté","Donateurs","Statut",lang==="ar"?"عاجل":"Urgent","Date"]
+          : ["Ref","Title","Beneficiary","Hospital","City","Category","Goal","Collected",lang==="ar"?"المتبرعون":"Donors","Status",lang==="ar"?"عاجل":"Urgent","Date"];
         const rows = d.cases.map(c => [
           c.tracking_id||"", c.title||"", c.full_name||"", c.hospital||"", c.city||"",
           c.category||"", c.amount||0, c.collected||0, c.donors||0,
@@ -7673,7 +7673,7 @@ ${dataRows}
           ? ["Date","Donateur","Email","Montant (FCFA)","Devise","Méthode","Statut","Message","Référence"]
           : ["Date","Donor","Email","Amount (FCFA)","Currency","Method","Status","Message","Reference"];
         const rows = d.donations.map(r => [
-          r.created_at?.slice(0,10)||"", r.donor_name||"Anonyme", r.donor_email||"",
+          r.created_at?.slice(0,10)||"", r.donor_name||lang==="ar"?"مجهول":lang==="fr"?"Anonyme":"Anonymous", r.donor_email||"",
           r.amount_fcfa||r.amount||0, r.currency||"FCFA", r.payment_method||"",
           r.status||"", r.message||"", r.reference||""
         ]);
@@ -7838,7 +7838,7 @@ ${sheets.join("\n")}
   <th>${fr?"Méthode":"Method"}</th><th>Statut</th>
 </tr></thead><tbody>`;
         d.donations.forEach(r => {
-          html += `<tr><td>${r.created_at?.slice(0,10)||""}</td><td>${r.donor_name||"Anonyme"}</td>
+          html += `<tr><td>${r.created_at?.slice(0,10)||""}</td><td>${r.donor_name||lang==="ar"?"مجهول":lang==="fr"?"Anonyme":"Anonymous"}</td>
 <td>${fmtN(r.amount_fcfa||r.amount||0)} FCFA</td><td>${r.payment_method||""}</td><td>${r.status||""}</td></tr>`;
         });
         html += `</tbody></table>`;
@@ -8264,7 +8264,7 @@ const PolitiqueAdmissionPage = ({ setPage, lang }) => {
         }} />
         <div className="ayyad-container" style={{ position:"relative", zIndex:2 }}>
           <button onClick={()=>setPage("home")} style={{ background:"transparent", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.78)", fontSize:13, marginBottom:18 }}>
-            ← {fr ? "Retour à l'accueil" : "Back to home"}
+            ← {fr ? "Retour à l'accueil" : lang==="ar"?"العودة إلى الرئيسية":"Back to home"}
           </button>
           <span className="ayyad-eyebrow" style={{ color:"#e9d59a", background:"rgba(201,168,76,0.10)", borderColor:"rgba(201,168,76,0.40)" }}>
             {fr ? "Politique officielle" : "Official policy"}
@@ -8558,7 +8558,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
       city: form.city,
       amount: parseFloat(form.amount),
       category: form.category === "Autre" ? (form.categoryOther || "Autre") : form.category,
-      full_name: user?.name || "Anonyme",
+      full_name: user?.name || lang==="ar"?"مجهول":lang==="fr"?"Anonyme":"Anonymous",
       photo_url: finalPhotoUrl || null,
       beneficiary_phone: form.beneficiary_phone || null,
       video_url: toEmbedUrl(form.videoUrl) || null,
@@ -8923,7 +8923,7 @@ const HowPage = ({ lang, setPage }) => {
         </div>
         <div className="mt-6 text-center">
           <button onClick={() => setPage("collectes")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-xl shadow-md transition-colors">
-            {lang==="fr" ? "Voir les collectes →" : "See campaigns →"}
+            {lang==="fr" ? "Voir les collectes →" : lang==="ar" ? "← استعراض الحملات" : "See campaigns →"}
           </button>
         </div>
       </div>
@@ -8951,7 +8951,7 @@ const HowPage = ({ lang, setPage }) => {
           </div>
           <div className="mt-6 text-center">
             <button onClick={() => setPage("submit")} className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-xl shadow-md transition-colors">
-              {lang==="fr" ? "Soumettre un dossier →" : "Submit a case →"}
+              {lang==="fr" ? "Soumettre un dossier →" : lang==="ar" ? "تقديم ملف ←" : "Submit a case →"}
             </button>
           </div>
         </div>
@@ -8959,13 +8959,13 @@ const HowPage = ({ lang, setPage }) => {
 
       {/* Garanties */}
       <div className="max-w-5xl mx-auto px-4 py-14">
-        <h2 className="text-2xl font-black text-gray-900 text-center mb-2">{lang==="fr" ? "Les garanties Ayyad" : "Ayyad guarantees"}</h2>
-        <p className="text-gray-500 text-center text-sm mb-10">{lang==="fr" ? "Ce qui nous différencie des autres plateformes" : "What sets us apart from other platforms"}</p>
+        <h2 className="text-2xl font-black text-gray-900 text-center mb-2">{lang==="fr" ? "Les garanties Ayyad" : lang==="ar" ? "ضمانات أياد" : "Ayyad guarantees"}</h2>
+        <p className="text-gray-500 text-center text-sm mb-10">{lang==="fr" ? "Ce qui nous différencie des autres plateformes" : lang==="ar" ? "ما يميّزنا عن المنصات الأخرى" : "What sets us apart from other platforms"}</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {[
-            {icon:"🏥", title:lang==="fr"?"Versement direct à l'hôpital":"Direct payment to hospital", desc:lang==="fr"?"Les fonds ne passent jamais par le patient. Chaque virement est traçable.":"Funds never go through the patient. Every transfer is traceable."},
-            {icon:"🔍", title:lang==="fr"?"Vérification sous 48h":"Verification within 48h", desc:lang==="fr"?"Notre équipe contacte l'hôpital partenaire pour valider chaque dossier.":"Our team contacts the partner hospital to validate each case."},
-            {icon:"🔒", title:lang==="fr"?"Données chiffrées AES-256":"AES-256 encrypted data", desc:lang==="fr"?"Tous vos documents médicaux sont chiffrés et stockés en sécurité.":"All your medical documents are encrypted and stored securely."},
+            {icon:"🏥", title:lang==="fr"?"Versement direct à l'hôpital":lang==="ar"?"دفع مباشر للمستشفى":"Direct payment to hospital", desc:lang==="fr"?"Les fonds ne passent jamais par le patient. Chaque virement est traçable.":lang==="ar"?"الأموال لا تمر أبداً عبر المريض. كل تحويل قابل للتتبع.":"Funds never go through the patient. Every transfer is traceable."},
+            {icon:"🔍", title:lang==="fr"?"Vérification sous 48h":lang==="ar"?"التحقق خلال 48 ساعة":"Verification within 48h", desc:lang==="fr"?"Notre équipe contacte l'hôpital partenaire pour valider chaque dossier.":lang==="ar"?"يتواصل فريقنا مع المستشفى الشريك للتحقق من كل ملف.":"Our team contacts the partner hospital to validate each case."},
+            {icon:"🔒", title:lang==="fr"?"Données chiffrées AES-256":lang==="ar"?"تشفير AES-256":"AES-256 encrypted data", desc:lang==="fr"?"Tous vos documents médicaux sont chiffrés et stockés en sécurité.":lang==="ar"?"جميع وثائقك الطبية مشفّرة ومحفوظة بأمان.":"All your medical documents are encrypted and stored securely."},
           ].map((g,i) => (
             <div key={i} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm text-center hover:shadow-md transition-shadow">
               <div className="text-4xl mb-4">{g.icon}</div>
@@ -9001,10 +9001,10 @@ const HowPage = ({ lang, setPage }) => {
           {/* Explication objectif */}
           <div className="bg-white/5 rounded-xl p-3 text-left space-y-1.5">
             <div className="text-[11px] text-gray-300 font-semibold uppercase tracking-wide mb-2">
-              {lang==="fr" ? "Comment ça fonctionne ?" : "How does it work?"}
+              {lang==="fr" ? "Comment ça fonctionne ?" : lang==="ar" ? "كيف يعمل ذلك؟" : "How does it work?"}
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-gray-400">{lang==="fr" ? "Objectif affiché (devis × 1.05)" : "Displayed goal (quote × 1.05)"}</span>
+              <span className="text-gray-400">{lang==="fr" ? "Objectif affiché (devis × 1.05)" : lang==="ar" ? "الهدف المعروض (العرض × 1.05)" : "Displayed goal (quote × 1.05)"}</span>
               <span className="text-white font-bold">10 500 FCFA</span>
             </div>
             <div className="flex justify-between text-xs">
@@ -9020,7 +9020,7 @@ const HowPage = ({ lang, setPage }) => {
           <div className="text-[11px] text-gray-400 leading-relaxed">
             {lang==="fr"
               ? "✅ Votre don va intégralement à l'hôpital. Les 5% Ayyad sont intégrés dans l'objectif de collecte dès le départ."
-              : "✅ Your donation goes entirely to the hospital. The 5% Ayyad fee is built into the campaign goal from the start."}
+              : lang==="ar" ? "✅ تذهب تبرعاتك بالكامل إلى المستشفى. رسوم أياد 5% مدرجة في هدف الحملة منذ البداية." : "✅ Your donation goes entirely to the hospital. The 5% Ayyad fee is built into the campaign goal from the start."}
           </div>
         </div>
       </div>
@@ -9031,7 +9031,7 @@ const HowPage = ({ lang, setPage }) => {
           <div className="text-center mb-10">
             <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-2xl text-2xl mb-4">🔄</div>
             <h2 className="text-2xl font-black text-gray-900 mb-2">
-              {lang==="fr" ? "Politique de remboursement" : "Refund policy"}
+              {lang==="fr" ? "Politique de remboursement" : lang==="ar" ? "سياسة الاسترداد" : "Refund policy"}
             </h2>
             <p className="text-gray-500 text-sm max-w-lg mx-auto">
               {lang==="fr"
@@ -11287,7 +11287,7 @@ const AdminPage = ({ user, setPage, lang }) => {
               {/* KPIs bilan */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: fr?"Collectes":"Campaigns",          v: filteredCases.length,  icon:"📋", sub:"total" },
+                  { label: fr?"Collectes":lang==="ar"?"الحملات":"Campaigns",          v: filteredCases.length,  icon:"📋", sub:"total" },
                   { label: fr?"Objectifs atteints":"Goals met", v: goalReached,            icon:"✅", sub:`${goalMissed} ${fr?"non atteints":"missed"}` },
                   { label: fr?"Total collecté":"Total raised",  v: fmt(collected),         icon:"💚", sub:"" },
                   { label: fr?"5% Ayyad":"5% Ayyad",           v: fmt(fees5pct),          icon:"💰", sub:"" },
@@ -11375,7 +11375,7 @@ const MonImpactPage = ({ user, setPage, lang }) => {
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-2xl mx-auto">
-        <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">← {fr?"Retour à l'accueil":"Back to home"}</button>
+        <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">← {fr?"Retour à l'accueil":lang==="ar"?"العودة إلى الرئيسية":"Back to home"}</button>
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-2xl text-3xl mb-4">💚</div>
           <h1 className="text-2xl font-black text-gray-900">{fr?"Mon Impact":"My Impact"}</h1>
@@ -13306,7 +13306,7 @@ const ChangePasswordPage = ({ setPage, lang }) => {
           <div className="text-center">
             <div className="text-4xl mb-3">✅</div>
             <p className="text-emerald-600 font-semibold mb-4">{lang==="fr" ? "Mot de passe modifié avec succès !" : "Password changed successfully!"}</p>
-            <button onClick={() => setPage("home")} className="bg-emerald-600 text-white font-bold px-6 py-2.5 rounded-xl w-full">{lang==="fr" ? "Retour à l'accueil" : "Back to home"}</button>
+            <button onClick={() => setPage("home")} className="bg-emerald-600 text-white font-bold px-6 py-2.5 rounded-xl w-full">{lang==="fr" ? "Retour à l'accueil" : lang==="ar"?"العودة إلى الرئيسية":"Back to home"}</button>
           </div>
         ) : (
           <div className="space-y-4">
@@ -13849,8 +13849,8 @@ export default function AyyadApp() {
           <div>
             <div className="bg-gradient-to-br from-emerald-700 to-teal-700 text-white">
               <div className="max-w-7xl mx-auto px-4 py-12 text-center">
-                <button onClick={() => setPage("home")} className="text-emerald-100 hover:text-white text-sm mb-4 inline-flex items-center gap-1">← {lang==="fr"?"Retour à l'accueil":"Back to home"}</button>
-                <h1 className="text-3xl sm:text-5xl font-black mb-3">{lang==="fr" ? "Soutenir Ayyad directement" : "Support Ayyad directly"}</h1>
+                <button onClick={() => setPage("home")} className="text-emerald-100 hover:text-white text-sm mb-4 inline-flex items-center gap-1">← {lang==="fr"?"Retour à l'accueil":lang==="ar"?"العودة إلى الرئيسية":lang==="ar"?"العودة إلى الرئيسية":"Back to home"}</button>
+                <h1 className="text-3xl sm:text-5xl font-black mb-3">{lang==="fr" ? "Soutenir Ayyad directement" : lang==="ar" ? "ادعم أياد مباشرة" : "ادعم أياد مباشرة"}</h1>
                 <p className="text-emerald-100 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
                   {lang==="fr"
                     ? "Votre don aide à financer les opérations de la plateforme : vérification médicale des dossiers, partenariats hospitaliers, infrastructure, et accompagnement des patients tout au long de leur collecte."
