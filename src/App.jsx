@@ -22,7 +22,7 @@ function getField(obj, field, lang) {
   if (!raw && raw !== 0) return "";
   // 2. Jsonb retourné comme objet JS par Supabase
   if (typeof raw === "object" && !Array.isArray(raw)) {
-    return raw[lang] || (lang==="ar" ? raw.en : raw.fr) || raw.en || raw.fr || "";
+    return raw[lang] || raw.fr || raw.en || "";
   }
   // 3. Text stocké en JSON '{"fr":"...","en":"..."}'
   if (typeof raw === "string" && raw.trim().startsWith("{")) {
@@ -90,9 +90,9 @@ function buildPaymentRef(caseObj) {
 function publicDonorName(rawName, lang) {
   const fr = lang !== "en";
   const ar = lang === "ar";
-  if (!rawName) return fr ? "Anonyme" : ar ? "مجهول" : "Anonymous";
+  if (!rawName) return fr ? "Anonyme" : "Anonymous";
   const s = String(rawName).trim();
-  if (!s) return fr ? "Anonyme" : ar ? "مجهول" : "Anonymous";
+  if (!s) return fr ? "Anonyme" : "Anonymous";
   // Si ça ressemble à un email, on garde juste la partie avant @
   if (s.includes("@")) return s.split("@")[0];
   return s;
@@ -362,8 +362,8 @@ const T = {
       statusLabels: { PENDING:"En attente", APPROVED:"Approuvé", REJECTED:"Rejeté", COLLECTING:"En collecte", FUNDED:"Financé" },
       noAdmin: "Accès réservé aux administrateurs."
     },
-    badges: { verified: lang==="ar" ? "✓ ملف موثق" : lang==="fr" ? "✓ Dossier vérifié" : "✓ Case verified", collecting: "Actif", funded: "✓ Financé", urgent: "🚨 URGENT" },
-    urgent: { title: "🚨 Cas urgents", sub: "Ces patients ont besoin d'aide immédiate — intervention critique sous 72h", alert: lang==="ar" ? "⚠️ التدخل مطلوب خلال 72 ساعة" : "⚠️ Intervention requise sous 72h" },
+    badges: { verified: "✓ Dossier vérifié", collecting: "Actif", funded: "✓ Financé", urgent: "🚨 URGENT" },
+    urgent: { title: "🚨 Cas urgents", sub: "Ces patients ont besoin d'aide immédiate — intervention critique sous 72h", alert: "⚠️ Intervention requise sous 72h" },
     supportAyyad: { title: "Soutenir Ayyad directement", sub: "Votre don aide à financer les opérations de la plateforme : vérification des dossiers, partenariats hospitaliers, et accompagnement des patients.", wave: "🌊 Payer via Wave",  number: "+225 07 48 05 61 28", copied: "✓ Numéro copié !", copy: "Copier le numéro", thanks: "Merci pour votre soutien !", thanksSub: "Chaque contribution aide Ayyad à rester gratuit pour les patients.", directDonation: "Don direct à Ayyad" },
     video: { title: "Message du patient", watch: "▶ Voir la vidéo", noVideo: "Aucune vidéo disponible pour ce dossier." },
     progress: { collected: "collectés sur", donors: "donateurs", daysLeft: "jours restants", intervention: "✓ Intervention planifiée", progressTitle: "Progression de la collecte", of: "de l'objectif" },
@@ -407,52 +407,7 @@ const T = {
   }
 };
 // Arabe : fallback sur FR pour les clés T[] — les textes arabes sont gérés inline via ar?"..."
-T.ar = {
-  nav: { collections: "الحملات", how: "كيف يعمل", admin: "الإدارة", login: "تسجيل الدخول", start: "ابدأ", logout: "تسجيل الخروج", medicalFinancing: "تمويل طبي" },
-  hero: { badge: "منصة موثوقة وآمنة", title1: "حين يستعجل الحياة،", title2: "نتحرك معاً.", sub: "وراء كل حملة مريض تعتمد صحته على تضامننا. تبرع. مستشفى. أمل.", cta1: "الحملات المنتهية والشهادات", cta2: "تقديم ملف" },
-  stats: { patients: "مرضى تمت مساعدتهم", collected: "جُمع بالدولار", hospitals: "مستشفيات شريكة" },
-  collections: { title: "الحملات النشطة", sub: "حالات نشطة موثقة" },
-  card: { donors: "متبرع", daysLeft: "أيام متبقية", funded: "تم تحقيق الهدف!", on: "من أصل" },
-  how: { title: "كيف يعمل أيد؟", sub: "بسيط، آمن، مصمم لأفريقيا", steps: [{ n:"1",icon:"📋",title:"تقديم الملف",desc:"يقدم المريض تقريره الطبي وعرض أسعار المستشفى" },{ n:"2",icon:"🔍",title:"التحقق",desc:"يتحقق فريقنا مع المستشفى الشريك خلال 48 ساعة" },{ n:"3",icon:"💚",title:"تبرع مباشر",desc:"تدفع المبلغ الذي اخترته بالضبط. بدون رسوم خفية." },{ n:"4",icon:"🏥",title:"الدفع للمستشفى",desc:"تُحوَّل الأموال مباشرة إلى المنشأة الصحية" }] },
-  donate: { title: "تبرع", sub: "ستُخصَم منك المبلغ الذي اخترته بالضبط.", amount: "المبلغ", custom: "مبلغ آخر", payment: "طريقة الدفع", anonymous: "تبرع مجهول", message: "اترك رسالة...", btnFunded: "الحملة منتهية", btn: "تبرع", secure: "دفع آمن · بدون رسوم خفية", confirm: "تأكيد", verifyDon: "مراجعة تبرعك", debited: "المبلغ المخصوم", beneficiary: "المستفيد", via: "عبر", anonymity: "الهوية المجهولة", active: "✓ مفعّل", modify: "تعديل", confirmBtn: "تأكيد ✓", thanks: "شكراً جزيلاً!", thanksSub: "تم تسجيل تبرعك بنجاح.", impact: "ما فعلته للتو:", impactSub: "قرّبت", impactEnd: "من حياة أفضل.", again: "تبرع مرة أخرى" },
-  guarantee: { title: "ضمان أيد", desc: "الأموال تُحوَّل مباشرة إلى المستشفى الشريك. لا نقداً أبداً. كل تحويل يُدقق." },
-  submit: { title: "تقديم ملف طبي", steps: ["المعلومات","الوثائق","التأكيد"], infoTitle: "صف حالتك الطبية", titleField: "عنوان الحملة *", descField: "الوصف *", hospitalField: "المستشفى *", cityField: "المدينة *", amountField: "المبلغ المقدّر *", categoryField: "التخصص", cats: ["قلبية","أورام","عصبية","عظمية","أطفال","نسائية","أخرى"], next: "متابعة →", docsTitle: "الوثائق المطلوبة", docsSub: "جميع الوثائق مشفرة (AES-256).", docs: [{ key:"medical",icon:"📄",title:"التقرير الطبي",desc:"تقرير الطبيب أو الوصفة الطبية" },{ key:"quote",icon:"🏥",title:"عرض أسعار المستشفى",desc:"عرض رسمي موقع من المنشأة" },{ key:"id",icon:"🪪",title:"وثيقة الهوية",desc:"بطاقة وطنية أو جواز سفر أو إقامة سارية" },{ key:"consent",icon:"✍️",title:"موافقة البيانات",desc:"نموذج موافقة أيد" }], upload: "اختر ملفاً", uploading: "جارٍ الرفع...", uploaded: "✓ تم الرفع", error: "خطأ، أعد المحاولة", warning: "جميع الوثائق مطلوبة للتحقق.", back: "← رجوع", submit: "إرسال →", successTitle: "تم إرسال الملف!", successSub: "ملفك قيد المراجعة.", processSteps: ["استلام الملف وترقيمه","مراجعة فريق أيد (< 48 ساعة)","التواصل مع المستشفى للتحقق من العرض","إطلاق الحملة"], backHome: "العودة إلى الرئيسية", loginRequired: "يجب تسجيل الدخول لتقديم ملف.", loginBtn: "تسجيل الدخول" },
-  login: { title: "تسجيل الدخول إلى أيد", sub: "مرحباً! سجّل دخولك إلى حسابك.", email: "البريد الإلكتروني", password: "كلمة المرور", btn: "تسجيل الدخول →", noAccount: "ليس لديك حساب؟", register: "إنشاء حساب", error: "البريد الإلكتروني أو كلمة المرور غير صحيحة." },
-  register: { title: "إنشاء حساب", roleQ: "أريد...", roles: [{ id:"donor",icon:"💚",title:"التبرع",desc:"مساعدة المرضى المحتاجين" },{ id:"beneficiary",icon:"🏥",title:"تلقي الرعاية",desc:"تمويل إجراء طبي" }], fields: [{ key:"name",label:"الاسم الكامل",p:"أمينة كوني",type:"text" },{ key:"email",label:"البريد الإلكتروني",p:"you@example.ci",type:"email" },{ key:"phone",label:"رقم Wave CI",p:"+225 07 XX XX XX XX",type:"tel" },{ key:"password",label:"كلمة المرور (6 أحرف على الأقل)",p:"••••••••",type:"password" }], terms: "أقبل", termsLink: "شروط الاستخدام", and: "و", privacyLink: "سياسة الخصوصية", btn: "إنشاء حسابي", continue: "متابعة →", back: "← رجوع", hasAccount: "لديك حساب بالفعل؟", signin: "تسجيل الدخول", error: "خطأ في إنشاء الحساب." },
-  admin: {
-    title: "إدارة أيد", sub: "لوحة التحكم التشغيلية", status: "النظام يعمل",
-    tabs: [{ id:"overview",label:"نظرة عامة",icon:"📊" },{ id:"cases",label:"الملفات",icon:"📋" },{ id:"donations",label:"التبرعات",icon:"💚" },{ id:"fraud",label:"الاحتيال",icon:"🔍" },{ id:"payouts",label:"التحويلات",icon:"🏦" },{ id:"finance",label:"المالية",icon:"💰" },{ id:"salary",label:"الرواتب",icon:"👔" },{ id:"audit",label:"المراجعة",icon:"📝" },{ id:"bilan",label:"التقارير",icon:"📈" },{ id:"testimonials",label:"الشهادات",icon:"💬" },{ id:"visitors",label:"الزوار",icon:"👁️" },{ id:"accounts",label:"الحسابات",icon:"👤" },{ id:"team",label:"الفريق",icon:"👥" },{ id:"export",label:"تصدير",icon:"📤",superAdminOnly:true }],
-    stats: [{ label:"الحالات النشطة",v:"—",icon:"📋" },{ label:"التبرعات هذا الشهر",v:"—",icon:"💚" },{ label:"المرضى المساعدون",v:"—",icon:"🏥" }],
-    recentTitle: "الملفات الأخيرة", revenueTitle: "الإيرادات التشغيلية (7٪)",
-    months: [{ month:"مارس 2025",dons:"24.8M",fees:"1 240 000 FCFA" },{ month:"فبراير 2025",dons:"19.2M",fees:"960 000 FCFA" },{ month:"يناير 2025",dons:"15.1M",fees:"755 000 FCFA" }],
-    pendingTitle: "الملفات في انتظار التحقق", pending: "قيد الانتظار", empty: "لا توجد ملفات في الانتظار", loading: "جارٍ التحميل...",
-    risk: "خطر", reject: "رفض", approve: "موافقة ✓", rejectConfirm: "سبب الرفض:", rejectBtn: "تأكيد الرفض",
-    fraudTitle: "تنبيهات الاحتيال", fraudLabels: [{ label:"حرجة",sev:"critical",c:"red" },{ label:"عالية",sev:"high",c:"amber" },{ label:"محلولة",sev:null,c:"emerald" }],
-    resolve: "حل", resolved: "محلول", payoutsTitle: "التحويلات للمستشفيات", payoutsPending: "قيد الانتظار", validate: "تحقق →", active2: "نشط", funded: "ممول",
-    statusLabels: { PENDING:"قيد الانتظار", APPROVED:"موافق عليه", REJECTED:"مرفوض", COLLECTING:"قيد الجمع", FUNDED:"ممول" },
-    noAdmin: "الوصول مقتصر على المسؤولين."
-  },
-  badges: { verified: "✓ ملف موثق", collecting: "نشط", funded: "✓ ممول", urgent: "🚨 عاجل" },
-  urgent: { title: "🚨 الحالات العاجلة", sub: "هؤلاء المرضى بحاجة إلى مساعدة فورية — تدخل حاسم خلال 72 ساعة", alert: "⚠️ التدخل مطلوب خلال 72 ساعة" },
-  supportAyyad: { title: "ادعم أيد مباشرة", sub: "تبرعك يساعد في تمويل عمليات المنصة: التحقق من الملفات، والشراكات مع المستشفيات، ودعم المرضى.", wave: "🌊 الدفع عبر Wave", number: "+225 07 48 05 61 28", copied: "✓ تم نسخ الرقم!", copy: "نسخ الرقم", thanks: "شكراً لدعمك!", thanksSub: "كل مساهمة تساعد أيد على البقاء مجانياً للمرضى.", directDonation: "تبرع مباشر لأيد" },
-  video: { title: "رسالة المريض", watch: "▶ مشاهدة الفيديو", noVideo: "لا يوجد فيديو متاح لهذا الملف." },
-  progress: { collected: "جُمع من", donors: "متبرع", daysLeft: "أيام متبقية", intervention: "✓ التدخل مجدوَل", progressTitle: "تقدم الحملة", of: "من الهدف" },
-  back: "← العودة إلى الحملات",
-  footer: { tagline: "تمويل الرعاية الصحية للجميع في أفريقيا.", platform: "المنصة", trust: "الثقة", legal: "القانونية", platformLinks: ["الحملات النشطة","كيف يعمل","تقديم ملف"], trustLinks: ["التحقق من الملفات","المستشفيات الشريكة","تقرير الأثر"], legalLinks: ["الإشعار القانوني","سياسة الخصوصية","امتثال BCEAO"], rights: "© 2025 Ayyad CI — جميع الحقوق محفوظة" },
-  howPage: { title: "كيف يعمل أيد؟", sub: "شفاف، آمن، مصمم لأفريقيا", forDonors: { icon:"💚",title:"للمتبرعين",steps:["تصفح الحملات النشطة الموثقة","اختر مبلغك بحرية","ادفع عبر Wave CI أو بطاقة بنكية","تُخصَم منك المبلغ الذي اخترته بالضبط","يصل المال مباشرة إلى المستشفى"] }, forBenef: { icon:"🏥",title:"للمستفيدين",steps:["أنشئ حساباً وقدم ملفك الطبي","ارفع التقرير الطبي والعرض وهوية","يتحقق فريقنا مع المستشفى الشريك","تُطلق حملتك خلال 48 ساعة","تُحوَّل الأموال مباشرة إلى المستشفى"] }, feeTitle: "قاعدة 5٪ — مدرجة في الهدف", feeSub: "تدرج أيد عمولتها البالغة 5٪ مباشرة في هدف الحملة. تتبرع بـ 10,000 FCFA، يستلم المستشفى 10,000 FCFA. لا يُستقطع شيء من تبرعك.", youGive: "تتبرع بـ", collectReceives: "المستشفى يستلم", ayyadFee: "رسوم أيد (مدرجة في الهدف)" },
-};
-
-
-const CATS_AR = {
-  "Cardiologie":"قلبية","Cardiology":"قلبية",
-  "Oncologie":"أورام","Oncology":"أورام",
-  "Neurologie":"عصبية","Neurology":"عصبية",
-  "Orthopédie":"عظمية","Orthopedics":"عظمية",
-  "Pédiatrie":"أطفال","Pediatrics":"أطفال",
-  "Gynécologie":"نسائية","Gynecology":"نسائية",
-  "Néphrologie":"كلوية","Nephrology":"كلوية",
-  "Autre":"أخرى","Other":"أخرى",
-};
+T.ar = T.fr;
 
 // ── Demo cases visibility (admin can toggle via dashboard) ───
 // true = campagnes fictives visibles sur la plateforme publique
@@ -767,7 +722,7 @@ const Navbar = ({ page, setPage, user, setUser, lang, setLang }) => {
             { icon:"📋", label:fr?"Soumettre un dossier":ar?"تقديم ملف":"Submit a case", page:"submit" },
             { icon:"❓", label:fr?"Comment ça marche":ar?"كيف يعمل":"How it works", page:"how" },
             { icon:"🤝", label:fr?"Soutenir Ayyad":ar?"دعم أيّاد":"Support Ayyad", page:"support-ayyad" },
-            { icon:"🔍", label:fr ? "Suivre une collecte" : ar ? "تتبع حملة" : "Track campaign", page:"tracking" },
+            { icon:"🔍", label:fr?"Suivre une collecte":"Track campaign", page:"tracking" },
           ].map(l=>(
             <button key={l.page} onClick={()=>{ setPage(l.page); setMobileOpen(false); }}
               style={{ display:"flex", alignItems:"center", gap:10, width:"100%", background:"transparent", border:"none", cursor:"pointer", textAlign:"left", padding:"11px 10px", borderRadius:10, fontSize:14, fontWeight:600, color:"var(--ink-700)" }}
@@ -823,7 +778,7 @@ const CaseCard = ({ c, lang, t, onClick }) => {
   const tc = t.card;
   const photo = c.photo_url || (c.photos && c.photos[0]) || null;
   const title = typeof c.title === "object" ? ((c.title?.[lang] || c.title?.fr || getField(c,"title",lang) || "") || c.title.fr) : c.title;
-  const category = typeof c.category === "object" ? ((lang==="ar" ? (CATS_AR[c.category?.en] || CATS_AR[c.category?.fr] || CATS_AR[c.category] || c.category?.[lang] || c.category?.en || c.category?.fr || c.category || "") : (c.category?.[lang] || c.category?.fr || c.category || "")) || c.category.fr) : c.category;
+  const category = typeof c.category === "object" ? ((c.category?.[lang] || c.category?.fr || c.category || "") || c.category.fr) : c.category;
 
   return (
     <div
@@ -850,7 +805,7 @@ const CaseCard = ({ c, lang, t, onClick }) => {
         ) : (
           <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:8 }}>
             <div style={{ fontSize: 56, opacity:0.25 }}>{typeof c.image === "string" && !c.image.startsWith("http") ? c.image : "🏥"}</div>
-            <span style={{ fontSize:11, color:"var(--ink-400)", fontWeight:600, letterSpacing:0.8, textTransform:"uppercase" }}>{fr ? "Photo à venir" : ar ? "صورة قريباً" : "Photo coming"}</span>
+            <span style={{ fontSize:11, color:"var(--ink-400)", fontWeight:600, letterSpacing:0.8, textTransform:"uppercase" }}>{fr ? "Photo à venir" : "Photo coming"}</span>
           </div>
         )}
 
@@ -892,7 +847,7 @@ const CaseCard = ({ c, lang, t, onClick }) => {
               fontSize:10, fontWeight:900, letterSpacing:1.2,
               padding:"5px 12px", borderRadius:9999,
               boxShadow:"0 4px 12px rgba(16,185,129,0.40)",
-            }}>✓ {fr ? "FINANCÉ" : ar ? "ممول" : "FUNDED"}</span>
+            }}>✓ {fr ? "FINANCÉ" : "FUNDED"}</span>
           </div>
         )}
 
@@ -934,7 +889,7 @@ const CaseCard = ({ c, lang, t, onClick }) => {
         <div style={{ marginBottom: 16 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom: 8 }}>
             <span style={{ fontFamily:"var(--font-serif)", fontWeight:800, fontSize:17, color:"var(--ayyad-deep)" }}>{fmtCard(Math.min(c.collected||0, c.required||0))}</span>
-            <span style={{ fontSize:11, color:"var(--ink-400)", fontWeight:600 }}>{c.required ? (lang==="ar" ? "من أصل " : tc.on + " ") + fmtCard(c.required) : (lang==="fr" ? "objectif à définir" : "amount TBD")}</span>
+            <span style={{ fontSize:11, color:"var(--ink-400)", fontWeight:600 }}>{c.required ? tc.on + " " + fmtCard(c.required) : (lang==="fr" ? "objectif à définir" : "amount TBD")}</span>
           </div>
           {c.required ? (
             <div style={{ height:6, background:"#f3f4f6", borderRadius:9999, overflow:"hidden" }}>
@@ -994,7 +949,7 @@ const CaseCard = ({ c, lang, t, onClick }) => {
             onMouseEnter={e=>{ e.currentTarget.style.transform = "translateY(-1px)"; }}
             onMouseLeave={e=>{ e.currentTarget.style.transform = "translateY(0)"; }}
             >
-              {funded ? (fr ? "Voir" : ar ? "عرض" : "View") : (fr ? "Soutenir" : lang==="ar" ? "ادعم" : "Support")} →
+              {funded ? (fr ? "Voir" : "View") : (fr ? "Soutenir" : "Support")} →
             </span>
           </div>
         </div>
@@ -1052,7 +1007,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
             <span className="bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-full">{urgentCases.length}</span>
           </div>
           <button onClick={() => setPage("urgents")} className="text-xs text-red-600 font-semibold hover:underline">
-            {lang==="fr" ? "Voir tous →" : lang==="ar" ? "عرض الكل →" : "See all →"}
+            {lang==="fr" ? "Voir tous →" : "See all →"}
           </button>
         </div>
         <p className="text-gray-500 text-sm mb-5">{t.urgent.sub}</p>
@@ -1140,7 +1095,7 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
                             </span>
                           </div>
                           <div style={{display:"flex", gap:12, alignItems:"center"}}>
-                            <span style={{color:"rgba(255,255,255,0.80)", fontSize:"11px"}}>👥 {c.donors || 0} {lang==="fr"?"dons":lang==="ar"?"متبرع":"donors"}</span>
+                            <span style={{color:"rgba(255,255,255,0.80)", fontSize:"11px"}}>👥 {c.donors || 0} {lang==="fr"?"dons":"donors"}</span>
                             <span style={{background:"#ef4444", color:"#fff", fontWeight:900, fontSize:"13px", padding:"3px 10px", borderRadius:"999px"}}>
                               {percent}%
                             </span>
@@ -1152,10 +1107,10 @@ const UrgentBanner = ({ cases, setSelectedCase, setPage, lang }) => {
                     {/* Call-to-action strip */}
                     <div style={{padding:"14px 20px", background:"#fff", display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid #fee2e2"}}>
                       <span style={{fontSize:"13px", color:"#374151"}}>
-                        {lang==="fr" ? "Ces patients ont besoin d'aide immédiate — intervention critique sous 72h" : lang==="ar" ? "هؤلاء المرضى بحاجة إلى مساعدة فورية — تدخل عاجل خلال 72 ساعة" : "These patients need immediate help — critical intervention within 72h"}
+                        {lang==="fr" ? "Ces patients ont besoin d'aide immédiate — intervention critique sous 72h" : "These patients need immediate help — critical intervention within 72h"}
                       </span>
                       <span style={{background:"#dc2626", color:"#fff", fontSize:"12px", fontWeight:700, padding:"6px 14px", borderRadius:"999px", whiteSpace:"nowrap"}}>
-                        {lang==="fr" ? "Aider →" : lang==="ar" ? "ساعد →" : "Help →"}
+                        {lang==="fr" ? "Aider →" : "Help →"}
                       </span>
                     </div>
                   </button>
@@ -1216,7 +1171,7 @@ const MediaSection = ({ c, lang, t, canEdit, onPhotosChange }) => {
   if (!hasMedia) return (
     <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 text-center">
       <div className="text-3xl mb-2">📸</div>
-      <div className="text-sm text-gray-400 mb-3">{lang==="fr" ? "Aucun média disponible pour ce dossier." : lang==="ar" ? "لا توسائط متاحة لهذا الملف." : "No media available for this case."}</div>
+      <div className="text-sm text-gray-400 mb-3">{lang==="fr" ? "Aucun média disponible pour ce dossier." : "No media available for this case."}</div>
       {canEdit && (
         <label className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-4 py-2 rounded-xl cursor-pointer transition-colors shadow">
           <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
@@ -1630,19 +1585,19 @@ const printDonationCertificate = ({ donorName, amount, beneficiary, caseTitle, t
 <body><div class="cert">
   <div class="logo">AYYAD</div>
   <div class="logo-sub">Financement médical solidaire · Côte d'Ivoire</div>
-  <h1>${fr ? "Certificat de don" : ar ? "شهادة تبرع" : "Certificate of Donation"}</h1>
+  <h1>${fr?"Certificat de don":"Certificate of Donation"}</h1>
   <div class="line"></div>
   <div class="body">
-    ${fr ? "Nous certifions que" : ar ? "نشهد أن" : "We certify that"}
-    <div class="name">${donorName || (fr ? "Un donateur anonyme" : ar ? "متبرع مجهول" : "An anonymous donor")}</div>
-    ${fr ? "a effectué un don de" : ar ? "قام بتبرع بمبلغ" : "has made a donation of"}
+    ${fr?"Nous certifions que":"We certify that"}
+    <div class="name">${donorName || (fr?"Un donateur anonyme":"An anonymous donor")}</div>
+    ${fr?"a effectué un don de":"has made a donation of"}
     <div class="amount">${amount.toLocaleString("fr-CI")} FCFA</div>
-    ${fr ? "au bénéfice de" : ar ? "لصالح" : "in support of"} <strong>${beneficiary}</strong><br/>
-    ${fr ? "pour la collecte " : ar ? "لحملة " : "for the campaign "}<em>"${caseTitle}"</em>
+    ${fr?"au bénéfice de":"in support of"} <strong>${beneficiary}</strong><br/>
+    ${fr?"pour la collecte ":"for the campaign "}<em>"${caseTitle}"</em>
   </div>
   <div class="info">
-    ${fr ? "Date" : ar ? "التاريخ" : "Date"} : ${date} &nbsp;·&nbsp; Réf : ${trackingId}<br/>
-    ${fr ? "93% de votre don est versé directement à l'hôpital · 7% frais de plateforme AYYAD" : ar ? "93% من تبرعك يُحوَّل مباشرة للمستشفى · 7% رسوم منصة أيد" : "93% of your donation goes directly to the hospital · 7% AYYAD platform fee"}
+    ${fr?"Date":"Date"} : ${date} &nbsp;·&nbsp; Réf : ${trackingId}<br/>
+    ${fr?"93% de votre don est versé directement à l'hôpital · 7% frais de plateforme AYYAD":"93% of your donation goes directly to the hospital · 7% AYYAD platform fee"}
   </div>
   <div class="seal">💚</div>
 </div>
@@ -1758,7 +1713,7 @@ const ShareButton = ({ c, lang, size = "normal" }) => {
           ? "text-xs px-2.5 py-1.5 border-gray-200 text-gray-600 hover:border-emerald-400 hover:text-emerald-700 bg-white"
           : "text-sm px-4 py-2.5 border-gray-200 text-gray-600 hover:border-emerald-400 hover:text-emerald-700 bg-white shadow-sm"}`}>
         <span>📤</span>
-        <span>{lang === "fr" ? "Partager" : lang==="ar" ? "شارك" : "Share"}</span>
+        <span>{lang === "fr" ? "Partager" : "Share"}</span>
       </button>
 
       {open && createPortal(
@@ -1876,13 +1831,13 @@ const CardPayForm = ({ amountDisplay, lang, onSuccess, onCancel, darkMode = fals
       <div className={`flex items-center gap-2 rounded-xl px-3 py-2 ${darkMode ? "bg-amber-500/20 border border-amber-400/30" : "bg-amber-50 border border-amber-200"}`}>
         <span>🔧</span>
         <span className={`text-xs ${darkMode ? "text-amber-200" : "text-amber-700"}`}>
-          {fr ? "Formulaire de démo — agrégateur de paiement à intégrer" : ar ? "نموذج تجريبي — معالج الدفع قيد التكامل" : "Demo form — payment processor to be integrated"}
+          {fr ? "Formulaire de démo — agrégateur de paiement à intégrer" : "Demo form — payment processor to be integrated"}
         </span>
       </div>
 
       {/* Numéro de carte */}
       <div>
-        <label className={`text-xs font-semibold mb-1 block ${darkMode ? "text-emerald-300" : "text-gray-600"}`}>{fr ? "Numéro de carte" : ar ? "رقم البطاقة" : "Card number"}</label>
+        <label className={`text-xs font-semibold mb-1 block ${darkMode ? "text-emerald-300" : "text-gray-600"}`}>{fr ? "Numéro de carte" : "Card number"}</label>
         <input type="text" inputMode="numeric" placeholder="1234 5678 9012 3456"
           value={cardNum} onChange={e => setCardNum(fmtCard(e.target.value))} maxLength={19}
           className={inp + " font-mono"} />
@@ -1890,8 +1845,8 @@ const CardPayForm = ({ amountDisplay, lang, onSuccess, onCancel, darkMode = fals
 
       {/* Nom */}
       <div>
-        <label className={`text-xs font-semibold mb-1 block ${darkMode ? "text-emerald-300" : "text-gray-600"}`}>{fr ? "Nom sur la carte" : ar ? "الاسم على البطاقة" : "Cardholder name"}</label>
-        <input type="text" placeholder={fr ? "PRÉNOM NOM" : ar ? "الاسم الكامل" : "FIRST LAST"}
+        <label className={`text-xs font-semibold mb-1 block ${darkMode ? "text-emerald-300" : "text-gray-600"}`}>{fr ? "Nom sur la carte" : "Cardholder name"}</label>
+        <input type="text" placeholder={fr ? "PRÉNOM NOM" : "FIRST LAST"}
           value={cardName} onChange={e => setCardName(e.target.value.toUpperCase())}
           className={inp + " uppercase tracking-wide"} />
       </div>
@@ -1899,7 +1854,7 @@ const CardPayForm = ({ amountDisplay, lang, onSuccess, onCancel, darkMode = fals
       {/* Expiration + CVV */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={`text-xs font-semibold mb-1 block ${darkMode ? "text-emerald-300" : "text-gray-600"}`}>{fr ? "Expiration" : ar ? "انتهاء الصلاحية" : "Expiry"}</label>
+          <label className={`text-xs font-semibold mb-1 block ${darkMode ? "text-emerald-300" : "text-gray-600"}`}>{fr ? "Expiration" : "Expiry"}</label>
           <input type="text" inputMode="numeric" placeholder="MM/YY"
             value={expiry} onChange={e => setExpiry(fmtExpiry(e.target.value))} maxLength={5}
             className={inp + " font-mono"} />
@@ -1919,7 +1874,7 @@ const CardPayForm = ({ amountDisplay, lang, onSuccess, onCancel, darkMode = fals
             ? darkMode ? "bg-white text-gray-900 hover:bg-gray-100" : "bg-gray-900 text-white hover:bg-gray-700"
             : "bg-gray-300 text-gray-400 cursor-not-allowed"
         }`}>
-        {paying ? `⏳ ${fr ? "Traitement…" : ar ? "جارٍ المعالجة…" : "Processing…"}` : `💳 ${fr ? "Payer" : ar ? "ادفع" : "Pay"} ${amountDisplay || ""}`}
+        {paying ? `⏳ ${fr ? "Traitement…" : "Processing…"}` : `💳 ${fr ? "Payer" : "Pay"} ${amountDisplay || ""}`}
       </button>
 
       {/* Logos sécurité */}
@@ -1929,7 +1884,7 @@ const CardPayForm = ({ amountDisplay, lang, onSuccess, onCancel, darkMode = fals
 
       {onCancel && (
         <button onClick={onCancel} className={`w-full text-xs py-1 ${darkMode ? "text-white/50 hover:text-white" : "text-gray-400 hover:text-gray-700"}`}>
-          ← {fr ? "Modifier" : ar ? "تعديل" : "Edit"}
+          ← {fr ? "Modifier" : "Edit"}
         </button>
       )}
     </div>
@@ -1971,11 +1926,13 @@ const SupportAyyadSection = ({ lang }) => {
     <div className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 text-white">
       <div className="max-w-4xl mx-auto px-4 py-14 text-center">
         <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 mb-5 text-sm font-medium">
-          <span>💚</span> {fr ? "Don direct à Ayyad" : ar ? "تبرع مباشر لأيد" : "Direct donation to Ayyad"}
+          <span>💚</span> {fr ? "Don direct à Ayyad" : "Direct donation to Ayyad"}
         </div>
-        <h2 className="text-3xl font-black mb-3">{fr ? "Soutenir Ayyad directement" : ar ? "ادعم أيد مباشرة" : "Support Ayyad directly"}</h2>
+        <h2 className="text-3xl font-black mb-3">{fr ? "Soutenir Ayyad directement" : "Support Ayyad directly"}</h2>
         <p className="text-emerald-200 text-sm max-w-lg mx-auto mb-8 leading-relaxed">
-          {fr ? "Votre don aide à financer les opérations de la plateforme : vérification des dossiers, partenariats hospitaliers, et accompagnement des patients." : ar ? "تبرعك يساعد في تمويل عمليات المنصة: التحقق من الملفات، الشراكات المستشفياتية، ودعم المرضى." : "Your donation helps fund platform operations: case verification, hospital partnerships, and patient support."}
+          {fr
+            ? "Votre don aide à financer les opérations de la plateforme : vérification des dossiers, partenariats hospitaliers, et accompagnement des patients."
+            : "Your donation helps fund platform operations: case verification, hospital partnerships, and patient support."}
         </p>
 
         <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 max-w-sm mx-auto space-y-4">
@@ -1983,7 +1940,7 @@ const SupportAyyadSection = ({ lang }) => {
           {/* ── ÉTAPE 1: formulaire montant ── */}
           {step === "form" && (<>
             <div>
-              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Devise" : ar ? "العملة" : "Currency"}</div>
+              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Devise" : "Currency"}</div>
               <div className="flex gap-2">
                 {CURRENCIES.map(c => (
                   <button key={c.code} onClick={() => { setCurrency(c.code); setAmount(""); }}
@@ -1995,7 +1952,7 @@ const SupportAyyadSection = ({ lang }) => {
             </div>
 
             <div>
-              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Montant" : ar ? "المبلغ" : "Amount"}</div>
+              <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">{fr ? "Montant" : "Amount"}</div>
               <div className="relative flex items-center bg-white rounded-xl overflow-hidden">
                 <input type="number" min={curInfo.min} step={curInfo.step} placeholder={String(curInfo.min)}
                   value={amount} onChange={e => setAmount(e.target.value)}
@@ -2014,13 +1971,15 @@ const SupportAyyadSection = ({ lang }) => {
             {/* Message libre du donateur — optionnel mais encourageant */}
             <div>
               <div className="text-xs text-emerald-300 font-semibold mb-2 text-left">
-                {fr ? "Votre message à Ayyad (optionnel)" : ar ? "رسالتك لأيد (اختياري)" : "Your message to Ayyad (optional)"}
+                {fr ? "Votre message à Ayyad (optionnel)" : "Your message to Ayyad (optional)"}
               </div>
               <textarea
                 value={donorMessage}
                 onChange={e => setDonorMessage(e.target.value.slice(0, 300))}
                 rows={3}
-                placeholder={fr ? "Un mot d'encouragement, un témoignage, une suggestion…" : ar ? "كلمة تشجيع، شهادة، اقتراح…" : "A word of encouragement, a testimonial, a suggestion…"}
+                placeholder={fr
+                  ? "Un mot d'encouragement, un témoignage, une suggestion…"
+                  : "A word of encouragement, a testimonial, a suggestion…"}
                 className="w-full text-gray-900 text-sm px-4 py-2.5 rounded-xl outline-none bg-white resize-none border border-white/20 focus:border-emerald-400"
               />
               <div className="mt-1 text-[10px] text-emerald-300/70 text-right">
@@ -2033,7 +1992,7 @@ const SupportAyyadSection = ({ lang }) => {
               disabled={!isValid}
               className={`w-full py-3.5 rounded-xl font-black text-sm transition-all ${isValid ? "bg-white text-emerald-900 hover:bg-emerald-100 shadow-lg" : "bg-white/20 text-white/40 cursor-not-allowed"}`}>
               {!amount || numericAmount===0
-                ? (fr ? "Saisir un montant" : ar ? "أدخل المبلغ" : "Enter an amount")
+                ? (fr ? "Saisir un montant" : "Enter an amount")
                 : !isValid
                 ? `Min. ${curInfo.min} ${curInfo.code}`
                 : `🌊 ${fr?"Payer":ar?"دفع":"Pay"} ${displayAmount} →`}
@@ -2045,7 +2004,7 @@ const SupportAyyadSection = ({ lang }) => {
             <details className="w-full bg-white/8 rounded-xl border border-white/20 text-left group">
               <summary className="cursor-pointer list-none flex items-center justify-between gap-2 px-3 py-2.5 select-none hover:bg-white/5 rounded-xl transition-colors">
                 <span className="flex items-center gap-2 text-xs font-bold text-white">
-                  🌍 {fr ? "Vous êtes à l'étranger ?" : ar ? "هل أنت في الخارج؟" : "Donating from abroad?"}
+                  🌍 {fr ? "Vous êtes à l'étranger ?" : "Donating from abroad?"}
                 </span>
                 <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-200">
                   <span>Sendwave</span>
@@ -2059,9 +2018,9 @@ const SupportAyyadSection = ({ lang }) => {
                     : <>Use the <strong className="text-white">Sendwave</strong> app (free, no hidden fees) from France, Canada, USA, UK, Belgium, Italy, Spain, Germany…</>}
                 </p>
                 <ol className="list-decimal pl-4 space-y-0.5">
-                  <li>{fr ? "Téléchargez Sendwave (App Store / Play Store)" : ar ? "حمّل Sendwave (App Store / Play Store)" : "Download Sendwave (App Store / Play Store)"}</li>
+                  <li>{fr ? "Téléchargez Sendwave (App Store / Play Store)" : "Download Sendwave (App Store / Play Store)"}</li>
                   <li>{fr ? <>Envoyez à : <strong className="font-mono text-white">+225 07 48 05 61 28</strong></> : <>Send to: <strong className="font-mono text-white">+225 07 48 05 61 28</strong></>}</li>
-                  <li>{fr ? "Saisissez le montant en EUR/USD/CAD/GBP — il arrive en FCFA sur Ayyad" : ar ? "أدخل المبلغ بـ EUR/USD/CAD/GBP — يصل بالفرنك الأفريقي إلى أيد" : "Enter the amount in EUR/USD/CAD/GBP — arrives in FCFA at Ayyad"}</li>
+                  <li>{fr ? "Saisissez le montant en EUR/USD/CAD/GBP — il arrive en FCFA sur Ayyad" : "Enter the amount in EUR/USD/CAD/GBP — arrives in FCFA at Ayyad"}</li>
                 </ol>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   <a href="https://apps.apple.com/app/sendwave-send-money/id1238118264" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-white text-emerald-900 px-2 py-1 rounded-md text-[10px] font-bold hover:bg-emerald-50">🍎 iOS</a>
@@ -2069,20 +2028,22 @@ const SupportAyyadSection = ({ lang }) => {
                   <a href="https://www.sendwave.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 border border-white/40 text-white px-2 py-1 rounded-md text-[10px] font-bold hover:bg-white/10">🌐 sendwave.com</a>
                 </div>
                 <p className="text-[10px] text-emerald-200/80 italic pt-1">
-                  💡 {fr ? "Sendwave appartient à Wave — l'argent arrive sur le même compte Ayyad." : ar ? "Sendwave تتبع Wave — الأموال تصل إلى نفس حساب أيد." : "Sendwave is owned by Wave — funds arrive in the same Ayyad account."}
+                  💡 {fr
+                    ? "Sendwave appartient à Wave — l'argent arrive sur le même compte Ayyad."
+                    : "Sendwave is owned by Wave — funds arrive in the same Ayyad account."}
                 </p>
               </div>
             </details>
 
             <p className="text-emerald-400 text-[10px]">
-              {fr ? "Paiement sécurisé · 100% de votre don va à Ayyad" : ar ? "دفع آمن · 100% من تبرعك يذهب لأيد" : "Secure payment · 100% of your donation goes to Ayyad"}
+              {fr ? "Paiement sécurisé · 100% de votre don va à Ayyad" : "Secure payment · 100% of your donation goes to Ayyad"}
             </p>
           </>)}
 
           {/* ── ÉTAPE 2: QR Wave + instructions Sendwave pour l'étranger ── */}
           {step === "wave_qr" && (
             <div className="flex flex-col items-center gap-3">
-              <div className="text-sm font-black">📱 {fr ? "Scannez pour payer via Wave CI" : ar ? "امسح للدفع عبر Wave CI" : "Scan to pay with Wave CI"}</div>
+              <div className="text-sm font-black">📱 {fr ? "Scannez pour payer via Wave CI" : "Scan to pay with Wave CI"}</div>
               <a
                 href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/"
                 target="_blank"
@@ -2094,7 +2055,7 @@ const SupportAyyadSection = ({ lang }) => {
                   onError={e => { e.target.style.display="none"; }} />
               </a>
               <div className="text-[11px] font-semibold text-white/80 bg-white/10 px-3 py-1.5 rounded-full">
-                👆 {fr ? "Touchez le QR sur mobile" : ar ? "المس رمز QR على الجوال" : "Tap the QR on mobile"}
+                👆 {fr ? "Touchez le QR sur mobile" : "Tap the QR on mobile"}
               </div>
               <div className="w-full bg-white rounded-xl p-3 text-gray-900">
                 <div className="flex justify-between items-center">
@@ -2115,7 +2076,7 @@ const SupportAyyadSection = ({ lang }) => {
               {/* Sendwave : pour la diaspora */}
               <details className="w-full bg-white/10 rounded-xl border border-white/20 text-left">
                 <summary className="cursor-pointer px-3 py-2 text-xs font-bold text-white select-none">
-                  🌍 {fr ? "Vous êtes à l'étranger ? Utilisez Sendwave" : ar ? "هل أنت في الخارج؟ استخدم Sendwave" : "From abroad? Use Sendwave"}
+                  🌍 {fr ? "Vous êtes à l'étranger ? Utilisez Sendwave" : "From abroad? Use Sendwave"}
                 </summary>
                 <div className="px-3 pb-3 text-[11px] text-emerald-100 leading-relaxed space-y-1.5">
                   <p>
@@ -2124,10 +2085,10 @@ const SupportAyyadSection = ({ lang }) => {
                       : <>The <strong className="text-white">Sendwave</strong> app is available in France, Canada, USA, UK, Belgium, Italy, Spain, Germany… (free, no hidden fees)</>}
                   </p>
                   <ol className="list-decimal pl-4 space-y-0.5">
-                    <li>{fr ? "Téléchargez Sendwave (App Store / Play Store)" : ar ? "حمّل Sendwave (App Store / Play Store)" : "Download Sendwave (App Store / Play Store)"}</li>
+                    <li>{fr ? "Téléchargez Sendwave (App Store / Play Store)" : "Download Sendwave (App Store / Play Store)"}</li>
                     <li>{fr ? <>Envoyez au numéro Wave : <strong className="font-mono text-white">+225 07 48 05 61 28</strong></> : <>Send to the Wave number: <strong className="font-mono text-white">+225 07 48 05 61 28</strong></>}</li>
                     <li>{fr ? `Saisissez ${displayAmount}` : `Enter ${displayAmount}`}</li>
-                    <li>{fr ? "Validez — l'argent arrive instantanément en FCFA" : ar ? "أكّد — يصل المال فوراً بالفرنك الأفريقي" : "Confirm — money arrives instantly in FCFA"}</li>
+                    <li>{fr ? "Validez — l'argent arrive instantanément en FCFA" : "Confirm — money arrives instantly in FCFA"}</li>
                   </ol>
                   <div className="flex flex-wrap gap-2 mt-2">
                     <a href="https://apps.apple.com/app/sendwave-send-money/id1238118264" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-white text-emerald-900 px-2 py-1 rounded-md text-[10px] font-bold">🍎 iOS</a>
@@ -2138,7 +2099,7 @@ const SupportAyyadSection = ({ lang }) => {
               </details>
 
               <button onClick={reset} className="text-xs text-white/40 hover:text-white/70 py-1">
-                ← {fr ? "Modifier le montant" : ar ? "تعديل المبلغ" : "Edit amount"}
+                ← {fr ? "Modifier le montant" : "Edit amount"}
               </button>
             </div>
           )}
@@ -2190,7 +2151,9 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
       eyebrow: fr ? "Plateforme vérifiée & sécurisée" : ar ? "منصة موثوقة وآمنة" : "Verified & secure platform",
       titlePre: fr ? "Quand la vie attend," : ar ? "حين يستعجل الحياة،" : "When life can't wait,",
       titleEm: fr ? "agissons ensemble." : ar ? "نتحرك معاً." : "we act together.",
-      sub: fr ? "Derrière chaque collecte, un patient dont la santé dépend de notre solidarité. Un don. Un hôpital. Un espoir." : ar ? "خلف كل حملة، مريض صحته تعتمد على تضامننا. تبرع واحد. مستشفى واحد. أمل واحد." : "Behind every campaign, a patient whose health depends on our solidarity. One donation. One hospital. One hope.",
+      sub: fr
+        ? "Derrière chaque collecte, un patient dont la santé dépend de notre solidarité. Un don. Un hôpital. Un espoir."
+        : "Behind every campaign, a patient whose health depends on our solidarity. One donation. One hospital. One hope.",
       cta: { label: fr ? "Faire un don maintenant" : ar ? "تبرع الآن" : "Donate now", action: () => setPage("collectesactives") },
     },
     {
@@ -2198,26 +2161,30 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
       eyebrow: fr ? "100% transparent · 0% frais cachés" : ar ? "شفافية 100% · 0% رسوم خفية" : "100% transparent · 0% hidden fees",
       titlePre: fr ? "Financer des soins," : ar ? "تمويل الرعاية الصحية،" : "Funding care,",
       titleEm: fr ? "changer une vie." : ar ? "لنغيّر حياة." : "changing a life.",
-      sub: fr ? "Vos dons sont versés directement à l'hôpital partenaire. Chaque virement est audité. Aucune intermédiation cash." : ar ? "تبرعاتك تُحوَّل مباشرة للمستشفى الشريك. كل تحويل مدقّق. بدون وسيط نقدي." : "Your donations go directly to the partner hospital. Every transfer is audited. No cash intermediation.",
+      sub: fr
+        ? "Vos dons sont versés directement à l'hôpital partenaire. Chaque virement est audité. Aucune intermédiation cash."
+        : "Your donations go directly to the partner hospital. Every transfer is audited. No cash intermediation.",
       cta: { label: fr ? "Découvrir les campagnes" : ar ? "استكشف الحملات" : "Explore campaigns", action: () => setPage("collectesactives") },
     },
     {
       img: "https://images.unsplash.com/photo-1666214280557-f1b5022eb634?w=1920&q=85",
-      eyebrow: fr ? "Pour les patients" : ar ? "للمرضى" : "For patients",
-      titlePre: fr ? "Une plateforme humaine," : ar ? "منصة إنسانية،" : "A platform built on humanity,",
-      titleEm: fr ? "construite pour vous." : ar ? "بُنيت من أجلك." : "built for you.",
-      sub: fr ? "Soumettez votre dossier médical, notre équipe le vérifie sous 48h avec un hôpital partenaire. Mise en ligne rapide, suivi personnalisé." : ar ? "قدّم ملفك الطبي، فريقنا يتحقق منه خلال 48 ساعة مع مستشفى شريك. إطلاق سريع ومتابعة شخصية." : "Submit your medical case, our team verifies it within 48h with a partner hospital. Fast online launch, personal follow-up.",
-      cta: { label: fr ? "Soumettre un dossier" : ar ? "تقديم ملف" : "Submit a case", action: () => setPage("submit") },
+      eyebrow: fr ? "Pour les patients" : "For patients",
+      titlePre: fr ? "Une plateforme humaine," : "A platform built on humanity,",
+      titleEm: fr ? "construite pour vous." : "built for you.",
+      sub: fr
+        ? "Soumettez votre dossier médical, notre équipe le vérifie sous 48h avec un hôpital partenaire. Mise en ligne rapide, suivi personnalisé."
+        : "Submit your medical case, our team verifies it within 48h with a partner hospital. Fast online launch, personal follow-up.",
+      cta: { label: fr ? "Soumettre un dossier" : "Submit a case", action: () => setPage("submit") },
     },
     {
       img: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=1920&q=85",
-      eyebrow: fr ? "Impact mesurable" : ar ? "أثر قابل للقياس" : "Measurable impact",
-      titlePre: fr ? "Chaque contribution" : ar ? "كل مساهمة" : "Every contribution",
-      titleEm: fr ? "peut sauver une vie." : ar ? "يمكن أن تنقذ حياة." : "can save a life.",
+      eyebrow: fr ? "Impact mesurable" : "Measurable impact",
+      titlePre: fr ? "Chaque contribution" : "Every contribution",
+      titleEm: fr ? "peut sauver une vie." : "can save a life.",
       sub: fr
         ? "Rejoignez une communauté de donateurs engagés à offrir un accès aux soins à ceux qui en ont le plus besoin en Côte d'Ivoire."
-        : lang==="ar" ? "انضم إلى مجتمع من المتبرعين الملتزمين بتوفير الرعاية الصحية لمن يحتاجها أكثر في كوت ديفوار." : lang==="ar" ? "انضم إلى مجتمع من المتبرعين الملتزمين بتوفير الرعاية الصحية لمن يحتاجها أكثر." : "Join a community of donors committed to providing healthcare access to those who need it most in Côte d'Ivoire.",
-      cta: { label: fr ? "Voir les histoires" : ar ? "اقرأ القصص" : "Read the stories", action: () => setPage("collectes") },
+        : "Join a community of donors committed to providing healthcare access to those who need it most in Côte d'Ivoire.",
+      cta: { label: fr ? "Voir les histoires" : "Read the stories", action: () => setPage("collectes") },
     },
   ];
 
@@ -2328,20 +2295,20 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
               {current.cta.label} →
             </button>
             <button onClick={() => setPage("submit")} className="ayyad-btn-ghost" style={{ fontSize:14 }}>
-              {fr ? "Lancer une campagne" : ar ? "أطلق حملة" : "Start a campaign"}
+              {fr ? "Lancer une campagne" : "Start a campaign"}
             </button>
             <button onClick={() => setPage("how")} className="ayyad-btn-ghost" style={{ fontSize:14 }}>
-              {fr ? "Comment ça marche" : ar ? "كيف يعمل" : "How it works"}
+              {fr ? "Comment ça marche" : "How it works"}
             </button>
           </div>
 
           {/* Trust pills */}
           <div style={{ display:"flex", flexWrap:"wrap", gap:10, marginTop: 36 }}>
             <span className="ayyad-trust-pill" style={{ background:"rgba(255,255,255,0.10)", color:"#fff", border:"1px solid rgba(255,255,255,0.22)" }}>
-              <span style={{ color:"#e9d59a" }}>🔒</span> {fr ? "Paiement sécurisé" : ar ? "دفع آمن" : "Secure payment"}
+              <span style={{ color:"#e9d59a" }}>🔒</span> {fr ? "Paiement sécurisé" : "Secure payment"}
             </span>
             <span className="ayyad-trust-pill" style={{ background:"rgba(255,255,255,0.10)", color:"#fff", border:"1px solid rgba(255,255,255,0.22)" }}>
-              <span style={{ color:"#e9d59a" }}>✓</span> {fr ? "100% transparent" : ar ? "100% شفاف" : "100% transparent"}
+              <span style={{ color:"#e9d59a" }}>✓</span> {fr ? "100% transparent" : "100% transparent"}
             </span>
             <span className="ayyad-trust-pill" style={{ background:"rgba(255,255,255,0.10)", color:"#fff", border:"1px solid rgba(255,255,255,0.22)" }}>
               <span style={{ color:"#e9d59a" }}>🏥</span> {fr ? "Hôpitaux partenaires" : ar ? "مستشفيات شريكة" : "Partner hospitals"}
@@ -2375,7 +2342,7 @@ const HeroSlider = ({ lang, setPage, t, heroStats }) => {
             { v: heroStats?.patients || "—", l: fr ? "Patients aidés" : ar ? "مرضى تمت مساعدتهم" : "Patients helped", icon:"💚" },
             { v: heroStats?.collected || "—", l: fr ? "FCFA collectés" : ar ? "دولار مُجمَّع" : "$ raised", icon:"📈" },
             { v: heroStats?.hospitals || "18", l: fr ? "Hôpitaux partenaires" : ar ? "مستشفيات شريكة" : "Partner hospitals", icon:"🏥" },
-            { v: "48h", l: fr ? "Vérification dossier" : ar ? "التحقق من الملف" : "Case verification", icon:"⚡" },
+            { v: "48h", l: fr ? "Vérification dossier" : "Case verification", icon:"⚡" },
           ].map((k, i) => (
             <div key={i} style={{
               padding:"clamp(6px, 1.5vw, 12px) clamp(10px, 2vw, 18px)",
@@ -2475,15 +2442,15 @@ const PartnersBanner = ({ lang }) => {
       <div className="ayyad-container">
         <div style={{ textAlign:"center", maxWidth: 720, margin:"0 auto 20px" }}>
           <span className="ayyad-eyebrow" style={{ color:"var(--ayyad-amber)", background:"rgba(245,158,11,0.10)", borderColor:"rgba(245,158,11,0.30)" }}>
-            {fr ? "🏥 Établissements partenaires" : ar ? "🏥 المنشآت الشريكة" : "🏥 Partner establishments"}
+            {fr ? "🏥 Établissements partenaires" : "🏥 Partner establishments"}
           </span>
           <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.6rem, 3vw, 2.4rem)", marginTop: 12, marginBottom: 10 }}>
-            {fr ? <>Nos <em>établissements partenaires.</em></> : ar ? <>مرافقنا <em>الصحية الشريكة.</em></> : <>Our <em>partner facilities.</em></>}
+            {fr ? <>Nos <em>établissements partenaires.</em></> : <>Our <em>partner facilities.</em></>}
           </h2>
           <p style={{ color:"var(--ink-500)", fontSize:14, lineHeight:1.6 }}>
             {fr
               ? "Ayyad travaille à la finalisation de partenariats officiels avec ces hôpitaux et cliniques de référence en Côte d'Ivoire. En attendant, les fonds sont versés directement à l'établissement qui prend en charge le patient."
-              : ar ? "تعمل أيد على إتمام شراكات رسمية مع هذه المستشفيات والعيادات في كوت ديفوار. في غضون ذلك، تُحوَّل الأموال مباشرة إلى المنشأة التي ترعى المريض." : "Ayyad is finalising official partnerships with these leading hospitals and clinics in Côte d'Ivoire. In the meantime, funds are transferred directly to the facility caring for the patient."}
+              : "Ayyad is finalising official partnerships with these leading hospitals and clinics in Côte d'Ivoire. In the meantime, funds are transferred directly to the facility caring for the patient."}
           </p>
         </div>
       </div>
@@ -2533,7 +2500,7 @@ const PartnersBanner = ({ lang }) => {
                   border:"1px solid rgba(13,92,46,0.20)",
                   whiteSpace:"nowrap",
                   textTransform:"uppercase",
-                }}>{fr ? "✓ Partenaire" : ar ? "✓ شريك" : "✓ Partner"}</span>
+                }}>{fr ? "✓ Partenaire" : "✓ Partner"}</span>
               </div>
             ))}
           </div>
@@ -2546,7 +2513,9 @@ const PartnersBanner = ({ lang }) => {
 
       <div className="ayyad-container">
         <p style={{ textAlign:"center", fontSize:12, color:"var(--ink-400)", marginTop: 24, fontStyle:"italic", maxWidth: 720, margin:"24px auto 0" }}>
-          {fr ? "Ces établissements accueillent les patients AYYAD. Les fonds sont versés directement à l'hôpital concerné, jamais en espèces." : ar ? "هذه المنشآت تستقبل مرضى أيد. الأموال تُحوَّل مباشرة للمستشفى المعني، وليس نقداً أبداً." : "These institutions welcome AYYAD patients. Funds are transferred directly to the hospital, never in cash."}
+          {fr
+            ? "Ces établissements accueillent les patients AYYAD. Les fonds sont versés directement à l'hôpital concerné, jamais en espèces."
+            : "These institutions welcome AYYAD patients. Funds are transferred directly to the hospital, never in cash."}
         </p>
       </div>
     </section>
@@ -2625,12 +2594,14 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
       <div className="ayyad-container">
         {/* Header centré */}
         <div style={{ textAlign:"center", marginBottom: 28 }}>
-          <span className="ayyad-eyebrow">{fr ? "Notre impact" : ar ? "أثرنا" : "Our impact"}</span>
+          <span className="ayyad-eyebrow">{fr ? "Notre impact" : "Our impact"}</span>
           <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.8rem, 3.4vw, 2.8rem)", marginTop: 14, marginBottom: 10 }}>
             {fr ? <>Des chiffres qui <em>changent des vies.</em></> : <>Numbers that <em>change lives.</em></>}
           </h2>
           <p style={{ color:"var(--ink-500)", fontSize:15, maxWidth: 600, margin:"0 auto", lineHeight:1.55 }}>
-            {fr ? "Chaque don est tracé, chaque virement est audité, chaque patient est suivi." : ar ? "كل تبرع مُتتبَّع، كل تحويل مدقّق، كل مريض مُتابَع." : "Every donation is tracked, every transfer is audited, every patient is followed up."}
+            {fr
+              ? "Chaque don est tracé, chaque virement est audité, chaque patient est suivi."
+              : "Every donation is tracked, every transfer is audited, every patient is followed up."}
           </p>
         </div>
 
@@ -2642,10 +2613,10 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
           marginBottom: 24,
         }}>
           {[
-            { v: collectedNum, suffix: " FCFA", label: fr ? "Total collecté" : ar ? "المجموع المجموع" : "Total raised", icon:"💰", color:"#0d5c2e" },
+            { v: collectedNum, suffix: " FCFA", label: fr ? "Total collecté" : "Total raised", icon:"💰", color:"#0d5c2e" },
             { v: patientsNum,  suffix: "",       label: fr ? "Patients aidés" : ar ? "مرضى تمت مساعدتهم" : "Patients helped", icon:"💚", color:"#10b981" },
             { v: hospitalsNum, suffix: "",       label: fr ? "Hôpitaux partenaires" : ar ? "مستشفيات شريكة" : "Partner hospitals", icon:"🏥", color:"#0f766e" },
-            { v: campagnesNum, suffix: "",       label: fr ? "Campagnes financées" : ar ? "حملات ممولة" : "Funded campaigns", icon:"🎯", color:"#a17f29" },
+            { v: campagnesNum, suffix: "",       label: fr ? "Campagnes financées" : "Funded campaigns", icon:"🎯", color:"#a17f29" },
           ].map((k, i) => (
             <div key={i} className="ayyad-card ayyad-reveal" style={{ padding:"clamp(16px, 3vw, 32px) clamp(14px, 2.5vw, 28px)", textAlign:"left", animationDelay: `${i*80}ms`, minWidth: 0 }}>
               <div style={{
@@ -2685,20 +2656,22 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
           <div style={{ position:"relative", display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap:"clamp(20px, 3vw, 40px)", alignItems:"center" }}>
             <div>
               <span className="ayyad-eyebrow" style={{ color:"#e9d59a", background:"rgba(201,168,76,0.10)", borderColor:"rgba(201,168,76,0.40)" }}>
-                {fr ? "Engagement Ayyad" : ar ? "التزام أيد" : "Ayyad commitment"}
+                {fr ? "Engagement Ayyad" : "Ayyad commitment"}
               </span>
               <h3 className="ayyad-h-display" style={{ color:"#fff", fontSize:"clamp(1.6rem, 2.6vw, 2.4rem)", marginTop: 18, marginBottom: 16 }}>
                 {fr ? <>La confiance n'est pas un mot, <em style={{ color:"#e9d59a" }}>c'est une preuve.</em></> : <>Trust isn't a word, <em style={{ color:"#e9d59a" }}>it's a proof.</em></>}
               </h3>
               <p style={{ color:"rgba(255,255,255,0.85)", lineHeight:1.7, fontSize:15 }}>
-                {fr ? "Nous publions chaque mois nos rapports d'impact, nos virements aux hôpitaux et notre commission. Aucune intermédiation cash, aucun frais caché : ce que vous donnez arrive intégralement à l'établissement de santé." : ar ? "ننشر شهرياً تقارير أثرنا وتحويلاتنا للمستشفيات وعمولتنا. بدون وسيط نقدي، بدون رسوم خفية: ما تتبرع به يصل كاملاً إلى المنشأة الصحية." : "Each month we publish our impact reports, hospital transfers and commission. No cash intermediation, no hidden fees: what you give arrives in full to the healthcare facility."}
+                {fr
+                  ? "Nous publions chaque mois nos rapports d'impact, nos virements aux hôpitaux et notre commission. Aucune intermédiation cash, aucun frais caché : ce que vous donnez arrive intégralement à l'établissement de santé."
+                  : "Each month we publish our impact reports, hospital transfers and commission. No cash intermediation, no hidden fees: what you give arrives in full to the healthcare facility."}
               </p>
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap: 12 }}>
               {[
-                { icon:"🔒", t: fr ? "Conformité BCEAO" : ar ? "امتثال BCEAO" : "BCEAO compliance",      s: fr ? "Plateforme déclarée et auditée" : ar ? "منصة مُعلنة ومدقّقة" : "Declared and audited platform",   target: "how" },
-                { icon:"📊", t: fr ? "Rapports trimestriels" : ar ? "تقارير ربع سنوية" : "Quarterly reports", s: fr ? "Transparence totale sur les fonds" : ar ? "شفافية كاملة على الأموال" : "Full transparency on funds", target: "how" },
-                { icon:"🏥", t: fr ? "Versement direct hôpital" : ar ? "دفع مباشر للمستشفى" : "Direct to hospital", s: fr ? "Jamais en espèces, toujours tracé" : ar ? "أبداً نقداً، دائماً مُتتبَّع" : "Never cash, always traceable", target: "how" },
+                { icon:"🔒", t: fr ? "Conformité BCEAO" : "BCEAO compliance",      s: fr ? "Plateforme déclarée et auditée" : "Declared and audited platform",   target: "how" },
+                { icon:"📊", t: fr ? "Rapports trimestriels"  : "Quarterly reports", s: fr ? "Transparence totale sur les fonds" : "Full transparency on funds", target: "how" },
+                { icon:"🏥", t: fr ? "Versement direct hôpital" : "Direct to hospital", s: fr ? "Jamais en espèces, toujours tracé" : "Never cash, always traceable", target: "how" },
               ].map((b, i) => (
                 <button
                   key={i}
@@ -2752,12 +2725,12 @@ const ProcessStrip = ({ lang, setPage }) => {
     <section style={{ background:"#fff", padding:"clamp(28px,4vw,52px) 0", borderBottom:"1px solid rgba(10,31,26,0.06)" }}>
       <div className="ayyad-container">
         <div style={{ textAlign:"center", marginBottom:"clamp(18px,3vw,36px)" }}>
-          <span className="ayyad-eyebrow">{fr ? "Notre fonctionnement" : ar ? "كيف نعمل" : "How we work"}</span>
+          <span className="ayyad-eyebrow">{fr ? "Notre fonctionnement" : "How we work"}</span>
           <h2 style={{ fontFamily:"var(--font-serif)", fontSize:"clamp(1.5rem,2.8vw,2.3rem)", fontWeight:800, color:"var(--ayyad-deep)", margin:"10px 0 6px", lineHeight:1.2 }}>
             {fr ? <>3 étapes. 0 intermédiaire. <span style={{color:"var(--ayyad-accent)"}}>100% transparent.</span></> : <>3 steps. 0 intermediary. <span style={{color:"var(--ayyad-accent)"}}>100% transparent.</span></>}
           </h2>
           <p style={{ color:"var(--ink-500)", fontSize:"clamp(13px,1.6vw,15px)", maxWidth:540, margin:"0 auto", lineHeight:1.6 }}>
-            {fr ? "AYYAD connecte directement le donateur à l'hôpital. Ici, votre argent ne se perd jamais." : ar ? "أيد تربط المتبرع مباشرة بالمستشفى. هنا، لن يضيع مالك أبدًا." : "AYYAD connects donors directly to hospitals. Here, your money is never lost."}
+            {fr ? "AYYAD connecte directement le donateur à l'hôpital. Ici, votre argent ne se perd jamais." : "AYYAD connects donors directly to hospitals. Here, your money is never lost."}
           </p>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(min(280px,100%), 1fr))", gap:"clamp(12px,2vw,24px)", marginBottom:28 }}>
@@ -2774,7 +2747,7 @@ const ProcessStrip = ({ lang, setPage }) => {
         </div>
         <div style={{ textAlign:"center" }}>
           <button onClick={()=>setPage("how")} style={{ background:"transparent", border:"1.5px solid rgba(13,92,46,0.22)", color:"var(--ayyad-deep)", fontWeight:700, fontSize:14, padding:"12px 28px", borderRadius:9999, cursor:"pointer", transition:"all .2s" }}>
-            {fr ? "En savoir plus sur notre démarche →" : ar ? "اعرف المزيد عن نهجنا →" : "Learn more about our approach →"}
+            {fr ? "En savoir plus sur notre démarche →" : "Learn more about our approach →"}
           </button>
         </div>
       </div>
@@ -2803,14 +2776,16 @@ const WhyAyyadSection = ({ lang }) => {
     <section style={{ background:"#fff", padding:"clamp(40px, 5vw, 64px) 0", borderTop:"1px solid rgba(10,31,26,0.07)" }}>
       <div className="ayyad-container">
         <div style={{ textAlign:"center", marginBottom:"clamp(24px, 4vw, 44px)" }}>
-          <span className="ayyad-eyebrow">{fr ? "Pourquoi AYYAD ?" : ar ? "لماذا أيد؟" : "Why AYYAD?"}</span>
+          <span className="ayyad-eyebrow">{fr ? "Pourquoi AYYAD ?" : "Why AYYAD?"}</span>
           <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.7rem, 3.2vw, 2.6rem)", marginTop: 14, marginBottom: 10 }}>
             {fr
               ? <>La confiance ne se promet pas.<br/><em>Elle se démontre.</em></>
               : <>Trust is not promised.<br/><em>It is demonstrated.</em></>}
           </h2>
           <p style={{ color:"var(--ink-500)", fontSize:15, maxWidth:540, margin:"0 auto", lineHeight:1.6 }}>
-            {fr ? "Avant de faire confiance à une plateforme, vous avez le droit de savoir comment elle fonctionne réellement." : ar ? "قبل الوثوق بأي منصة، من حقك أن تعرف كيف تعمل فعلياً." : "Before trusting a platform, you have the right to know how it really works."}
+            {fr
+              ? "Avant de faire confiance à une plateforme, vous avez le droit de savoir comment elle fonctionne réellement."
+              : "Before trusting a platform, you have the right to know how it really works."}
           </p>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap:"clamp(12px, 2vw, 20px)" }}>
@@ -2849,7 +2824,7 @@ const DjanaSuccessSection = ({ lang, setPage }) => {
       <div className="ayyad-container">
         <div style={{ textAlign:"center", marginBottom:"clamp(20px, 3vw, 32px)" }}>
           <span className="ayyad-eyebrow" style={{ color:"#10b981" }}>
-            {fr ? "✅ Première vie sauvée" : ar ? "✅ أول حياة أُنقذت" : "✅ First life saved"}
+            {fr ? "✅ Première vie sauvée" : "✅ First life saved"}
           </span>
           <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.6rem, 3vw, 2.4rem)", marginTop: 12, marginBottom: 10 }}>
             {fr
@@ -2857,7 +2832,9 @@ const DjanaSuccessSection = ({ lang, setPage }) => {
               : <>Djana is free. <em>Thanks to you.</em></>}
           </h2>
           <p style={{ color:"var(--ink-500)", fontSize:15, maxWidth:520, margin:"0 auto", lineHeight:1.6 }}>
-            {fr ? "AYYAD a financé sa première opération en juin 2026. Voici comment ça s'est passé." : ar ? "أيد موّلت أول عملية جراحية في يونيو 2026. إليك كيف جرى ذلك." : "AYYAD funded its first surgery in June 2026. Here's how it happened."}
+            {fr
+              ? "AYYAD a financé sa première opération en juin 2026. Voici comment ça s'est passé."
+              : "AYYAD funded its first surgery in June 2026. Here's how it happened."}
           </p>
         </div>
 
@@ -2880,15 +2857,17 @@ const DjanaSuccessSection = ({ lang, setPage }) => {
             <div style={{ flex:1, minWidth: 0 }}>
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" }}>
                 <span style={{ background:"linear-gradient(90deg,#10b981,#059669)", color:"#fff", fontSize:11, fontWeight:800, padding:"4px 12px", borderRadius:99, letterSpacing:"0.3px" }}>
-                  ✅ {fr ? "DOSSIER FINANCÉ" : ar ? "ملف ممول" : "FULLY FUNDED"}
+                  ✅ {fr ? "DOSSIER FINANCÉ" : "FULLY FUNDED"}
                 </span>
                 <span style={{ fontSize:12, color:"var(--ink-400)", fontWeight:600 }}>AYD-2026-06-001</span>
               </div>
               <h3 style={{ fontSize:"clamp(15px, 2.5vw, 19px)", fontWeight:900, color:"var(--ayyad-deep)", margin:"0 0 8px", lineHeight:1.3 }}>
-                {fr ? "Djana Coulibaly, 5 ans — Bouaké, Côte d'Ivoire" : ar ? "جانا كوليبالي، 5 سنوات — بواكي، كوت ديفوار" : "Djana Coulibaly, 5 years old — Bouaké, Côte d'Ivoire"}
+                {fr ? "Djana Coulibaly, 5 ans — Bouaké, Côte d'Ivoire" : "Djana Coulibaly, 5 years old — Bouaké, Côte d'Ivoire"}
               </h3>
               <p style={{ fontSize:"clamp(13px, 1.6vw, 15px)", color:"var(--ink-500)", lineHeight:1.75, margin:0 }}>
-                {fr ? "Djana vivait depuis des mois avec une stomie après une opération d'urgence au CHU de Bouaké. Sa sœur aînée avait contracté 540 000 FCFA de dettes pour financer sa première chirurgie. AYYAD a vérifié le dossier avec l'Hôpital Jean-Baptiste Vatelot et a financé l'intégralité de son opération de rétablissement." : ar ? "جانا عاشت شهوراً مع فغرة بعد عملية طارئة في مستشفى بواكيه. أختها الكبرى تحملت 540,000 فرنك ديوناً لتمويل جراحتها الأولى. أيد تحققت من الملف مع مستشفى جان باتيست فاتيلو وموّلت كامل جراحة إعادة التأهيل." : "Djana had been living for months with a stoma after emergency surgery at Bouaké's CHU. Her older sister had taken on 540,000 FCFA in debt to fund her first surgery. AYYAD verified the case with Jean-Baptiste Vatelot Hospital and fully funded her restorative surgery."}
+                {fr
+                  ? "Djana vivait depuis des mois avec une stomie après une opération d'urgence au CHU de Bouaké. Sa sœur aînée avait contracté 540 000 FCFA de dettes pour financer sa première chirurgie. AYYAD a vérifié le dossier avec l'Hôpital Jean-Baptiste Vatelot et a financé l'intégralité de son opération de rétablissement."
+                  : "Djana had been living for months with a stoma after emergency surgery at Bouaké's CHU. Her older sister had taken on 540,000 FCFA in debt to fund her first surgery. AYYAD verified the case with Jean-Baptiste Vatelot Hospital and fully funded her restorative surgery."}
               </p>
             </div>
           </div>
@@ -2896,9 +2875,9 @@ const DjanaSuccessSection = ({ lang, setPage }) => {
           {/* Metrics */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:12, padding:"16px 20px", background:"#f0fdf4", borderRadius:16, marginBottom:20 }}>
             {[
-              { v:"540 000 FCFA", l: fr ? "collectés" : ar ? "جُمع" : "raised" },
-              { v:"48h", l: fr ? "vérification" : ar ? "التحقق" : "verification" },
-              { v:"100%", l: fr ? "financé" : ar ? "ممول" : "funded" },
+              { v:"540 000 FCFA", l: fr ? "collectés" : "raised" },
+              { v:"48h", l: fr ? "vérification" : "verification" },
+              { v:"100%", l: fr ? "financé" : "funded" },
             ].map((s, i) => (
               <div key={i} style={{ textAlign:"center" }}>
                 <div style={{ fontWeight:900, fontSize:"clamp(14px, 2.5vw, 20px)", color:"#059669", lineHeight:1.1 }}>{s.v}</div>
@@ -2925,7 +2904,7 @@ const DjanaSuccessSection = ({ lang, setPage }) => {
             onClick={() => setPage("collectesactives")}
             style={{ background:"var(--ayyad-deep)", color:"#fff", fontWeight:800, fontSize:15, padding:"14px 36px", borderRadius:99, border:"none", cursor:"pointer", boxShadow:"0 4px 20px rgba(13,92,46,0.25)" }}
           >
-            {fr ? "Soutenir les patients actuels →" : ar ? "دعم المرضى الحاليين →" : "Support current patients →"}
+            {fr ? "Soutenir les patients actuels →" : "Support current patients →"}
           </button>
         </div>
       </div>
@@ -2971,7 +2950,7 @@ const VisionSection = ({ lang, setPage }) => {
             }}>
               <img
                 src="/vision-ayyad-clean.jpg"
-                alt={fr ? "Une maman et son enfant — soutenir une vie" : ar ? "أم وطفلها — دعم حياة" : "A mother and her child — supporting a life"}
+                alt={fr ? "Une maman et son enfant — soutenir une vie" : "A mother and her child — supporting a life"}
                 style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center" }}
                 onError={e=>{ e.target.style.display='none'; }}
               />
@@ -2981,7 +2960,9 @@ const VisionSection = ({ lang, setPage }) => {
               <div style={{ position:"absolute", bottom:32, left:32, right:32, color:"#fff" }}>
                 <div style={{ fontSize:48, fontFamily:"var(--font-serif)", color:"#e9d59a", lineHeight:1, marginBottom:8 }}>"</div>
                 <p style={{ fontFamily:"var(--font-serif)", fontStyle:"italic", fontSize:18, fontWeight:500, lineHeight:1.45 }}>
-                  {fr ? "Soutenir une vie, c'est en sauver une." : ar ? "دعم حياة يعني إنقاذها." : "To support a life is to save one."}
+                  {fr
+                    ? "Soutenir une vie, c'est en sauver une."
+                    : "To support a life is to save one."}
                 </p>
               </div>
             </div>
@@ -2992,19 +2973,21 @@ const VisionSection = ({ lang, setPage }) => {
 
           {/* Texte droit */}
           <div className="ayyad-reveal-right" style={{ minWidth: 0 }}>
-            <span className="ayyad-eyebrow">{fr ? "Notre vision" : ar ? "رؤيتنا" : "Our vision"}</span>
+            <span className="ayyad-eyebrow">{fr ? "Notre vision" : "Our vision"}</span>
             <h2 className="ayyad-h-display" style={{ fontSize:"clamp(2rem, 3.6vw, 3.2rem)", marginTop: 18, marginBottom: 24 }}>
               {fr
                 ? <>Un accès aux soins <em>sans condition,</em> sans détour.</>
                 : <>Healthcare access <em>without condition,</em> without detour.</>}
             </h2>
             <p style={{ color:"var(--ink-700)", fontSize:17, lineHeight:1.75, marginBottom: 20 }}>
-              {fr ? "Ayyad est née d'un constat simple : en Côte d'Ivoire, des milliers de patients renoncent à des soins vitaux faute de moyens. Pourtant, des dizaines de milliers de personnes seraient prêtes à donner — si elles avaient l'assurance que leur don arrive vraiment au bon endroit." : ar ? "أيد وُلدت من ملاحظة بسيطة: في كوت ديفوار، آلاف المرضى يتخلون عن رعاية حيوية لنقص الموارد. ومع ذلك، عشرات الآلاف مستعدون للتبرع — لو أُعطوا ضماناً بأن تبرعهم يصل للمكان الصحيح." : "Ayyad was born from a simple observation: in Côte d'Ivoire, thousands of patients give up vital care for lack of resources. Yet tens of thousands of people would be willing to donate — if they had the assurance that their gift truly reaches the right place."}
+              {fr
+                ? "Ayyad est née d'un constat simple : en Côte d'Ivoire, des milliers de patients renoncent à des soins vitaux faute de moyens. Pourtant, des dizaines de milliers de personnes seraient prêtes à donner — si elles avaient l'assurance que leur don arrive vraiment au bon endroit."
+                : "Ayyad was born from a simple observation: in Côte d'Ivoire, thousands of patients give up vital care for lack of resources. Yet tens of thousands of people would be willing to donate — if they had the assurance that their gift truly reaches the right place."}
             </p>
             <p style={{ color:"var(--ink-500)", fontSize:15, lineHeight:1.75, marginBottom: 32 }}>
               {fr
                 ? "Notre mission est de créer un pont de confiance entre le donateur et le patient, à travers une plateforme transparente, vérifiée et 100% africaine."
-                : ar ? "مهمتنا بناء جسر من الثقة بين المتبرع والمريض، عبر منصة شفافة وموثقة وأفريقية 100%." : "Our mission is to build a bridge of trust between the donor and the patient, through a transparent, verified and 100% African platform."}
+                : "Our mission is to build a bridge of trust between the donor and the patient, through a transparent, verified and 100% African platform."}
             </p>
 
             {/* 3 piliers — responsive 3 cols sur écrans larges, padding et taille adaptés */}
@@ -3015,9 +2998,9 @@ const VisionSection = ({ lang, setPage }) => {
               width:"100%",
             }}>
               {[
-                { icon:"🤝", t: fr ? "Solidarité" : ar ? "التضامن" : "Solidarity"          },
-                { icon:"🔍", t: fr ? "Transparence" : ar ? "الشفافية" : "Transparency"      },
-                { icon:"⚡", t: fr ? "Rapidité" : ar ? "السرعة" : "Speed"             },
+                { icon:"🤝", t: fr ? "Solidarité" : "Solidarity"          },
+                { icon:"🔍", t: fr ? "Transparence" : "Transparency"      },
+                { icon:"⚡", t: fr ? "Rapidité"    : "Speed"             },
               ].map((p, i) => (
                 <div key={i} style={{
                   textAlign:"center", padding:"12px 6px",
@@ -3033,7 +3016,7 @@ const VisionSection = ({ lang, setPage }) => {
 
             <div style={{ display:"flex", gap:14, flexWrap:"wrap" }}>
               <button onClick={()=>setPage("how")} className="ayyad-btn-primary" style={{ fontSize:14, padding:"13px 26px" }}>
-                {fr ? "Découvrir notre démarche" : ar ? "اكتشف نهجنا" : "Discover our approach"} →
+                {fr ? "Découvrir notre démarche" : "Discover our approach"} →
               </button>
               <button onClick={()=>setPage("collectesactives")} style={{
                 background:"transparent",
@@ -3043,7 +3026,7 @@ const VisionSection = ({ lang, setPage }) => {
                 padding:"13px 26px", borderRadius:9999, cursor:"pointer",
                 transition:"all .2s",
               }}>
-                {fr ? "Voir les campagnes" : ar ? "شاهد الحملات" : "See campaigns"}
+                {fr ? "Voir les campagnes" : "See campaigns"}
               </button>
             </div>
           </div>
@@ -3186,7 +3169,7 @@ const TestimonialsCarousel = ({ lang }) => {
   };
 
   const handleUpload = async () => {
-    if (!form.name.trim() || !form.file) { setUploadErr(fr ? "Nom et fichier requis." : ar ? "الاسم والملف مطلوبان." : "Name and file required."); return; }
+    if (!form.name.trim() || !form.file) { setUploadErr(fr ? "Nom et fichier requis." : "Name and file required."); return; }
     setUploading(true); setUploadErr("");
     try {
       const ext = form.file.name.split(".").pop().toLowerCase();
@@ -3228,13 +3211,14 @@ const TestimonialsCarousel = ({ lang }) => {
         {/* Header */}
         <div style={{ textAlign:"center", maxWidth:720, margin:"0 auto 40px" }}>
           <span className="ayyad-eyebrow" style={{ color:"#e9d59a", background:"rgba(201,168,76,0.10)", borderColor:"rgba(201,168,76,0.40)" }}>
-            {fr ? "Voix de bénéficiaires" : ar ? "أصوات المستفيدين" : "Beneficiary voices"}
+            {fr ? "Voix de bénéficiaires" : "Beneficiary voices"}
           </span>
           <h2 className="ayyad-h-display" style={{ color:"#fff", fontSize:"clamp(2rem, 3.6vw, 3rem)", marginTop:18, marginBottom:16 }}>
             {fr ? <>Ils ont retrouvé <em style={{ color:"#e9d59a" }}>l'espoir,</em> et la santé.</> : <>They found <em style={{ color:"#e9d59a" }}>hope,</em> and health.</>}
           </h2>
           <p style={{ color:"rgba(255,255,255,0.78)", fontSize:16, lineHeight:1.65 }}>
-            {fr ? "Chaque don raconte une histoire. Voici les vidéos et photos partagées par nos bénéficiaires." : ar ? "كل تبرع يحكي قصة. إليك مقاطع الفيديو والصور التي شاركها مستفيدونا." : "Every donation tells a story. Here are videos and photos shared by our beneficiaries."}
+            {fr ? "Chaque don raconte une histoire. Voici les vidéos et photos partagées par nos bénéficiaires."
+                : "Every donation tells a story. Here are videos and photos shared by our beneficiaries."}
           </p>
         </div>
 
@@ -3248,13 +3232,14 @@ const TestimonialsCarousel = ({ lang }) => {
             }}>
               <div style={{ fontSize:48, marginBottom:16 }}>🎥</div>
               <p style={{ color:"rgba(255,255,255,0.70)", fontSize:16, marginBottom:24 }}>
-                {fr ? "Les témoignages vidéo apparaîtront ici après validation." : ar ? "ستظهر الشهادات المرئية هنا بعد التحقق." : "Video testimonials will appear here after validation."}
+                {fr ? "Les témoignages vidéo apparaîtront ici après validation."
+                    : "Video testimonials will appear here after validation."}
               </p>
               <button onClick={()=>setShowUpload(true)} style={{
                 background:"#e9d59a", color:"#0a3d2e", border:"none",
                 borderRadius:999, padding:"12px 28px", fontWeight:800, fontSize:15, cursor:"pointer",
               }}>
-                {fr ? "📤 Soumettre votre témoignage" : ar ? "📤 أرسل شهادتك" : "📤 Submit your testimonial"}
+                {fr ? "📤 Soumettre votre témoignage" : "📤 Submit your testimonial"}
               </button>
             </div>
           ) : (
@@ -3328,7 +3313,7 @@ const TestimonialsCarousel = ({ lang }) => {
                           }}>
                             <span style={{ fontSize:15 }}>🔴</span>
                             <span style={{ fontWeight:800, fontSize:12, color:"#fca5a5", letterSpacing:1 }}>
-                              {fr ? "AVANT AIDE" : ar ? "قبل المساعدة" : "BEFORE HELP"}
+                              {fr ? "AVANT AIDE" : "BEFORE HELP"}
                             </span>
                           </div>
                           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -3338,7 +3323,7 @@ const TestimonialsCarousel = ({ lang }) => {
                                     {renderMedia(m)}
                                     {m.label && (
                                       <div style={{ padding:"6px 10px", fontSize:11, color:"rgba(255,255,255,0.6)", fontWeight:600 }}>
-                                        {m.label[fr ? "fr" : ar ? "ar" : "en"]}
+                                        {m.label[fr ? "fr" : "en"]}
                                       </div>
                                     )}
                                   </div>
@@ -3357,7 +3342,7 @@ const TestimonialsCarousel = ({ lang }) => {
                           }}>
                             <span style={{ fontSize:15 }}>✅</span>
                             <span style={{ fontWeight:800, fontSize:12, color:"#6ee7b7", letterSpacing:1 }}>
-                              {fr ? "APRÈS AIDE" : ar ? "بعد المساعدة" : "AFTER HELP"}
+                              {fr ? "APRÈS AIDE" : "AFTER HELP"}
                             </span>
                           </div>
                           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -3367,7 +3352,7 @@ const TestimonialsCarousel = ({ lang }) => {
                                     {renderMedia(m)}
                                     {m.label && (
                                       <div style={{ padding:"6px 10px", fontSize:11, color:"rgba(255,255,255,0.6)", fontWeight:600 }}>
-                                        {m.label[fr ? "fr" : ar ? "ar" : "en"]}
+                                        {m.label[fr ? "fr" : "en"]}
                                       </div>
                                     )}
                                   </div>
@@ -3375,7 +3360,7 @@ const TestimonialsCarousel = ({ lang }) => {
                               : (
                                 <div style={{ color:"rgba(255,255,255,0.25)", fontSize:13, padding:"20px 12px", textAlign:"center",
                                   background:"rgba(255,255,255,0.04)", borderRadius:12, border:"1px dashed rgba(255,255,255,0.12)" }}>
-                                  {fr ? "Photos/vidéos après aide à venir" : ar ? "صور/فيديوهات ما بعد المساعدة قريباً" : "Post-help photos/videos coming soon"}
+                                  {fr ? "Photos/vidéos après aide à venir" : "Post-help photos/videos coming soon"}
                                 </div>
                               )
                             }
@@ -3390,14 +3375,14 @@ const TestimonialsCarousel = ({ lang }) => {
                           <button
                             onClick={() => { const i = keys.indexOf(activeKey); setSelectedBenef(keys[(i - 1 + keys.length) % keys.length]); }}
                             style={{ background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:999, padding:"8px 18px", color:"rgba(255,255,255,0.7)", fontWeight:700, fontSize:13, cursor:"pointer" }}
-                          >‹ {fr ? "Précédent" : ar ? "السابق" : "Previous"}</button>
+                          >‹ {fr ? "Précédent" : "Previous"}</button>
                           <span style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>
                             {keys.indexOf(activeKey) + 1} / {keys.length}
                           </span>
                           <button
                             onClick={() => { const i = keys.indexOf(activeKey); setSelectedBenef(keys[(i + 1) % keys.length]); }}
                             style={{ background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:999, padding:"8px 18px", color:"rgba(255,255,255,0.7)", fontWeight:700, fontSize:13, cursor:"pointer" }}
-                          >{fr ? "Suivant" : ar ? "التالي" : "Next"} ›</button>
+                          >{fr ? "Suivant" : "Next"} ›</button>
                         </div>
                       )}
                     </div>
@@ -3412,7 +3397,7 @@ const TestimonialsCarousel = ({ lang }) => {
                   border:"1px solid rgba(233,213,154,0.40)",
                   borderRadius:999, padding:"10px 24px", fontWeight:700, fontSize:14, cursor:"pointer",
                 }}>
-                  {fr ? "📤 Partager votre témoignage" : ar ? "📤 شارك شهادتك" : "📤 Share your testimonial"}
+                  {fr ? "📤 Partager votre témoignage" : "📤 Share your testimonial"}
                 </button>
               </div>
             </div>
@@ -3435,26 +3420,27 @@ const TestimonialsCarousel = ({ lang }) => {
                 background:"none", border:"none", fontSize:22, cursor:"pointer", color:"#666",
               }}>✕</button>
               <h3 style={{ fontWeight:900, fontSize:20, color:"#0a3d2e", marginBottom:6 }}>
-                {fr ? "Partager votre témoignage" : ar ? "شارك شهادتك" : "Share your testimonial"}
+                {fr ? "Partager votre témoignage" : "Share your testimonial"}
               </h3>
               <p style={{ color:"#6B7280", fontSize:13, marginBottom:20 }}>
-                {fr ? "Votre vidéo ou photo sera examinée avant publication." : ar ? "سيُراجع الفيديو أو الصورة قبل النشر." : "Your video or photo will be reviewed before publishing."}
+                {fr ? "Votre vidéo ou photo sera examinée avant publication."
+                    : "Your video or photo will be reviewed before publishing."}
               </p>
               <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
                 <div>
                   <label style={{ fontSize:13, fontWeight:700, color:"#374151", display:"block", marginBottom:5 }}>
-                    {fr ? "Votre prénom *" : ar ? "اسمك *" : "Your name *"}
+                    {fr ? "Votre prénom *" : "Your name *"}
                   </label>
                   <input
                     value={form.name}
                     onChange={e=>setForm(f=>({...f,name:e.target.value}))}
-                    placeholder={fr ? "Ex: Djana, Kouadio…" : ar ? "مثال: جانا، كوادو…" : "e.g. Djana, John…"}
+                    placeholder={fr ? "Ex: Djana, Kouadio…" : "e.g. Djana, John…"}
                     style={{ width:"100%", border:"1px solid #D1D5DB", borderRadius:10, padding:"10px 14px", fontSize:14, boxSizing:"border-box", color:"#111827", background:"#fff" }}
                   />
                 </div>
                 <div>
                   <label style={{ fontSize:13, fontWeight:700, color:"#374151", display:"block", marginBottom:5 }}>
-                    {fr ? "Numéro de dossier (facultatif)" : ar ? "رقم الملف (اختياري)" : "Case number (optional)"}
+                    {fr ? "Numéro de dossier (facultatif)" : "Case number (optional)"}
                   </label>
                   <input
                     value={form.caseId}
@@ -3465,7 +3451,7 @@ const TestimonialsCarousel = ({ lang }) => {
                 </div>
                 <div>
                   <label style={{ fontSize:13, fontWeight:700, color:"#374151", display:"block", marginBottom:5 }}>
-                    {fr ? "Vidéo ou photo *" : ar ? "فيديو أو صورة *" : "Video or photo *"}
+                    {fr ? "Vidéo ou photo *" : "Video or photo *"}
                   </label>
                   <input
                     type="file"
@@ -3474,7 +3460,8 @@ const TestimonialsCarousel = ({ lang }) => {
                     style={{ width:"100%", fontSize:13 }}
                   />
                   <p style={{ fontSize:11, color:"#9CA3AF", marginTop:4 }}>
-                    {fr ? "Vidéo max 50MB · Photo max 10MB (JPG, PNG, MP4, MOV)" : ar ? "فيديو بحد أقصى 50MB · صورة بحد أقصى 10MB (JPG, PNG, MP4, MOV)" : "Video max 50MB · Photo max 10MB (JPG, PNG, MP4, MOV)"}
+                    {fr ? "Vidéo max 50MB · Photo max 10MB (JPG, PNG, MP4, MOV)"
+                        : "Video max 50MB · Photo max 10MB (JPG, PNG, MP4, MOV)"}
                   </p>
                 </div>
                 {uploadErr && <p style={{ color:"#DC2626", fontSize:13 }}>⚠ {uploadErr}</p>}
@@ -3487,7 +3474,7 @@ const TestimonialsCarousel = ({ lang }) => {
                     padding:"13px", fontWeight:800, fontSize:15, cursor: uploading ? "default" : "pointer",
                   }}
                 >
-                  {uploading ? (fr ? "Envoi en cours…" : ar ? "جارٍ الرفع…" : "Uploading…") : (fr ? "Envoyer →" : ar ? "إرسال →" : "Submit →")}
+                  {uploading ? (fr ? "Envoi en cours…" : "Uploading…") : (fr ? "Envoyer →" : "Submit →")}
                 </button>
               </div>
             </div>
@@ -3502,16 +3489,17 @@ const TestimonialsCarousel = ({ lang }) => {
             <div style={{ background:"#fff", borderRadius:20, padding:"40px 28px", maxWidth:400, width:"100%", textAlign:"center" }}>
               <div style={{ fontSize:52, marginBottom:16 }}>✅</div>
               <h3 style={{ fontWeight:900, fontSize:20, color:"#0a3d2e", marginBottom:10 }}>
-                {fr ? "Merci pour votre témoignage !" : ar ? "شكراً على شهادتك!" : "Thank you for your testimonial!"}
+                {fr ? "Merci pour votre témoignage !" : "Thank you for your testimonial!"}
               </h3>
               <p style={{ color:"#6B7280", fontSize:14, marginBottom:24 }}>
-                {fr ? "Votre média sera visible après validation par notre équipe." : ar ? "سيظهر ملفك بعد مراجعة فريقنا." : "Your media will appear after our team's review."}
+                {fr ? "Votre média sera visible après validation par notre équipe."
+                    : "Your media will appear after our team's review."}
               </p>
               <button onClick={()=>{ setShowUpload(false); setUploadDone(false); setForm({name:"",caseId:"",file:null}); }} style={{
                 background:"#0a3d2e", color:"#fff", border:"none",
                 borderRadius:12, padding:"12px 28px", fontWeight:800, fontSize:15, cursor:"pointer",
               }}>
-                {fr ? "Fermer" : ar ? "إغلاق" : "Close"}
+                {fr ? "Fermer" : "Close"}
               </button>
             </div>
           </div>
@@ -3561,8 +3549,8 @@ const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-br from-red-700 to-red-500 text-white py-16 px-4 text-center">
         <div className="text-5xl mb-4">🚨</div>
-        <h1 className="text-3xl font-black mb-3">{lang==="fr" ? "Cas urgents" : lang==="ar" ? "الحالات العاجلة" : "Urgent cases"}</h1>
-        <p className="text-red-100 max-w-xl mx-auto">{lang==="fr" ? "Ces patients ont besoin d'aide immédiate. Chaque heure compte." : lang==="ar" ? "هؤلاء المرضى بحاجة إلى مساعدة فورية. كل ساعة مهمة." : "These patients need immediate help. Every hour counts."}</p>
+        <h1 className="text-3xl font-black mb-3">{lang==="fr" ? "Cas urgents" : "Urgent cases"}</h1>
+        <p className="text-red-100 max-w-xl mx-auto">{lang==="fr" ? "Ces patients ont besoin d'aide immédiate. Chaque heure compte." : "These patients need immediate help. Every hour counts."}</p>
         <div className="bg-red-800/40 rounded-2xl px-6 py-3 inline-block mt-4 text-sm font-semibold">
           ⏱️ {lang==="fr" ? "Intervention critique sous 72h" : "Critical intervention within 72h"}
         </div>
@@ -3571,7 +3559,7 @@ const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
         {urgents.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <div className="text-4xl mb-3">✅</div>
-            <div>{lang==="fr" ? "Aucun cas urgent pour l'instant." : lang==="ar" ? "لا توجد حالات عاجلة في الوقت الحالي." : "No urgent cases right now."}</div>
+            <div>{lang==="fr" ? "Aucun cas urgent pour l'instant." : "No urgent cases right now."}</div>
           </div>
         ) : urgents.map(c => (
           <div key={c.id} onClick={() => { setSelectedCase(c); setPage("case"); }}
@@ -3598,13 +3586,13 @@ const UrgentsPage = ({ setPage, setSelectedCase, lang }) => {
                 </div>
               </div>
               <button className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex-shrink-0">
-                {lang==="fr" ? "Aider →" : lang==="ar" ? "ساعد →" : "Help →"}
+                {lang==="fr" ? "Aider →" : "Help →"}
               </button>
             </div>
           </div>
         ))}
         <div className="text-center mt-6">
-          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-red-600">← {lang==="fr"?"Retour à l'accueil":lang==="ar"?"العودة للرئيسية":"Back to home"}</button>
+          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-red-600">← {lang==="fr"?"Retour à l'accueil":"Back to home"}</button>
         </div>
       </div>
     </div>
@@ -3662,7 +3650,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
     ...dbCases.map(normalizCase),
     ...getDisplayCases().filter(c => c.status !== "FUNDED"),
   ];
-  const cases = allCases.filter(c => (lang==="ar" ? (CATS_AR[c.category?.en] || CATS_AR[c.category?.fr] || CATS_AR[c.category] || c.category?.[lang] || c.category?.en || c.category?.fr || c.category || "") : (c.category?.[lang] || c.category?.fr || c.category || "")) === specialite);
+  const cases = allCases.filter(c => (c.category?.[lang] || c.category?.fr || c.category || "") === specialite);
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-br from-emerald-700 to-teal-600 text-white py-10 px-4">
@@ -3672,7 +3660,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
             <span className="text-4xl">{CAT_ICONS[specialite] || "🏥"}</span>
             <div>
               <h1 className="text-3xl font-black">{specialite}</h1>
-              <p className="text-emerald-200 text-sm">{cases.length} {lang==="fr" ? "collecte(s) active(s)" : lang==="ar" ? "حملة (حملات) نشطة" : "active campaign(s)"}</p>
+              <p className="text-emerald-200 text-sm">{cases.length} {lang==="fr" ? "collecte(s) active(s)" : "active campaign(s)"}</p>
             </div>
           </div>
         </div>
@@ -3759,7 +3747,7 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
     : mockActive;
   const groups = {};
   active.forEach(c => {
-    const cat = (lang==="ar" ? (CATS_AR[c.category?.en] || CATS_AR[c.category?.fr] || CATS_AR[c.category] || c.category?.[lang] || c.category?.en || c.category?.fr || c.category || "") : (c.category?.[lang] || c.category?.fr || c.category || ""));
+    const cat = (c.category?.[lang] || c.category?.fr || c.category || "");
     if (!groups[cat]) groups[cat] = { label: cat, cases: [] };
     groups[cat].cases.push(c);
   });
@@ -3773,8 +3761,8 @@ const CollectesActivesPage = ({ setPage, setSelectedCase, lang, setSpecialite })
           <p className="text-emerald-100 text-sm">{active.length} {lang==="fr" ? "dossiers vérifiés — choisissez une spécialité" : "verified cases — choose a specialty"}</p>
           <div className="flex gap-4 mt-6 flex-wrap">
             {[[active.length+"", lang==="fr"?"Collectes":"Campaigns"],
-              [Object.keys(groups).length+"", lang==="fr"?"Spécialités":lang==="ar"?"التخصصات":"Specialties"],
-              [active.reduce((s,c)=>s+c.donors,0)+"", lang==="fr"?"Donateurs":lang==="ar"?"المتبرعون":"Donors"]
+              [Object.keys(groups).length+"", lang==="fr"?"Spécialités":"Specialties"],
+              [active.reduce((s,c)=>s+c.donors,0)+"", lang==="fr"?"Donateurs":"Donors"]
             ].map(([v,l]) => (
               <div key={l} className="bg-white/10 rounded-xl px-4 py-2 text-center">
                 <div className="text-xl font-black">{v}</div>
@@ -3822,7 +3810,7 @@ const CollectesPage = ({ setPage, lang }) => {
       {/* Hero */}
       <div className="bg-gradient-to-br from-emerald-700 to-teal-600 text-white py-16 px-4 text-center">
         <div className="text-5xl mb-4">💚</div>
-        <h1 className="text-3xl font-black mb-3">{lang==="fr" ? "Vies transformées par Ayyad" : lang==="ar" ? "أرواح غيّرتها أيد" : "Lives transformed by Ayyad"}</h1>
+        <h1 className="text-3xl font-black mb-3">{lang==="fr" ? "Vies transformées par Ayyad" : "Lives transformed by Ayyad"}</h1>
         <p className="text-emerald-100 max-w-xl mx-auto">{lang==="fr" ? "Ces personnes ont reçu les soins dont elles avaient besoin grâce à votre générosité." : "These people received the care they needed thanks to your generosity."}</p>
         {/* Stats — uniquement données réelles */}
         <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mt-8">
@@ -3842,7 +3830,7 @@ const CollectesPage = ({ setPage, lang }) => {
         {/* Tabs */}
         <div className="flex gap-2 mb-8 bg-white rounded-2xl p-1.5 shadow-sm border border-gray-100 w-fit mx-auto">
           <button onClick={() => setTab("testimonials")} className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab==="testimonials" ? "bg-emerald-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
-            💬 {lang==="fr" ? "Témoignages" : lang==="ar" ? "الشهادات" : "Testimonials"}
+            💬 {lang==="fr" ? "Témoignages" : "Testimonials"}
           </button>
           <button onClick={() => setTab("funded")} className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab==="funded" ? "bg-emerald-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
             ✅ {lang==="fr" ? "Collectes terminées" : "Completed campaigns"}
@@ -3869,7 +3857,7 @@ const CollectesPage = ({ setPage, lang }) => {
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div>
                           <div className="font-black text-gray-900">{t.beneficiary}</div>
-                          <div className="text-xs text-gray-400">{t.age && `${t.age} ${lang==="fr"?"ans":lang==="ar"?"سنة":"years old"}`}{t.city && ` · ${t.city}`}{t.hospital && ` · ${t.hospital}`}</div>
+                          <div className="text-xs text-gray-400">{t.age && `${t.age} ${lang==="fr"?"ans":"years old"}`}{t.city && ` · ${t.city}`}{t.hospital && ` · ${t.hospital}`}</div>
                         </div>
                         <div className="text-right">
                           {t.amount && <div className="text-emerald-600 font-bold text-sm">{Number(t.amount).toLocaleString()} FCFA</div>}
@@ -3885,7 +3873,7 @@ const CollectesPage = ({ setPage, lang }) => {
                   <div className="flex items-center gap-2 mt-3">
                     {(t.category_fr || t.category_en) && (
                       <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
-                        {lang==="fr" ? t.category_fr : lang==="ar" ? (CATS_AR[t.category_en] || CATS_AR[t.category_fr] || t.category_en || t.category_fr) : (t.category_en || t.category_fr)}
+                        {lang==="fr" ? t.category_fr : (t.category_en || t.category_fr)}
                       </span>
                     )}
                     <span className="text-xs text-gray-400">✅ {lang==="fr"?"Collecte terminée · Virement confirmé":"Campaign completed · Transfer confirmed"}</span>
@@ -3922,7 +3910,7 @@ const CollectesPage = ({ setPage, lang }) => {
                 <div className="text-center flex-shrink-0">
                   <div className="text-2xl">✅</div>
                   <div className="text-xs text-emerald-600 font-bold mt-1">{lang==="fr"?"Financé":"Funded"}</div>
-                  <div className="text-xs text-gray-400">{c.donors} {lang==="fr"?"donateurs":lang==="ar"?"متبرع":"donors"}</div>
+                  <div className="text-xs text-gray-400">{c.donors} {lang==="fr"?"donateurs":"donors"}</div>
                 </div>
               </div>
             ))}
@@ -3930,7 +3918,7 @@ const CollectesPage = ({ setPage, lang }) => {
         )}
 
         <div className="text-center mt-10">
-          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">← {lang==="fr"?"Retour à l'accueil":lang==="ar"?"العودة للرئيسية":"Back to home"}</button>
+          <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">← {lang==="fr"?"Retour à l'accueil":"Back to home"}</button>
         </div>
       </div>
     </div>
@@ -3982,12 +3970,12 @@ const MissionPage = ({ lang, setPage }) => (
     <div style={{ background:"linear-gradient(135deg,#064e3b,#047857)", padding:"clamp(40px,5vw,72px) clamp(20px,4vw,40px) clamp(32px,4vw,56px)", textAlign:"center", color:"#fff" }}>
       <button onClick={()=>setPage("home")} style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:999, padding:"7px 16px", color:"rgba(255,255,255,0.85)", fontWeight:600, fontSize:13, cursor:"pointer", marginBottom:24, display:"inline-flex", alignItems:"center", gap:6 }}>← {lang==="fr" ? "Retour" : "Back"}</button>
       <h1 style={{ fontSize:"clamp(2rem,4vw,3rem)", fontWeight:900, margin:"0 0 14px", lineHeight:1.15 }}>
-        {lang==="fr" ? "Notre mission" : lang==="ar" ? "مهمتنا" : "Our mission"}
+        {lang==="fr" ? "Notre mission" : "Our mission"}
       </h1>
       <p style={{ color:"rgba(255,255,255,0.80)", fontSize:17, maxWidth:640, margin:"0 auto", lineHeight:1.65 }}>
         {lang==="fr"
           ? "AYYAD connecte des patients ivoiriens qui n'ont pas les moyens de payer leurs soins à des donateurs du monde entier — sans intermédiaire, sans cash, avec 100% de traçabilité."
-          : lang==="ar" ? "أيد يربط المرضى الذين لا يستطيعون تحمل تكاليف الرعاية الصحية بالمتبرعين حول العالم — بدون وسيط، بدون نقد، 100% قابل للتتبع." : "AYYAD connects Ivorian patients who cannot afford their healthcare to donors worldwide — no intermediary, no cash, 100% traceable."}
+          : "AYYAD connects Ivorian patients who cannot afford their healthcare to donors worldwide — no intermediary, no cash, 100% traceable."}
       </p>
     </div>
     <Reveal><VisionSection lang={lang} setPage={setPage} /></Reveal>
@@ -4010,12 +3998,12 @@ const TemoignagesPage = ({ lang, setPage }) => (
     <div style={{ background:"linear-gradient(135deg,#064e3b,#047857)", padding:"clamp(40px,5vw,72px) clamp(20px,4vw,40px) clamp(32px,4vw,56px)", textAlign:"center", color:"#fff" }}>
       <button onClick={()=>setPage("home")} style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:999, padding:"7px 16px", color:"rgba(255,255,255,0.85)", fontWeight:600, fontSize:13, cursor:"pointer", marginBottom:24, display:"inline-flex", alignItems:"center", gap:6 }}>← {lang==="fr" ? "Retour" : "Back"}</button>
       <h1 style={{ fontSize:"clamp(2rem,4vw,3rem)", fontWeight:900, margin:"0 0 14px", lineHeight:1.15 }}>
-        {lang==="fr" ? "Témoignages" : lang==="ar" ? "الشهادات" : "Testimonials"}
+        {lang==="fr" ? "Témoignages" : "Testimonials"}
       </h1>
       <p style={{ color:"rgba(255,255,255,0.80)", fontSize:17, maxWidth:640, margin:"0 auto", lineHeight:1.65 }}>
         {lang==="fr"
           ? "Avant l'aide et après. En photos, en vidéos. Ce sont de vraies personnes dont des donateurs ont changé la vie."
-          : lang==="ar" ? "قبل المساعدة وبعدها. بالصور والفيديو. هؤلاء أشخاص حقيقيون غيّر المتبرعون حياتهم." : "Before help and after. In photos, in videos. These are real people whose lives donors changed."}
+          : "Before help and after. In photos, in videos. These are real people whose lives donors changed."}
       </p>
     </div>
     <DjanaSuccessSection lang={lang} setPage={setPage} />
@@ -4094,7 +4082,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
     });
   }, []);
 
-  const catMap = lang==="fr" ? ["Tous","Cardiologie","Oncologie","Pédiatrie","Néphrologie","Orthopédie"] : [lang==="ar" ? "الكل" : "All","Cardiology","Oncology","Pediatrics","Nephrology","Orthopedics"];
+  const catMap = lang==="fr" ? ["Tous","Cardiologie","Oncologie","Pédiatrie","Néphrologie","Orthopédie"] : ["All","Cardiology","Oncology","Pediatrics","Nephrology","Orthopedics"];
   const allCases = dbCases.length > 0 ? [...dbCases, ...getDisplayCases().filter(c => c.status !== "FUNDED")] : getDisplayCases();
   // Helper: extracts string from title/category whether stored as string or {fr,en} object
   const gs = (val) => typeof val === "object" && val !== null ? (val[lang] || val.fr || val.en || "") : (val || "");
@@ -4107,26 +4095,26 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       <div className="lg:hidden" style={{background:"linear-gradient(160deg,#064e3b 0%,#047857 55%,#0f766e 100%)",color:"#fff",padding:"28px 16px 24px"}}>
         <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.12)",borderRadius:99,padding:"4px 14px",fontSize:11,fontWeight:700,marginBottom:16,letterSpacing:"0.5px",textTransform:"uppercase"}}>
           <span style={{width:6,height:6,background:"#6ee7b7",borderRadius:"50%",display:"inline-block"}}/>
-          {lang==="fr" ? "100% vérifié · 0% frais" : lang==="ar" ? "موثوق 100% · 0% رسوم" : "100% verified · 0% fees"}
+          {lang==="fr" ? "100% vérifié · 0% frais" : "100% verified · 0% fees"}
         </div>
         <h1 style={{fontSize:28,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,textAlign:"left"}}>
           {lang==="fr" ? "Financer la santé" : lang==="ar" ? "تمويل الصحة" : "Fund healthcare"}<br/>
-          <span style={{color:"#a7f3d0"}}>{lang==="fr" ? "c'est sauver une vie." : lang==="ar" ? "يعني إنقاذ حياة." : "means saving a life."}</span>
+          <span style={{color:"#a7f3d0"}}>{lang==="fr" ? "c'est sauver une vie." : "means saving a life."}</span>
         </h1>
         <p style={{fontSize:13,color:"rgba(255,255,255,0.82)",margin:"0 0 18px",lineHeight:1.55,textAlign:"left"}}>
-          {lang==="fr" ? "Chaque don va directement à l'hôpital partenaire. Zéro intermédiaire." : lang==="ar" ? "كل تبرع يذهب مباشرة إلى المستشفى الشريك. بدون وسيط." : "Every donation goes directly to the partner hospital. Zero intermediary."}
+          {lang==="fr" ? "Chaque don va directement à l'hôpital partenaire. Zéro intermédiaire." : "Every donation goes directly to the partner hospital. Zero intermediary."}
         </p>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:1,marginBottom:20,background:"rgba(0,0,0,0.18)",borderRadius:14,overflow:"hidden"}}>
-          {[{v:heroStats.collected||"0",l:lang==="fr"?"FCFA collectés":lang==="ar"?"جُمع":"FCFA raised"},{v:heroStats.patients||"0",l:lang==="fr"?"Patients aidés":lang==="ar"?"مرضى مساعَدون":"Patients helped"},{v:heroStats.hospitals||"18",l:lang==="fr"?"Hôpitaux":lang==="ar"?"مستشفيات":"Hospitals"}].map((s,i)=>(
+          {[{v:heroStats.collected||"0",l:lang==="fr"?"FCFA collectés":"FCFA raised"},{v:heroStats.patients||"0",l:lang==="fr"?"Patients aidés":"Patients helped"},{v:heroStats.hospitals||"18",l:lang==="fr"?"Hôpitaux":"Hospitals"}].map((s,i)=>(
             <div key={i} style={{textAlign:"center",padding:"10px 4px",background:"rgba(255,255,255,0.06)"}}>
               <div style={{fontWeight:900,fontSize:18,lineHeight:1}}>{s.v}</div>
               <div style={{fontSize:9,color:"rgba(255,255,255,0.65)",textTransform:"uppercase",letterSpacing:"0.4px",marginTop:3}}>{s.l}</div>
             </div>
           ))}
         </div>
-        <button onClick={()=>{const el=document.getElementById('collectes');if(el)el.scrollIntoView({behavior:'smooth'});else setPage('collectesactives');}} style={{background:"#fff",color:"#047857",fontWeight:900,fontSize:17,padding:"16px",borderRadius:16,border:"none",cursor:"pointer",width:"100%",boxShadow:"0 6px 24px rgba(0,0,0,0.22)",marginBottom:10,letterSpacing:"-0.2px"}}>💚 {lang==="fr" ? "Soutenir un patient" : lang==="ar" ? "ادعم مريضاً" : "Support a patient"}</button>
-        <button onClick={()=>setPage('submit')} style={{background:"rgba(255,255,255,0.10)",border:"1.5px solid rgba(255,255,255,0.25)",color:"#fff",fontWeight:600,fontSize:14,padding:"12px",borderRadius:12,cursor:"pointer",width:"100%"}}>{lang==="fr" ? "Soumettre un dossier médical →" : lang==="ar" ? "تقديم ملف طبي →" : "Submit a medical case →"}</button>
-        <p style={{fontSize:11,color:"rgba(255,255,255,0.5)",textAlign:"center",margin:"12px 0 0",letterSpacing:"0.2px"}}>🔒 {lang==="fr" ? "Fonds versés directement à l'hôpital · Aucuns frais" : lang==="ar" ? "الأموال تُحوَّل مباشرة للمستشفى · بدون رسوم" : "Funds sent directly to hospital · No fees"}</p>
+        <button onClick={()=>{const el=document.getElementById('collectes');if(el)el.scrollIntoView({behavior:'smooth'});else setPage('collectesactives');}} style={{background:"#fff",color:"#047857",fontWeight:900,fontSize:17,padding:"16px",borderRadius:16,border:"none",cursor:"pointer",width:"100%",boxShadow:"0 6px 24px rgba(0,0,0,0.22)",marginBottom:10,letterSpacing:"-0.2px"}}>💚 {lang==="fr" ? "Soutenir un patient" : "Support a patient"}</button>
+        <button onClick={()=>setPage('submit')} style={{background:"rgba(255,255,255,0.10)",border:"1.5px solid rgba(255,255,255,0.25)",color:"#fff",fontWeight:600,fontSize:14,padding:"12px",borderRadius:12,cursor:"pointer",width:"100%"}}>{lang==="fr" ? "Soumettre un dossier médical →" : "Submit a medical case →"}</button>
+        <p style={{fontSize:11,color:"rgba(255,255,255,0.5)",textAlign:"center",margin:"12px 0 0",letterSpacing:"0.2px"}}>🔒 {lang==="fr" ? "Fonds versés directement à l'hôpital · Aucuns frais" : "Funds sent directly to hospital · No fees"}</p>
       </div>
       <div className="hidden lg:block"><HeroSlider lang={lang} setPage={setPage} t={t} heroStats={heroStats} /></div>
 
@@ -4154,12 +4142,12 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
                     <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Parcourir toutes les collectes médicales" : "Browse all medical campaigns"}</div>
                   </button>
                   <button onClick={() => { setPage("urgents"); setHeroMenu(false); }} className="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 transition-colors group">
-                    <div className="font-semibold text-gray-900 text-sm group-hover:text-red-700">🚨 {lang==="fr" ? "Cas urgents" : lang==="ar" ? "الحالات العاجلة" : "Urgent cases"}</div>
+                    <div className="font-semibold text-gray-900 text-sm group-hover:text-red-700">🚨 {lang==="fr" ? "Cas urgents" : "Urgent cases"}</div>
                     <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Interventions critiques sous 72h" : "Critical interventions within 72h"}</div>
                   </button>
                   <button onClick={() => { setPage("how"); setHeroMenu(false); }} className="w-full text-left px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors group">
                     <div className="font-semibold text-gray-900 text-sm">🔒 {lang==="fr" ? "Garantie Ayyad" : "Ayyad guarantee"}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Fonds versés directement à l'hôpital" : lang==="ar" ? "الأموال تُحوَّل مباشرة للمستشفى" : "Funds sent directly to hospital"}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{lang==="fr" ? "Fonds versés directement à l'hôpital" : "Funds sent directly to hospital"}</div>
                   </button>
                 </div>
               )}
@@ -4191,14 +4179,14 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           {/* Header section éditorial */}
           <div style={{ display:"flex", flexDirection:"column", gap:16, marginBottom: 24 }}>
             <div style={{ textAlign:"center" }}>
-              <span className="ayyad-eyebrow">{lang==="fr" ? "Campagnes vérifiées" : lang==="ar" ? "حملات موثقة" : "Verified campaigns"}</span>
+              <span className="ayyad-eyebrow">{lang==="fr" ? "Campagnes vérifiées" : "Verified campaigns"}</span>
               <h2 className="ayyad-h-display" style={{ fontSize:"clamp(2rem, 3.6vw, 3rem)", marginTop: 18, marginBottom: 14 }}>
                 {lang==="fr" ? <>Soutenez des patients <em>aujourd'hui.</em></> : lang==="ar" ? <>ادعم المرضى <em>اليوم.</em></> : <>Support patients <em>today.</em></>}
               </h2>
               <p style={{ color:"var(--ink-500)", fontSize:16, maxWidth: 620, margin:"0 auto", lineHeight:1.65 }}>
                 {lang==="fr"
                   ? `${getDisplayCases().filter(c=>c.status==="COLLECTING").length + dbCases.length} dossiers actifs · 100% vérifiés par notre équipe et un hôpital partenaire`
-                  : lang==="ar" ? `${getDisplayCases().filter(c=>c.status==="COLLECTING").length + dbCases.length} حالات نشطة · موثقة 100% من فريقنا ومستشفى شريك` : `${getDisplayCases().filter(c=>c.status==="COLLECTING").length + dbCases.length} active cases · 100% verified by our team and a partner hospital`}
+                  : `${getDisplayCases().filter(c=>c.status==="COLLECTING").length + dbCases.length} active cases · 100% verified by our team and a partner hospital`}
               </p>
             </div>
 
@@ -4213,7 +4201,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
               <div className="ayyad-cats" style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                 {catMap.map((c,i) => {
                   const active = (filter==="all"&&i===0)||filter===c;
-                  const _ico = {"Tous":"✨","All":"✨","الكل":"✨","Cardiologie":"🫀","Cardiology":"🫀","Oncologie":"🎗️","Oncology":"🎗️","Pédiatrie":"👶","Pediatrics":"👶","Néphrologie":"🫘","Nephrology":"🫘","Orthopédie":"🦴","Orthopedics":"🦴"}[c]||"🏥";
+                  const _ico = {"Tous":"✨","All":"✨","Cardiologie":"🫀","Cardiology":"🫀","Oncologie":"🎗️","Oncology":"🎗️","Pédiatrie":"👶","Pediatrics":"👶","Néphrologie":"🫘","Nephrology":"🫘","Orthopédie":"🦴","Orthopedics":"🦴"}[c]||"🏥";
                   return (
                     <button key={c} onClick={() => setFilter(i===0?"all":c)} style={{
                       padding:"8px 18px", borderRadius: 9999,
@@ -4307,10 +4295,10 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           </p>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:12 }}>
             {[
-              { icon:"🌍", title: lang==="fr" ? "Notre mission" : lang==="ar" ? "مهمتنا" : "Our mission", sub: lang==="fr" ? "Qui sommes-nous et pourquoi AYYAD existe" : lang==="ar" ? "من نحن ولماذا أيد موجود" : "Who we are and why AYYAD exists", page:"mission" },
-              { icon:"🔒", title: lang==="fr" ? "Pourquoi nous faire confiance ?" : lang==="ar" ? "لماذا تثق بنا؟" : "Why trust us?", sub: lang==="fr" ? "Transparence, zéro intermédiaire, audit public" : lang==="ar" ? "شفافية، بدون وسيط، تدقيق علني" : "Transparency, zero intermediary, public audit", page:"how" },
-              { icon:"💚", title: lang==="fr" ? "Cas financés" : lang==="ar" ? "حالات ممولة" : "Funded cases", sub: lang==="fr" ? "Les vies que nous avons sauvées ensemble" : lang==="ar" ? "الأرواح التي أنقذناها معاً" : "Lives we saved together", page:"collectes" },
-              { icon:"🎤", title: lang==="fr" ? "Témoignages" : lang==="ar" ? "الشهادات" : "Testimonials", sub: lang==="fr" ? "Avant et après l'aide — en photos et vidéos" : lang==="ar" ? "قبل وبعد المساعدة — بالصور والفيديو" : "Before and after help — in photos & videos", page:"temoignages" },
+              { icon:"🌍", title: lang==="fr" ? "Notre mission" : "Our mission", sub: lang==="fr" ? "Qui sommes-nous et pourquoi AYYAD existe" : "Who we are and why AYYAD exists", page:"mission" },
+              { icon:"🔒", title: lang==="fr" ? "Pourquoi nous faire confiance ?" : "Why trust us?", sub: lang==="fr" ? "Transparence, zéro intermédiaire, audit public" : "Transparency, zero intermediary, public audit", page:"how" },
+              { icon:"💚", title: lang==="fr" ? "Cas financés" : "Funded cases", sub: lang==="fr" ? "Les vies que nous avons sauvées ensemble" : "Lives we saved together", page:"collectes" },
+              { icon:"🎤", title: lang==="fr" ? "Témoignages" : "Testimonials", sub: lang==="fr" ? "Avant et après l'aide — en photos et vidéos" : "Before and after help — in photos & videos", page:"temoignages" },
             ].map(c => (
               <button key={c.page} onClick={()=>setPage(c.page)} style={{
                 display:"flex", alignItems:"flex-start", gap:12, padding:"16px 18px",
@@ -4356,10 +4344,10 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
             </div>
             <div style={{ textAlign:"center" }}>
               <button onClick={() => setPage("support-ayyad")} className="ayyad-btn-gold" style={{ fontSize:14, padding:"15px 30px" }}>
-                💚 {lang==="fr" ? "Soutenir Ayyad" : lang==="ar" ? "ادعم أيد" : "Support Ayyad"} →
+                💚 {lang==="fr" ? "Soutenir Ayyad" : "Support Ayyad"} →
               </button>
               <div style={{ fontSize:12, color:"var(--ink-400)", marginTop:14, fontWeight:600 }}>
-                {lang==="fr" ? "Don 100% dédié au fonctionnement de la plateforme" : lang==="ar" ? "100% مخصص لتشغيل المنصة" : "100% dedicated to platform operations"}
+                {lang==="fr" ? "Don 100% dédié au fonctionnement de la plateforme" : "100% dedicated to platform operations"}
               </div>
             </div>
           </div>
@@ -4519,7 +4507,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                 ? <> <strong>500 F</strong> = 1 jour de médicaments · <strong>1 000 F</strong> = analyses · <strong>2 000 F</strong> = consultation · <strong>5 000 F</strong> = soins d'une semaine</>
                 : <> <strong>500 F</strong> = 1 day of medication · <strong>1,000 F</strong> = lab tests · <strong>2,000 F</strong> = consultation · <strong>5,000 F</strong> = a week of care</>}
             </div>
-            <p style={{fontSize:12,fontWeight:700,color:"#374151",margin:"0 0 10px"}}>{fr ? "Choisissez votre montant (FCFA)" : ar ? "اختر مبلغك (فرنك أفريقي)" : "Choose your amount (FCFA)"}</p>
+            <p style={{fontSize:12,fontWeight:700,color:"#374151",margin:"0 0 10px"}}>{fr?"Choisissez votre montant (FCFA)":"Choose your amount (FCFA)"}</p>
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:10}}>
               {[500,1000,2000,5000].map(p=>(
                 <button key={p} onClick={()=>{setPreset(p);setCustom("");}}
@@ -4598,13 +4586,13 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             {/* ── Instructions inline CI — apparaissent immédiatement au choix du provider ── */}
             {provider==="WAVE"&&finalAmt>=500&&(
               <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:14,padding:"14px",marginBottom:12}}>
-                <div style={{fontWeight:800,fontSize:13,color:"#1d4ed8",marginBottom:10}}>〰️ {fr ? "Comment payer via Wave :" : ar ? "كيفية الدفع عبر Wave:" : "How to pay via Wave:"}</div>
+                <div style={{fontWeight:800,fontSize:13,color:"#1d4ed8",marginBottom:10}}>〰️ {fr?"Comment payer via Wave :":"How to pay via Wave:"}</div>
                 <div style={{background:"#dbeafe",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
                   <img src={`data:image/png;base64,${QR_WAVE}`} alt="QR Wave" style={{width:80,height:80,flexShrink:0,borderRadius:8,border:"2px solid #bfdbfe"}} />
                   <div>
-                    <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:4}}>{fr ? "Numéro Wave AYYAD :" : ar ? "رقم Wave لأيد:" : "AYYAD Wave number:"}</div>
+                    <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:4}}>{fr?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
                     <div style={{fontWeight:900,fontSize:17,color:"#1d4ed8",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
-                    <div style={{fontSize:10,color:"#6366f1",marginTop:5}}>📷 {fr ? "Scannez le QR ou entrez le numéro" : ar ? "امسح رمز QR أو أدخل الرقم" : "Scan QR or enter the number"}</div>
+                    <div style={{fontSize:10,color:"#6366f1",marginTop:5}}>📷 {fr?"Scannez le QR ou entrez le numéro":"Scan QR or enter the number"}</div>
                   </div>
                 </div>
                 <div style={{fontSize:11,color:"#3730a3",lineHeight:1.9}}>
@@ -4615,13 +4603,13 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             )}
             {provider==="OM"&&finalAmt>=500&&(
               <div style={{background:"#fff7ed",border:"1.5px solid #fdba74",borderRadius:14,padding:"14px",marginBottom:12}}>
-                <div style={{fontWeight:800,fontSize:13,color:"#c2410c",marginBottom:10}}>🟠 {fr ? "Comment payer via Orange Money :" : ar ? "كيفية الدفع عبر Orange Money:" : "How to pay via Orange Money:"}</div>
+                <div style={{fontWeight:800,fontSize:13,color:"#c2410c",marginBottom:10}}>🟠 {fr?"Comment payer via Orange Money :":"How to pay via Orange Money:"}</div>
                 <div style={{background:"#ffedd5",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
                   <img src={`data:image/png;base64,${QR_OM}`} alt="QR Orange Money" style={{width:80,height:80,flexShrink:0,borderRadius:8,border:"2px solid #fdba74"}} />
                   <div>
-                    <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:4}}>{fr ? "Numéro Orange Money AYYAD :" : ar ? "رقم Orange Money لأيد:" : "AYYAD Orange Money number:"}</div>
+                    <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:4}}>{fr?"Numéro Orange Money AYYAD :":"AYYAD Orange Money number:"}</div>
                     <div style={{fontWeight:900,fontSize:17,color:"#c2410c",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
-                    <div style={{fontSize:10,color:"#ea580c",marginTop:5}}>📷 {fr ? "Scannez le QR ou entrez le numéro" : ar ? "امسح رمز QR أو أدخل الرقم" : "Scan QR or enter the number"}</div>
+                    <div style={{fontSize:10,color:"#ea580c",marginTop:5}}>📷 {fr?"Scannez le QR ou entrez le numéro":"Scan QR or enter the number"}</div>
                   </div>
                 </div>
                 <div style={{fontSize:11,color:"#9a3412",lineHeight:1.9}}>
@@ -4632,13 +4620,13 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             )}
             {provider==="MTN"&&finalAmt>=500&&(
               <div style={{background:"#fefce8",border:"1.5px solid #fde047",borderRadius:14,padding:"14px",marginBottom:12}}>
-                <div style={{fontWeight:800,fontSize:13,color:"#854d0e",marginBottom:10}}>🟡 {fr ? "Comment payer via MTN MoMo :" : ar ? "كيفية الدفع عبر MTN MoMo:" : "How to pay via MTN MoMo:"}</div>
+                <div style={{fontWeight:800,fontSize:13,color:"#854d0e",marginBottom:10}}>🟡 {fr?"Comment payer via MTN MoMo :":"How to pay via MTN MoMo:"}</div>
                 <div style={{background:"#fef9c3",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
                   <img src={`data:image/png;base64,${QR_MTN}`} alt="QR MTN MoMo" style={{width:80,height:80,flexShrink:0,borderRadius:8,border:"2px solid #fde047"}} />
                   <div>
-                    <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:4}}>{fr ? "Numéro MTN MoMo AYYAD :" : ar ? "رقم MTN MoMo لأيد:" : "AYYAD MTN MoMo number:"}</div>
+                    <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:4}}>{fr?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
                     <div style={{fontWeight:900,fontSize:17,color:"#ca8a04",fontFamily:"monospace",letterSpacing:"1px"}}>+225 05 01 85 59 91</div>
-                    <div style={{fontSize:10,color:"#854d0e",marginTop:5}}>📷 {fr ? "Scannez le QR ou entrez le numéro" : ar ? "امسح رمز QR أو أدخل الرقم" : "Scan QR or enter the number"}</div>
+                    <div style={{fontSize:10,color:"#854d0e",marginTop:5}}>📷 {fr?"Scannez le QR ou entrez le numéro":"Scan QR or enter the number"}</div>
                   </div>
                 </div>
                 <div style={{fontSize:11,color:"#713f12",lineHeight:1.9}}>
@@ -4649,7 +4637,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             )}
             {provider==="VB"&&finalAmt>=500&&(
               <div style={{background:"#f0f9ff",border:"1.5px solid #7dd3fc",borderRadius:14,padding:"14px",marginBottom:12}}>
-                <div style={{fontWeight:800,fontSize:13,color:"#0369a1",marginBottom:8}}>🏦 {fr ? "Coordonnées bancaires AYYAD :" : ar ? "بيانات حساب أيد البنكي:" : "AYYAD Bank Details:"}</div>
+                <div style={{fontWeight:800,fontSize:13,color:"#0369a1",marginBottom:8}}>🏦 {fr?"Coordonnées bancaires AYYAD :":"AYYAD Bank Details:"}</div>
                 <div style={{background:"#e0f2fe",borderRadius:10,padding:"12px 14px",marginBottom:10,fontFamily:"monospace",fontSize:12,lineHeight:2.2}}>
                   {fr?"Banque":ar?"البنك":"Bank"} : <strong>SGBCI (Société Générale CI)</strong><br/>
                   {fr?"Titulaire":ar?"صاحب الحساب":"Account holder"} : <strong>AYYAD SARLU</strong><br/>
@@ -4676,7 +4664,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                     <div style={{width:36,height:4,borderRadius:2,background:"#d1d5db"}} />
                   </div>
                   <div style={{fontWeight:800,fontSize:15,color:"#1e3a5f",marginBottom:4}}>🌍 {fr?"Depuis l'étranger":ar?"من الخارج":"From abroad"}</div>
-                  <div style={{fontSize:12,color:"#6b7280",marginBottom:14}}>{fr ? "Choisissez votre appli de transfert :" : ar ? "اختر تطبيق التحويل:" : "Choose your transfer app:"}</div>
+                  <div style={{fontSize:12,color:"#6b7280",marginBottom:14}}>{fr?"Choisissez votre appli de transfert :":"Choose your transfer app:"}</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
                     {INT_PROVIDERS.map(m=>(
                       <button key={m.id} onClick={()=>setIntlSel(m.id)}
@@ -4697,8 +4685,8 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                         :<>✈️ {fr?"Comment envoyer via TapTap Send :":ar?"كيفية الإرسال عبر TapTap Send:":"How to send via TapTap Send:"}</>}
                       </div>
                       <div style={{background:"#e0e7ff",borderRadius:10,padding:"10px 14px",marginBottom:10,fontFamily:"monospace",lineHeight:2.2}}>
-                        {fr ? "Nom destinataire" : ar ? "اسم المستلم" : "Recipient name"} : <strong style={{fontSize:14}}>AyyadCI</strong><br/>
-                        {fr ? "Numéro" : ar ? "الرقم" : "Number"} : <strong style={{fontSize:14}}>+225 07 48 05 61 28</strong><br/>
+                        {fr?"Nom destinataire":"Recipient name"} : <strong style={{fontSize:14}}>AyyadCI</strong><br/>
+                        {fr?"Numéro":"Number"} : <strong style={{fontSize:14}}>+225 07 48 05 61 28</strong><br/>
                         {fr?"Pays":ar?"الدولة":"Country"} : <strong>Côte d'Ivoire 🇨🇮</strong>
                       </div>
                       <div style={{fontSize:11,color:"#6366f1",marginBottom:10,lineHeight:1.7}}>
@@ -4761,7 +4749,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                         <span style={{fontSize:22,color:c.color}}>{c.emoji}</span>
                         <span>{c.label}</span>
                         <span style={{fontSize:9,color:"#9ca3af",fontWeight:600}}>{c.network}</span>
-                        {!c.addr&&<span style={{fontSize:8,background:"#fef3c7",color:"#92400e",padding:"1px 4px",borderRadius:8,fontWeight:800}}>{fr ? "Bientôt" : ar ? "قريباً" : "Soon"}</span>}
+                        {!c.addr&&<span style={{fontSize:8,background:"#fef3c7",color:"#92400e",padding:"1px 4px",borderRadius:8,fontWeight:800}}>{fr?"Bientôt":"Soon"}</span>}
                       </button>
                     ))}
                   </div>
@@ -4840,13 +4828,13 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                   boxShadow:finalAmt>=500?"0 8px 28px rgba(4,120,87,0.4)":"none",
                   transform:finalAmt>=500&&!initiating?"scale(1.01)":"none",transition:"all .2s"}}>
                 {initiating
-                  ? (fr ? "⏳ Préparation..." : ar ? "⏳ جارٍ التحضير..." : "⏳ Preparing...")
+                  ? (fr?"⏳ Préparation...":"⏳ Preparing...")
                   : finalAmt>=500
                     ? (fr ? `💚 Donner ${finalAmt.toLocaleString("fr-CI")} FCFA maintenant →` : `💚 Donate ${finalAmt.toLocaleString("fr-CI")} FCFA now →`)
-                    : (fr ? "Entrez un montant" : ar ? "أدخل مبلغاً" : "Enter an amount")}
+                    : (fr ? "Entrez un montant" : "Enter an amount")}
               </button>
             )}
-            <p style={{textAlign:"center",fontSize:11,color:"#9ca3af",margin:0}}>🔒 {fr?"Fonds versés directement à l'hôpital · 0% frais":ar?"الأموال تُحوَّل مباشرة للمستشفى · 0% رسوم":"Funds sent directly to hospital · 0% fees"}</p>
+            <p style={{textAlign:"center",fontSize:11,color:"#9ca3af",margin:0}}>🔒 {fr?"Fonds versés directement à l'hôpital · 0% frais":"Funds sent directly to hospital · 0% fees"}</p>
           </div>
         )}
 
@@ -4854,7 +4842,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
         {step==="pay"&&(
           <div style={{padding:"20px",boxSizing:"border-box",width:"100%"}}>
             <button onClick={()=>setStep("choose")} style={{background:"none",border:"none",color:"#059669",fontWeight:700,fontSize:13,cursor:"pointer",padding:"0 0 16px",display:"block"}}>
-              ← {fr ? "Modifier" : ar ? "تعديل" : "Change"}
+              ← {fr?"Modifier":"Change"}
             </button>
             <div style={{background:"#f0fdf4",borderRadius:16,padding:"18px",marginBottom:18,textAlign:"center"}}>
               <div style={{fontWeight:900,fontSize:34,color:"#047857",lineHeight:1}}>{finalAmt.toLocaleString("fr-CI")}</div>
@@ -4866,8 +4854,8 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
               {payUrls.wave_url&&(
                 <div style={{background:"#eff6ff",border:"2px solid #93c5fd",borderRadius:16,padding:"16px",marginBottom:12,textAlign:"center"}}>
                   <div style={{fontSize:11,fontWeight:800,color:"#1d4ed8",marginBottom:10}}>
-                    📱 {fr ? "Sur mobile → s'ouvre automatiquement dans Wave" : ar ? "على الجوال → يفتح تلقائياً في Wave" : "On mobile → opens directly in Wave"}
-                    <br/><span style={{fontWeight:400,color:"#3b82f6"}}>{fr ? "Sur ordinateur → scannez ce QR avec votre téléphone" : ar ? "على الكمبيوتر → امسح هذا QR بهاتفك" : "On desktop → scan this QR with your phone"}</span>
+                    📱 {fr?"Sur mobile → s'ouvre automatiquement dans Wave":"On mobile → opens directly in Wave"}
+                    <br/><span style={{fontWeight:400,color:"#3b82f6"}}>{fr?"Sur ordinateur → scannez ce QR avec votre téléphone":"On desktop → scan this QR with your phone"}</span>
                   </div>
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(payUrls.wave_url)}`}
@@ -4879,7 +4867,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                     📲 {fr?`Ouvrir Wave — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`Open Wave — ${finalAmt.toLocaleString("fr-CI")} FCFA`}
                   </a>
                   <div style={{fontSize:10,color:"#6b7280"}}>
-                    {fr ? "Référence" : ar ? "المرجع" : "Ref"} : <strong style={{fontFamily:"monospace"}}>{payRef}</strong>
+                    {fr?"Référence":"Ref"} : <strong style={{fontFamily:"monospace"}}>{payRef}</strong>
                   </div>
                 </div>
               )}
@@ -4899,8 +4887,8 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                   📞 {OM_NUM}
                 </a>
                 <div style={{fontSize:11,color:"#9a3412",textAlign:"center"}}>
-                  {fr ? "Ouvrez l'app Orange Money → Envoyer de l'argent → entrez ce numéro" : ar ? "افتح تطبيق Orange Money → إرسال مال → أدخل هذا الرقم" : "Open Orange Money app → Send money → enter this number"}
-                  <br/>{fr ? "Ou composez " : ar ? "أو اتصل على " : "Or dial "}<strong>#144#</strong>
+                  {fr?"Ouvrez l'app Orange Money → Envoyer de l'argent → entrez ce numéro":"Open Orange Money app → Send money → enter this number"}
+                  <br/>{fr?"Ou composez ":"Or dial "}<strong>#144#</strong>
                 </div>
               </div>
             )}
@@ -4909,8 +4897,8 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
               {payUrls.mtn_url&&(
                 <div style={{background:"#fefce8",border:"2px solid #fde047",borderRadius:16,padding:"16px",marginBottom:12,textAlign:"center"}}>
                   <div style={{fontSize:11,fontWeight:800,color:"#854d0e",marginBottom:10}}>
-                    📱 {fr ? "Sur mobile → s'ouvre dans MTN MoMo" : ar ? "على الجوال → يفتح في MTN MoMo" : "On mobile → opens in MTN MoMo"}
-                    <br/><span style={{fontWeight:400,color:"#a16207"}}>{fr ? "Sur ordinateur → scannez ce QR avec votre téléphone" : ar ? "على الكمبيوتر → امسح هذا QR بهاتفك" : "On desktop → scan this QR with your phone"}</span>
+                    📱 {fr?"Sur mobile → s'ouvre dans MTN MoMo":"On mobile → opens in MTN MoMo"}
+                    <br/><span style={{fontWeight:400,color:"#a16207"}}>{fr?"Sur ordinateur → scannez ce QR avec votre téléphone":"On desktop → scan this QR with your phone"}</span>
                   </div>
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(payUrls.mtn_url)}`}
@@ -4922,7 +4910,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                     📲 {fr?`Ouvrir MTN MoMo — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`Open MTN MoMo — ${finalAmt.toLocaleString("fr-CI")} FCFA`}
                   </a>
                   <div style={{fontSize:10,color:"#6b7280"}}>
-                    {fr ? "Référence" : ar ? "المرجع" : "Ref"} : <strong style={{fontFamily:"monospace"}}>{payRef}</strong>
+                    {fr?"Référence":"Ref"} : <strong style={{fontFamily:"monospace"}}>{payRef}</strong>
                   </div>
                 </div>
               )}
@@ -4938,21 +4926,21 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             {(provider==="SENDWAVE"||provider==="TAPTAP")&&(
               <div style={{background:"#f0f4ff",borderRadius:14,padding:"16px",marginBottom:14,fontSize:12,color:"#4338ca",lineHeight:1.8}}>
                 <div style={{fontWeight:800,fontSize:13,marginBottom:10,color:"#312e81"}}>
-                  {provider==="SENDWAVE"?"💸 Sendwave":"✈️ TapTap Send"} — {fr ? "envoi depuis l'étranger" : ar ? "إرسال من الخارج" : "send from abroad"}
+                  {provider==="SENDWAVE"?"💸 Sendwave":"✈️ TapTap Send"} — {fr?"envoi depuis l'étranger":"send from abroad"}
                 </div>
                 {fr?<>Envoyez <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> à :</>:<>Send <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> to:</>}
                 <div style={{background:"#e0e7ff",borderRadius:10,padding:"10px 14px",margin:"8px 0",fontFamily:"monospace",fontSize:13,lineHeight:2.2}}>
-                  {fr ? "Nom" : ar ? "الاسم" : "Name"} : <strong style={{fontSize:15}}>AyyadCI</strong><br/>
-                  {fr ? "Numéro" : ar ? "الرقم" : "Number"} : <strong style={{fontSize:15}}>{SW_NUM}</strong>
+                  {fr?"Nom":"Name"} : <strong style={{fontSize:15}}>AyyadCI</strong><br/>
+                  {fr?"Numéro":"Number"} : <strong style={{fontSize:15}}>{SW_NUM}</strong>
                 </div>
                 <div style={{fontSize:11,color:"#6366f1"}}>
-                  {fr ? "Pays destinataire : Côte d'Ivoire 🇨🇮" : ar ? "الدولة المستلمة: كوت ديفوار 🇨🇮" : "Destination country: Côte d'Ivoire 🇨🇮"}
+                  {fr?"Pays destinataire : Côte d'Ivoire 🇨🇮":"Destination country: Côte d'Ivoire 🇨🇮"}
                 </div>
               </div>
             )}
             {provider==="VB"&&(
               <div style={{background:"#f0f9ff",borderRadius:12,padding:"14px",marginBottom:14,fontSize:12,color:"#0369a1",lineHeight:1.8}}>
-                <div style={{fontWeight:800,fontSize:13,marginBottom:6}}>🏦 {fr ? "Virement bancaire" : ar ? "تحويل بنكي" : "Bank Transfer"}</div>
+                <div style={{fontWeight:800,fontSize:13,marginBottom:6}}>🏦 {fr?"Virement bancaire":"Bank Transfer"}</div>
                 <div style={{background:"#e0f2fe",borderRadius:8,padding:"10px 12px",marginBottom:8,fontFamily:"monospace",fontSize:11,lineHeight:2}}>
                   {fr?"Banque":ar?"البنك":"Bank"} : <strong>SGBCI (Société Générale CI)</strong><br/>
                   {fr?"Titulaire":ar?"صاحب الحساب":"Account holder"} : <strong>AYYAD SARLU</strong><br/>
@@ -4960,14 +4948,14 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                   BIC : <strong>SGCICIAB</strong>
                 </div>
                 <div style={{background:"#fef3c7",borderRadius:8,padding:"8px 10px",fontSize:11,color:"#92400e",fontWeight:700}}>
-                  ⚠️ {fr ? "Mentionnez la référence en objet du virement :" : ar ? "اذكر المرجع في موضوع التحويل:" : "Add this reference to your transfer subject:"}
+                  ⚠️ {fr?"Mentionnez la référence en objet du virement :":"Add this reference to your transfer subject:"}
                   <span style={{display:"block",fontFamily:"monospace",marginTop:2,color:"#111"}}>{payRef}</span>
                 </div>
               </div>
             )}
 
             <div style={{background:"#f9fafb",borderRadius:12,padding:"10px 12px",marginBottom:14,fontSize:11,color:"#9ca3af"}}>
-              {fr ? "Référence" : ar ? "المرجع" : "Ref"} : <strong style={{color:"#374151",fontFamily:"monospace"}}>{payRef}</strong>
+              {fr?"Référence":"Ref"} : <strong style={{color:"#374151",fontFamily:"monospace"}}>{payRef}</strong>
             </div>
 
             {provider!=="VB"&&(
@@ -4983,7 +4971,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             </button>
             )}
             <p style={{textAlign:"center",fontSize:11,color:"#9ca3af",margin:0}}>
-              {fr ? "Votre don sera vérifié par l'équipe Ayyad" : ar ? "سيُتحقق من تبرعك من قِبَل فريق أيد" : "Your donation will be verified by the Ayyad team"}
+              {fr?"Votre don sera vérifié par l'équipe Ayyad":"Your donation will be verified by the Ayyad team"}
             </p>
           </div>
         )}
@@ -4996,11 +4984,11 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
               {fr?"Merci pour votre générosité !":ar?"شكراً لكرمك!":"Thank you for your generosity!"}
             </div>
             <p style={{fontSize:14,color:"#6b7280",lineHeight:1.6,marginBottom:28}}>
-              {fr ? "Votre paiement va être vérifié sous 24h et le montant crédité au dossier. Vous faites une vraie différence." : ar ? "سيُتحقق من دفعتك خلال 24 ساعة ويُضاف المبلغ للملف. أنت تصنع فارقاً حقيقياً." : "Your payment will be verified within 24h and credited to this campaign. You're making a real difference."}
+              {fr?"Votre paiement va être vérifié sous 24h et le montant crédité au dossier. Vous faites une vraie différence.":"Your payment will be verified within 24h and credited to this campaign. You're making a real difference."}
             </p>
             <button onClick={onClose}
               style={{background:"linear-gradient(135deg,#047857,#059669)",color:"#fff",border:"none",borderRadius:14,padding:"15px 32px",fontWeight:800,fontSize:16,cursor:"pointer",boxShadow:"0 4px 20px rgba(4,120,87,0.3)"}}>
-              ← {fr ? "Retour au dossier" : ar ? "العودة للملف" : "Back to campaign"}
+              ← {fr?"Retour au dossier":"Back to campaign"}
             </button>
           </div>
         )}
@@ -5467,12 +5455,12 @@ const CasePage = ({ c, setPage, lang, user }) => {
               <div style={{fontWeight:800,fontSize:12,color:"#111827",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
                 {fmtCurrency(liveCollected||0)}
               </div>
-              <div style={{fontSize:10,color:"#6B7280",whiteSpace:"nowrap"}}>{liveDonors||0} {lang==="fr"?"dons":lang==="ar"?"متبرع":"donors"}</div>
+              <div style={{fontSize:10,color:"#6B7280",whiteSpace:"nowrap"}}>{liveDonors||0} {lang==="fr"?"dons":"donors"}</div>
             </div>
             <button
               onClick={()=>{try{if(navigator.share){navigator.share({title:(c.title?.[lang]||"AYYAD"),url:window.location.href})}else{navigator.clipboard.writeText(window.location.href)}}catch(e){}}}
               style={{flexShrink:0,padding:"9px 11px",borderRadius:50,border:"2px solid #E5E7EB",background:"#fff",fontSize:11,fontWeight:700,color:"#374151",cursor:"pointer",whiteSpace:"nowrap"}}>
-              📤 {lang==="fr"?"Partager":lang==="ar" ? "شارك" : "Share"}
+              📤 {lang==="fr"?"Partager":"Share"}
             </button>
             <button
               onClick={() => setShowModal(true)}
@@ -5505,7 +5493,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
         <div className="absolute bottom-0 left-0 right-0 z-10 px-5 pb-7 max-w-6xl mx-auto" style={{left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"72rem"}}>
           {/* Badges */}
           <div className="flex flex-wrap gap-2 mb-3">
-            <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">{(lang==="ar" ? (CATS_AR[c.category?.en] || CATS_AR[c.category?.fr] || CATS_AR[c.category] || c.category?.[lang] || c.category?.en || c.category?.fr || c.category || "") : (c.category?.[lang] || c.category?.fr || c.category || ""))}</span>
+            <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">{(c.category?.[lang] || c.category?.fr || c.category || "")}</span>
             <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm border border-white/30">✓ {t.badges.verified}</span>
             {funded && <span className="bg-emerald-400/90 text-white text-xs font-bold px-3 py-1 rounded-full">✓ {t.badges.funded}</span>}
             {c.urgent && <span className="bg-red-500/90 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">🚨 {t.badges.urgent}</span>}
@@ -5514,7 +5502,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
           <div className="flex flex-wrap gap-x-5 gap-y-1 text-white/80 text-sm">
             <span>🏥 {c.hospital}</span>
             <span>📍 {c.city}</span>
-            <span>👤 {c.age} {lang==="fr"?"ans":lang==="ar"?"سنة":"years"}</span>
+            <span>👤 {c.age} {lang==="fr"?"ans":"years"}</span>
             {c.trackingId && <span className="font-mono text-emerald-300">#{c.trackingId}</span>}
           </div>
         </div>
@@ -5547,7 +5535,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   {fmtCurrency(liveCollected||0)}
                 </div>
                 <div style={{fontSize:12,color:"#6B7280",margin:"3px 0 4px"}}>
-                  {lang==="fr"?"collectés sur":lang==="ar"?"من أصل":"raised of"} {fmtCurrency(c.required||c.amount||0)}
+                  {lang==="fr"?"collectés sur":"raised of"} {fmtCurrency(c.required||c.amount||0)}
                 </div>
                 <div style={{fontSize:11,color:"#059669",display:"flex",alignItems:"center",gap:5}}>
                   <span style={{display:"inline-block",width:7,height:7,borderRadius:"50%",background:"#059669",animation:"pulse 1.5s infinite"}}/>
@@ -5569,7 +5557,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
               <button
                 onClick={()=>{try{if(navigator.share){navigator.share({title:(c.title?.[lang]||"AYYAD"),url:window.location.href})}else{navigator.clipboard.writeText(window.location.href)}}catch(e){}}}
                 style={{padding:"14px 0",borderRadius:50,border:"2px solid #E5E7EB",background:"#fff",color:"#374151",fontWeight:700,fontSize:14,cursor:"pointer"}}>
-                📤 {lang==="fr"?"Partager":lang==="ar" ? "شارك" : "Share"}
+                📤 {lang==="fr"?"Partager":"Share"}
               </button>
             </div>
           </div>
@@ -5661,20 +5649,20 @@ const CasePage = ({ c, setPage, lang, user }) => {
               <div style={{display:"flex",justifyContent:"space-around",alignItems:"center"}}>
                 <div style={{textAlign:"center"}}>
                   <div style={{fontSize:22}}>🔒</div>
-                  <div style={{fontSize:11,fontWeight:800,color:"#047857",marginTop:2}}>{lang==="fr"?"0% frais":lang==="ar"?"0% رسوم":"0% fees"}</div>
-                  <div style={{fontSize:10,color:"#9ca3af"}}>{lang==="fr"?"sur votre don":lang==="ar" ? "على تبرعك" : "on your gift"}</div>
+                  <div style={{fontSize:11,fontWeight:800,color:"#047857",marginTop:2}}>{lang==="fr"?"0% frais":"0% fees"}</div>
+                  <div style={{fontSize:10,color:"#9ca3af"}}>{lang==="fr"?"sur votre don":"on your gift"}</div>
                 </div>
                 <div style={{width:1,height:38,background:"#e5e7eb"}} />
                 <div style={{textAlign:"center"}}>
                   <div style={{fontSize:22}}>✅</div>
-                  <div style={{fontSize:11,fontWeight:800,color:"#047857",marginTop:2}}>{lang==="fr"?"Vérifié":lang==="ar" ? "موثّق" : "Verified"}</div>
-                  <div style={{fontSize:10,color:"#9ca3af"}}>{lang==="fr"?"par Ayyad":lang==="ar" ? "من أيد" : "by Ayyad"}</div>
+                  <div style={{fontSize:11,fontWeight:800,color:"#047857",marginTop:2}}>{lang==="fr"?"Vérifié":"Verified"}</div>
+                  <div style={{fontSize:10,color:"#9ca3af"}}>{lang==="fr"?"par Ayyad":"by Ayyad"}</div>
                 </div>
                 <div style={{width:1,height:38,background:"#e5e7eb"}} />
                 <div style={{textAlign:"center"}}>
                   <div style={{fontSize:22}}>🏥</div>
-                  <div style={{fontSize:11,fontWeight:800,color:"#047857",marginTop:2}}>{lang==="fr"?"Direct hôpital":lang==="ar" ? "للمستشفى" : "To hospital"}</div>
-                  <div style={{fontSize:10,color:"#9ca3af"}}>{lang==="fr"?"fonds sécurisés":lang==="ar" ? "أموال مؤمّنة" : "secured funds"}</div>
+                  <div style={{fontSize:11,fontWeight:800,color:"#047857",marginTop:2}}>{lang==="fr"?"Direct hôpital":"To hospital"}</div>
+                  <div style={{fontSize:10,color:"#9ca3af"}}>{lang==="fr"?"fonds sécurisés":"secured funds"}</div>
                 </div>
               </div>
             </div>
@@ -5703,7 +5691,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             {recentDonations.length > 0 && (
               <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-                  <h2 className="font-black text-gray-900">{lang==="ar"?"آخر المتبرعين":lang==="fr"?"Derniers donateurs":"Recent donors"}</h2>
+                  <h2 className="font-black text-gray-900">{lang==="fr"?"Derniers donateurs":lang==="ar"?"آخر المتبرعين":"Recent donors"}</h2>
                   <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>Live
                   </span>
@@ -6041,7 +6029,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 <div style={{height:5,borderRadius:99,background:"#E5E7EB",marginBottom:4}}>
                   <div style={{height:"100%",borderRadius:99,background:"#059669",transition:"width 0.5s",width:Math.min(100,Math.round(((liveCollected||0)/(c.amount||1))*100))+"%"}} />
                 </div>
-                <div style={{fontSize:11,color:"#6B7280",marginBottom:12}}>{liveDonors||0} {lang==="fr"?"donateurs":lang==="ar"?"متبرع":"donors"}</div>
+                <div style={{fontSize:11,color:"#6B7280",marginBottom:12}}>{liveDonors||0} {lang==="fr"?"donateurs":"donors"}</div>
               </div>
 
               <div style={{padding:"16px 18px"}}>
@@ -6065,7 +6053,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   ))}
                 </div>
                 <input type="number" value={amount} onChange={e=>setAmount(e.target.value)}
-                  placeholder={currency==="FCFA"?(lang==="fr"?"Autre montant (FCFA)":lang==="ar" ? "مبلغ آخر" : "Custom amount (FCFA)"):`Amount in ${currency}`}
+                  placeholder={currency==="FCFA"?(lang==="fr"?"Autre montant (FCFA)":"Custom amount (FCFA)"):`Amount in ${currency}`}
                   style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:9,border:"1.5px solid #E5E7EB",fontSize:13,fontWeight:600,marginBottom:12,outline:"none"}} />
                 {currency!=="FCFA"&&parseInt(amount)>0&&<div style={{fontSize:11,color:"#6B7280",textAlign:"center",marginBottom:8}}>≈ {Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1)).toLocaleString("fr-FR")} FCFA</div>}
 
@@ -6305,7 +6293,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             {recentDonations.length > 0 && (
               <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-                  <h2 className="font-black text-gray-900">{lang==="ar"?"آخر المتبرعين":lang==="fr"?"Derniers donateurs":"Recent donors"}</h2>
+                  <h2 className="font-black text-gray-900">{lang==="fr"?"Derniers donateurs":lang==="ar"?"آخر المتبرعين":"Recent donors"}</h2>
                   <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>Live
                   </span>
@@ -6368,7 +6356,7 @@ const StaffRow = ({ m, fr, paid, onPay, onDelete, onUpdate, fmt }) => {
       <div className="px-4 py-3 bg-blue-50 border-l-4 border-blue-400 space-y-2">
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-[10px] font-bold text-gray-500 uppercase">{fr ? "Nom" : ar ? "الاسم" : "Name"}</label>
+            <label className="text-[10px] font-bold text-gray-500 uppercase">{fr?"Nom":"Name"}</label>
             <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}
               className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm mt-0.5" />
           </div>
@@ -6383,14 +6371,14 @@ const StaffRow = ({ m, fr, paid, onPay, onDelete, onUpdate, fmt }) => {
               className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm mt-0.5" placeholder="+225 07..." />
           </div>
           <div>
-            <label className="text-[10px] font-bold text-gray-500 uppercase">{fr ? "Salaire/mois" : ar ? "الراتب/شهر" : "Salary/month"}</label>
+            <label className="text-[10px] font-bold text-gray-500 uppercase">{fr?"Salaire/mois":"Salary/month"}</label>
             <input type="number" value={form.monthly_salary} onChange={e=>setForm(f=>({...f,monthly_salary:e.target.value}))}
               className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm mt-0.5" />
           </div>
         </div>
         <div className="flex gap-2 pt-1">
           <button onClick={save} className="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-emerald-700">
-            ✓ {fr ? "Enregistrer" : ar ? "حفظ" : "Save"}
+            ✓ {fr?"Enregistrer":"Save"}
           </button>
           <button onClick={()=>setEditing(false)} className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-200">
             {fr?"Annuler":ar?"إلغاء":"Cancel"}
@@ -6412,20 +6400,20 @@ const StaffRow = ({ m, fr, paid, onPay, onDelete, onUpdate, fmt }) => {
       <div className="flex items-center gap-2">
         <div className="text-right">
           <div className="font-black text-sm text-gray-900">{fmt(m.monthly_salary)}</div>
-          <div className="text-[10px] text-gray-400">{fr ? "/mois" : ar ? "/شهر" : "/month"}</div>
+          <div className="text-[10px] text-gray-400">{fr?"/mois":"/month"}</div>
         </div>
         {paid ? (
-          <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded-lg">✅ {fr ? "Payé" : ar ? "مدفوع" : "Paid"}</span>
+          <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded-lg">✅ {fr?"Payé":"Paid"}</span>
         ) : (
           <button onClick={onPay} className="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-blue-700">
-            🌊 {fr ? "Payer" : ar ? "ادفع" : "Pay"}
+            🌊 {fr?"Payer":"Pay"}
           </button>
         )}
-        <button onClick={()=>setEditing(true)} title={fr ? "Modifier" : ar ? "تعديل" : "Edit"}
+        <button onClick={()=>setEditing(true)} title={fr?"Modifier":"Edit"}
           className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg p-1.5 transition-colors text-sm">
           ✏️
         </button>
-        <button onClick={onDelete} title={fr ? "Supprimer" : ar ? "حذف" : "Delete"}
+        <button onClick={onDelete} title={fr?"Supprimer":"Delete"}
           className="text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg p-1.5 transition-colors text-sm">
           🗑️
         </button>
@@ -6491,16 +6479,18 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
     const usable = (adminCases || []).filter(c => !["PENDING", "REJECTED"].includes(c.status) && !c._isDemo);
     setManualCases(usable);
     if (usable.length === 0) {
-      setManualError(fr ? "Aucun dossier validé trouvé. Vérifie que des dossiers sont en statut Approuvé/Collecte/Financé." : ar ? "لا توجد ملفات معتمدة. تحقق من أن الملفات في حالة موافق/جمع/ممول." : "No approved case found. Check that some cases have status Approved/Collecting/Funded.");
+      setManualError(fr
+        ? "Aucun dossier validé trouvé. Vérifie que des dossiers sont en statut Approuvé/Collecte/Financé."
+        : "No approved case found. Check that some cases have status Approved/Collecting/Funded.");
     }
     setManualOpen(true);
   };
 
   const submitManualDonation = async () => {
     setManualError("");
-    if (!manualForm.case_id) { setManualError(fr ? "Sélectionnez un dossier." : ar ? "اختر ملفاً." : "Select a case."); return; }
+    if (!manualForm.case_id) { setManualError(fr?"Sélectionnez un dossier.":"Select a case."); return; }
     const amt = Number(manualForm.amount);
-    if (!amt || amt <= 0) { setManualError(fr ? "Montant invalide." : ar ? "المبلغ غير صالح." : "Invalid amount."); return; }
+    if (!amt || amt <= 0) { setManualError(fr?"Montant invalide.":"Invalid amount."); return; }
     setManualSaving(true);
     try {
       // Via /api/donate (bypass RLS) avec fallback Supabase direct
@@ -6532,8 +6522,8 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
         } catch(e) { console.warn("[manual donation recompute] échec:", e); }
       }
       setMsg(justReached
-        ? (fr ? "🎉 Objectif atteint ! Emails envoyés aux donateurs." : ar ? "🎉 تم تحقيق الهدف! تم إرسال رسائل للمتبرعين." : "🎉 Goal reached! Emails sent to donors.")
-        : (fr ? "✅ Don manuel enregistré !" : ar ? "✅ تم تسجيل التبرع اليدوي!" : "✅ Manual donation recorded!"));
+        ? (fr ? "🎉 Objectif atteint ! Emails envoyés aux donateurs." : "🎉 Goal reached! Emails sent to donors.")
+        : (fr ? "✅ Don manuel enregistré !" : "✅ Manual donation recorded!"));
       setTimeout(() => setMsg(""), 4000);
       setManualOpen(false);
       fetchDonations();
@@ -6612,8 +6602,8 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
     }
     const { justReached } = await recomputeCaseTotalsAndNotify(donation.case_id);
     setMsg(justReached
-      ? (fr ? "🎉 Objectif atteint ! Emails envoyés aux donateurs." : ar ? "🎉 تم تحقيق الهدف! تم إرسال رسائل للمتبرعين." : "🎉 Goal reached! Emails sent to donors.")
-      : (fr ? "✅ Don confirmé !" : ar ? "✅ تم تأكيد التبرع!" : "✅ Donation confirmed!"));
+      ? (fr ? "🎉 Objectif atteint ! Emails envoyés aux donateurs." : "🎉 Goal reached! Emails sent to donors.")
+      : (fr ? "✅ Don confirmé !" : "✅ Donation confirmed!"));
     setTimeout(() => setMsg(""), 4000);
     fetchDonations();
   };
@@ -6621,7 +6611,7 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
   const cancel = async (id) => {
     const { error } = await supabase.from("donations").update({ status: "cancelled" }).eq("id", id);
     if (!error) {
-      setMsg(fr ? "Don annulé." : ar ? "تم إلغاء التبرع." : "Donation cancelled.");
+      setMsg(fr ? "Don annulé." : "Donation cancelled.");
       setTimeout(() => setMsg(""), 3000);
       fetchDonations();
     }
@@ -6642,10 +6632,10 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
   const totalPending   = donations.filter(d => d.status === "pending").reduce((s, d) => s + (d.amount_fcfa || d.amount || 0), 0);
 
   const statusBadge = (s) => {
-    if (s === "confirmed") return <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{fr ? "Confirmé" : ar ? "مؤكد" : "Confirmed"}</span>;
-    if (s === "cancelled") return <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">{fr ? "Annulé" : ar ? "ملغى" : "Cancelled"}</span>;
-    if (s === "initiated") return <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{fr ? "Initié" : ar ? "بدأ" : "Initiated"}</span>;
-    return <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{fr ? "En attente" : ar ? "قيد الانتظار" : "Pending"}</span>;
+    if (s === "confirmed") return <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{fr?"Confirmé":"Confirmed"}</span>;
+    if (s === "cancelled") return <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">{fr?"Annulé":"Cancelled"}</span>;
+    if (s === "initiated") return <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{fr?"Initié":"Initiated"}</span>;
+    return <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{fr?"En attente":"Pending"}</span>;
   };
 
   return (
@@ -6653,17 +6643,17 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-gray-800">💚 {fr ? "Gestion des dons" : ar ? "التبرعات" : "Donations"}</h2>
-          <p className="text-xs text-gray-400 mt-0.5">{donations.length} {fr ? "dons enregistrés" : ar ? "تبرعات مسجلة" : "donations recorded"}</p>
+          <h2 className="text-xl font-bold text-gray-800">💚 {fr ? "Gestion des dons" : "Donations"}</h2>
+          <p className="text-xs text-gray-400 mt-0.5">{donations.length} {fr ? "dons enregistrés" : "donations recorded"}</p>
         </div>
         <div className="flex items-center gap-3 self-start sm:self-auto">
           <button
             onClick={openManualModal}
             className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm"
           >
-            ＋ {fr ? "Saisir un don manuel" : ar ? "إدخال تبرع يدوي" : "Add manual donation"}
+            ＋ {fr?"Saisir un don manuel":"Add manual donation"}
           </button>
-          <button onClick={fetchDonations} className="text-xs text-emerald-600 hover:underline font-medium">↻ {fr ? "Actualiser" : ar ? "تحديث" : "Refresh"}</button>
+          <button onClick={fetchDonations} className="text-xs text-emerald-600 hover:underline font-medium">↻ {fr?"Actualiser":"Refresh"}</button>
         </div>
       </div>
 
@@ -6672,24 +6662,26 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => !manualSaving && setManualOpen(false)}>
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-5 space-y-4 my-8" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h3 className="font-black text-lg text-gray-900">📝 {fr ? "Don manuel" : ar ? "تبرع يدوي" : "Manual donation"}</h3>
+              <h3 className="font-black text-lg text-gray-900">📝 {fr?"Don manuel":"Manual donation"}</h3>
               <button onClick={() => setManualOpen(false)} disabled={manualSaving} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
             </div>
             <p className="text-xs text-gray-500 leading-relaxed">
-              {fr ? "À utiliser quand tu reçois un paiement Wave (ou autre) sans qu'aucune ligne pending n'apparaisse dans Ayyad. Tu remplis ce que tu vois dans la notif Wave Business." : ar ? "استخدم هذا عند استلام دفعة Wave (أو غيرها) دون ظهور سطر معلق في أيد." : "Use this when you receive a Wave payment (or other) but no pending line appears in Ayyad. Fill in what you see in the Wave Business notification."}
+              {fr
+                ? "À utiliser quand tu reçois un paiement Wave (ou autre) sans qu'aucune ligne pending n'apparaisse dans Ayyad. Tu remplis ce que tu vois dans la notif Wave Business."
+                : "Use this when you receive a Wave payment (or other) but no pending line appears in Ayyad. Fill in what you see in the Wave Business notification."}
             </p>
             {manualError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-xs text-red-700">{manualError}</div>
             )}
             <div className="space-y-3">
               <div>
-                <label className="text-xs text-gray-600 font-semibold">{fr ? "Dossier *" : ar ? "الملف *" : "Case *"}</label>
+                <label className="text-xs text-gray-600 font-semibold">{fr?"Dossier *":"Case *"}</label>
                 <select
                   value={manualForm.case_id}
                   onChange={e => setManualForm(f => ({...f, case_id: e.target.value}))}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 bg-white"
                 >
-                  <option value="">— {fr ? "Sélectionner" : ar ? "اختيار" : "Select"} —</option>
+                  <option value="">— {fr?"Sélectionner":"Select"} —</option>
                   {manualCases.map(c => {
                     const t = typeof c.title === "object" ? (c.title.fr || c.title.en) : c.title;
                     return <option key={c.id} value={c.id}>{(c.tracking_id || c.id.slice(0,8)) + " — " + (t || c.full_name || c.beneficiary || "—")}</option>;
@@ -6697,7 +6689,7 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
                 </select>
               </div>
               <div>
-                <label className="text-xs text-gray-600 font-semibold">{fr ? "Montant (FCFA) *" : ar ? "المبلغ (فرنك أفريقي) *" : "Amount (FCFA) *"}</label>
+                <label className="text-xs text-gray-600 font-semibold">{fr?"Montant (FCFA) *":"Amount (FCFA) *"}</label>
                 <input
                   type="number"
                   inputMode="numeric"
@@ -6709,42 +6701,42 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-xs text-gray-600 font-semibold">{fr ? "Méthode" : ar ? "الطريقة" : "Method"}</label>
+                  <label className="text-xs text-gray-600 font-semibold">{fr?"Méthode":"Method"}</label>
                   <select
                     value={manualForm.payment_method}
                     onChange={e => setManualForm(f => ({...f, payment_method: e.target.value}))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 bg-white"
                   >
                     <option value="WAVE">🌊 Wave</option>
-                    <option value="CASH">💵 {fr ? "Espèces" : ar ? "نقداً" : "Cash"}</option>
-                    <option value="BANK">🏦 {fr ? "Virement banc." : ar ? "تحويل بنكي" : "Bank transfer"}</option>
-                    <option value="OTHER">{fr ? "Autre" : ar ? "أخرى" : "Other"}</option>
+                    <option value="CASH">💵 {fr?"Espèces":"Cash"}</option>
+                    <option value="BANK">🏦 {fr?"Virement banc.":"Bank transfer"}</option>
+                    <option value="OTHER">{fr?"Autre":"Other"}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-600 font-semibold">{fr ? "Statut" : ar ? "الحالة" : "Status"}</label>
+                  <label className="text-xs text-gray-600 font-semibold">{fr?"Statut":"Status"}</label>
                   <select
                     value={manualForm.status}
                     onChange={e => setManualForm(f => ({...f, status: e.target.value}))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 bg-white"
                   >
-                    <option value="confirmed">{fr ? "Confirmé" : ar ? "مؤكد" : "Confirmed"}</option>
-                    <option value="pending">{fr ? "En attente" : ar ? "قيد الانتظار" : "Pending"}</option>
+                    <option value="confirmed">{fr?"Confirmé":"Confirmed"}</option>
+                    <option value="pending">{fr?"En attente":"Pending"}</option>
                   </select>
                 </div>
               </div>
               <div>
-                <label className="text-xs text-gray-600 font-semibold">{fr ? "Nom du donateur" : ar ? "اسم المتبرع" : "Donor name"}</label>
+                <label className="text-xs text-gray-600 font-semibold">{fr?"Nom du donateur":"Donor name"}</label>
                 <input
                   type="text"
                   value={manualForm.donor_name}
                   onChange={e => setManualForm(f => ({...f, donor_name: e.target.value}))}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1"
-                  placeholder={fr ? "(optionnel — anonyme par défaut)" : ar ? "(اختياري — مجهول افتراضياً)" : "(optional — anonymous by default)"}
+                  placeholder={fr?"(optionnel — anonyme par défaut)":"(optional — anonymous by default)"}
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-600 font-semibold">{fr ? "Référence Wave / N° transaction" : ar ? "مرجع Wave / رقم المعاملة" : "Wave reference / Tx number"}</label>
+                <label className="text-xs text-gray-600 font-semibold">{fr?"Référence Wave / N° transaction":"Wave reference / Tx number"}</label>
                 <input
                   type="text"
                   value={manualForm.reference}
@@ -6764,7 +6756,7 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
                 disabled={manualSaving}
                 onClick={submitManualDonation}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm shadow-sm disabled:opacity-60"
-              >{manualSaving ? (fr ? "Enregistrement…" : ar ? "جارٍ الحفظ…" : "Saving…") : (fr ? "Enregistrer le don" : ar ? "حفظ التبرع" : "Save donation")}</button>
+              >{manualSaving ? (fr?"Enregistrement…":"Saving…") : (fr?"Enregistrer le don":"Save donation")}</button>
             </div>
           </div>
         </div>
@@ -6776,17 +6768,17 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
           <div className="text-xl font-black text-gray-900">{donations.filter(d=>d.status==="pending"||d.status==="initiated").length}</div>
-          <div className="text-[11px] text-amber-600 font-bold mt-0.5">{fr ? "En attente" : ar ? "قيد الانتظار" : "Pending"}</div>
+          <div className="text-[11px] text-amber-600 font-bold mt-0.5">{fr?"En attente":"Pending"}</div>
           <div className="text-[10px] text-gray-400">{new Intl.NumberFormat("fr").format(donations.filter(d=>d.status==="pending"||d.status==="initiated").reduce((s,d)=>s+(d.amount_fcfa||d.amount||0),0))} FCFA</div>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
           <div className="text-xl font-black text-emerald-700">{donations.filter(d=>d.status==="confirmed").length}</div>
-          <div className="text-[11px] text-emerald-600 font-bold mt-0.5">{fr ? "Confirmés" : ar ? "مؤكدة" : "Confirmed"}</div>
+          <div className="text-[11px] text-emerald-600 font-bold mt-0.5">{fr?"Confirmés":"Confirmed"}</div>
           <div className="text-[10px] text-gray-400">{new Intl.NumberFormat("fr").format(totalConfirmed)} FCFA</div>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
           <div className="text-xl font-black text-red-500">{donations.filter(d=>d.status==="cancelled").length}</div>
-          <div className="text-[11px] text-red-500 font-bold mt-0.5">{fr ? "Annulés" : ar ? "ملغاة" : "Cancelled"}</div>
+          <div className="text-[11px] text-red-500 font-bold mt-0.5">{fr?"Annulés":"Cancelled"}</div>
         </div>
       </div>
 
@@ -6794,22 +6786,22 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
       <div className="flex gap-2 flex-wrap">
         <input
           value={search} onChange={e=>setSearch(e.target.value)}
-          placeholder={fr ? "🔍 Rechercher donateur, référence…" : ar ? "🔍 البحث عن متبرع، مرجع…" : "🔍 Search donor, reference…"}
+          placeholder={fr?"🔍 Rechercher donateur, référence…":"🔍 Search donor, reference…"}
           className="flex-1 min-w-[180px] border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400"
         />
         {["all","pending","initiated","confirmed","cancelled"].map(s => (
           <button key={s} onClick={()=>setFilterStatus(s)}
             className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${filterStatus===s?"bg-emerald-600 text-white border-emerald-600":"bg-white text-gray-500 border-gray-200 hover:border-emerald-400"}`}>
-            {s==="all"?(fr?"Tous":ar?"الكل":lang==="ar" ? "الكل" : "All"):s==="pending"?(fr ? "En attente" : ar ? "قيد الانتظار" : "Pending"):s==="confirmed"?(fr ? "Confirmés" : ar ? "مؤكدة" : "Confirmed"):(fr ? "Annulés" : ar ? "ملغاة" : "Cancelled")}
+            {s==="all"?(fr?"Tous":ar?"الكل":"All"):s==="pending"?(fr?"En attente":"Pending"):s==="confirmed"?(fr?"Confirmés":"Confirmed"):(fr?"Annulés":"Cancelled")}
           </button>
         ))}
       </div>
 
       {/* Liste */}
       {loading ? (
-        <div className="text-center py-12 text-gray-400 text-sm">{fr ? "Chargement…" : ar ? "جارٍ التحميل…" : "Loading…"}</div>
+        <div className="text-center py-12 text-gray-400 text-sm">{fr?"Chargement…":"Loading…"}</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-gray-400 text-sm">{fr ? "Aucun don trouvé." : ar ? "لم يُعثر على تبرع." : "No donations found."}</div>
+        <div className="text-center py-12 text-gray-400 text-sm">{fr?"Aucun don trouvé.":"No donations found."}</div>
       ) : (
         <div className="space-y-2">
           {filtered.map(d => (
@@ -6831,13 +6823,13 @@ const AdminDonationsTab = ({ lang, adminCases = [] }) => {
                   <div className="text-xs text-gray-500">
                     {d.donor_name
                       ? <><span className="font-semibold text-gray-700">{d.donor_name}</span>{d.donor_email && ` · ${d.donor_email}`}</>
-                      : <span className="italic text-gray-400">{fr ? "Donateur anonyme" : ar ? "متبرع مجهول" : "Anonymous donor"}</span>
+                      : <span className="italic text-gray-400">{fr?"Donateur anonyme":"Anonymous donor"}</span>
                     }
                   </div>
                   {/* Message */}
                   {d.message && <div className="text-[11px] text-emerald-600 italic mt-1">"{d.message}"</div>}
                   {/* Date */}
-                  <div className="text-[10px] text-gray-300 mt-1">{new Date(d.created_at).toLocaleString(fr ? "fr-CI" : ar ? "ar" : "en-US")}</div>
+                  <div className="text-[10px] text-gray-300 mt-1">{new Date(d.created_at).toLocaleString(fr?"fr-CI":"en-US")}</div>
                 </div>
                 {/* Actions */}
                 {d.status === "pending" && (
@@ -6898,16 +6890,16 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
 
   const fmtDate = (iso) => {
     if (!iso) return "—";
-    return new Date(iso).toLocaleDateString(fr ? "fr-CI" : ar ? "ar" : "en-US", { day:"2-digit", month:"short", year:"numeric" });
+    return new Date(iso).toLocaleDateString(fr ? "fr-CI" : "en-US", { day:"2-digit", month:"short", year:"numeric" });
   };
 
   const fmtLast = (iso) => {
-    if (!iso) return fr ? "Jamais connecté" : ar ? "لم يتصل أبداً" : "Never logged in";
+    if (!iso) return fr ? "Jamais connecté" : "Never logged in";
     const diff = Math.floor((Date.now() - new Date(iso)) / 1000);
-    if (diff < 60) return fr ? "À l'instant" : ar ? "الآن" : "Just now";
-    if (diff < 3600) return Math.floor(diff/60) + (fr ? " min" : ar ? " دقيقة" : " min ago");
-    if (diff < 86400) return Math.floor(diff/3600) + (fr ? " h" : ar ? " ساعة" : " h ago");
-    if (diff < 2592000) return Math.floor(diff/86400) + (fr ? " j" : ar ? " يوم" : " d ago");
+    if (diff < 60) return fr ? "À l'instant" : "Just now";
+    if (diff < 3600) return Math.floor(diff/60) + (fr ? " min" : " min ago");
+    if (diff < 86400) return Math.floor(diff/3600) + (fr ? " h" : " h ago");
+    if (diff < 2592000) return Math.floor(diff/86400) + (fr ? " j" : " d ago");
     return fmtDate(iso);
   };
 
@@ -6916,7 +6908,7 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
     setSaving(true);
     const { account, action } = actionModal;
     let update = {};
-    if (action === "ban") update = { is_banned: true, ban_reason: banReason || (fr ? "Violation des conditions" : ar ? "انتهاك الشروط" : "Terms violation") };
+    if (action === "ban") update = { is_banned: true, ban_reason: banReason || (fr ? "Violation des conditions" : "Terms violation") };
     if (action === "unban") update = { is_banned: false, ban_reason: null };
     if (action === "promote") update = { is_admin: true };
     if (action === "demote") update = { is_admin: false };
@@ -6973,10 +6965,10 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
   });
 
   const statCards = [
-    { label: fr ? "Comptes total" : ar ? "إجمالي الحسابات" : "Total accounts", value: stats.total, icon: "👤", color: "emerald" },
-    { label: fr ? "Ce mois" : ar ? "هذا الشهر" : "This month", value: stats.thisMonth, icon: "🆕", color: "blue" },
-    { label: fr ? "Admins" : ar ? "المشرفون" : "Admins", value: stats.admins, icon: "🛡️", color: "purple" },
-    { label: fr ? "Bannis" : ar ? "محظورون" : "Banned", value: stats.banned, icon: "🚫", color: "red" },
+    { label: fr ? "Comptes total" : "Total accounts", value: stats.total, icon: "👤", color: "emerald" },
+    { label: fr ? "Ce mois" : "This month", value: stats.thisMonth, icon: "🆕", color: "blue" },
+    { label: fr ? "Admins" : "Admins", value: stats.admins, icon: "🛡️", color: "purple" },
+    { label: fr ? "Bannis" : "Banned", value: stats.banned, icon: "🚫", color: "red" },
   ];
 
   const colorMap = { emerald: "bg-emerald-50 text-emerald-700 border-emerald-100", blue: "bg-blue-50 text-blue-700 border-blue-100", purple: "bg-purple-50 text-purple-700 border-purple-100", red: "bg-red-50 text-red-700 border-red-100" };
@@ -6986,10 +6978,10 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold text-gray-800">👤 {fr ? "Gestion des comptes" : ar ? "إدارة الحسابات" : "Account Management"}</h2>
-          <p className="text-sm text-gray-500 mt-0.5">{fr ? "Tous les comptes inscrits sur la plateforme" : ar ? "جميع الحسابات المسجلة على المنصة" : "All accounts registered on the platform"}</p>
+          <h2 className="text-xl font-bold text-gray-800">👤 {fr ? "Gestion des comptes" : "Account Management"}</h2>
+          <p className="text-sm text-gray-500 mt-0.5">{fr ? "Tous les comptes inscrits sur la plateforme" : "All accounts registered on the platform"}</p>
         </div>
-        <button onClick={load} className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-gray-600">🔄 {fr ? "Actualiser" : ar ? "تحديث" : "Refresh"}</button>
+        <button onClick={load} className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-gray-600">🔄 {fr ? "Actualiser" : "Refresh"}</button>
       </div>
 
       {/* Stats */}
@@ -7004,26 +6996,26 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
 
       {/* Filters + Search */}
       <div className="flex flex-wrap gap-2">
-        {[["all", fr?"Tous":ar?"الكل":lang==="ar" ? "الكل" : "All"],["regular",fr ? "Standard" : ar ? "عادي" : "Regular"],["admin","Admin"],["banned",fr ? "Bannis" : ar ? "محظورون" : "Banned"]].map(([id,lbl]) => (
+        {[["all", fr?"Tous":ar?"الكل":"All"],["regular",fr?"Standard":"Regular"],["admin","Admin"],["banned",fr?"Bannis":"Banned"]].map(([id,lbl]) => (
           <button key={id} onClick={() => setFilter(id)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filter===id ? "bg-emerald-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>{lbl}</button>
         ))}
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder={fr ? "Rechercher nom ou email..." : ar ? "البحث بالاسم أو البريد..." : "Search name or email..."}
+          placeholder={fr ? "Rechercher nom ou email..." : "Search name or email..."}
           className="flex-1 min-w-[200px] border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400"
         />
       </div>
 
       {/* Table */}
       {loading ? (
-        <div className="text-center text-gray-400 py-12">⏳ {fr ? "Chargement..." : ar ? "جارٍ التحميل..." : "Loading..."}</div>
+        <div className="text-center text-gray-400 py-12">⏳ {fr ? "Chargement..." : "Loading..."}</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center text-gray-400 py-12">{fr ? "Aucun compte trouvé" : ar ? "لم يُعثر على حساب" : "No accounts found"}</div>
+        <div className="text-center text-gray-400 py-12">{fr ? "Aucun compte trouvé" : "No accounts found"}</div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-            <span className="text-xs text-gray-500 font-medium">{filtered.length} {fr ? "compte(s)" : ar ? "حساب(ات)" : "account(s)"}</span>
+            <span className="text-xs text-gray-500 font-medium">{filtered.length} {fr ? "compte(s)" : "account(s)"}</span>
           </div>
           <div className="divide-y divide-gray-50">
             {filtered.map(a => (
@@ -7037,32 +7029,32 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-sm text-gray-800 truncate">{a.full_name || a.name || "—"}</span>
                     {a.is_admin && <span className="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded-full">🛡️ Admin</span>}
-                    {a.is_banned && <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">🚫 {fr ? "Banni" : ar ? "محظور" : "Banned"}</span>}
+                    {a.is_banned && <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">🚫 {fr?"Banni":"Banned"}</span>}
                   </div>
                   <div className="text-xs text-gray-400 truncate">{a.email || "—"}</div>
                 </div>
                 {/* Dates */}
                 <div className="hidden sm:block text-right flex-shrink-0">
-                  <div className="text-xs text-gray-500">{fr ? "Inscrit" : ar ? "مسجل" : "Joined"}: {fmtDate(a.created_at)}</div>
-                  <div className="text-xs text-gray-400">{fr ? "Dernière co." : ar ? "آخر اتصال" : "Last login"}: {fmtLast(a.last_login)}</div>
+                  <div className="text-xs text-gray-500">{fr ? "Inscrit" : "Joined"}: {fmtDate(a.created_at)}</div>
+                  <div className="text-xs text-gray-400">{fr ? "Dernière co." : "Last login"}: {fmtLast(a.last_login)}</div>
                 </div>
                 {/* Actions */}
                 {a.id !== currentUser?.id && (
                   <div className="flex gap-1 flex-shrink-0">
                     {a.is_banned ? (
-                      <button onClick={() => setActionModal({ account: a, action: "unban" })} className="text-xs bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-lg hover:bg-green-100 font-medium">✓ {fr ? "Réactiver" : ar ? "إعادة التفعيل" : "Unban"}</button>
+                      <button onClick={() => setActionModal({ account: a, action: "unban" })} className="text-xs bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-lg hover:bg-green-100 font-medium">✓ {fr?"Réactiver":"Unban"}</button>
                     ) : (
-                      <button onClick={() => setActionModal({ account: a, action: "ban" })} className="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg hover:bg-red-100 font-medium">🚫 {fr ? "Bannir" : ar ? "حظر" : "Ban"}</button>
+                      <button onClick={() => setActionModal({ account: a, action: "ban" })} className="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg hover:bg-red-100 font-medium">🚫 {fr?"Bannir":"Ban"}</button>
                     )}
                     {a.is_admin ? (
-                      <button onClick={() => setActionModal({ account: a, action: "demote" })} className="text-xs bg-purple-50 text-purple-600 border border-purple-200 px-2.5 py-1 rounded-lg hover:bg-purple-100 font-medium">↓ {fr ? "Retirer admin" : ar ? "سحب صلاحية المشرف" : "Remove admin"}</button>
+                      <button onClick={() => setActionModal({ account: a, action: "demote" })} className="text-xs bg-purple-50 text-purple-600 border border-purple-200 px-2.5 py-1 rounded-lg hover:bg-purple-100 font-medium">↓ {fr?"Retirer admin":"Remove admin"}</button>
                     ) : (
-                      <button onClick={() => setActionModal({ account: a, action: "promote" })} className="text-xs bg-purple-50 text-purple-600 border border-purple-200 px-2.5 py-1 rounded-lg hover:bg-purple-100 font-medium">🛡️ {fr ? "Promouvoir" : ar ? "ترقية" : "Promote"}</button>
+                      <button onClick={() => setActionModal({ account: a, action: "promote" })} className="text-xs bg-purple-50 text-purple-600 border border-purple-200 px-2.5 py-1 rounded-lg hover:bg-purple-100 font-medium">🛡️ {fr?"Promouvoir":"Promote"}</button>
                     )}
                   </div>
                 )}
                 {a.id === currentUser?.id && (
-                  <span className="text-xs text-gray-400 italic flex-shrink-0">{fr ? "(vous)" : ar ? "(أنت)" : "(you)"}</span>
+                  <span className="text-xs text-gray-400 italic flex-shrink-0">{fr?"(vous)":"(you)"}</span>
                 )}
               </div>
             ))}
@@ -7075,10 +7067,10 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
             <h3 className="font-black text-lg text-gray-900 mb-2">
-              {actionModal.action === "ban" && (fr ? "🚫 Bannir ce compte" : ar ? "🚫 حظر هذا الحساب" : "🚫 Ban this account")}
-              {actionModal.action === "unban" && (fr ? "✓ Réactiver ce compte" : ar ? "✓ إعادة تفعيل هذا الحساب" : "✓ Unban this account")}
-              {actionModal.action === "promote" && (fr ? "🛡️ Promouvoir en admin" : ar ? "🛡️ ترقية لمشرف" : "🛡️ Promote to admin")}
-              {actionModal.action === "demote" && (fr ? "↓ Retirer les droits admin" : ar ? "↓ سحب صلاحيات المشرف" : "↓ Remove admin rights")}
+              {actionModal.action === "ban" && (fr ? "🚫 Bannir ce compte" : "🚫 Ban this account")}
+              {actionModal.action === "unban" && (fr ? "✓ Réactiver ce compte" : "✓ Unban this account")}
+              {actionModal.action === "promote" && (fr ? "🛡️ Promouvoir en admin" : "🛡️ Promote to admin")}
+              {actionModal.action === "demote" && (fr ? "↓ Retirer les droits admin" : "↓ Remove admin rights")}
             </h3>
             <p className="text-sm text-gray-500 mb-4">
               <strong>{actionModal.account.full_name || actionModal.account.name || actionModal.account.email}</strong>
@@ -7088,7 +7080,7 @@ const AdminAccountsTab = ({ lang, user: currentUser }) => {
                 value={banReason}
                 onChange={e => setBanReason(e.target.value)}
                 rows={2}
-                placeholder={fr ? "Motif du bannissement..." : ar ? "سبب الحظر..." : "Ban reason..."}
+                placeholder={fr ? "Motif du bannissement..." : "Ban reason..."}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400 mb-4"
               />
             )}
@@ -7130,10 +7122,10 @@ const AdminVisitorsTab = ({ lang }) => {
     const d = new Date(iso);
     const now = new Date();
     const diff = Math.floor((now - d) / 1000);
-    if (diff < 60) return fr ? "À l'instant" : ar ? "الآن" : "Just now";
-    if (diff < 3600) return Math.floor(diff / 60) + (fr ? " min" : ar ? " دقيقة" : " min ago");
-    if (diff < 86400) return Math.floor(diff / 3600) + (fr ? " h" : ar ? " ساعة" : " h ago");
-    return Math.floor(diff / 86400) + (fr ? " j" : ar ? " يوم" : " d ago");
+    if (diff < 60) return fr ? "À l'instant" : "Just now";
+    if (diff < 3600) return Math.floor(diff / 60) + (fr ? " min" : " min ago");
+    if (diff < 86400) return Math.floor(diff / 3600) + (fr ? " h" : " h ago");
+    return Math.floor(diff / 86400) + (fr ? " j" : " d ago");
   };
 
   const filtered = visitors.filter(v =>
@@ -7144,36 +7136,36 @@ const AdminVisitorsTab = ({ lang }) => {
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold text-gray-800">👁️ {fr ? "Visiteurs connectés" : ar ? "الزوار المتصلون" : "Logged-in visitors"}</h2>
-          <p className="text-sm text-gray-500 mt-0.5">{fr ? "Utilisateurs qui se sont connectés à la plateforme" : ar ? "المستخدمون الذين سجلوا الدخول" : "Users who logged into the platform"}</p>
+          <h2 className="text-xl font-bold text-gray-800">👁️ {fr ? "Visiteurs connectés" : "Logged-in visitors"}</h2>
+          <p className="text-sm text-gray-500 mt-0.5">{fr ? "Utilisateurs qui se sont connectés à la plateforme" : "Users who logged into the platform"}</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="bg-emerald-100 text-emerald-700 text-sm font-bold px-3 py-1 rounded-full">{visitors.length} {fr ? "utilisateurs" : ar ? "مستخدمون" : "users"}</span>
-          <button onClick={load} className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-gray-600">🔄 {fr ? "Actualiser" : ar ? "تحديث" : "Refresh"}</button>
+          <span className="bg-emerald-100 text-emerald-700 text-sm font-bold px-3 py-1 rounded-full">{visitors.length} {fr ? "utilisateurs" : "users"}</span>
+          <button onClick={load} className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-gray-600">🔄 {fr ? "Actualiser" : "Refresh"}</button>
         </div>
       </div>
 
       <input
         value={search}
         onChange={e => setSearch(e.target.value)}
-        placeholder={fr ? "Rechercher par nom ou email..." : ar ? "البحث بالاسم أو البريد..." : "Search by name or email..."}
+        placeholder={fr ? "Rechercher par nom ou email..." : "Search by name or email..."}
         className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
       />
 
       {loading ? (
-        <div className="text-center text-gray-400 py-12">⏳ {fr ? "Chargement..." : ar ? "جارٍ التحميل..." : "Loading..."}</div>
+        <div className="text-center text-gray-400 py-12">⏳ {fr ? "Chargement..." : "Loading..."}</div>
       ) : filtered.length === 0 ? (
         <div className="text-center text-gray-400 py-12">
-          {search ? (fr ? "Aucun résultat" : ar ? "لا توجد نتائج" : "No results") : (fr ? "Aucune visite enregistrée pour l'instant" : ar ? "لا توجد زيارات مسجلة حتى الآن" : "No visits recorded yet")}
+          {search ? (fr ? "Aucun résultat" : "No results") : (fr ? "Aucune visite enregistrée pour l'instant" : "No visits recorded yet")}
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{fr ? "Utilisateur" : ar ? "المستخدم" : "User"}</th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{fr ? "Utilisateur" : "User"}</th>
                 <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3">Email</th>
-                <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{fr ? "Dernière visite" : ar ? "آخر زيارة" : "Last seen"}</th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{fr ? "Dernière visite" : "Last seen"}</th>
               </tr>
             </thead>
             <tbody>
@@ -7484,13 +7476,13 @@ const AdminExportTab = ({ lang, user }) => {
 
   // Labels sections
   const SECTION_LABELS = {
-    dossiers:  fr ? "📋 Dossiers" : ar ? "📋 الملفات" : "📋 Cases",
-    dons:      fr ? "💚 Dons" : ar ? "💚 التبرعات" : "💚 Donations",
-    virements: fr ? "🏦 Virements" : ar ? "🏦 التحويلات" : "🏦 Payouts",
-    finance:   fr ? "💰 Finance" : ar ? "💰 المالية" : "💰 Finance",
-    salaires:  fr ? "👔 Salaires" : ar ? "👔 الرواتب" : "👔 Salaries",
-    bilan:     fr ? "📈 Bilan" : ar ? "📈 التقارير" : "📈 Reporting",
-    audit:     fr ? "📝 Journal d'audit" : ar ? "📝 سجل المراجعة" : "📝 Audit log",
+    dossiers:  fr ? "📋 Dossiers"        : "📋 Cases",
+    dons:      fr ? "💚 Dons"            : "💚 Donations",
+    virements: fr ? "🏦 Virements"       : "🏦 Payouts",
+    finance:   fr ? "💰 Finance"         : "💰 Finance",
+    salaires:  fr ? "👔 Salaires"        : "👔 Salaries",
+    bilan:     fr ? "📈 Bilan"           : "📈 Reporting",
+    audit:     fr ? "📝 Journal d'audit" : "📝 Audit log",
   };
 
   // ── Fetch toutes les données ──
@@ -7576,7 +7568,7 @@ ${dataRows}
           c.category||"", c.amount||0, c.collected||0, c.donors||0,
           c.status||"", c.urgent?"Oui":"Non", c.created_at?.slice(0,10)||""
         ]);
-        sheets.push(buildSheet(fr ? "Dossiers" : ar ? "الملفات" : "Cases", headers, rows));
+        sheets.push(buildSheet(fr?"Dossiers":"Cases", headers, rows));
       }
 
       if (sections.dons && d.donations) {
@@ -7588,7 +7580,7 @@ ${dataRows}
           r.amount_fcfa||r.amount||0, r.currency||"FCFA", r.payment_method||"",
           r.status||"", r.message||"", r.reference||""
         ]);
-        sheets.push(buildSheet(fr ? "Dons" : ar ? "التبرعات" : "Donations", headers, rows));
+        sheets.push(buildSheet(fr?"Dons":"Donations", headers, rows));
       }
 
       if (sections.virements && d.cases) {
@@ -7601,7 +7593,7 @@ ${dataRows}
           const fee = Math.round(col*0.05);
           return [c.tracking_id||"", c.title||"", c.hospital||"", col, col-fee, fee, c.payout_status||"", c.payout_date?.slice(0,10)||""];
         });
-        sheets.push(buildSheet(fr ? "Virements" : ar ? "التحويلات" : "Payouts", headers, rows));
+        sheets.push(buildSheet(fr?"Virements":"Payouts", headers, rows));
       }
 
       if (sections.finance && d.expenses) {
@@ -7609,7 +7601,7 @@ ${dataRows}
           ? ["Date","Libellé","Catégorie","Montant (FCFA)","Référence"]
           : ["Date","Label","Category","Amount (FCFA)","Reference"];
         const rows = d.expenses.map(e => [e.date?.slice(0,10)||"", e.label||"", e.category||"", e.amount||0, e.reference||""]);
-        sheets.push(buildSheet(fr ? "Finance" : ar ? "المالية" : "Finance", headers, rows));
+        sheets.push(buildSheet(fr?"Finance":"Finance", headers, rows));
       }
 
       if (sections.salaires && d.salaries) {
@@ -7620,7 +7612,7 @@ ${dataRows}
           p.payment_month||"", p.staff_members?.name||"", p.staff_members?.role||"",
           p.amount||0, p.payment_method||"WAVE", p.status||"", p.payment_date?.slice(0,10)||""
         ]);
-        sheets.push(buildSheet(fr ? "Salaires" : ar ? "الرواتب" : "Salaries", headers, rows));
+        sheets.push(buildSheet(fr?"Salaires":"Salaries", headers, rows));
       }
 
       if (sections.bilan && d.cases) {
@@ -7631,17 +7623,17 @@ ${dataRows}
         const totalExp = (d.expenses||[]).reduce((s,e)=>s+(e.amount||0),0);
         const headers = fr ? ["Indicateur","Valeur"] : ["Indicator","Value"];
         const rows = [
-          [fr ? "Période" : ar ? "الفترة" : "Period", `${dateFrom} → ${dateTo}`],
-          [fr ? "Nombre de dossiers" : ar ? "عدد الملفات" : "Number of cases", allActive.length],
-          [fr ? "Total collecté (FCFA)" : ar ? "المجموع المجموع (فرنك)" : "Total raised (FCFA)", totalCol],
-          [fr ? "Frais Ayyad 5% (FCFA)" : ar ? "رسوم أيد 5% (فرنك)" : "Ayyad 5% fee (FCFA)", fees],
-          [fr ? "Total salaires (FCFA)" : ar ? "إجمالي الرواتب (فرنك)" : "Total salaries (FCFA)", totalSal],
-          [fr ? "Total charges (FCFA)" : ar ? "إجمالي المصاريف (فرنك)" : "Total expenses (FCFA)", totalExp],
-          [fr ? "Solde (FCFA)" : ar ? "الرصيد (فرنك)" : "Balance (FCFA)", fees - totalSal - totalExp],
-          [fr ? "Dossiers objectif atteint" : ar ? "ملفات تحقق هدفها" : "Cases goal reached", allActive.filter(c=>(c.collected||0)>=(c.amount||1)).length],
-          [fr ? "Virements confirmés" : ar ? "تحويلات مؤكدة" : "Confirmed payouts", allActive.filter(c=>c.payout_status==="confirmed").length],
+          [fr?"Période":"Period", `${dateFrom} → ${dateTo}`],
+          [fr?"Nombre de dossiers":"Number of cases", allActive.length],
+          [fr?"Total collecté (FCFA)":"Total raised (FCFA)", totalCol],
+          [fr?"Frais Ayyad 5% (FCFA)":"Ayyad 5% fee (FCFA)", fees],
+          [fr?"Total salaires (FCFA)":"Total salaries (FCFA)", totalSal],
+          [fr?"Total charges (FCFA)":"Total expenses (FCFA)", totalExp],
+          [fr?"Solde (FCFA)":"Balance (FCFA)", fees - totalSal - totalExp],
+          [fr?"Dossiers objectif atteint":"Cases goal reached", allActive.filter(c=>(c.collected||0)>=(c.amount||1)).length],
+          [fr?"Virements confirmés":"Confirmed payouts", allActive.filter(c=>c.payout_status==="confirmed").length],
         ];
-        sheets.push(buildSheet(fr ? "Bilan" : ar ? "التقارير" : "Reporting", headers, rows));
+        sheets.push(buildSheet(fr?"Bilan":"Reporting", headers, rows));
       }
 
       if (sections.audit && d.audit) {
@@ -7653,7 +7645,7 @@ ${dataRows}
           l.user_email||"", l.user_role||"", l.action||"",
           l.target||"", l.old_value||"", l.new_value||""
         ]);
-        sheets.push(buildSheet(fr ? "Journal audit" : ar ? "سجل المراجعة" : "Audit log", headers, rows));
+        sheets.push(buildSheet(fr?"Journal audit":"Audit log", headers, rows));
       }
 
       const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -7678,7 +7670,7 @@ ${sheets.join("\n")}
       document.body.appendChild(a); a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch(e) { console.error("Export Excel error:", e); alert(fr ? "Erreur lors de l'export." : ar ? "خطأ أثناء التصدير." : "Export error."); }
+    } catch(e) { console.error("Export Excel error:", e); alert(fr?"Erreur lors de l'export.":"Export error."); }
     setLoading(false);
   };
 
@@ -7709,8 +7701,8 @@ ${sheets.join("\n")}
   .footer{margin-top:30px;border-top:1px solid #e5e7eb;padding-top:10px;font-size:9px;color:#9ca3af}
   @media print{body{padding:10px}.no-print{display:none}}
 </style></head><body>
-<h1>AYYAD — ${fr ? "Rapport d'export" : ar ? "تقرير التصدير" : "Export Report"}</h1>
-<div class="sub">${fr ? "Période" : ar ? "الفترة" : "Period"} : ${period} · ${fr ? "Généré le" : ar ? "صُدِر بتاريخ" : "Generated"} : ${now}</div>`;
+<h1>AYYAD — ${fr?"Rapport d'export":"Export Report"}</h1>
+<div class="sub">${fr?"Période":"Period"} : ${period} · ${fr?"Généré le":"Generated"} : ${now}</div>`;
 
       if (sections.bilan && d.cases) {
         const allActive = d.cases.filter(c=>!["PENDING","REJECTED"].includes(c.status));
@@ -7719,20 +7711,20 @@ ${sheets.join("\n")}
         const totalSal = (d.salaries||[]).reduce((s,p)=>s+(p.amount||0),0);
         const totalExp = (d.expenses||[]).reduce((s,e)=>s+(e.amount||0),0);
         const balance = fees - totalSal - totalExp;
-        html += `<h2>${fr ? "Bilan de la période" : ar ? "تقرير الفترة" : "Period Summary"}</h2>
+        html += `<h2>${fr?"Bilan de la période":"Period Summary"}</h2>
 <div class="kpi-grid">
-  <div class="kpi"><div class="kpi-v">${allActive.length}</div><div class="kpi-l">${fr ? "Dossiers" : ar ? "الملفات" : "Cases"}</div></div>
-  <div class="kpi"><div class="kpi-v">${fmtN(totalCol)}</div><div class="kpi-l">${fr ? "Collecté (FCFA)" : ar ? "جُمع (فرنك)" : "Raised (FCFA)"}</div></div>
-  <div class="kpi"><div class="kpi-v">${fmtN(fees)}</div><div class="kpi-l">${fr ? "Frais Ayyad 5%" : ar ? "رسوم أيد 5%" : "Ayyad 5% fee"}</div></div>
-  <div class="kpi"><div class="kpi-v" style="color:${balance<0?"#dc2626":"#0d5c2e"}">${fmtN(balance)}</div><div class="kpi-l">${fr ? "Solde" : ar ? "الرصيد" : "Balance"}</div></div>
+  <div class="kpi"><div class="kpi-v">${allActive.length}</div><div class="kpi-l">${fr?"Dossiers":"Cases"}</div></div>
+  <div class="kpi"><div class="kpi-v">${fmtN(totalCol)}</div><div class="kpi-l">${fr?"Collecté (FCFA)":"Raised (FCFA)"}</div></div>
+  <div class="kpi"><div class="kpi-v">${fmtN(fees)}</div><div class="kpi-l">${fr?"Frais Ayyad 5%":"Ayyad 5% fee"}</div></div>
+  <div class="kpi"><div class="kpi-v" style="color:${balance<0?"#dc2626":"#0d5c2e"}">${fmtN(balance)}</div><div class="kpi-l">${fr?"Solde":"Balance"}</div></div>
 </div>`;
       }
 
       if (sections.dossiers && d.cases) {
-        html += `<h2>${fr ? "Dossiers" : ar ? "الملفات" : "Cases"}</h2>
+        html += `<h2>${fr?"Dossiers":"Cases"}</h2>
 <table><thead><tr>
-  <th>${fr ? "Référence" : ar ? "المرجع" : "Ref"}</th><th>${fr ? "Titre" : ar ? "العنوان" : "Title"}</th><th>${fr ? "Bénéficiaire" : ar ? "المستفيد" : "Beneficiary"}</th>
-  <th>${fr ? "Hôpital" : ar ? "المستشفى" : "Hospital"}</th><th>${fr ? "Objectif" : ar ? "الهدف" : "Goal"}</th><th>${fr ? "Collecté" : ar ? "جُمع" : "Raised"}</th><th>Statut</th>
+  <th>${fr?"Référence":"Ref"}</th><th>${fr?"Titre":"Title"}</th><th>${fr?"Bénéficiaire":"Beneficiary"}</th>
+  <th>${fr?"Hôpital":"Hospital"}</th><th>${fr?"Objectif":"Goal"}</th><th>${fr?"Collecté":"Raised"}</th><th>Statut</th>
 </tr></thead><tbody>`;
         d.cases.forEach(c => {
           html += `<tr><td>${c.tracking_id||""}</td><td>${c.title||""}</td><td>${c.full_name||""}</td>
@@ -7743,10 +7735,10 @@ ${sheets.join("\n")}
 
       if (sections.dons && d.donations) {
         const totalDons = d.donations.filter(d=>d.status==="confirmed").reduce((s,d)=>s+(d.amount_fcfa||d.amount||0),0);
-        html += `<h2>${fr ? "Dons" : ar ? "التبرعات" : "Donations"} (${d.donations.length} — ${fmtN(totalDons)} FCFA ${fr ? "confirmés" : ar ? "مؤكدة" : "confirmed"})</h2>
+        html += `<h2>${fr?"Dons":"Donations"} (${d.donations.length} — ${fmtN(totalDons)} FCFA ${fr?"confirmés":"confirmed"})</h2>
 <table><thead><tr>
-  <th>${fr ? "Date" : ar ? "التاريخ" : "Date"}</th><th>${fr ? "Donateur" : ar ? "المتبرع" : "Donor"}</th><th>${fr ? "Montant" : ar ? "المبلغ" : "Amount"}</th>
-  <th>${fr ? "Méthode" : ar ? "الطريقة" : "Method"}</th><th>Statut</th>
+  <th>${fr?"Date":"Date"}</th><th>${fr?"Donateur":"Donor"}</th><th>${fr?"Montant":"Amount"}</th>
+  <th>${fr?"Méthode":"Method"}</th><th>Statut</th>
 </tr></thead><tbody>`;
         d.donations.forEach(r => {
           html += `<tr><td>${r.created_at?.slice(0,10)||""}</td><td>${r.donor_name||"Anonyme"}</td>
@@ -7758,10 +7750,10 @@ ${sheets.join("\n")}
       if (sections.virements && d.cases) {
         const payouts = d.cases.filter(c=>c.payout_status);
         if (payouts.length > 0) {
-          html += `<h2>${fr ? "Virements hospitaliers" : ar ? "التحويلات المستشفياتية" : "Hospital Payouts"}</h2>
+          html += `<h2>${fr?"Virements hospitaliers":"Hospital Payouts"}</h2>
 <table><thead><tr>
-  <th>${fr ? "Référence" : ar ? "المرجع" : "Ref"}</th><th>${fr ? "Hôpital" : ar ? "المستشفى" : "Hospital"}</th><th>${fr ? "Collecté" : ar ? "جُمع" : "Raised"}</th>
-  <th>${fr ? "Montant hôpital" : ar ? "مبلغ المستشفى" : "Hospital amount"}</th><th>${fr ? "Frais Ayyad" : ar ? "رسوم أيد" : "Ayyad fee"}</th><th>Statut</th>
+  <th>${fr?"Référence":"Ref"}</th><th>${fr?"Hôpital":"Hospital"}</th><th>${fr?"Collecté":"Raised"}</th>
+  <th>${fr?"Montant hôpital":"Hospital amount"}</th><th>${fr?"Frais Ayyad":"Ayyad fee"}</th><th>Statut</th>
 </tr></thead><tbody>`;
           payouts.forEach(c => {
             const col = c.collected||0;
@@ -7774,10 +7766,10 @@ ${sheets.join("\n")}
       }
 
       if (sections.salaires && d.salaries) {
-        html += `<h2>${fr ? "Salaires" : ar ? "الرواتب" : "Salaries"}</h2>
+        html += `<h2>${fr?"Salaires":"Salaries"}</h2>
 <table><thead><tr>
-  <th>${fr ? "Mois" : ar ? "الشهر" : "Month"}</th><th>${fr ? "Employé" : ar ? "الموظف" : "Employee"}</th><th>${fr ? "Rôle" : ar ? "الدور" : "Role"}</th>
-  <th>${fr ? "Montant" : ar ? "المبلغ" : "Amount"}</th><th>Statut</th>
+  <th>${fr?"Mois":"Month"}</th><th>${fr?"Employé":"Employee"}</th><th>${fr?"Rôle":"Role"}</th>
+  <th>${fr?"Montant":"Amount"}</th><th>Statut</th>
 </tr></thead><tbody>`;
         d.salaries.forEach(p => {
           html += `<tr><td>${p.payment_month||""}</td><td>${p.staff_members?.name||""}</td>
@@ -7787,9 +7779,9 @@ ${sheets.join("\n")}
       }
 
       if (sections.finance && d.expenses) {
-        html += `<h2>${fr ? "Charges de fonctionnement" : ar ? "مصاريف التشغيل" : "Operating Expenses"}</h2>
+        html += `<h2>${fr?"Charges de fonctionnement":"Operating Expenses"}</h2>
 <table><thead><tr>
-  <th>${fr ? "Date" : ar ? "التاريخ" : "Date"}</th><th>${fr ? "Libellé" : ar ? "الوصف" : "Label"}</th><th>${fr ? "Catégorie" : ar ? "الفئة" : "Category"}</th><th>${fr ? "Montant" : ar ? "المبلغ" : "Amount"}</th>
+  <th>${fr?"Date":"Date"}</th><th>${fr?"Libellé":"Label"}</th><th>${fr?"Catégorie":"Category"}</th><th>${fr?"Montant":"Amount"}</th>
 </tr></thead><tbody>`;
         d.expenses.forEach(e => {
           html += `<tr><td>${e.date?.slice(0,10)||""}</td><td>${e.label||""}</td><td>${e.category||""}</td><td>${fmtN(e.amount||0)} FCFA</td></tr>`;
@@ -7798,10 +7790,10 @@ ${sheets.join("\n")}
       }
 
       if (sections.audit && d.audit) {
-        html += `<h2>${fr ? "Journal d'audit" : ar ? "سجل المراجعة" : "Audit Log"}</h2>
+        html += `<h2>${fr?"Journal d'audit":"Audit Log"}</h2>
 <table><thead><tr>
-  <th>${fr ? "Horodatage" : ar ? "الطابع الزمني" : "Timestamp"}</th><th>${fr ? "Opérateur" : ar ? "مشغّل" : "Operator"}</th><th>${fr ? "Rôle" : ar ? "الدور" : "Role"}</th>
-  <th>${fr ? "Action" : ar ? "الإجراء" : "Action"}</th><th>${fr ? "Cible" : ar ? "الهدف" : "Target"}</th>
+  <th>${fr?"Horodatage":"Timestamp"}</th><th>${fr?"Opérateur":"Operator"}</th><th>${fr?"Rôle":"Role"}</th>
+  <th>${fr?"Action":"Action"}</th><th>${fr?"Cible":"Target"}</th>
 </tr></thead><tbody>`;
         d.audit.forEach(l => {
           html += `<tr><td>${l.created_at?.slice(0,19).replace("T"," ")||""}</td><td>${l.user_email||""}</td>
@@ -7810,14 +7802,14 @@ ${sheets.join("\n")}
         html += `</tbody></table>`;
       }
 
-      html += `<div class="footer">AYYAD CI · ${fr ? "Rapport généré automatiquement" : ar ? "تقرير مولَّد تلقائياً" : "Automatically generated report"} · ${now}</div>
+      html += `<div class="footer">AYYAD CI · ${fr?"Rapport généré automatiquement":"Automatically generated report"} · ${now}</div>
 <script>window.onload=()=>window.print();</script>
 </body></html>`;
 
       const w = window.open("","_blank","width=1000,height=700");
       if (w) { w.document.write(html); w.document.close(); }
-      else alert(fr ? "Autorisez les pop-ups pour générer le PDF." : ar ? "اسمح بالنوافذ المنبثقة لإنشاء PDF." : "Please allow pop-ups to generate the PDF.");
-    } catch(e) { console.error("Export PDF error:", e); alert(fr ? "Erreur lors de l'export PDF." : ar ? "خطأ أثناء تصدير PDF." : "PDF export error."); }
+      else alert(fr?"Autorisez les pop-ups pour générer le PDF.":"Please allow pop-ups to generate the PDF.");
+    } catch(e) { console.error("Export PDF error:", e); alert(fr?"Erreur lors de l'export PDF.":"PDF export error."); }
     setLoading(false);
   };
 
@@ -7827,33 +7819,33 @@ ${sheets.join("\n")}
       <div className="bg-gradient-to-r from-emerald-800 to-emerald-600 rounded-2xl p-5 text-white">
         <div className="flex items-center gap-3 mb-1">
           <span className="text-2xl">📤</span>
-          <h2 className="text-lg font-black">{fr ? "Export des données" : ar ? "تصدير البيانات" : "Data Export"}</h2>
+          <h2 className="text-lg font-black">{fr?"Export des données":"Data Export"}</h2>
           <span className="ml-auto bg-purple-200 text-purple-800 text-xs font-bold px-2 py-0.5 rounded-full">super_admin</span>
         </div>
         <p className="text-emerald-100 text-xs">
-          {fr ? "Exportez les données de la plateforme au format Excel ou PDF." : ar ? "صدّر بيانات المنصة بصيغة Excel أو PDF." : "Export platform data in Excel or PDF format."}
+          {fr?"Exportez les données de la plateforme au format Excel ou PDF.":"Export platform data in Excel or PDF format."}
         </p>
       </div>
 
       {/* Plage de dates */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <h3 className="font-bold text-gray-900 text-sm mb-4">📅 {fr ? "Plage de dates" : ar ? "نطاق التاريخ" : "Date range"}</h3>
+        <h3 className="font-bold text-gray-900 text-sm mb-4">📅 {fr?"Plage de dates":"Date range"}</h3>
         <div className="flex flex-wrap gap-4 items-center">
           <div>
-            <label className="text-xs text-gray-500 block mb-1">{fr ? "Du" : ar ? "من" : "From"}</label>
+            <label className="text-xs text-gray-500 block mb-1">{fr?"Du":"From"}</label>
             <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}
               className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">{fr ? "Au" : ar ? "إلى" : "To"}</label>
+            <label className="text-xs text-gray-500 block mb-1">{fr?"Au":"To"}</label>
             <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)}
               className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
           </div>
           <div className="flex gap-2 mt-4">
             {[
-              {label:fr ? "Ce mois" : ar ? "هذا الشهر" : "This month", fn:()=>{const n=new Date();const y=n.getFullYear();const m=n.getMonth();setDateFrom(`${y}-${String(m+1).padStart(2,"0")}-01`);setDateTo(today);}},
-              {label:fr ? "Cette année" : ar ? "هذه السنة" : "This year",  fn:()=>{setDateFrom(`${new Date().getFullYear()}-01-01`);setDateTo(today);}},
-              {label:fr?"Tout":lang==="ar" ? "الكل" : "All",                fn:()=>{setDateFrom("2024-01-01");setDateTo(today);}},
+              {label:fr?"Ce mois":"This month", fn:()=>{const n=new Date();const y=n.getFullYear();const m=n.getMonth();setDateFrom(`${y}-${String(m+1).padStart(2,"0")}-01`);setDateTo(today);}},
+              {label:fr?"Cette année":"This year",  fn:()=>{setDateFrom(`${new Date().getFullYear()}-01-01`);setDateTo(today);}},
+              {label:fr?"Tout":"All",                fn:()=>{setDateFrom("2024-01-01");setDateTo(today);}},
             ].map(b=>(
               <button key={b.label} onClick={b.fn}
                 className="text-xs bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-300 text-gray-600 hover:text-emerald-700 px-3 py-1.5 rounded-lg font-medium transition-all">
@@ -7866,7 +7858,7 @@ ${sheets.join("\n")}
 
       {/* Sections */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <h3 className="font-bold text-gray-900 text-sm mb-4">📂 {fr ? "Sections à inclure" : ar ? "الأقسام المضمّنة" : "Sections to include"}</h3>
+        <h3 className="font-bold text-gray-900 text-sm mb-4">📂 {fr?"Sections à inclure":"Sections to include"}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Object.keys(SECTION_LABELS).map(k=>(
             <button key={k} onClick={()=>toggleSection(k)}
@@ -7880,10 +7872,10 @@ ${sheets.join("\n")}
         </div>
         <div className="flex gap-2 mt-3">
           <button onClick={()=>setSections({dossiers:true,dons:true,virements:true,finance:true,salaires:true,bilan:true,audit:true})}
-            className="text-xs text-emerald-600 hover:underline font-semibold">{fr ? "Tout sélectionner" : ar ? "تحديد الكل" : "Select all"}</button>
+            className="text-xs text-emerald-600 hover:underline font-semibold">{fr?"Tout sélectionner":"Select all"}</button>
           <span className="text-gray-300">·</span>
           <button onClick={()=>setSections({dossiers:false,dons:false,virements:false,finance:false,salaires:false,bilan:false,audit:false})}
-            className="text-xs text-gray-400 hover:underline font-semibold">{fr ? "Tout désélectionner" : ar ? "إلغاء تحديد الكل" : "Deselect all"}</button>
+            className="text-xs text-gray-400 hover:underline font-semibold">{fr?"Tout désélectionner":"Deselect all"}</button>
         </div>
       </div>
 
@@ -7893,8 +7885,8 @@ ${sheets.join("\n")}
           className="flex items-center justify-center gap-3 bg-emerald-700 hover:bg-emerald-800 disabled:bg-gray-300 text-white font-black py-4 rounded-2xl shadow-md transition-all text-base">
           <span className="text-2xl">📊</span>
           <div className="text-left">
-            <div>{loading ? (fr?"Chargement...":ar?"جار التحميل...":"Loading...") : (fr ? "Exporter Excel" : ar ? "تصدير Excel" : "Export Excel")}</div>
-            <div className="text-xs text-emerald-200 font-normal">{fr ? "Fichier .xls (compatible Excel & LibreOffice)" : ar ? "ملف .xls (متوافق مع Excel و LibreOffice)" : ".xls file (Excel & LibreOffice)"}</div>
+            <div>{loading ? (fr?"Chargement...":ar?"جار التحميل...":"Loading...") : (fr?"Exporter Excel":"Export Excel")}</div>
+            <div className="text-xs text-emerald-200 font-normal">{fr?"Fichier .xls (compatible Excel & LibreOffice)":".xls file (Excel & LibreOffice)"}</div>
           </div>
         </button>
 
@@ -7902,15 +7894,17 @@ ${sheets.join("\n")}
           className="flex items-center justify-center gap-3 bg-gray-800 hover:bg-gray-900 disabled:bg-gray-300 text-white font-black py-4 rounded-2xl shadow-md transition-all text-base">
           <span className="text-2xl">📄</span>
           <div className="text-left">
-            <div>{loading ? (fr?"Chargement...":ar?"جار التحميل...":"Loading...") : (fr ? "Exporter PDF" : ar ? "تصدير PDF" : "Export PDF")}</div>
-            <div className="text-xs text-gray-400 font-normal">{fr ? "Impression → Enregistrer en PDF" : ar ? "طباعة → حفظ كـ PDF" : "Print → Save as PDF"}</div>
+            <div>{loading ? (fr?"Chargement...":ar?"جار التحميل...":"Loading...") : (fr?"Exporter PDF":"Export PDF")}</div>
+            <div className="text-xs text-gray-400 font-normal">{fr?"Impression → Enregistrer en PDF":"Print → Save as PDF"}</div>
           </div>
         </button>
       </div>
 
       {/* Note */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
-        🔐 {fr ? "Cette fonctionnalité est réservée aux super administrateurs. Toutes les exportations sont enregistrées dans le journal d'audit." : ar ? "هذه الميزة مخصصة للمشرفين العامين. جميع التصديرات مسجلة في سجل المراجعة." : "This feature is restricted to super administrators. All exports are recorded in the audit log."}
+        🔐 {fr
+          ? "Cette fonctionnalité est réservée aux super administrateurs. Toutes les exportations sont enregistrées dans le journal d'audit."
+          : "This feature is restricted to super administrators. All exports are recorded in the audit log."}
       </div>
     </div>
   );
@@ -8173,16 +8167,18 @@ const PolitiqueAdmissionPage = ({ setPage, lang }) => {
         }} />
         <div className="ayyad-container" style={{ position:"relative", zIndex:2 }}>
           <button onClick={()=>setPage("home")} style={{ background:"transparent", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.78)", fontSize:13, marginBottom:18 }}>
-            ← {fr ? "Retour à l'accueil" : ar ? "العودة للرئيسية" : "Back to home"}
+            ← {fr ? "Retour à l'accueil" : "Back to home"}
           </button>
           <span className="ayyad-eyebrow" style={{ color:"#e9d59a", background:"rgba(201,168,76,0.10)", borderColor:"rgba(201,168,76,0.40)" }}>
-            {fr ? "Politique officielle" : ar ? "السياسة الرسمية" : "Official policy"}
+            {fr ? "Politique officielle" : "Official policy"}
           </span>
           <h1 className="ayyad-h-display" style={{ color:"#fff", fontSize:"clamp(1.8rem, 4vw, 3rem)", marginTop:18, marginBottom:14 }}>
             {fr ? <>Notre politique <em style={{ color:"#e9d59a" }}>d'admission des dossiers.</em></> : <>Our <em style={{ color:"#e9d59a" }}>case admission policy.</em></>}
           </h1>
           <p style={{ color:"rgba(255,255,255,0.85)", fontSize:16, lineHeight:1.65, maxWidth:720 }}>
-            {fr ? "Pourquoi Ayyad refuse les dossiers déjà lancés sur les réseaux sociaux, et comment soumettre un dossier valide." : ar ? "لماذا ترفض أيد الملفات المنشورة مسبقاً على الشبكات الاجتماعية، وكيفية تقديم ملف صالح." : "Why Ayyad refuses cases already launched on social media, and how to submit a valid case."}
+            {fr
+              ? "Pourquoi Ayyad refuse les dossiers déjà lancés sur les réseaux sociaux, et comment soumettre un dossier valide."
+              : "Why Ayyad refuses cases already launched on social media, and how to submit a valid case."}
           </p>
         </div>
       </div>
@@ -8201,7 +8197,7 @@ const PolitiqueAdmissionPage = ({ setPage, lang }) => {
             <div style={{ fontSize:32, flexShrink:0 }}>⚠️</div>
             <div>
               <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.3rem, 2.4vw, 1.7rem)", marginBottom:10 }}>
-                {fr ? "La règle Ayyad" : ar ? "قاعدة أيد" : "The Ayyad rule"}
+                {fr ? "La règle Ayyad" : "The Ayyad rule"}
               </h2>
               <p style={{ color:"var(--ink-700)", fontSize:15, lineHeight:1.7 }}>
                 {fr
@@ -8209,7 +8205,9 @@ const PolitiqueAdmissionPage = ({ setPage, lang }) => {
                   : <><strong>Ayyad does not accept patient cases that have already been publicly launched on other fundraising channels</strong> (Facebook, TikTok, Instagram, WhatsApp, GoFundMe, M-Pesa, cash donations between individuals, etc.).</>}
               </p>
               <p style={{ color:"var(--ink-500)", fontSize:14, lineHeight:1.65, marginTop:12, fontStyle:"italic" }}>
-                {fr ? "Cette règle n'est pas une rigidité administrative. Elle est le fondement même de la confiance que nous construisons avec nos donateurs, et la garantie que nous offrons à chaque patient pris en charge." : ar ? "هذه القاعدة ليست جموداً إدارياً. إنها أساس الثقة التي نبنيها مع متبرعينا، والضمان الذي نقدمه لكل مريض نتكفل به." : "This rule is not administrative rigidity. It is the very foundation of the trust we build with our donors, and the guarantee we offer to every patient we take on."}
+                {fr
+                  ? "Cette règle n'est pas une rigidité administrative. Elle est le fondement même de la confiance que nous construisons avec nos donateurs, et la garantie que nous offrons à chaque patient pris en charge."
+                  : "This rule is not administrative rigidity. It is the very foundation of the trust we build with our donors, and the guarantee we offer to every patient we take on."}
               </p>
             </div>
           </div>
@@ -8217,7 +8215,7 @@ const PolitiqueAdmissionPage = ({ setPage, lang }) => {
 
         {/* 4 raisons */}
         <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.4rem, 2.6vw, 1.9rem)", marginBottom:8 }}>
-          {fr ? "Pourquoi cette règle existe" : ar ? "لماذا توجد هذه القاعدة" : "Why this rule exists"}
+          {fr ? "Pourquoi cette règle existe" : "Why this rule exists"}
         </h2>
         <div style={{ width:48, height:3, background:"var(--grad-gold)", borderRadius:999, marginBottom:32 }} />
 
@@ -8226,26 +8224,34 @@ const PolitiqueAdmissionPage = ({ setPage, lang }) => {
             {
               num: "1",
               icon: "🔍",
-              title: fr ? "Transparence financière vis-à-vis des donateurs" : ar ? "الشفافية المالية تجاه المتبرعين" : "Financial transparency for donors",
-              body: fr ? "Lorsqu'un donateur contribue sur Ayyad, il doit pouvoir vérifier précisément combien a déjà été collecté et combien il reste à réunir pour atteindre l'objectif médical. Si des fonds parviennent en parallèle par d'autres canaux non traçables, notre jauge ne reflète plus la réalité et nous induirions involontairement nos donateurs en erreur. Cela trahirait le principe même de notre plateforme." : ar ? "عندما يتبرع شخص على أيد، يجب أن يتمكن من التحقق بدقة من المبلغ الذي جُمع والمتبقي لتحقيق الهدف الطبي. إذا وصلت أموال موازية عبر قنوات غير قابلة للتتبع، لن تعكس مقياسنا الواقع وسنضلل متبرعينا دون قصد." : "When a donor contributes via Ayyad, they must be able to verify exactly how much has been collected and how much remains to reach the medical goal. If funds arrive in parallel through other untraceable channels, our progress gauge no longer reflects reality and we would unintentionally mislead our donors. This would betray the very principle of our platform.",
+              title: fr ? "Transparence financière vis-à-vis des donateurs" : "Financial transparency for donors",
+              body: fr
+                ? "Lorsqu'un donateur contribue sur Ayyad, il doit pouvoir vérifier précisément combien a déjà été collecté et combien il reste à réunir pour atteindre l'objectif médical. Si des fonds parviennent en parallèle par d'autres canaux non traçables, notre jauge ne reflète plus la réalité et nous induirions involontairement nos donateurs en erreur. Cela trahirait le principe même de notre plateforme."
+                : "When a donor contributes via Ayyad, they must be able to verify exactly how much has been collected and how much remains to reach the medical goal. If funds arrive in parallel through other untraceable channels, our progress gauge no longer reflects reality and we would unintentionally mislead our donors. This would betray the very principle of our platform.",
             },
             {
               num: "2",
               icon: "🏥",
-              title: fr ? "Garantie d'un versement direct à l'hôpital" : ar ? "ضمان التحويل المباشر للمستشفى" : "Guarantee of direct hospital payment",
-              body: fr ? "Ayyad s'engage publiquement à verser 100% des dons collectés directement à l'établissement de santé qui prend en charge le patient — jamais en espèces, jamais sur un compte personnel. Cette promesse ne peut être tenue que si Ayyad est le seul canal de collecte actif sur le dossier. Dans le cas contraire, il devient impossible de tracer l'intégralité des fonds et de garantir qu'ils sont effectivement utilisés pour les soins." : ar ? "تلتزم أيد علناً بتحويل 100% من التبرعات مباشرة للمنشأة الصحية المعنية — أبداً نقداً، أبداً لحساب شخصي. هذا الوعد لا يمكن الوفاء به إلا إذا كانت أيد القناة الوحيدة النشطة لجمع التبرعات." : "Ayyad publicly commits to transferring 100% of collected donations directly to the healthcare facility caring for the patient — never in cash, never to a personal account. This promise can only be kept if Ayyad is the only active fundraising channel for the case. Otherwise, it becomes impossible to track all the funds and guarantee they are actually used for care.",
+              title: fr ? "Garantie d'un versement direct à l'hôpital" : "Guarantee of direct hospital payment",
+              body: fr
+                ? "Ayyad s'engage publiquement à verser 100% des dons collectés directement à l'établissement de santé qui prend en charge le patient — jamais en espèces, jamais sur un compte personnel. Cette promesse ne peut être tenue que si Ayyad est le seul canal de collecte actif sur le dossier. Dans le cas contraire, il devient impossible de tracer l'intégralité des fonds et de garantir qu'ils sont effectivement utilisés pour les soins."
+                : "Ayyad publicly commits to transferring 100% of collected donations directly to the healthcare facility caring for the patient — never in cash, never to a personal account. This promise can only be kept if Ayyad is the only active fundraising channel for the case. Otherwise, it becomes impossible to track all the funds and guarantee they are actually used for care.",
             },
             {
               num: "3",
               icon: "🛡️",
-              title: fr ? "Protection du patient et de sa famille" : ar ? "حماية المريض وعائلته" : "Patient and family protection",
-              body: fr ? "Une collecte mixte sur plusieurs canaux expose la famille à des questions complexes en cas de surcollecte, à des soupçons injustifiés, et parfois à des tensions familiales ou communautaires. En cantonnant chaque dossier à un seul canal officiel et vérifié, nous protégeons la dignité du patient et la sérénité de ses proches." : ar ? "التمويل المختلط عبر قنوات متعددة يعرّض الأسرة لتساؤلات معقدة عند تجاوز الهدف. بتخصيص كل ملف لقناة رسمية واحدة، نحمي كرامة المريض وسكينة أهله." : "A mixed fundraising effort across multiple channels exposes the family to complex questions in case of over-collection, to unjustified suspicion, and sometimes to family or community tensions. By confining each case to a single official and verified channel, we protect the patient's dignity and the peace of mind of their loved ones.",
+              title: fr ? "Protection du patient et de sa famille" : "Patient and family protection",
+              body: fr
+                ? "Une collecte mixte sur plusieurs canaux expose la famille à des questions complexes en cas de surcollecte, à des soupçons injustifiés, et parfois à des tensions familiales ou communautaires. En cantonnant chaque dossier à un seul canal officiel et vérifié, nous protégeons la dignité du patient et la sérénité de ses proches."
+                : "A mixed fundraising effort across multiple channels exposes the family to complex questions in case of over-collection, to unjustified suspicion, and sometimes to family or community tensions. By confining each case to a single official and verified channel, we protect the patient's dignity and the peace of mind of their loved ones.",
             },
             {
               num: "4",
               icon: "🌱",
-              title: fr ? "Intégrité de la plateforme et des autres bénéficiaires" : ar ? "نزاهة المنصة وسائر المستفيدين" : "Platform integrity and other beneficiaries",
-              body: fr ? "Chaque dossier publié sur Ayyad est vérifié sous 48 heures avec l'hôpital partenaire. Accepter des dossiers déjà mélangés à d'autres collectes affaiblirait la valeur de cette vérification pour l'ensemble des patients vraiment dépendants d'Ayyad pour leurs soins." : ar ? "كل ملف ينشر على أيد يُتحقق منه خلال 48 ساعة مع المستشفى الشريك. قبول الملفات المختلطة مع حملات أخرى سيضعف قيمة هذا التحقق لجميع المرضى المعتمدين على أيد." : "Every case published on Ayyad is verified within 48 hours with the partner hospital. Accepting cases already mixed with other fundraising would weaken the value of this verification for all patients truly dependent on Ayyad for their care.",
+              title: fr ? "Intégrité de la plateforme et des autres bénéficiaires" : "Platform integrity and other beneficiaries",
+              body: fr
+                ? "Chaque dossier publié sur Ayyad est vérifié sous 48 heures avec l'hôpital partenaire. Accepter des dossiers déjà mélangés à d'autres collectes affaiblirait la valeur de cette vérification pour l'ensemble des patients vraiment dépendants d'Ayyad pour leurs soins."
+                : "Every case published on Ayyad is verified within 48 hours with the partner hospital. Accepting cases already mixed with other fundraising would weaken the value of this verification for all patients truly dependent on Ayyad for their care.",
             },
           ].map(reason => (
             <div key={reason.num} className="ayyad-card" style={{ padding:"clamp(20px, 3vw, 28px)", display:"flex", gap:18 }}>
@@ -8279,13 +8285,13 @@ const PolitiqueAdmissionPage = ({ setPage, lang }) => {
           marginBottom:32,
         }}>
           <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.3rem, 2.4vw, 1.7rem)", marginBottom:18, color:"var(--ayyad-deep)" }}>
-            ✅ {fr ? "Quels dossiers Ayyad accepte" : ar ? "الملفات التي تقبلها أيد" : "Which cases Ayyad accepts"}
+            ✅ {fr ? "Quels dossiers Ayyad accepte" : "Which cases Ayyad accepts"}
           </h2>
           <ul style={{ paddingLeft:0, listStyle:"none", display:"flex", flexDirection:"column", gap:14 }}>
             {[
-              fr ? "Les dossiers patients dont la demande de financement médical n'a pas encore été lancée publiquement" : ar ? "الملفات التي لم يُطلق طلب تمويلها الطبي علناً بعد" : "Patient cases whose medical funding request has not yet been publicly launched",
-              fr ? "Les dossiers dont les autres canaux de collecte ont été officiellement fermés, avec un justificatif des montants déjà collectés et un objectif Ayyad ajusté au solde restant à couvrir" : ar ? "الملفات التي أُغلقت قنوات جمعها الأخرى رسمياً مع مبرر للمبالغ المجموعة وهدف أيد معدّل للرصيد المتبقي" : "Cases whose other fundraising channels have been officially closed, with proof of amounts already collected and an Ayyad goal adjusted to the remaining balance to cover",
-              fr ? "Les dossiers soumis directement à Ayyad dès le départ, sans communication préalable sur les réseaux sociaux" : ar ? "الملفات المقدمة مباشرة لأيد من البداية دون تواصل مسبق على الشبكات الاجتماعية" : "Cases submitted directly to Ayyad from the start, without prior communication on social media",
+              fr ? "Les dossiers patients dont la demande de financement médical n'a pas encore été lancée publiquement" : "Patient cases whose medical funding request has not yet been publicly launched",
+              fr ? "Les dossiers dont les autres canaux de collecte ont été officiellement fermés, avec un justificatif des montants déjà collectés et un objectif Ayyad ajusté au solde restant à couvrir" : "Cases whose other fundraising channels have been officially closed, with proof of amounts already collected and an Ayyad goal adjusted to the remaining balance to cover",
+              fr ? "Les dossiers soumis directement à Ayyad dès le départ, sans communication préalable sur les réseaux sociaux" : "Cases submitted directly to Ayyad from the start, without prior communication on social media",
             ].map((item, i) => (
               <li key={i} style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
                 <span style={{ color:"var(--ayyad-emerald)", fontWeight:900, fontSize:18, flexShrink:0, lineHeight:1.4 }}>✓</span>
@@ -8297,15 +8303,17 @@ const PolitiqueAdmissionPage = ({ setPage, lang }) => {
 
         {/* Comment soumettre */}
         <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.4rem, 2.6vw, 1.9rem)", marginBottom:8 }}>
-          {fr ? "Comment soumettre un dossier" : ar ? "كيفية تقديم ملف" : "How to submit a case"}
+          {fr ? "Comment soumettre un dossier" : "How to submit a case"}
         </h2>
         <div style={{ width:48, height:3, background:"var(--grad-gold)", borderRadius:999, marginBottom:24 }} />
         <p style={{ color:"var(--ink-700)", fontSize:15.5, lineHeight:1.75, marginBottom:24 }}>
-          {fr ? "Toute demande passe par notre formulaire officiel. Notre équipe vérifie le dossier sous 48 heures en collaboration avec un hôpital partenaire, puis met la collecte en ligne avec un objectif financier basé sur le devis médical réel." : ar ? "كل طلب يمر عبر نموذجنا الرسمي. فريقنا يتحقق من الملف خلال 48 ساعة بالتعاون مع مستشفى شريك، ثم ينشر الحملة بهدف مالي مبني على الفاتورة الطبية الحقيقية." : "All requests go through our official form. Our team verifies the case within 48 hours in collaboration with a partner hospital, then puts the campaign online with a financial goal based on the actual medical quote."}
+          {fr
+            ? "Toute demande passe par notre formulaire officiel. Notre équipe vérifie le dossier sous 48 heures en collaboration avec un hôpital partenaire, puis met la collecte en ligne avec un objectif financier basé sur le devis médical réel."
+            : "All requests go through our official form. Our team verifies the case within 48 hours in collaboration with a partner hospital, then puts the campaign online with a financial goal based on the actual medical quote."}
         </p>
         <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginBottom:48 }}>
           <button onClick={() => setPage("submit")} className="ayyad-btn-primary" style={{ fontSize:14, padding:"13px 26px" }}>
-            📋 {fr ? "Soumettre un dossier" : ar ? "تقديم ملف" : "Submit a case"} →
+            📋 {fr ? "Soumettre un dossier" : "Submit a case"} →
           </button>
           <button onClick={() => setPage("how")} style={{
             background:"transparent",
@@ -8314,7 +8322,7 @@ const PolitiqueAdmissionPage = ({ setPage, lang }) => {
             fontWeight:700, fontSize:14,
             padding:"13px 26px", borderRadius:9999, cursor:"pointer",
           }}>
-            {fr ? "Comment ça marche" : ar ? "كيف يعمل" : "How it works"}
+            {fr ? "Comment ça marche" : "How it works"}
           </button>
         </div>
 
@@ -8326,10 +8334,12 @@ const PolitiqueAdmissionPage = ({ setPage, lang }) => {
           textAlign:"center",
         }}>
           <p style={{ fontFamily:"var(--font-serif)", fontStyle:"italic", fontSize:"clamp(1.05rem, 2vw, 1.25rem)", lineHeight:1.6, marginBottom:16 }}>
-            {fr ? "Notre engagement reste constant : financer des soins, pas alimenter des collectes parallèles. Cette discipline est ce qui fait d'Ayyad une plateforme dans laquelle les donateurs peuvent investir leur générosité en confiance, et les patients trouver un accompagnement médical sécurisé et digne." : ar ? "التزامنا ثابت: تمويل الرعاية لا إطعام حملات موازية. هذا الانضباط هو ما يجعل أيد منصة يثق بها المتبرعون ويجد فيها المرضى دعماً طبياً آمناً وكريماً." : "Our commitment remains constant: to fund care, not to feed parallel fundraising. This discipline is what makes Ayyad a platform in which donors can invest their generosity with confidence, and patients find secure and dignified medical support."}
+            {fr
+              ? "Notre engagement reste constant : financer des soins, pas alimenter des collectes parallèles. Cette discipline est ce qui fait d'Ayyad une plateforme dans laquelle les donateurs peuvent investir leur générosité en confiance, et les patients trouver un accompagnement médical sécurisé et digne."
+              : "Our commitment remains constant: to fund care, not to feed parallel fundraising. This discipline is what makes Ayyad a platform in which donors can invest their generosity with confidence, and patients find secure and dignified medical support."}
           </p>
           <p style={{ fontSize:13, color:"rgba(255,255,255,0.75)" }}>
-            {fr ? "Pour toute question :" : ar ? "لأي استفسار:" : "For any question:"} <a href="mailto:contact@ayyadci.com" style={{ color:"#e9d59a", textDecoration:"none", fontWeight:700 }}>contact@ayyadci.com</a>
+            {fr ? "Pour toute question :" : "For any question:"} <a href="mailto:contact@ayyadci.com" style={{ color:"#e9d59a", textDecoration:"none", fontWeight:700 }}>contact@ayyadci.com</a>
           </p>
         </div>
       </div>
@@ -9096,9 +9106,9 @@ const AdminTeamList = ({ user, fr }) => {
 
   const ROLES = [
     { value: "super_admin", label: "Super Admin",              color: "bg-purple-100 text-purple-700" },
-    { value: "admin",       label: fr ? "Admin" : ar ? "مشرف" : "Admin",    color: "bg-indigo-100 text-indigo-700" },
+    { value: "admin",       label: fr ? "Admin" : "Admin",    color: "bg-indigo-100 text-indigo-700" },
     { value: "finance",     label: "Finance",                  color: "bg-blue-100 text-blue-700"   },
-    { value: "operator",    label: fr ? "Opérateur" : ar ? "مشغّل" : "Operator", color: "bg-green-100 text-green-700" },
+    { value: "operator",    label: fr ? "Opérateur":"Operator", color: "bg-green-100 text-green-700" },
   ];
 
   const getRoleStyle = (role) => ROLES.find(r => r.value === role)?.color || "bg-gray-100 text-gray-600";
@@ -9127,7 +9137,7 @@ const AdminTeamList = ({ user, fr }) => {
   React.useEffect(() => { fetchAdmins(); }, [fetchAdmins]);
 
   const handleAdd = async () => {
-    if (!newEmail.includes("@")) return setMsg(fr ? "Email invalide" : ar ? "بريد غير صالح" : "Invalid email");
+    if (!newEmail.includes("@")) return setMsg(fr ? "Email invalide" : "Invalid email");
     setAdding(true);
     setMsg("");
     try {
@@ -9141,7 +9151,7 @@ const AdminTeamList = ({ user, fr }) => {
       if (error) {
         setMsg(fr ? "Erreur : " + error.message : "Error: " + error.message);
       } else {
-        setMsg(fr ? "Membre ajouté ✓" : ar ? "تمت إضافة العضو ✓" : "Member added ✓");
+        setMsg(fr ? "Membre ajouté ✓" : "Member added ✓");
         setNewEmail("");
         setNewRole("operator");
         setShowAdd(false);
@@ -9173,19 +9183,21 @@ const AdminTeamList = ({ user, fr }) => {
   if (loading) return (
     <div className="text-center py-12 text-gray-400">
       <div className="text-2xl mb-2">⏳</div>
-      <p className="text-sm">{fr ? "Chargement de l'équipe…" : ar ? "جارٍ تحميل الفريق…" : "Loading team…"}</p>
+      <p className="text-sm">{fr ? "Chargement de l'équipe…" : "Loading team…"}</p>
     </div>
   );
 
   if (fetchErr) return (
     <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-sm text-red-700">
-      <p className="font-bold mb-1">⚠️ {fr ? "Erreur de chargement" : ar ? "خطأ في التحميل" : "Loading error"}</p>
+      <p className="font-bold mb-1">⚠️ {fr ? "Erreur de chargement" : "Loading error"}</p>
       <p className="text-xs font-mono">{fetchErr}</p>
       <p className="mt-3 text-xs text-red-500">
-        {fr ? "Vérifiez que la table admin_users a une politique RLS SELECT pour les admins." : ar ? "تحقق من أن جدول admin_users لديه سياسة RLS SELECT للمشرفين." : "Make sure the admin_users table has a SELECT RLS policy for admins."}
+        {fr
+          ? "Vérifiez que la table admin_users a une politique RLS SELECT pour les admins."
+          : "Make sure the admin_users table has a SELECT RLS policy for admins."}
       </p>
       <button onClick={fetchAdmins} className="mt-3 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold">
-        {fr ? "Réessayer" : ar ? "إعادة المحاولة" : "Retry"}
+        {fr ? "Réessayer" : "Retry"}
       </button>
     </div>
   );
@@ -9199,7 +9211,7 @@ const AdminTeamList = ({ user, fr }) => {
             onClick={() => setShowAdd(!showAdd)}
             className="text-sm font-semibold text-emerald-700 hover:underline"
           >
-            {showAdd ? (fr ? "▲ Annuler" : ar ? "▲ إلغاء" : "▲ Cancel") : (fr ? "▼ Ajouter un membre" : ar ? "▼ إضافة عضو" : "▼ Add member")}
+            {showAdd ? (fr ? "▲ Annuler" : "▲ Cancel") : (fr ? "▼ Ajouter un membre" : "▼ Add member")}
           </button>
           {showAdd && (
             <div className="mt-3 flex flex-col sm:flex-row gap-3">
@@ -9222,7 +9234,7 @@ const AdminTeamList = ({ user, fr }) => {
                 disabled={adding}
                 className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50"
               >
-                {adding ? "…" : (fr ? "Ajouter" : ar ? "إضافة" : "Add")}
+                {adding ? "…" : (fr ? "Ajouter" : "Add")}
               </button>
             </div>
           )}
@@ -9233,9 +9245,11 @@ const AdminTeamList = ({ user, fr }) => {
       {/* Message si aucun admin visible (RLS probable) */}
       {admins.length === 0 && !fetchErr && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-800">
-          <p className="font-bold mb-1">ℹ️ {fr ? "Aucun membre visible" : ar ? "لا يوجد أعضاء مرئيون" : "No members visible"}</p>
+          <p className="font-bold mb-1">ℹ️ {fr ? "Aucun membre visible" : "No members visible"}</p>
           <p className="text-xs">
-            {fr ? "La table admin_users est vide ou la politique RLS ne permet pas de lister tous les membres. Exécutez le SQL ci-dessous dans Supabase pour corriger :" : ar ? "جدول admin_users فارغ أو سياسة RLS لا تسمح بإدراج جميع الأعضاء." : "The admin_users table is empty or the RLS policy doesn't allow listing all members. Run the SQL below in Supabase to fix:"}
+            {fr
+              ? "La table admin_users est vide ou la politique RLS ne permet pas de lister tous les membres. Exécutez le SQL ci-dessous dans Supabase pour corriger :"
+              : "The admin_users table is empty or the RLS policy doesn't allow listing all members. Run the SQL below in Supabase to fix:"}
           </p>
           <pre className="mt-3 bg-amber-100 rounded-lg p-3 text-xs overflow-x-auto whitespace-pre-wrap">{`CREATE POLICY "admin_users_select_for_admins"
 ON admin_users FOR SELECT
@@ -9257,7 +9271,7 @@ USING (
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-800">{admin.email || "—"}</p>
-              <p className="text-xs text-gray-400">{admin.is_active !== false ? (fr ? "Actif" : ar ? "نشط" : "Active") : (fr ? "Désactivé" : ar ? "معطّل" : "Disabled")}</p>
+              <p className="text-xs text-gray-400">{admin.is_active !== false ? (fr ? "Actif" : "Active") : (fr ? "Désactivé" : "Disabled")}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -9274,7 +9288,7 @@ USING (
                   onClick={() => toggleActive(admin)}
                   className={`text-xs px-3 py-1 rounded-full font-semibold ${admin.is_active !== false ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"}`}
                 >
-                  {admin.is_active !== false ? (fr ? "Désactiver" : ar ? "تعطيل" : "Disable") : (fr ? "Réactiver" : ar ? "إعادة التفعيل" : "Enable")}
+                  {admin.is_active !== false ? (fr ? "Désactiver" : "Disable") : (fr ? "Réactiver" : "Enable")}
                 </button>
               </>
             ) : (
@@ -10664,16 +10678,16 @@ const AdminPage = ({ user, setPage, lang }) => {
                 <div className="flex justify-end">
                   <button onClick={()=>quickXLS("ayyad_finance", fr?["Date","Libellé","Catégorie","Montant (FCFA)","Référence"]:["Date","Label","Category","Amount (FCFA)","Reference"], expenses.map(e=>[e.date?.slice(0,10)||"",e.label||"",e.category||"",e.amount||0,e.reference||""]))}
                     className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all">
-                    📊 {fr ? "Exporter Excel" : ar ? "تصدير Excel" : "Export Excel"}
+                    📊 {fr?"Exporter Excel":"Export Excel"}
                   </button>
                 </div>
               )}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: fr ? "Total collecté" : ar ? "المجموع المجموع" : "Total raised",          v: fmt(totalCollected),     icon:"💚", color:"emerald" },
-                  { label: fr ? "Revenus Ayyad" : ar ? "إيرادات أيد" : "Ayyad revenue",          v: fmt(totalRevenusAyyad),  icon:"💰", color:"amber"   },
-                  { label: fr ? "Salaires payés" : ar ? "رواتب مدفوعة" : "Salaries paid",         v: fmt(totalSalariesPaid),  icon:"👔", color:"blue"    },
-                  { label: fr ? "Solde disponible" : ar ? "الرصيد المتاح" : "Available balance",   v: fmt(balance),            icon:"🏦", color: balance>=0?"emerald":"red" },
+                  { label: fr?"Total collecté":"Total raised",          v: fmt(totalCollected),     icon:"💚", color:"emerald" },
+                  { label: fr?"Revenus Ayyad":"Ayyad revenue",          v: fmt(totalRevenusAyyad),  icon:"💰", color:"amber"   },
+                  { label: fr?"Salaires payés":"Salaries paid",         v: fmt(totalSalariesPaid),  icon:"👔", color:"blue"    },
+                  { label: fr?"Solde disponible":"Available balance",   v: fmt(balance),            icon:"🏦", color: balance>=0?"emerald":"red" },
                 ].map(k => (
                   <div key={k.label} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
                     <div className="text-3xl mb-2">{k.icon}</div>
@@ -10687,41 +10701,41 @@ const AdminPage = ({ user, setPage, lang }) => {
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-gray-100 flex items-center gap-2">
                   <span className="text-lg">💰</span>
-                  <h3 className="font-bold text-gray-900 text-sm">{fr ? "Sources de revenus Ayyad" : ar ? "مصادر إيرادات أيد" : "Ayyad Revenue Streams"}</h3>
+                  <h3 className="font-bold text-gray-900 text-sm">{fr ? "Sources de revenus Ayyad" : "Ayyad Revenue Streams"}</h3>
                 </div>
                 <div className="divide-y divide-gray-50">
                   {[
                     {
                       icon:"📊", color:"text-amber-600", bg:"bg-amber-50",
-                      label: fr ? "5% sur objectif collecte" : ar ? "5% على هدف الجمع" : "5% on campaign goal",
-                      desc: fr ? "Prélevés sur chaque montant collecté, dans la limite de l'objectif" : ar ? "مُخصومة من كل مبلغ مجموع، بحد الهدف" : "Deducted from each collected amount, up to the goal",
+                      label: fr ? "5% sur objectif collecte" : "5% on campaign goal",
+                      desc: fr ? "Prélevés sur chaque montant collecté, dans la limite de l'objectif" : "Deducted from each collected amount, up to the goal",
                       amount: rev5pctObjectif,
                       count: allActive.filter(c=>(c.collected||0)>0).length,
-                      unit: fr ? "collectes actives" : ar ? "حملات نشطة" : "active campaigns",
+                      unit: fr ? "collectes actives" : "active campaigns",
                     },
                     {
                       icon:"🎉", color:"text-emerald-600", bg:"bg-emerald-50",
-                      label: fr ? "5% sur surcollecte" : ar ? "5% على الفائض" : "5% on surplus",
-                      desc: fr ? "5% du surplus versé à Ayyad quand l'objectif est dépassé" : ar ? "5% من الفائض يُحوَّل لأيد عند تجاوز الهدف" : "5% of surplus paid to Ayyad when goal is exceeded",
+                      label: fr ? "5% sur surcollecte" : "5% on surplus",
+                      desc: fr ? "5% du surplus versé à Ayyad quand l'objectif est dépassé" : "5% of surplus paid to Ayyad when goal is exceeded",
                       amount: rev5pctSurcollecte,
                       count: allActive.filter(c=>(c.collected||0)>(c.amount||1)).length,
-                      unit: fr ? "collectes avec surplus" : ar ? "حملات مع فائض" : "campaigns with surplus",
+                      unit: fr ? "collectes avec surplus" : "campaigns with surplus",
                     },
                     {
                       icon:"⏳", color:"text-orange-600", bg:"bg-orange-50",
-                      label: fr ? "5% sur collectes non atteintes" : ar ? "5% على الحملات غير المحققة" : "5% on unmet goals",
-                      desc: fr ? "5% prélevés avant redistribution du solde aux cas urgents" : ar ? "5% تُخصم قبل إعادة توزيع الرصيد على الحالات العاجلة" : "5% deducted before balance is redistributed to urgent cases",
+                      label: fr ? "5% sur collectes non atteintes" : "5% on unmet goals",
+                      desc: fr ? "5% prélevés avant redistribution du solde aux cas urgents" : "5% deducted before balance is redistributed to urgent cases",
                       amount: rev5pctNonAtteint,
                       count: funded.filter(c=>(c.collected||0)<(c.amount||1)).length,
-                      unit: fr ? "collectes non atteintes" : ar ? "حملات غير محققة" : "unmet campaigns",
+                      unit: fr ? "collectes non atteintes" : "unmet campaigns",
                     },
                     {
                       icon:"💚", color:"text-teal-600", bg:"bg-teal-50",
-                      label: fr ? "Dons directs à Ayyad" : ar ? "تبرعات مباشرة لأيد" : "Direct donations to Ayyad",
-                      desc: fr ? "Dons effectués directement via Wave ou carte sur la section Soutenir Ayyad" : ar ? "تبرعات مباشرة عبر Wave أو بطاقة في قسم دعم أيد" : "Donations made directly via Wave or card on the Support Ayyad section",
+                      label: fr ? "Dons directs à Ayyad" : "Direct donations to Ayyad",
+                      desc: fr ? "Dons effectués directement via Wave ou carte sur la section Soutenir Ayyad" : "Donations made directly via Wave or card on the Support Ayyad section",
                       amount: revDonsDirect,
                       count: expenses.filter(e=>e.category==="don_direct").length,
-                      unit: fr ? "dons enregistrés" : ar ? "تبرعات مسجلة" : "recorded donations",
+                      unit: fr ? "dons enregistrés" : "recorded donations",
                     },
                   ].map((row, i) => (
                     <div key={i} className={`p-4 flex items-center gap-4 ${row.bg}`}>
@@ -10738,7 +10752,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                   ))}
                   {/* Total */}
                   <div className="p-4 bg-gray-900 flex items-center justify-between">
-                    <div className="text-white font-bold text-sm">💰 {fr ? "Total revenus Ayyad" : ar ? "إجمالي إيرادات أيد" : "Total Ayyad Revenue"}</div>
+                    <div className="text-white font-bold text-sm">💰 {fr ? "Total revenus Ayyad" : "Total Ayyad Revenue"}</div>
                     <div className="font-black text-amber-400 text-lg">{fmt(totalRevenusAyyad)}</div>
                   </div>
                 </div>
@@ -10747,16 +10761,16 @@ const AdminPage = ({ user, setPage, lang }) => {
               {/* Tableau des collectes avec 5% */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-gray-100">
-                  <h3 className="font-bold text-gray-900 text-sm">{fr ? "Collectes — Prélèvements 5%" : ar ? "الحملات — خصم 5%" : "Campaigns — 5% deductions"}</h3>
+                  <h3 className="font-bold text-gray-900 text-sm">{fr?"Collectes — Prélèvements 5%":"Campaigns — 5% deductions"}</h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead><tr className="bg-gray-50 text-gray-500 uppercase text-[10px]">
-                      <th className="text-left px-4 py-3">{fr ? "Dossier" : ar ? "الملف" : "Case"}</th>
-                      <th className="text-right px-4 py-3">{fr ? "Collecté" : ar ? "جُمع" : "Raised"}</th>
-                      <th className="text-right px-4 py-3">{fr ? "Objectif" : ar ? "الهدف" : "Goal"}</th>
+                      <th className="text-left px-4 py-3">{fr?"Dossier":"Case"}</th>
+                      <th className="text-right px-4 py-3">{fr?"Collecté":"Raised"}</th>
+                      <th className="text-right px-4 py-3">{fr?"Objectif":"Goal"}</th>
                       <th className="text-right px-4 py-3">5% Ayyad</th>
-                      <th className="text-right px-4 py-3">{fr ? "Reste" : ar ? "الباقي" : "Remainder"}</th>
+                      <th className="text-right px-4 py-3">{fr?"Reste":"Remainder"}</th>
                       <th className="text-center px-4 py-3">Statut</th>
                     </tr></thead>
                     <tbody className="divide-y divide-gray-50">
@@ -10775,7 +10789,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                             <td className="px-4 py-3 text-right text-gray-700">{fmt(rest)}</td>
                             <td className="px-4 py-3 text-center">
                               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${reached?"bg-emerald-100 text-emerald-700":"bg-amber-100 text-amber-700"}`}>
-                                {reached?(fr ? "✓ Atteint" : ar ? "✓ محقق" : "✓ Reached"):(fr ? "Non atteint" : ar ? "غير محقق" : "Not reached")}
+                                {reached?(fr?"✓ Atteint":"✓ Reached"):(fr?"Non atteint":"Not reached")}
                               </span>
                             </td>
                           </tr>
@@ -10790,7 +10804,7 @@ const AdminPage = ({ user, setPage, lang }) => {
               {expenses.length > 0 && (
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                   <div className="p-4 border-b border-gray-100">
-                    <h3 className="font-bold text-gray-900 text-sm">{fr ? "Charges de fonctionnement" : ar ? "مصاريف التشغيل" : "Operating expenses"}</h3>
+                    <h3 className="font-bold text-gray-900 text-sm">{fr?"Charges de fonctionnement":"Operating expenses"}</h3>
                   </div>
                   <div className="divide-y divide-gray-50">
                     {expenses.slice(0,10).map(e => (
@@ -10807,7 +10821,7 @@ const AdminPage = ({ user, setPage, lang }) => {
               )}
               {expenses.length === 0 && !loadingFinance && (
                 <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-8 text-center text-gray-400 text-sm">
-                  {fr ? "Aucune charge enregistrée. Ajoutez des dépenses depuis la table ayyad_expenses dans Supabase." : ar ? "لا توجد مصاريف مسجلة. أضف نفقات من جدول ayyad_expenses في Supabase." : "No expenses recorded yet. Add entries in the ayyad_expenses table in Supabase."}
+                  {fr?"Aucune charge enregistrée. Ajoutez des dépenses depuis la table ayyad_expenses dans Supabase.":"No expenses recorded yet. Add entries in the ayyad_expenses table in Supabase."}
                 </div>
               )}
             </div>
@@ -10854,7 +10868,7 @@ const AdminPage = ({ user, setPage, lang }) => {
           };
 
           const deletePayment = async (id) => {
-            if (!window.confirm(fr ? "Supprimer cette transaction ?" : ar ? "حذف هذه المعاملة؟" : "Delete this transaction?")) return;
+            if (!window.confirm(fr ? "Supprimer cette transaction ?" : "Delete this transaction?")) return;
             const { error } = await supabase.from("salary_payments").delete().eq("id", id);
             if (!error) {
               setSalaryPayments(prev => prev.filter(p => p.id !== id));
@@ -10897,15 +10911,15 @@ const AdminPage = ({ user, setPage, lang }) => {
                 <div className="flex justify-end">
                   <button onClick={()=>quickXLS_sal("ayyad_salaires", fr?["Mois","Employé","Rôle","Montant (FCFA)","Méthode","Statut","Date paiement"]:["Month","Employee","Role","Amount (FCFA)","Method","Status","Payment date"], salaryPayments.map(p=>[p.payment_month||"",p.staff_name||"",p.role||"",p.amount||0,p.payment_method||p.method||"WAVE",p.status||"",p.payment_date?.slice(0,10)||""]))}
                     className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all">
-                    📊 {fr ? "Exporter Excel" : ar ? "تصدير Excel" : "Export Excel"}
+                    📊 {fr?"Exporter Excel":"Export Excel"}
                   </button>
                 </div>
               )}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {[
-                  { label: fr ? "Masse salariale mensuelle" : ar ? "الراتب الشهري الإجمالي" : "Monthly payroll",  v: fmt(totalMonthlySalaries), icon:"👥" },
-                  { label: fr ? "Payé ce mois" : ar ? "مدفوع هذا الشهر" : "Paid this month",               v: fmt(totalPaidThisMonth),   icon:"✅" },
-                  { label: fr ? "Restant à payer" : ar ? "المتبقي للدفع" : "Remaining to pay",           v: fmt(totalMonthlySalaries - totalPaidThisMonth), icon:"⏳" },
+                  { label: fr?"Masse salariale mensuelle":"Monthly payroll",  v: fmt(totalMonthlySalaries), icon:"👥" },
+                  { label: fr?"Payé ce mois":"Paid this month",               v: fmt(totalPaidThisMonth),   icon:"✅" },
+                  { label: fr?"Restant à payer":"Remaining to pay",           v: fmt(totalMonthlySalaries - totalPaidThisMonth), icon:"⏳" },
                 ].map(k => (
                   <div key={k.label} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
                     <div className="text-3xl mb-2">{k.icon}</div>
@@ -10918,22 +10932,22 @@ const AdminPage = ({ user, setPage, lang }) => {
               {/* Liste du personnel */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-                  <h3 className="font-bold text-gray-900 text-sm">{fr ? "Personnel Ayyad" : ar ? "موظفو أيد" : "Ayyad Staff"}</h3>
+                  <h3 className="font-bold text-gray-900 text-sm">{fr?"Personnel Ayyad":"Ayyad Staff"}</h3>
                   <button onClick={()=>setShowAddStaff(v=>!v)} className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-xl font-semibold hover:bg-emerald-700">
-                    + {fr ? "Ajouter" : ar ? "إضافة" : "Add member"}
+                    + {fr?"Ajouter":"Add member"}
                   </button>
                 </div>
 
                 {showAddStaff && (
                   <div className="p-4 bg-emerald-50 border-b border-emerald-100 space-y-3">
                     <div className="grid grid-cols-2 gap-3">
-                      <input placeholder={fr ? "Nom complet" : ar ? "الاسم الكامل" : "Full name"} value={newStaff.name} onChange={e=>setNewStaff(s=>({...s,name:e.target.value}))} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-                      <input placeholder={fr ? "Poste / Rôle" : ar ? "المنصب / الدور" : "Position / Role"} value={newStaff.role} onChange={e=>setNewStaff(s=>({...s,role:e.target.value}))} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                      <input placeholder={fr?"Nom complet":"Full name"} value={newStaff.name} onChange={e=>setNewStaff(s=>({...s,name:e.target.value}))} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                      <input placeholder={fr?"Poste / Rôle":"Position / Role"} value={newStaff.role} onChange={e=>setNewStaff(s=>({...s,role:e.target.value}))} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
                       <input placeholder="Numéro Wave (+225...)" value={newStaff.wave_number} onChange={e=>setNewStaff(s=>({...s,wave_number:e.target.value}))} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-                      <input type="number" placeholder={fr ? "Salaire mensuel (FCFA)" : ar ? "الراتب الشهري (فرنك)" : "Monthly salary (FCFA)"} value={newStaff.monthly_salary||""} onChange={e=>setNewStaff(s=>({...s,monthly_salary:e.target.value}))} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                      <input type="number" placeholder={fr?"Salaire mensuel (FCFA)":"Monthly salary (FCFA)"} value={newStaff.monthly_salary||""} onChange={e=>setNewStaff(s=>({...s,monthly_salary:e.target.value}))} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={addStaffMember} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700">{fr ? "Enregistrer" : ar ? "حفظ" : "Save"}</button>
+                      <button onClick={addStaffMember} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700">{fr?"Enregistrer":"Save"}</button>
                       <button onClick={()=>setShowAddStaff(false)} className="border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-sm">{fr?"Annuler":ar?"إلغاء":"Cancel"}</button>
                     </div>
                   </div>
@@ -10942,7 +10956,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                 {loadingFinance ? (
                   <div className="p-8 text-center text-gray-400 text-sm">{fr?"Chargement...":ar?"جار التحميل...":"Loading..."}</div>
                 ) : staffMembers.length === 0 ? (
-                  <div className="p-8 text-center text-gray-400 text-sm">{fr ? "Aucun employé enregistré." : ar ? "لا يوجد موظفون مسجلون." : "No staff members yet."}</div>
+                  <div className="p-8 text-center text-gray-400 text-sm">{fr?"Aucun employé enregistré.":"No staff members yet."}</div>
                 ) : (
                   <div className="divide-y divide-gray-50">
                     {staffMembers.map(m => {
@@ -10964,15 +10978,15 @@ const AdminPage = ({ user, setPage, lang }) => {
               {salaryPayments.length > 0 && (
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                   <div className="p-4 border-b border-gray-100">
-                    <h3 className="font-bold text-gray-900 text-sm">{fr ? "Historique des paiements" : ar ? "سجل المدفوعات" : "Payment history"}</h3>
+                    <h3 className="font-bold text-gray-900 text-sm">{fr?"Historique des paiements":"Payment history"}</h3>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs">
                       <thead><tr className="bg-gray-50 text-gray-500 uppercase text-[10px]">
-                        <th className="text-left px-4 py-3">{fr ? "Employé" : ar ? "الموظف" : "Employee"}</th>
-                        <th className="text-right px-4 py-3">{fr ? "Montant" : ar ? "المبلغ" : "Amount"}</th>
-                        <th className="text-center px-4 py-3">{fr ? "Mois" : ar ? "الشهر" : "Month"}</th>
-                        <th className="text-center px-4 py-3">{fr ? "Méthode" : ar ? "الطريقة" : "Method"}</th>
+                        <th className="text-left px-4 py-3">{fr?"Employé":"Employee"}</th>
+                        <th className="text-right px-4 py-3">{fr?"Montant":"Amount"}</th>
+                        <th className="text-center px-4 py-3">{fr?"Mois":"Month"}</th>
+                        <th className="text-center px-4 py-3">{fr?"Méthode":"Method"}</th>
                         <th className="text-center px-4 py-3">Statut</th>
                         <th className="text-center px-4 py-3">Action</th>
                       </tr></thead>
@@ -10985,13 +10999,13 @@ const AdminPage = ({ user, setPage, lang }) => {
                             <td className="px-4 py-3 text-center">🌊 {p.method||"Wave"}</td>
                             <td className="px-4 py-3 text-center">
                               <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${p.status==="paid"?"bg-emerald-100 text-emerald-700":"bg-amber-100 text-amber-700"}`}>
-                                {p.status==="paid"?(fr ? "Payé" : ar ? "مدفوع" : "Paid"):(fr ? "En attente" : ar ? "قيد الانتظار" : "Pending")}
+                                {p.status==="paid"?(fr?"Payé":"Paid"):(fr?"En attente":"Pending")}
                               </span>
                             </td>
                             <td className="px-4 py-3 text-center">
                               <button onClick={()=>deletePayment(p.id)}
                                 className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg px-2 py-1 text-xs font-semibold transition-colors"
-                                title={fr ? "Supprimer" : ar ? "حذف" : "Delete"}>
+                                title={fr?"Supprimer":"Delete"}>
                                 🗑️
                               </button>
                             </td>
@@ -11127,15 +11141,15 @@ const AdminPage = ({ user, setPage, lang }) => {
             const periodLabel = isMonthly ? `${(fr?MONTHS_FR:MONTHS_EN)[bilanMonth-1]} ${bilanYear}` : String(bilanYear);
             const headers = fr?["Indicateur","Valeur"]:["Indicator","Value"];
             const rows = [
-              [fr ? "Période" : ar ? "الفترة" : "Period", periodLabel],
-              [fr ? "Dossiers actifs" : ar ? "الملفات النشطة" : "Active cases", filteredCases.length],
-              [fr ? "Objectifs atteints" : ar ? "أهداف محققة" : "Goals reached", goalReached],
-              [fr ? "Total collecté (FCFA)" : ar ? "المجموع المجموع (فرنك)" : "Total raised (FCFA)", collected],
-              [fr ? "Frais Ayyad 5% (FCFA)" : ar ? "رسوم أيد 5% (فرنك)" : "Ayyad 5% fee (FCFA)", fees5pct],
-              [fr ? "Salaires payés (FCFA)" : ar ? "رواتب مدفوعة (فرنك)" : "Salaries paid (FCFA)", totalSalaries],
-              [fr ? "Charges diverses (FCFA)" : ar ? "مصاريف متنوعة (فرنك)" : "Misc expenses (FCFA)", totalExp],
-              [fr ? "Montant redistribué (FCFA)" : ar ? "مبلغ موزَّع (فرنك)" : "Redistributed (FCFA)", redistributed],
-              [fr ? "Solde disponible (FCFA)" : ar ? "الرصيد المتاح (فرنك)" : "Available balance (FCFA)", balance],
+              [fr?"Période":"Period", periodLabel],
+              [fr?"Dossiers actifs":"Active cases", filteredCases.length],
+              [fr?"Objectifs atteints":"Goals reached", goalReached],
+              [fr?"Total collecté (FCFA)":"Total raised (FCFA)", collected],
+              [fr?"Frais Ayyad 5% (FCFA)":"Ayyad 5% fee (FCFA)", fees5pct],
+              [fr?"Salaires payés (FCFA)":"Salaries paid (FCFA)", totalSalaries],
+              [fr?"Charges diverses (FCFA)":"Misc expenses (FCFA)", totalExp],
+              [fr?"Montant redistribué (FCFA)":"Redistributed (FCFA)", redistributed],
+              [fr?"Solde disponible (FCFA)":"Available balance (FCFA)", balance],
             ];
             const hRow = `<Row>${headers.map(h=>`<Cell ss:StyleID="h"><Data ss:Type="String">${h}</Data></Cell>`).join("")}</Row>`;
             const dRows = rows.map(r=>`<Row>${r.map(v=>`<Cell><Data ss:Type="${typeof v==="number"?"Number":"String"}">${String(v??"")}</Data></Cell>`).join("")}</Row>`).join("\n");
@@ -11153,7 +11167,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                   <div className="flex rounded-xl overflow-hidden border border-gray-200">
                     {["monthly","annual"].map(p => (
                       <button key={p} onClick={()=>setBilanPeriod(p)} className={`px-4 py-2 text-sm font-semibold transition-all ${bilanPeriod===p?"bg-emerald-600 text-white":"text-gray-600 hover:bg-gray-50"}`}>
-                        {p==="monthly"?(fr ? "Mensuel" : ar ? "شهري" : "Monthly"):(fr ? "Annuel" : ar ? "سنوي" : "Annual")}
+                        {p==="monthly"?(fr?"Mensuel":"Monthly"):(fr?"Annuel":"Annual")}
                       </button>
                     ))}
                   </div>
@@ -11167,7 +11181,7 @@ const AdminPage = ({ user, setPage, lang }) => {
                   )}
                   {["super_admin","finance","admin"].includes(user?.adminRole) && (
                     <button onClick={exportBilanXLS} className="ml-auto flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all">
-                      📊 {fr ? "Exporter Excel" : ar ? "تصدير Excel" : "Export Excel"}
+                      📊 {fr?"Exporter Excel":"Export Excel"}
                     </button>
                   )}
                 </div>
@@ -11176,14 +11190,14 @@ const AdminPage = ({ user, setPage, lang }) => {
               {/* KPIs bilan */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: fr ? "Collectes" : ar ? "الحملات" : "Campaigns",          v: filteredCases.length,  icon:"📋", sub:"total" },
-                  { label: fr ? "Objectifs atteints" : ar ? "أهداف محققة" : "Goals met", v: goalReached,            icon:"✅", sub:`${goalMissed} ${fr ? "non atteints" : ar ? "غير محققة" : "missed"}` },
-                  { label: fr ? "Total collecté" : ar ? "المجموع المجموع" : "Total raised",  v: fmt(collected),         icon:"💚", sub:"" },
-                  { label: fr ? "5% Ayyad" : ar ? "5% أيد" : "5% Ayyad",           v: fmt(fees5pct),          icon:"💰", sub:"" },
-                  { label: fr ? "Salaires" : ar ? "الرواتب" : "Salaries",            v: fmt(totalSalaries),     icon:"👔", sub:"" },
-                  { label: fr ? "Charges" : ar ? "المصاريف" : "Expenses",             v: fmt(totalExp),          icon:"📦", sub:"" },
-                  { label: fr ? "Redistribués" : ar ? "موزَّعة" : "Redistributed",   v: fmt(redistributed),     icon:"🔄", sub:"" },
-                  { label: fr ? "Solde" : ar ? "الرصيد" : "Balance",                v: fmt(balance),           icon:"🏦", sub:"", highlight: balance<0?"red":"emerald" },
+                  { label: fr?"Collectes":"Campaigns",          v: filteredCases.length,  icon:"📋", sub:"total" },
+                  { label: fr?"Objectifs atteints":"Goals met", v: goalReached,            icon:"✅", sub:`${goalMissed} ${fr?"non atteints":"missed"}` },
+                  { label: fr?"Total collecté":"Total raised",  v: fmt(collected),         icon:"💚", sub:"" },
+                  { label: fr?"5% Ayyad":"5% Ayyad",           v: fmt(fees5pct),          icon:"💰", sub:"" },
+                  { label: fr?"Salaires":"Salaries",            v: fmt(totalSalaries),     icon:"👔", sub:"" },
+                  { label: fr?"Charges":"Expenses",             v: fmt(totalExp),          icon:"📦", sub:"" },
+                  { label: fr?"Redistribués":"Redistributed",   v: fmt(redistributed),     icon:"🔄", sub:"" },
+                  { label: fr?"Solde":"Balance",                v: fmt(balance),           icon:"🏦", sub:"", highlight: balance<0?"red":"emerald" },
                 ].map(k=>(
                   <div key={k.label} className={`bg-white rounded-2xl p-4 border shadow-sm ${k.highlight==="red"?"border-red-200":"border-gray-100"}`}>
                     <div className="text-2xl mb-1">{k.icon}</div>
@@ -11197,18 +11211,18 @@ const AdminPage = ({ user, setPage, lang }) => {
               {/* Résumé texte */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                 <h3 className="font-bold text-gray-900 mb-4">
-                  {fr ? "Résumé opérationnel" : ar ? "ملخص التشغيل" : "Operational summary"} — {isMonthly?(fr?MONTHS_FR:MONTHS_EN)[bilanMonth-1]+" "+bilanYear:bilanYear}
+                  {fr?"Résumé opérationnel":"Operational summary"} — {isMonthly?(fr?MONTHS_FR:MONTHS_EN)[bilanMonth-1]+" "+bilanYear:bilanYear}
                 </h3>
                 <div className="space-y-2 text-sm">
                   {[
-                    { label: fr ? "Collectes créées" : ar ? "حملات أُنشئت" : "Campaigns created",          v: filteredCases.length+" "+(fr ? "dossiers" : ar ? "ملفات" : "cases") },
-                    { label: fr ? "Objectifs atteints" : ar ? "أهداف محققة" : "Goals reached",            v: goalReached+" / "+filteredCases.length },
-                    { label: fr ? "Total collecté" : ar ? "المجموع المجموع" : "Total collected",              v: fmt(collected) },
-                    { label: fr ? "5% prélevés (fonctionnement)" : ar ? "5% مخصومة (تشغيل)" : "5% fee taken",   v: fmt(fees5pct) },
-                    { label: fr ? "Salaires payés" : ar ? "رواتب مدفوعة" : "Salaries paid",                v: fmt(totalSalaries) },
-                    { label: fr ? "Charges diverses" : ar ? "مصاريف متنوعة" : "Misc expenses",              v: fmt(totalExp) },
-                    { label: fr ? "Montant redistribué" : ar ? "مبلغ موزَّع" : "Redistributed",           v: fmt(redistributed) },
-                    { label: fr ? "Solde disponible Ayyad" : ar ? "الرصيد المتاح لأيد" : "Available balance",    v: fmt(balance), bold: true, color: balance<0?"text-red-600":"text-emerald-700" },
+                    { label: fr?"Collectes créées":"Campaigns created",          v: filteredCases.length+" "+(fr?"dossiers":"cases") },
+                    { label: fr?"Objectifs atteints":"Goals reached",            v: goalReached+" / "+filteredCases.length },
+                    { label: fr?"Total collecté":"Total collected",              v: fmt(collected) },
+                    { label: fr?"5% prélevés (fonctionnement)":"5% fee taken",   v: fmt(fees5pct) },
+                    { label: fr?"Salaires payés":"Salaries paid",                v: fmt(totalSalaries) },
+                    { label: fr?"Charges diverses":"Misc expenses",              v: fmt(totalExp) },
+                    { label: fr?"Montant redistribué":"Redistributed",           v: fmt(redistributed) },
+                    { label: fr?"Solde disponible Ayyad":"Available balance",    v: fmt(balance), bold: true, color: balance<0?"text-red-600":"text-emerald-700" },
                   ].map(r=>(
                     <div key={r.label} className="flex justify-between items-center py-1.5 border-b border-gray-50 last:border-0">
                       <span className="text-gray-500">{r.label}</span>
@@ -11264,19 +11278,19 @@ const MonImpactPage = ({ user, setPage, lang }) => {
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-2xl mx-auto">
-        <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">← {fr ? "Retour à l'accueil" : ar ? "العودة للرئيسية" : "Back to home"}</button>
+        <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">← {fr?"Retour à l'accueil":"Back to home"}</button>
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-2xl text-3xl mb-4">💚</div>
-          <h1 className="text-2xl font-black text-gray-900">{fr ? "Mon Impact" : ar ? "أثري" : "My Impact"}</h1>
+          <h1 className="text-2xl font-black text-gray-900">{fr?"Mon Impact":"My Impact"}</h1>
           <p className="text-gray-500 text-sm mt-2">{user?.name || user?.email}</p>
         </div>
 
         {/* KPIs */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           {[
-            { icon:"💰", v: totalFcfa.toLocaleString("fr-CI")+" FCFA", l: fr ? "Total donné" : ar ? "المجموع المتبرع" : "Total given" },
-            { icon:"🏥", v: uniqueCases, l: fr ? "Patients soutenus" : ar ? "مرضى مدعومون" : "Patients supported" },
-            { icon:"✅", v: confirmed.length, l: fr ? "Dons confirmés" : ar ? "تبرعات مؤكدة" : "Confirmed donations" },
+            { icon:"💰", v: totalFcfa.toLocaleString("fr-CI")+" FCFA", l: fr?"Total donné":"Total given" },
+            { icon:"🏥", v: uniqueCases, l: fr?"Patients soutenus":"Patients supported" },
+            { icon:"✅", v: confirmed.length, l: fr?"Dons confirmés":"Confirmed donations" },
           ].map(k=>(
             <div key={k.l} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
               <div className="text-2xl mb-1">{k.icon}</div>
@@ -11291,27 +11305,27 @@ const MonImpactPage = ({ user, setPage, lang }) => {
         ) : donations.length === 0 ? (
           <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-10 text-center">
             <div className="text-4xl mb-3">💚</div>
-            <p className="font-bold text-gray-700">{fr ? "Vous n'avez pas encore fait de don." : ar ? "لم تتبرع بعد." : "You haven't made any donations yet."}</p>
+            <p className="font-bold text-gray-700">{fr?"Vous n'avez pas encore fait de don.":"You haven't made any donations yet."}</p>
             <button onClick={()=>setPage("home")} className="mt-4 bg-emerald-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-emerald-700">
-              {fr ? "Découvrir les collectes →" : ar ? "اكتشف الحملات →" : "Browse campaigns →"}
+              {fr?"Découvrir les collectes →":"Browse campaigns →"}
             </button>
           </div>
         ) : (
           <div className="space-y-3">
-            <h2 className="font-bold text-gray-900 text-sm mb-3">{fr ? "Historique de vos dons" : ar ? "سجل تبرعاتك" : "Your donation history"}</h2>
+            <h2 className="font-bold text-gray-900 text-sm mb-3">{fr?"Historique de vos dons":"Your donation history"}</h2>
             {donations.map(d=>(
               <div key={d.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${d.status==="confirmed"?"bg-emerald-100":"bg-amber-100"}`}>
                   {d.status==="confirmed"?"✅":"⏳"}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-900 text-sm truncate">{d.case_id ? ("Dossier #"+d.case_id.slice(0,8)) : (fr ? "Don Ayyad" : ar ? "تبرع أيد" : "Ayyad donation")}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{new Date(d.created_at).toLocaleDateString(fr ? "fr-CI" : ar ? "ar" : "en-US")} · {d.payment_method||"WAVE"}</div>
+                  <div className="font-semibold text-gray-900 text-sm truncate">{d.case_id ? ("Dossier #"+d.case_id.slice(0,8)) : (fr?"Don Ayyad":"Ayyad donation")}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{new Date(d.created_at).toLocaleDateString(fr?"fr-CI":"en-US")} · {d.payment_method||"WAVE"}</div>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <div className="font-black text-emerald-700 text-sm">{(d.amount_fcfa||d.amount||0).toLocaleString("fr-CI")} FCFA</div>
                   <div className={`text-[10px] font-bold ${d.status==="confirmed"?"text-emerald-600":"text-amber-500"}`}>
-                    {d.status==="confirmed"?(fr ? "Confirmé" : ar ? "مؤكد" : "Confirmed"):(fr ? "En attente" : ar ? "قيد الانتظار" : "Pending")}
+                    {d.status==="confirmed"?(fr?"Confirmé":"Confirmed"):(fr?"En attente":"Pending")}
                   </div>
                 </div>
               </div>
@@ -11323,9 +11337,9 @@ const MonImpactPage = ({ user, setPage, lang }) => {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mt-6">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <div className="font-bold text-gray-900 text-sm">{fr ? "Alertes nouveaux cas" : ar ? "تنبيهات الحالات الجديدة" : "New case alerts"}</div>
+              <div className="font-bold text-gray-900 text-sm">{fr?"Alertes nouveaux cas":"New case alerts"}</div>
               <div className="text-xs text-gray-500 mt-1">
-                {fr ? "Recevoir un email quand un nouveau patient est publie sur Ayyad" : ar ? "تلقّ بريداً إلكترونياً عند نشر مريض جديد على أيد" : "Get an email when a new patient is published on Ayyad"}
+                {fr?"Recevoir un email quand un nouveau patient est publie sur Ayyad":"Get an email when a new patient is published on Ayyad"}
               </div>
             </div>
             <button
@@ -11338,7 +11352,7 @@ const MonImpactPage = ({ user, setPage, lang }) => {
           </div>
           {notifPref && (
             <p className="text-xs text-emerald-600 mt-3 font-medium">
-              {fr ? "Vous recevrez un email a chaque nouveau dossier publie." : ar ? "ستتلقى بريداً عند كل ملف جديد يُنشر." : "You will receive an email for each new published case."}
+              {fr?"Vous recevrez un email a chaque nouveau dossier publie.":"You will receive an email for each new published case."}
             </p>
           )}
         </div>
@@ -11352,15 +11366,15 @@ const HospitauxPage = ({ setPage, lang }) => {
   const fr = lang === "fr";
   const ar = lang === "ar";
   const hospitals = [
-    { name:"CHU de Cocody",        city:"Abidjan",       spec:fr ? "Cardiologie, Neurologie" : ar ? "قلبية، عصبية" : "Cardiology, Neurology",       cases:12, icon:"🏥", verified:true },
-    { name:"CHU de Yopougon",      city:"Abidjan",       spec:fr ? "Pédiatrie, Gynécologie" : ar ? "أطفال، نسائية" : "Pediatrics, Gynecology",       cases:9,  icon:"🏥", verified:true },
-    { name:"CHU de Bouaké",        city:"Bouaké",        spec:fr ? "Néphrologie, Chirurgie" : ar ? "كلوية، جراحة" : "Nephrology, Surgery",          cases:7,  icon:"🏥", verified:true },
-    { name:"CHR de Daloa",         city:"Daloa",         spec:fr ? "Orthopédie, Traumatologie" : ar ? "عظمية، إصابات" : "Orthopedics, Trauma",       cases:5,  icon:"🏥", verified:true },
-    { name:"Institut National d'Oncologie", city:"Abidjan", spec:fr ? "Oncologie" : ar ? "أورام" : "Oncology",                              cases:8,  icon:"🏥", verified:true },
-    { name:"CHR de Yamoussoukro",  city:"Yamoussoukro",  spec:fr ? "Chirurgie générale" : ar ? "جراحة عامة" : "General Surgery",                 cases:4,  icon:"🏥", verified:true },
-    { name:"CHR de Korhogo",       city:"Korhogo",       spec:fr ? "Orthopédie, Médecine interne" : ar ? "عظمية، طب داخلي" : "Orthopedics, Internal",  cases:3,  icon:"🏥", verified:true },
-    { name:"CHR de Man",           city:"Man",            spec:fr ? "Ophtalmologie, Pédiatrie" : ar ? "عيون، أطفال" : "Ophthalmology, Pediatrics", cases:3,  icon:"🏥", verified:true },
-    { name:"Clinique Vision CI",   city:"San-Pédro",     spec:fr ? "Ophtalmologie" : ar ? "طب عيون" : "Ophthalmology",                        cases:2,  icon:"🏥", verified:true },
+    { name:"CHU de Cocody",        city:"Abidjan",       spec:fr?"Cardiologie, Neurologie":"Cardiology, Neurology",       cases:12, icon:"🏥", verified:true },
+    { name:"CHU de Yopougon",      city:"Abidjan",       spec:fr?"Pédiatrie, Gynécologie":"Pediatrics, Gynecology",       cases:9,  icon:"🏥", verified:true },
+    { name:"CHU de Bouaké",        city:"Bouaké",        spec:fr?"Néphrologie, Chirurgie":"Nephrology, Surgery",          cases:7,  icon:"🏥", verified:true },
+    { name:"CHR de Daloa",         city:"Daloa",         spec:fr?"Orthopédie, Traumatologie":"Orthopedics, Trauma",       cases:5,  icon:"🏥", verified:true },
+    { name:"Institut National d'Oncologie", city:"Abidjan", spec:fr?"Oncologie":"Oncology",                              cases:8,  icon:"🏥", verified:true },
+    { name:"CHR de Yamoussoukro",  city:"Yamoussoukro",  spec:fr?"Chirurgie générale":"General Surgery",                 cases:4,  icon:"🏥", verified:true },
+    { name:"CHR de Korhogo",       city:"Korhogo",       spec:fr?"Orthopédie, Médecine interne":"Orthopedics, Internal",  cases:3,  icon:"🏥", verified:true },
+    { name:"CHR de Man",           city:"Man",            spec:fr?"Ophtalmologie, Pédiatrie":"Ophthalmology, Pediatrics", cases:3,  icon:"🏥", verified:true },
+    { name:"Clinique Vision CI",   city:"San-Pédro",     spec:fr?"Ophtalmologie":"Ophthalmology",                        cases:2,  icon:"🏥", verified:true },
   ];
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
@@ -11368,25 +11382,26 @@ const HospitauxPage = ({ setPage, lang }) => {
         <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-6">← {fr?"Retour":ar?"رجوع":"Back"}</button>
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-2xl text-3xl mb-4">🏥</div>
-          <h1 className="text-2xl font-black text-gray-900">{fr ? "Hôpitaux partenaires vérifiés" : ar ? "مستشفيات شريكة موثقة" : "Verified Partner Hospitals"}</h1>
+          <h1 className="text-2xl font-black text-gray-900">{fr?"Hôpitaux partenaires vérifiés":"Verified Partner Hospitals"}</h1>
           <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
-            {fr ? "Ayyad travaille exclusivement avec des établissements médicaux agréés et vérifiés. Les fonds sont versés directement à ces hôpitaux." : ar ? "أيد تعمل حصرياً مع منشآت طبية معتمدة. الأموال تُحوَّل مباشرة لهذه المستشفيات." : "Ayyad works exclusively with accredited and verified medical facilities. Funds are transferred directly to these hospitals."}
+            {fr?"Ayyad travaille exclusivement avec des établissements médicaux agréés et vérifiés. Les fonds sont versés directement à ces hôpitaux."
+              :"Ayyad works exclusively with accredited and verified medical facilities. Funds are transferred directly to these hospitals."}
           </p>
         </div>
 
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
           <span className="text-xl">🔒</span>
           <div className="text-sm text-emerald-800">
-            <strong>{fr ? "Virement direct garanti" : ar ? "تحويل مباشر مضمون" : "Direct transfer guaranteed"}</strong> — {fr ? "Aucun fonds ne transite par des tiers. Chaque virement est tracé et audité." : ar ? "لا تمر أي أموال عبر وسطاء. كل تحويل مُتتبَّع ومدقَّق." : "No funds go through third parties. Every transfer is tracked and audited."}
+            <strong>{fr?"Virement direct garanti":"Direct transfer guaranteed"}</strong> — {fr?"Aucun fonds ne transite par des tiers. Chaque virement est tracé et audité.":"No funds go through third parties. Every transfer is tracked and audited."}
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           {[
-            {icon:"🏥",v:hospitals.length,l:fr ? "Hôpitaux partenaires" : ar ? "مستشفيات شريكة" : "Partner hospitals"},
-            {icon:"📋",v:hospitals.reduce((s,h)=>s+h.cases,0)+"+",l:fr ? "Dossiers traités" : ar ? "ملفات معالَجة" : "Cases handled"},
-            {icon:"🌍",v:"7",l:fr ? "Villes couvertes" : ar ? "مدن مغطاة" : "Cities covered"},
-            {icon:"✅",v:"100%",l:fr ? "Virements vérifiés" : ar ? "تحويلات موثقة" : "Verified transfers"},
+            {icon:"🏥",v:hospitals.length,l:fr?"Hôpitaux partenaires":"Partner hospitals"},
+            {icon:"📋",v:hospitals.reduce((s,h)=>s+h.cases,0)+"+",l:fr?"Dossiers traités":"Cases handled"},
+            {icon:"🌍",v:"7",l:fr?"Villes couvertes":"Cities covered"},
+            {icon:"✅",v:"100%",l:fr?"Virements vérifiés":"Verified transfers"},
           ].map(k=>(
             <div key={k.l} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
               <span className="text-2xl">{k.icon}</span>
@@ -11402,19 +11417,19 @@ const HospitauxPage = ({ setPage, lang }) => {
               <div className="flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-bold text-gray-900">{h.name}</span>
-                  {h.verified && <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-full">✓ {fr?"Vérifié":lang==="ar" ? "موثّق" : "Verified"}</span>}
+                  {h.verified && <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-full">✓ {fr?"Vérifié":"Verified"}</span>}
                 </div>
                 <div className="text-xs text-gray-500 mt-0.5">📍 {h.city} · {h.spec}</div>
-                <div className="text-xs text-emerald-600 font-semibold mt-1">{h.cases} {fr ? "dossiers traités" : ar ? "ملفات معالَجة" : "cases handled"}</div>
+                <div className="text-xs text-emerald-600 font-semibold mt-1">{h.cases} {fr?"dossiers traités":"cases handled"}</div>
               </div>
             </div>
           ))}
         </div>
 
         <div className="mt-8 bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center">
-          <h3 className="font-bold text-gray-900 mb-2">{fr ? "Votre hôpital n'est pas listé ?" : ar ? "مستشفاك غير مدرج؟" : "Your hospital is not listed?"}</h3>
+          <h3 className="font-bold text-gray-900 mb-2">{fr?"Votre hôpital n'est pas listé ?":"Your hospital is not listed?"}</h3>
           <p className="text-sm text-gray-500 mb-4">
-            {fr ? "Ayyad est en expansion. Contactez-nous pour soumettre une demande de partenariat." : ar ? "أيد في توسع. تواصل معنا لتقديم طلب شراكة." : "Ayyad is expanding. Contact us to submit a partnership request."}
+            {fr?"Ayyad est en expansion. Contactez-nous pour soumettre une demande de partenariat.":"Ayyad is expanding. Contact us to submit a partnership request."}
           </p>
           <a href="mailto:contact@ayyadci.com" className="inline-flex items-center gap-2 bg-emerald-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-emerald-700">
             ✉️ contact@ayyadci.com
@@ -11452,77 +11467,103 @@ const RefundPage = ({ setPage, lang }) => {
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-100 rounded-2xl text-3xl mb-4">🔄</div>
           <h1 className="text-2xl font-black text-gray-900">
-            {fr ? "Politique de remboursement" : ar ? "سياسة الاسترداد" : "Refund Policy"}
+            {fr ? "Politique de remboursement" : "Refund Policy"}
           </h1>
           <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
-            {fr ? "Ayyad s'engage à gérer chaque franc confié avec transparence et intégrité." : ar ? "تلتزم أيد بإدارة كل فرنك مُؤتمَن عليه بشفافية ونزاهة." : "Ayyad is committed to managing every franc entrusted with transparency and integrity."}
+            {fr
+              ? "Ayyad s'engage à gérer chaque franc confié avec transparence et intégrité."
+              : "Ayyad is committed to managing every franc entrusted with transparency and integrity."}
           </p>
           <div className="text-[11px] text-gray-400 mt-2">
-            {fr ? "Dernière mise à jour : mars 2025" : ar ? "آخر تحديث: مارس 2025" : "Last updated: March 2025"}
+            {fr ? "Dernière mise à jour : mars 2025" : "Last updated: March 2025"}
           </div>
         </div>
 
         <div className="space-y-4">
           {/* Principe général */}
-          <Section icon="📋" title={fr ? "Principe général" : ar ? "المبدأ العام" : "General principle"}>
+          <Section icon="📋" title={fr ? "Principe général" : "General principle"}>
             <p className="text-sm text-gray-600 leading-relaxed">
-              {fr ? "Tout don effectué sur Ayyad est un acte de solidarité volontaire. Ayyad ne garantit pas l'atteinte de l'objectif de collecte, mais garantit que chaque franc reçu sera utilisé conformément à la présente politique." : ar ? "كل تبرع على أيد هو عمل تضامني طوعي. أيد لا تضمن تحقيق هدف الجمع، لكنها تضمن استخدام كل فرنك وفق هذه السياسة." : "Every donation made on Ayyad is a voluntary act of solidarity. Ayyad does not guarantee that the campaign goal will be reached, but guarantees that every franc received will be used in accordance with this policy."}
+              {fr
+                ? "Tout don effectué sur Ayyad est un acte de solidarité volontaire. Ayyad ne garantit pas l'atteinte de l'objectif de collecte, mais garantit que chaque franc reçu sera utilisé conformément à la présente politique."
+                : "Every donation made on Ayyad is a voluntary act of solidarity. Ayyad does not guarantee that the campaign goal will be reached, but guarantees that every franc received will be used in accordance with this policy."}
             </p>
           </Section>
 
           {/* Cas 1 — Dossier rejeté */}
-          <Section icon="❌" title={fr ? "Dossier rejeté après réception de dons" : ar ? "رفض الملف بعد استلام التبرعات" : "Case rejected after donations received"}>
+          <Section icon="❌" title={fr ? "Dossier rejeté après réception de dons" : "Case rejected after donations received"}>
             <p className="text-sm text-gray-600 leading-relaxed">
-              {fr ? "Si Ayyad rejette un dossier après réception de dons (documents falsifiés, fraude détectée, non-conformité médicale, etc.) :" : ar ? "إذا رفضت أيد ملفاً بعد استلام تبرعات (وثائق مزورة، احتيال مكتشف، عدم مطابقة طبية، إلخ):" : "If Ayyad rejects a case after receiving donations (falsified documents, detected fraud, medical non-compliance, etc.):"}
+              {fr
+                ? "Si Ayyad rejette un dossier après réception de dons (documents falsifiés, fraude détectée, non-conformité médicale, etc.) :"
+                : "If Ayyad rejects a case after receiving donations (falsified documents, detected fraud, medical non-compliance, etc.):"}
             </p>
             <div className="space-y-3">
-              <Rule label={fr ? "1. Notification immédiate" : ar ? "1. إشعار فوري" : "1. Immediate notification"}>
-                {fr ? "Tous les donateurs ayant un compte Ayyad sont contactés par email dans un délai de 48h après la décision de rejet." : ar ? "جميع المتبرعين بحساب أيد يُتصل بهم بالبريد خلال 48 ساعة من قرار الرفض." : "All donors with an Ayyad account are contacted by email within 48 hours of the rejection decision."}
+              <Rule label={fr ? "1. Notification immédiate" : "1. Immediate notification"}>
+                {fr
+                  ? "Tous les donateurs ayant un compte Ayyad sont contactés par email dans un délai de 48h après la décision de rejet."
+                  : "All donors with an Ayyad account are contacted by email within 48 hours of the rejection decision."}
               </Rule>
-              <Rule label={fr ? "2. Choix du donateur" : ar ? "2. خيار المتبرع" : "2. Donor's choice"}>
-                {fr ? "Chaque donateur peut choisir : (a) un remboursement intégral sur son numéro mobile money d'origine, ou (b) la redistribution de son don aux cas urgents actifs sur la plateforme." : ar ? "كل متبرع يختار: (أ) استرداد كامل على رقم موبايل موني الأصلي، أو (ب) إعادة توزيع تبرعه على الحالات العاجلة النشطة." : "Each donor can choose: (a) a full refund to their original mobile money number, or (b) redistribution of their donation to active urgent cases on the platform."}
+              <Rule label={fr ? "2. Choix du donateur" : "2. Donor's choice"}>
+                {fr
+                  ? "Chaque donateur peut choisir : (a) un remboursement intégral sur son numéro mobile money d'origine, ou (b) la redistribution de son don aux cas urgents actifs sur la plateforme."
+                  : "Each donor can choose: (a) a full refund to their original mobile money number, or (b) redistribution of their donation to active urgent cases on the platform."}
               </Rule>
-              <Rule label={fr ? "3. Délai de réponse" : ar ? "3. مهلة الرد" : "3. Response deadline"}>
-                {fr ? "Le donateur dispose de 14 jours calendaires pour exprimer son choix. Sans réponse dans ce délai, le don est automatiquement redistribué aux cas urgents actifs." : ar ? "للمتبرع 14 يوماً تقويمياً للتعبير عن اختياره. بدون رد، يُعاد توزيع التبرع تلقائياً على الحالات العاجلة." : "The donor has 14 calendar days to express their choice. Without a response within this period, the donation is automatically redistributed to active urgent cases."}
+              <Rule label={fr ? "3. Délai de réponse" : "3. Response deadline"}>
+                {fr
+                  ? "Le donateur dispose de 14 jours calendaires pour exprimer son choix. Sans réponse dans ce délai, le don est automatiquement redistribué aux cas urgents actifs."
+                  : "The donor has 14 calendar days to express their choice. Without a response within this period, the donation is automatically redistributed to active urgent cases."}
               </Rule>
-              <Rule label={fr ? "4. Délai de remboursement" : ar ? "4. مهلة الاسترداد" : "4. Refund timeline"}>
-                {fr ? "Les remboursements sont effectués dans un délai de 5 jours ouvrés après confirmation du choix, via le même opérateur mobile money utilisé pour le don." : ar ? "تُنفَّذ الاستردادات خلال 5 أيام عمل بعد تأكيد الاختيار عبر نفس مشغل موبايل موني المستخدم." : "Refunds are processed within 5 business days after confirmation of the choice, via the same mobile money operator used for the donation."}
+              <Rule label={fr ? "4. Délai de remboursement" : "4. Refund timeline"}>
+                {fr
+                  ? "Les remboursements sont effectués dans un délai de 5 jours ouvrés après confirmation du choix, via le même opérateur mobile money utilisé pour le don."
+                  : "Refunds are processed within 5 business days after confirmation of the choice, via the same mobile money operator used for the donation."}
               </Rule>
             </div>
           </Section>
 
           {/* Cas 2 — Objectif non atteint */}
-          <Section icon="⏳" title={fr ? "Objectif non atteint à l'échéance" : ar ? "عدم تحقيق الهدف عند الموعد" : "Goal not reached at deadline"}>
+          <Section icon="⏳" title={fr ? "Objectif non atteint à l'échéance" : "Goal not reached at deadline"}>
             <p className="text-sm text-gray-600 leading-relaxed">
-              {fr ? "Si l'objectif de collecte n'est pas atteint à la date de clôture prévue :" : ar ? "إذا لم يتحقق هدف الجمع في تاريخ الإغلاق المحدد:" : "If the campaign goal is not reached by the scheduled closing date:"}
+              {fr
+                ? "Si l'objectif de collecte n'est pas atteint à la date de clôture prévue :"
+                : "If the campaign goal is not reached by the scheduled closing date:"}
             </p>
             <div className="space-y-3">
-              <Rule label={fr ? "1. Notification aux donateurs enregistrés" : ar ? "1. إشعار المتبرعين المسجلين" : "1. Notification to registered donors"}>
-                {fr ? "Une notification email est envoyée à tous les donateurs ayant un compte sur la plateforme, avec le montant collecté, l'écart par rapport à l'objectif, et les options disponibles." : ar ? "يُرسل إشعار بريدي لجميع المتبرعين المسجلين مع المبلغ المجموع والفرق عن الهدف والخيارات المتاحة." : "An email notification is sent to all donors with a platform account, showing the amount collected, the gap from the goal, and available options."}
+              <Rule label={fr ? "1. Notification aux donateurs enregistrés" : "1. Notification to registered donors"}>
+                {fr
+                  ? "Une notification email est envoyée à tous les donateurs ayant un compte sur la plateforme, avec le montant collecté, l'écart par rapport à l'objectif, et les options disponibles."
+                  : "An email notification is sent to all donors with a platform account, showing the amount collected, the gap from the goal, and available options."}
               </Rule>
-              <Rule label={fr ? "2. Options proposées" : ar ? "2. الخيارات المقترحة" : "2. Available options"}>
-                {fr ? "Remboursement intégral du don, ou maintien du don redistribué aux cas les plus urgents actifs sur la plateforme au moment de la clôture." : ar ? "استرداد كامل للتبرع، أو إبقاؤه ليُعاد توزيعه على الحالات الأكثر إلحاحاً عند الإغلاق." : "Full refund of the donation, or keeping the donation redistributed to the most urgent active cases on the platform at closing time."}
+              <Rule label={fr ? "2. Options proposées" : "2. Available options"}>
+                {fr
+                  ? "Remboursement intégral du don, ou maintien du don redistribué aux cas les plus urgents actifs sur la plateforme au moment de la clôture."
+                  : "Full refund of the donation, or keeping the donation redistributed to the most urgent active cases on the platform at closing time."}
               </Rule>
-              <Rule label={fr ? "3. Donateurs anonymes" : ar ? "3. المتبرعون المجهولون" : "3. Anonymous donors"}>
-                {fr ? "Les dons effectués de manière anonyme (sans compte Ayyad) ne peuvent pas être remboursés faute d'identification. Ils sont automatiquement redistribués aux cas urgents." : ar ? "التبرعات المجهولة (بدون حساب أيد) لا يمكن استردادها لعدم التعريف. تُعاد توزيعها تلقائياً على الحالات العاجلة." : "Donations made anonymously (without an Ayyad account) cannot be refunded due to lack of identification. They are automatically redistributed to urgent cases."}
+              <Rule label={fr ? "3. Donateurs anonymes" : "3. Anonymous donors"}>
+                {fr
+                  ? "Les dons effectués de manière anonyme (sans compte Ayyad) ne peuvent pas être remboursés faute d'identification. Ils sont automatiquement redistribués aux cas urgents."
+                  : "Donations made anonymously (without an Ayyad account) cannot be refunded due to lack of identification. They are automatically redistributed to urgent cases."}
               </Rule>
-              <Rule label={fr ? "4. Délai de réponse" : ar ? "4. مهلة الرد" : "4. Response deadline"}>
-                {fr ? "14 jours calendaires pour répondre. Sans réponse → redistribution automatique." : ar ? "14 يوماً للرد. بدون رد ← إعادة توزيع تلقائية." : "14 calendar days to respond. No response → automatic redistribution."}
+              <Rule label={fr ? "4. Délai de réponse" : "4. Response deadline"}>
+                {fr
+                  ? "14 jours calendaires pour répondre. Sans réponse → redistribution automatique."
+                  : "14 calendar days to respond. No response → automatic redistribution."}
               </Rule>
             </div>
           </Section>
 
           {/* Cas 3 — Surcollecte */}
-          <Section icon="🎉" title={fr ? "Objectif dépassé — Surcollecte" : ar ? "تجاوز الهدف — الفائض" : "Goal exceeded — Surplus"}>
+          <Section icon="🎉" title={fr ? "Objectif dépassé — Surcollecte" : "Goal exceeded — Surplus"}>
             <p className="text-sm text-gray-600 leading-relaxed">
-              {fr ? "Si les dons dépassent l'objectif, la collecte reste ouverte jusqu'au lendemain de l'atteinte de l'objectif. Le surplus est ensuite réparti selon la règle suivante :" : ar ? "إذا تجاوزت التبرعات الهدف، تبقى الحملة مفتوحة حتى اليوم التالي من تحقيق الهدف. يُوزَّع الفائض وفق القاعدة التالية:" : "If donations exceed the goal, the campaign stays open until the day after the goal is reached. The surplus is then distributed as follows:"}
+              {fr
+                ? "Si les dons dépassent l'objectif, la collecte reste ouverte jusqu'au lendemain de l'atteinte de l'objectif. Le surplus est ensuite réparti selon la règle suivante :"
+                : "If donations exceed the goal, the campaign stays open until the day after the goal is reached. The surplus is then distributed as follows:"}
             </p>
             <div className="bg-gray-50 rounded-xl p-4 space-y-2">
               {[
-                ["🏥", fr ? "Objectif atteint → viré intégralement à l'hôpital" : ar ? "الهدف محقق ← يُحوَّل كاملاً للمستشفى" : "Goal met → transferred in full to hospital", "100%", "text-emerald-600"],
-                ["👤", fr ? "70% du surplus → bénéficiaire (mobile money)" : ar ? "70% من الفائض ← المستفيد (موبايل موني)" : "70% of surplus → beneficiary (mobile money)", "70%", "text-blue-600"],
-                ["🚨", fr ? "25% du surplus → redistribués aux cas urgents" : ar ? "25% من الفائض ← يُعاد توزيعه على الحالات العاجلة" : "25% of surplus → redistributed to urgent cases", "25%", "text-purple-600"],
-                ["⚙️", fr ? "5% du surplus → frais opérationnels Ayyad" : ar ? "5% من الفائض ← مصاريف تشغيل أيد" : "5% of surplus → Ayyad operational fee", "5%", "text-amber-600"],
+                ["🏥", fr?"Objectif atteint → viré intégralement à l'hôpital":"Goal met → transferred in full to hospital", "100%", "text-emerald-600"],
+                ["👤", fr?"70% du surplus → bénéficiaire (mobile money)":"70% of surplus → beneficiary (mobile money)", "70%", "text-blue-600"],
+                ["🚨", fr?"25% du surplus → redistribués aux cas urgents":"25% of surplus → redistributed to urgent cases", "25%", "text-purple-600"],
+                ["⚙️", fr?"5% du surplus → frais opérationnels Ayyad":"5% of surplus → Ayyad operational fee", "5%", "text-amber-600"],
               ].map(([icon, label, pct, color]) => (
                 <div key={label} className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2"><span>{icon}</span><span className="text-gray-600">{label}</span></div>
@@ -11531,12 +11572,14 @@ const RefundPage = ({ setPage, lang }) => {
               ))}
             </div>
             <p className="text-xs text-gray-400">
-              {fr ? "⚠️ Le virement des 70% au bénéficiaire peut être différé par Ayyad si le patient est encore en convalescence, afin de garantir une utilisation appropriée des fonds." : ar ? "⚠️ تحويل 70% للمستفيد قد يُؤجَّل إذا كان المريض لا يزال في مرحلة التعافي لضمان الاستخدام الملائم." : "⚠️ The 70% transfer to the beneficiary may be deferred by Ayyad if the patient is still recovering, to ensure appropriate use of funds."}
+              {fr
+                ? "⚠️ Le virement des 70% au bénéficiaire peut être différé par Ayyad si le patient est encore en convalescence, afin de garantir une utilisation appropriée des fonds."
+                : "⚠️ The 70% transfer to the beneficiary may be deferred by Ayyad if the patient is still recovering, to ensure appropriate use of funds."}
             </p>
           </Section>
 
           {/* Non remboursables */}
-          <Section icon="⚠️" title={fr ? "Cas non remboursables" : ar ? "حالات غير قابلة للاسترداد" : "Non-refundable cases"}>
+          <Section icon="⚠️" title={fr ? "Cas non remboursables" : "Non-refundable cases"}>
             <div className="space-y-2">
               {(fr ? [
                 "Dons effectués de façon anonyme (sans compte Ayyad)",
@@ -11561,10 +11604,12 @@ const RefundPage = ({ setPage, lang }) => {
           <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 text-center">
             <div className="text-2xl mb-2">📩</div>
             <div className="font-bold text-emerald-800 text-sm mb-1">
-              {fr ? "Une question sur votre don ?" : ar ? "سؤال عن تبرعك؟" : "A question about your donation?"}
+              {fr ? "Une question sur votre don ?" : "A question about your donation?"}
             </div>
             <div className="text-xs text-emerald-600 mb-3">
-              {fr ? "Notre équipe répond sous 24h ouvrées." : ar ? "فريقنا يرد خلال 24 ساعة عمل." : "Our team responds within 24 business hours."}
+              {fr
+                ? "Notre équipe répond sous 24h ouvrées."
+                : "Our team responds within 24 business hours."}
             </div>
             <a href="mailto:support@ayyadci.com" className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl">
               support@ayyadci.com
@@ -11573,7 +11618,7 @@ const RefundPage = ({ setPage, lang }) => {
 
           <div className="text-center pt-2">
             <button onClick={() => setPage("how")} className="text-sm text-gray-400 hover:text-emerald-600">
-              {fr ? "← Retour à Comment ça marche" : ar ? "← العودة إلى كيف يعمل" : "← Back to How it works"}
+              {fr ? "← Retour à Comment ça marche" : "← Back to How it works"}
             </button>
           </div>
         </div>
@@ -11605,10 +11650,12 @@ const LegalPage = ({ setPage, lang }) => {
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-100 rounded-2xl text-3xl mb-4">⚖️</div>
           <h1 className="text-2xl font-black text-gray-900">
-            {fr ? "Mentions légales & CGU" : ar ? "الإشعارات القانونية وشروط الاستخدام" : "Legal Notice & Terms"}
+            {fr ? "Mentions légales & CGU" : "Legal Notice & Terms"}
           </h1>
           <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 mt-3 max-w-sm mx-auto">
-            {fr ? "⚠️ Document provisoire — à finaliser après enregistrement officiel d'Ayyad CI" : ar ? "⚠️ وثيقة مؤقتة — للتكميل بعد التسجيل الرسمي لأيد CI" : "⚠️ Provisional document — to be finalized after official Ayyad CI registration"}
+            {fr
+              ? "⚠️ Document provisoire — à finaliser après enregistrement officiel d'Ayyad CI"
+              : "⚠️ Provisional document — to be finalized after official Ayyad CI registration"}
           </p>
         </div>
 
@@ -11628,77 +11675,101 @@ const LegalPage = ({ setPage, lang }) => {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           {tab === "mentions" && (
             <div>
-              <div className="text-[11px] text-gray-400 mb-4">{fr ? "Dernière mise à jour : mars 2025" : ar ? "آخر تحديث: مارس 2025" : "Last updated: March 2025"}</div>
+              <div className="text-[11px] text-gray-400 mb-4">{fr ? "Dernière mise à jour : mars 2025" : "Last updated: March 2025"}</div>
 
-              <Heading>{fr ? "1. Éditeur de la plateforme" : ar ? "1. ناشر المنصة" : "1. Platform editor"}</Heading>
+              <Heading>{fr ? "1. Éditeur de la plateforme" : "1. Platform editor"}</Heading>
               <P>
-                {fr ? "La plateforme Ayyad (accessible à l'adresse " : ar ? "منصة أيد (المتاحة على العنوان " : "The Ayyad platform (accessible at "}
+                {fr ? "La plateforme Ayyad (accessible à l'adresse " : "The Ayyad platform (accessible at "}
                 <strong>www.ayyadci.com</strong>
-                {fr ? ") est éditée par :" : ar ? ") يُنشرها:" : ") is published by:"}
+                {fr ? ") est éditée par :" : ") is published by:"}
               </P>
               <div className="bg-gray-50 rounded-xl p-4 text-xs space-y-1.5 mb-3">
-                <div><span className="text-gray-400 w-32 inline-block">{fr ? "Dénomination" : ar ? "التسمية" : "Name"}</span><strong>Ayyad CI</strong> <Placeholder>{fr ? "À compléter après enregistrement" : ar ? "للإكمال بعد التسجيل" : "To complete after registration"}</Placeholder></div>
-                <div><span className="text-gray-400 w-32 inline-block">{fr ? "Forme juridique" : ar ? "الشكل القانوني" : "Legal form"}</span><Placeholder>{fr ? "SARL / SAS / ONG — À définir" : ar ? "SARL / SAS / منظمة — للتحديد" : "SARL / SAS / NGO — To define"}</Placeholder></div>
-                <div><span className="text-gray-400 w-32 inline-block">{fr ? "Capital social" : ar ? "رأس المال الاجتماعي" : "Share capital"}</span><Placeholder>{fr ? "Montant — À compléter" : ar ? "المبلغ — للإكمال" : "Amount — To complete"}</Placeholder></div>
-                <div><span className="text-gray-400 w-32 inline-block">RCCM</span><Placeholder>{fr ? "Numéro RCCM — À compléter" : ar ? "رقم RCCM — للإكمال" : "RCCM number — To complete"}</Placeholder></div>
-                <div><span className="text-gray-400 w-32 inline-block">{fr ? "Siège social" : ar ? "المقر الاجتماعي" : "Registered office"}</span>Abidjan, Côte d'Ivoire <Placeholder>{fr ? "Commune — À préciser" : ar ? "البلدية — للتحديد" : "District — To specify"}</Placeholder></div>
-                <div><span className="text-gray-400 w-32 inline-block">{fr ? "Directeur de pub." : ar ? "مدير النشر" : "Publisher"}</span><strong>Bly Kedhard Serge Ismael</strong></div>
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Dénomination":"Name"}</span><strong>Ayyad CI</strong> <Placeholder>{fr?"À compléter après enregistrement":"To complete after registration"}</Placeholder></div>
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Forme juridique":"Legal form"}</span><Placeholder>{fr?"SARL / SAS / ONG — À définir":"SARL / SAS / NGO — To define"}</Placeholder></div>
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Capital social":"Share capital"}</span><Placeholder>{fr?"Montant — À compléter":"Amount — To complete"}</Placeholder></div>
+                <div><span className="text-gray-400 w-32 inline-block">RCCM</span><Placeholder>{fr?"Numéro RCCM — À compléter":"RCCM number — To complete"}</Placeholder></div>
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Siège social":"Registered office"}</span>Abidjan, Côte d'Ivoire <Placeholder>{fr?"Commune — À préciser":"District — To specify"}</Placeholder></div>
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Directeur de pub.":"Publisher"}</span><strong>Bly Kedhard Serge Ismael</strong></div>
                 <div><span className="text-gray-400 w-32 inline-block">Email</span><a href="mailto:contact@ayyadci.com" className="text-emerald-600">contact@ayyadci.com</a></div>
               </div>
 
-              <Heading>{fr ? "2. Hébergement" : ar ? "2. الاستضافة" : "2. Hosting"}</Heading>
+              <Heading>{fr ? "2. Hébergement" : "2. Hosting"}</Heading>
               <div className="bg-gray-50 rounded-xl p-4 text-xs space-y-1.5 mb-3">
-                <div><span className="text-gray-400 w-32 inline-block">{fr ? "Hébergeur" : ar ? "المضيف" : "Host"}</span><strong>Vercel Inc.</strong></div>
-                <div><span className="text-gray-400 w-32 inline-block">{fr?"Adresse":ar?"العنوان":"Address"}</span>340 Pine Street, Suite 701, San Francisco, CA 94104, USA</div>
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Hébergeur":"Host"}</span><strong>Vercel Inc.</strong></div>
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Adresse":"Address"}</span>340 Pine Street, Suite 701, San Francisco, CA 94104, USA</div>
                 <div><span className="text-gray-400 w-32 inline-block">Site</span><a href="https://vercel.com" target="_blank" rel="noreferrer" className="text-emerald-600">vercel.com</a></div>
               </div>
               <div className="bg-gray-50 rounded-xl p-4 text-xs space-y-1.5 mb-3">
-                <div><span className="text-gray-400 w-32 inline-block">{fr ? "Base de données" : ar ? "قاعدة البيانات" : "Database"}</span><strong>Supabase Inc.</strong></div>
-                <div><span className="text-gray-400 w-32 inline-block">{fr?"Adresse":ar?"العنوان":"Address"}</span>970 Toa Payoh North, Singapore 318992</div>
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Base de données":"Database"}</span><strong>Supabase Inc.</strong></div>
+                <div><span className="text-gray-400 w-32 inline-block">{fr?"Adresse":"Address"}</span>970 Toa Payoh North, Singapore 318992</div>
                 <div><span className="text-gray-400 w-32 inline-block">Site</span><a href="https://supabase.com" target="_blank" rel="noreferrer" className="text-emerald-600">supabase.com</a></div>
               </div>
 
-              <Heading>{fr ? "3. Propriété intellectuelle" : ar ? "3. الملكية الفكرية" : "3. Intellectual property"}</Heading>
-              <P>{fr ? "L'ensemble des contenus présents sur la plateforme Ayyad (logo, textes, interface, code) sont la propriété exclusive d'Ayyad CI et sont protégés par les lois ivoiriennes et internationales sur la propriété intellectuelle. Toute reproduction sans autorisation préalable écrite est interdite." : ar ? "جميع المحتويات على منصة أيد (الشعار، النصوص، الواجهة، الكود) ملك حصري لأيد CI ومحمية بالقوانين الإيفوارية والدولية للملكية الفكرية." : "All content on the Ayyad platform (logo, texts, interface, code) is the exclusive property of Ayyad CI and is protected by Ivorian and international intellectual property laws. Any reproduction without prior written authorization is prohibited."}</P>
+              <Heading>{fr ? "3. Propriété intellectuelle" : "3. Intellectual property"}</Heading>
+              <P>{fr
+                ? "L'ensemble des contenus présents sur la plateforme Ayyad (logo, textes, interface, code) sont la propriété exclusive d'Ayyad CI et sont protégés par les lois ivoiriennes et internationales sur la propriété intellectuelle. Toute reproduction sans autorisation préalable écrite est interdite."
+                : "All content on the Ayyad platform (logo, texts, interface, code) is the exclusive property of Ayyad CI and is protected by Ivorian and international intellectual property laws. Any reproduction without prior written authorization is prohibited."}</P>
 
-              <Heading>{fr ? "4. Responsabilité" : ar ? "4. المسؤولية" : "4. Liability"}</Heading>
-              <P>{fr ? "Ayyad CI ne saurait être tenu responsable des dommages directs ou indirects résultant de l'utilisation de la plateforme. Ayyad CI vérifie les dossiers médicaux soumis mais ne peut garantir l'exactitude absolue de toutes les informations communiquées par les bénéficiaires." : ar ? "أيد CI غير مسؤولة عن الأضرار المباشرة أو غير المباشرة الناتجة عن استخدام المنصة. أيد CI تتحقق من الملفات الطبية لكن لا تضمن دقة جميع المعلومات." : "Ayyad CI cannot be held liable for direct or indirect damages resulting from the use of the platform. Ayyad CI verifies submitted medical cases but cannot guarantee the absolute accuracy of all information provided by beneficiaries."}</P>
+              <Heading>{fr ? "4. Responsabilité" : "4. Liability"}</Heading>
+              <P>{fr
+                ? "Ayyad CI ne saurait être tenu responsable des dommages directs ou indirects résultant de l'utilisation de la plateforme. Ayyad CI vérifie les dossiers médicaux soumis mais ne peut garantir l'exactitude absolue de toutes les informations communiquées par les bénéficiaires."
+                : "Ayyad CI cannot be held liable for direct or indirect damages resulting from the use of the platform. Ayyad CI verifies submitted medical cases but cannot guarantee the absolute accuracy of all information provided by beneficiaries."}</P>
 
-              <Heading>{fr ? "5. Droit applicable" : ar ? "5. القانون المطبق" : "5. Applicable law"}</Heading>
-              <P>{fr ? "Les présentes mentions légales sont soumises au droit ivoirien. En cas de litige, les tribunaux compétents de la ville d'Abidjan, Côte d'Ivoire, seront seuls compétents." : ar ? "هذه الإشعارات القانونية خاضعة للقانون الإيفواري. في حال نزاع، محاكم مدينة أبيدجان هي المختصة." : "These legal notices are governed by Ivorian law. In case of dispute, the competent courts of Abidjan, Côte d'Ivoire, shall have exclusive jurisdiction."}</P>
+              <Heading>{fr ? "5. Droit applicable" : "5. Applicable law"}</Heading>
+              <P>{fr
+                ? "Les présentes mentions légales sont soumises au droit ivoirien. En cas de litige, les tribunaux compétents de la ville d'Abidjan, Côte d'Ivoire, seront seuls compétents."
+                : "These legal notices are governed by Ivorian law. In case of dispute, the competent courts of Abidjan, Côte d'Ivoire, shall have exclusive jurisdiction."}</P>
             </div>
           )}
 
           {tab === "cgu" && (
             <div>
-              <div className="text-[11px] text-gray-400 mb-4">{fr ? "Dernière mise à jour : mars 2025" : ar ? "آخر تحديث: مارس 2025" : "Last updated: March 2025"}</div>
+              <div className="text-[11px] text-gray-400 mb-4">{fr ? "Dernière mise à jour : mars 2025" : "Last updated: March 2025"}</div>
 
-              <Heading>{fr ? "1. Objet" : ar ? "1. الموضوع" : "1. Purpose"}</Heading>
-              <P>{fr ? "Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme Ayyad par tout visiteur ou utilisateur enregistré. L'utilisation de la plateforme implique l'acceptation pleine et entière des présentes CGU." : ar ? "تنظّم شروط الاستخدام هذه الوصول إلى منصة أيد واستخدامها من قِبَل أي زائر أو مستخدم مسجل. استخدام المنصة يعني القبول الكامل بهذه الشروط." : "These Terms of Use govern access to and use of the Ayyad platform by any visitor or registered user. Use of the platform implies full acceptance of these Terms."}</P>
+              <Heading>{fr ? "1. Objet" : "1. Purpose"}</Heading>
+              <P>{fr
+                ? "Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme Ayyad par tout visiteur ou utilisateur enregistré. L'utilisation de la plateforme implique l'acceptation pleine et entière des présentes CGU."
+                : "These Terms of Use govern access to and use of the Ayyad platform by any visitor or registered user. Use of the platform implies full acceptance of these Terms."}</P>
 
-              <Heading>{fr ? "2. Description du service" : ar ? "2. وصف الخدمة" : "2. Service description"}</Heading>
-              <P>{fr ? "Ayyad est une plateforme de financement participatif médical solidaire. Elle met en relation des personnes souhaitant financer des soins médicaux (donateurs) avec des patients dans le besoin (bénéficiaires), via un système de collecte de fonds sécurisé. Ayyad n'est pas un établissement financier et n'effectue pas d'opérations bancaires au sens strict." : ar ? "أيد منصة تمويل جماعي طبي تضامني. تربط بين من يرغبون في تمويل رعاية طبية (متبرعون) ومرضى محتاجين (مستفيدون) عبر نظام جمع آمن." : "Ayyad is a solidarity medical crowdfunding platform. It connects people wishing to finance medical care (donors) with patients in need (beneficiaries) through a secure fundraising system. Ayyad is not a financial institution and does not perform banking operations in the strict sense."}</P>
+              <Heading>{fr ? "2. Description du service" : "2. Service description"}</Heading>
+              <P>{fr
+                ? "Ayyad est une plateforme de financement participatif médical solidaire. Elle met en relation des personnes souhaitant financer des soins médicaux (donateurs) avec des patients dans le besoin (bénéficiaires), via un système de collecte de fonds sécurisé. Ayyad n'est pas un établissement financier et n'effectue pas d'opérations bancaires au sens strict."
+                : "Ayyad is a solidarity medical crowdfunding platform. It connects people wishing to finance medical care (donors) with patients in need (beneficiaries) through a secure fundraising system. Ayyad is not a financial institution and does not perform banking operations in the strict sense."}</P>
 
-              <Heading>{fr ? "3. Inscription et compte utilisateur" : ar ? "3. التسجيل وحساب المستخدم" : "3. Registration and user account"}</Heading>
-              <P>{fr ? "L'inscription est gratuite et ouverte à toute personne physique majeure. L'utilisateur s'engage à fournir des informations exactes et à maintenir la confidentialité de ses identifiants. Ayyad se réserve le droit de suspendre tout compte en cas d'utilisation frauduleuse ou contraire aux présentes CGU." : ar ? "التسجيل مجاني ومفتوح لأي شخص بالغ. يلتزم المستخدم بتقديم معلومات دقيقة وبالحفاظ على سرية بياناته. أيد تحتفظ بحق تعليق أي حساب في حالة الاحتيال." : "Registration is free and open to any adult individual. The user agrees to provide accurate information and to maintain the confidentiality of their credentials. Ayyad reserves the right to suspend any account in case of fraudulent use or violation of these Terms."}</P>
+              <Heading>{fr ? "3. Inscription et compte utilisateur" : "3. Registration and user account"}</Heading>
+              <P>{fr
+                ? "L'inscription est gratuite et ouverte à toute personne physique majeure. L'utilisateur s'engage à fournir des informations exactes et à maintenir la confidentialité de ses identifiants. Ayyad se réserve le droit de suspendre tout compte en cas d'utilisation frauduleuse ou contraire aux présentes CGU."
+                : "Registration is free and open to any adult individual. The user agrees to provide accurate information and to maintain the confidentiality of their credentials. Ayyad reserves the right to suspend any account in case of fraudulent use or violation of these Terms."}</P>
 
-              <Heading>{fr ? "4. Dons et paiements" : ar ? "4. التبرعات والمدفوعات" : "4. Donations and payments"}</Heading>
-              <P>{fr ? "Les dons sont effectués via des opérateurs de paiement mobile (Wave CI, carte bancaire). Chaque don est définitif sauf dans les cas prévus par la politique de remboursement d'Ayyad. L'objectif de collecte affiché est égal au devis médical + 5% de frais opérationnels Ayyad. Ces 5% sont intégrés dans l'objectif dès le départ : le donateur paie exactement le montant qu'il a choisi, et l'hôpital reçoit exactement le montant du devis." : ar ? "التبرعات تُنفَّذ عبر مشغلي الدفع بالجوال (Wave CI، بطاقة بنكية). كل تبرع نهائي إلا في الحالات المنصوص عليها في سياسة الاسترداد." : "Donations are made via Wave CI or international card payment. Each donation is final except in cases provided for by Ayyad's refund policy. The displayed campaign goal equals the medical quote + 5% Ayyad operational fee. This 5% is built into the goal from the start: the donor pays exactly the amount they chose, and the hospital receives exactly the quoted amount."}</P>
+              <Heading>{fr ? "4. Dons et paiements" : "4. Donations and payments"}</Heading>
+              <P>{fr
+                ? "Les dons sont effectués via des opérateurs de paiement mobile (Wave CI, carte bancaire). Chaque don est définitif sauf dans les cas prévus par la politique de remboursement d'Ayyad. L'objectif de collecte affiché est égal au devis médical + 5% de frais opérationnels Ayyad. Ces 5% sont intégrés dans l'objectif dès le départ : le donateur paie exactement le montant qu'il a choisi, et l'hôpital reçoit exactement le montant du devis."
+                : "Donations are made via Wave CI or international card payment. Each donation is final except in cases provided for by Ayyad's refund policy. The displayed campaign goal equals the medical quote + 5% Ayyad operational fee. This 5% is built into the goal from the start: the donor pays exactly the amount they chose, and the hospital receives exactly the quoted amount."}</P>
 
-              <Heading>{fr ? "5. Soumission de dossiers" : ar ? "5. تقديم الملفات" : "5. Case submission"}</Heading>
-              <P>{fr ? "Tout bénéficiaire soumettant un dossier s'engage à fournir des documents médicaux authentiques et véridiques. La soumission de faux documents constitue une fraude passible de poursuites judiciaires conformément au droit ivoirien. Ayyad se réserve le droit de rejeter tout dossier sans justification." : ar ? "كل مستفيد يقدم ملفاً يلتزم بتقديم وثائق طبية أصيلة وصادقة. تقديم وثائق مزورة جريمة قابلة للملاحقة القضائية." : "Any beneficiary submitting a case agrees to provide authentic and truthful medical documents. Submission of false documents constitutes fraud subject to legal action under Ivorian law. Ayyad reserves the right to reject any case without justification."}</P>
+              <Heading>{fr ? "5. Soumission de dossiers" : "5. Case submission"}</Heading>
+              <P>{fr
+                ? "Tout bénéficiaire soumettant un dossier s'engage à fournir des documents médicaux authentiques et véridiques. La soumission de faux documents constitue une fraude passible de poursuites judiciaires conformément au droit ivoirien. Ayyad se réserve le droit de rejeter tout dossier sans justification."
+                : "Any beneficiary submitting a case agrees to provide authentic and truthful medical documents. Submission of false documents constitutes fraud subject to legal action under Ivorian law. Ayyad reserves the right to reject any case without justification."}</P>
 
-              <Heading>{fr ? "6. Protection des données personnelles" : ar ? "6. حماية البيانات الشخصية" : "6. Personal data protection"}</Heading>
-              <P>{fr ? "Les données personnelles collectées sont traitées conformément à la loi ivoirienne n°2013-450 du 19 juin 2013 relative à la protection des données à caractère personnel et aux directives de l'ARTCI. Les utilisateurs disposent d'un droit d'accès, de rectification et de suppression de leurs données en contactant contact@ayyadci.com." : ar ? "البيانات الشخصية المجمعة تُعالَج وفق القانون الإيفواري رقم 2013-450. للمستخدمين حق الوصول والتعديل والحذف عبر contact@ayyadci.com." : "Personal data collected is processed in accordance with Ivorian law n°2013-450 of June 19, 2013 on personal data protection and ARTCI guidelines. Users have the right to access, correct and delete their data by contacting contact@ayyadci.com."}</P>
+              <Heading>{fr ? "6. Protection des données personnelles" : "6. Personal data protection"}</Heading>
+              <P>{fr
+                ? "Les données personnelles collectées sont traitées conformément à la loi ivoirienne n°2013-450 du 19 juin 2013 relative à la protection des données à caractère personnel et aux directives de l'ARTCI. Les utilisateurs disposent d'un droit d'accès, de rectification et de suppression de leurs données en contactant contact@ayyadci.com."
+                : "Personal data collected is processed in accordance with Ivorian law n°2013-450 of June 19, 2013 on personal data protection and ARTCI guidelines. Users have the right to access, correct and delete their data by contacting contact@ayyadci.com."}</P>
 
-              <Heading>{fr ? "7. Responsabilité des utilisateurs" : ar ? "7. مسؤولية المستخدمين" : "7. User responsibility"}</Heading>
-              <P>{fr ? "L'utilisateur est seul responsable de l'usage qu'il fait de la plateforme. Il s'interdit notamment : (a) de publier des informations fausses ou trompeuses, (b) d'utiliser la plateforme à des fins commerciales non autorisées, (c) de tenter de contourner les systèmes de sécurité." : ar ? "المستخدم المسؤول الوحيد عن استخدامه للمنصة. يُمنع: (أ) نشر معلومات كاذبة أو مضللة، (ب) استخدام المنصة لأغراض تجارية غير مرخصة، (ج) محاولة تجاوز أنظمة الأمان." : "The user is solely responsible for their use of the platform. They agree not to: (a) publish false or misleading information, (b) use the platform for unauthorized commercial purposes, (c) attempt to bypass security systems."}</P>
+              <Heading>{fr ? "7. Responsabilité des utilisateurs" : "7. User responsibility"}</Heading>
+              <P>{fr
+                ? "L'utilisateur est seul responsable de l'usage qu'il fait de la plateforme. Il s'interdit notamment : (a) de publier des informations fausses ou trompeuses, (b) d'utiliser la plateforme à des fins commerciales non autorisées, (c) de tenter de contourner les systèmes de sécurité."
+                : "The user is solely responsible for their use of the platform. They agree not to: (a) publish false or misleading information, (b) use the platform for unauthorized commercial purposes, (c) attempt to bypass security systems."}</P>
 
-              <Heading>{fr ? "8. Modification des CGU" : ar ? "8. تعديل شروط الاستخدام" : "8. Amendment of Terms"}</Heading>
-              <P>{fr ? "Ayyad se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs seront notifiés par email de toute modification substantielle. L'utilisation continue de la plateforme après notification vaut acceptation des nouvelles CGU." : ar ? "أيد تحتفظ بحق تعديل هذه الشروط في أي وقت. سيُشعَر المستخدمون بالبريد عند أي تعديل جوهري." : "Ayyad reserves the right to modify these Terms at any time. Users will be notified by email of any substantial modification. Continued use of the platform after notification constitutes acceptance of the new Terms."}</P>
+              <Heading>{fr ? "8. Modification des CGU" : "8. Amendment of Terms"}</Heading>
+              <P>{fr
+                ? "Ayyad se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs seront notifiés par email de toute modification substantielle. L'utilisation continue de la plateforme après notification vaut acceptation des nouvelles CGU."
+                : "Ayyad reserves the right to modify these Terms at any time. Users will be notified by email of any substantial modification. Continued use of the platform after notification constitutes acceptance of the new Terms."}</P>
 
-              <Heading>{fr ? "9. Contact" : ar ? "9. التواصل" : "9. Contact"}</Heading>
-              <P>{fr ? "Pour toute question relative aux présentes CGU, contactez-nous à :" : ar ? "لأي سؤال حول هذه الشروط، تواصل معنا على:" : "For any questions regarding these Terms, contact us at:"}</P>
+              <Heading>{fr ? "9. Contact" : "9. Contact"}</Heading>
+              <P>{fr
+                ? "Pour toute question relative aux présentes CGU, contactez-nous à :"
+                : "For any questions regarding these Terms, contact us at:"}</P>
               <a href="mailto:legal@ayyadci.com" className="text-emerald-600 text-xs font-bold">legal@ayyadci.com</a>
             </div>
           )}
@@ -11706,7 +11777,7 @@ const LegalPage = ({ setPage, lang }) => {
 
         <div className="text-center mt-6 space-y-2">
           <button onClick={() => setPage("refund")} className="block mx-auto text-sm text-gray-400 hover:text-emerald-600">
-            {fr ? "→ Politique de remboursement" : ar ? "← سياسة الاسترداد" : "→ Refund policy"}
+            {fr ? "→ Politique de remboursement" : "→ Refund policy"}
           </button>
           <button onClick={() => setPage("home")} className="block mx-auto text-sm text-gray-400 hover:text-emerald-600">
             {fr ? "← Retour à l'accueil" : ar ? "رجوع إلى الرئيسية ←" : "← Back to home"}
@@ -11743,40 +11814,42 @@ const ImpactPage = ({ setPage, lang }) => {
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="text-center mb-2">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-100 rounded-2xl text-3xl mb-4">📊</div>
-          <h1 className="text-2xl font-black text-gray-900">{fr ? "Rapport d'impact Ayyad" : ar ? "تقرير أثر أيد" : "Ayyad Impact Report"}</h1>
+          <h1 className="text-2xl font-black text-gray-900">{fr ? "Rapport d'impact Ayyad" : "Ayyad Impact Report"}</h1>
           <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
-            {fr ? "Transparence totale sur l'utilisation des fonds et l'impact réel sur les patients." : ar ? "شفافية كاملة على استخدام الأموال والأثر الحقيقي على المرضى." : "Full transparency on fund usage and real patient impact."}
+            {fr ? "Transparence totale sur l'utilisation des fonds et l'impact réel sur les patients." : "Full transparency on fund usage and real patient impact."}
           </p>
-          <div className="text-[11px] text-gray-400 mt-2">{fr ? "Données mises à jour en temps réel · Lancée en 2025" : ar ? "بيانات محدَّثة في الوقت الفعلي · أُطلقت 2025" : "Real-time data · Launched in 2025"}</div>
+          <div className="text-[11px] text-gray-400 mt-2">{fr ? "Données mises à jour en temps réel · Lancée en 2025" : "Real-time data · Launched in 2025"}</div>
         </div>
 
         {/* KPIs */}
         <div className="grid grid-cols-2 gap-3">
-          <Block icon="🏥" title={fr ? "Patients aidés" : ar ? "مرضى تمت مساعدتهم" : "Patients helped"} value="En cours" sub={fr ? "Dossiers actifs" : ar ? "الملفات النشطة" : "Active cases"} />
-          <Block icon="💚" title={fr ? "Montant collecté" : ar ? "المبلغ المجموع" : "Amount raised"} value="En cours" sub={fr ? "Depuis le lancement" : ar ? "منذ الإطلاق" : "Since launch"} />
-          <Block icon="🎯" title={fr ? "Taux de succès" : ar ? "معدل النجاح" : "Success rate"} value="—" sub={fr ? "Dossiers financés / soumis" : ar ? "ملفات ممولة / مقدَّمة" : "Funded / submitted"} />
-          <Block icon="⚡" title={fr ? "Délai moyen" : ar ? "المتوسط الزمني" : "Average time"} value="72h" sub={fr ? "Validation dossier" : ar ? "تحقق الملف" : "Case validation"} />
+          <Block icon="🏥" title={fr ? "Patients aidés" : ar ? "مرضى تمت مساعدتهم" : "Patients helped"} value="En cours" sub={fr ? "Dossiers actifs" : "Active cases"} />
+          <Block icon="💚" title={fr ? "Montant collecté" : "Amount raised"} value="En cours" sub={fr ? "Depuis le lancement" : "Since launch"} />
+          <Block icon="🎯" title={fr ? "Taux de succès" : "Success rate"} value="—" sub={fr ? "Dossiers financés / soumis" : "Funded / submitted"} />
+          <Block icon="⚡" title={fr ? "Délai moyen" : "Average time"} value="72h" sub={fr ? "Validation dossier" : "Case validation"} />
         </div>
 
         {/* Utilisation des fonds */}
-        <Section icon="💰" title={fr ? "Comment sont calculés les frais Ayyad ?" : ar ? "كيف تُحسب رسوم أيد؟" : "How are Ayyad fees calculated?"}>
+        <Section icon="💰" title={fr ? "Comment sont calculés les frais Ayyad ?" : "How are Ayyad fees calculated?"}>
           {/* Principe */}
           <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4">
             <p className="text-xs font-bold text-emerald-800 mb-1">
-              {fr ? "✅ Principe : les 5% sont intégrés dans l'objectif de collecte dès le départ" : ar ? "✅ المبدأ: الـ5% مدرجة في هدف الجمع من البداية" : "✅ Principle: the 5% is built into the campaign goal from the start"}
+              {fr ? "✅ Principe : les 5% sont intégrés dans l'objectif de collecte dès le départ" : "✅ Principle: the 5% is built into the campaign goal from the start"}
             </p>
             <p className="text-xs text-emerald-700 leading-relaxed">
-              {fr ? "Ayyad n'a aucuns frais cachés. Les 5% ne sont jamais prélevés sur le montant que vous donnez. Ils sont calculés à partir du devis médical et intégrés dans l'objectif de collecte." : ar ? "أيد بدون رسوم خفية. الـ5% لا تُخصم أبداً من المبلغ الذي تتبرع به. تُحسب من الفاتورة الطبية وتُدرج في هدف الجمع." : "Ayyad has no hidden fees. The 5% is never deducted from the amount you donate. It is calculated from the medical quote and built into the campaign goal."}
+              {fr
+                ? "Ayyad n'a aucuns frais cachés. Les 5% ne sont jamais prélevés sur le montant que vous donnez. Ils sont calculés à partir du devis médical et intégrés dans l'objectif de collecte."
+                : "Ayyad has no hidden fees. The 5% is never deducted from the amount you donate. It is calculated from the medical quote and built into the campaign goal."}
             </p>
           </div>
 
           {/* Exemple concret */}
-          <div className="text-xs font-bold text-gray-700 mb-2">{fr ? "Exemple concret :" : ar ? "مثال عملي:" : "Concrete example:"}</div>
+          <div className="text-xs font-bold text-gray-700 mb-2">{fr ? "Exemple concret :" : "Concrete example:"}</div>
           <div className="space-y-2 mb-4">
             <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
               <span className="text-lg">🏥</span>
               <div className="flex-1">
-                <div className="text-xs text-gray-500">{fr ? "Devis médical de l'hôpital" : ar ? "فاتورة المستشفى الطبية" : "Hospital medical quote"}</div>
+                <div className="text-xs text-gray-500">{fr ? "Devis médical de l'hôpital" : "Hospital medical quote"}</div>
                 <div className="font-black text-gray-900">1 000 000 FCFA</div>
               </div>
             </div>
@@ -11784,43 +11857,45 @@ const ImpactPage = ({ setPage, lang }) => {
             <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl p-3">
               <span className="text-lg">🎯</span>
               <div className="flex-1">
-                <div className="text-xs text-blue-600 font-bold">{fr ? "Objectif de collecte affiché" : ar ? "هدف الجمع المعروض" : "Displayed campaign goal"}</div>
+                <div className="text-xs text-blue-600 font-bold">{fr ? "Objectif de collecte affiché" : "Displayed campaign goal"}</div>
                 <div className="font-black text-blue-800">1 050 000 FCFA</div>
               </div>
             </div>
           </div>
 
           {/* Résultat */}
-          <div className="text-xs font-bold text-gray-700 mb-2">{fr ? "Quand l'objectif est atteint :" : ar ? "عند تحقيق الهدف:" : "When the goal is reached:"}</div>
+          <div className="text-xs font-bold text-gray-700 mb-2">{fr ? "Quand l'objectif est atteint :" : "When the goal is reached:"}</div>
           <div className="space-y-2">
             <div className="flex justify-between items-center bg-emerald-50 rounded-xl px-4 py-3">
               <div className="flex items-center gap-2">
                 <span>🏥</span>
-                <span className="text-xs font-semibold text-gray-700">{fr ? "L'hôpital reçoit" : ar ? "يستلم المستشفى" : "Hospital receives"}</span>
+                <span className="text-xs font-semibold text-gray-700">{fr ? "L'hôpital reçoit" : "Hospital receives"}</span>
               </div>
               <span className="font-black text-emerald-700">1 000 000 FCFA</span>
             </div>
             <div className="flex justify-between items-center bg-gray-50 rounded-xl px-4 py-3">
               <div className="flex items-center gap-2">
                 <span>⚙️</span>
-                <span className="text-xs font-semibold text-gray-700">{fr ? "Frais Ayyad (vérification, plateforme)" : ar ? "رسوم أيد (تحقق، منصة)" : "Ayyad fees (verification, platform)"}</span>
+                <span className="text-xs font-semibold text-gray-700">{fr ? "Frais Ayyad (vérification, plateforme)" : "Ayyad fees (verification, platform)"}</span>
               </div>
               <span className="font-black text-gray-500">50 000 FCFA</span>
             </div>
           </div>
           <p className="text-[11px] text-gray-400 mt-4 leading-relaxed border-t border-gray-100 pt-3">
-            {fr ? "👤 En tant que donateur, vous payez exactement le montant que vous avez choisi. L'hôpital reçoit exactement le montant du devis. Personne ne perd rien : les frais Ayyad sont dans l'objectif, pas en plus." : ar ? "👤 بوصفك متبرعاً، تدفع بالضبط ما اخترته. المستشفى يستلم بالضبط مبلغ الفاتورة. لا أحد يخسر: رسوم أيد في الهدف وليست إضافية." : "👤 As a donor, you pay exactly the amount you chose. The hospital receives exactly the quote amount. Nobody loses anything: Ayyad fees are inside the goal, not on top of it."}
+            {fr
+              ? "👤 En tant que donateur, vous payez exactement le montant que vous avez choisi. L'hôpital reçoit exactement le montant du devis. Personne ne perd rien : les frais Ayyad sont dans l'objectif, pas en plus."
+              : "👤 As a donor, you pay exactly the amount you chose. The hospital receives exactly the quote amount. Nobody loses anything: Ayyad fees are inside the goal, not on top of it."}
           </p>
         </Section>
 
         {/* Processus de vérification */}
-        <Section icon="🔍" title={fr ? "Processus de vérification" : ar ? "عملية التحقق" : "Verification process"}>
+        <Section icon="🔍" title={fr ? "Processus de vérification" : "Verification process"}>
           <div className="space-y-3">
             {[
-              { step: "1", title: fr ? "Soumission du dossier" : ar ? "تقديم الملف" : "Case submission", desc: fr ? "Le patient soumet ses documents médicaux (rapport, devis, pièce d'identité)." : ar ? "المريض يقدم وثائقه الطبية (تقرير، فاتورة، هوية)." : "Patient submits medical documents (report, quote, ID)." },
-              { step: "2", title: fr ? "Vérification Ayyad" : ar ? "تحقق أيد" : "Ayyad verification", desc: fr ? "Notre équipe vérifie l'authenticité des documents sous 72h." : ar ? "فريقنا يتحقق من أصالة الوثائق خلال 72 ساعة." : "Our team verifies document authenticity within 72h." },
-              { step: "3", title: fr ? "Validation & publication" : ar ? "التحقق والنشر" : "Validation & publication", desc: fr ? "Le dossier validé est publié sur la plateforme et la collecte démarre." : ar ? "الملف المتحقق منه يُنشر على المنصة وتبدأ الحملة." : "Validated case is published and fundraising begins." },
-              { step: "4", title: fr ? "Virement à l'hôpital" : ar ? "التحويل للمستشفى" : "Hospital transfer", desc: fr ? "À l'atteinte de l'objectif, les fonds sont virés directement à l'hôpital." : ar ? "عند تحقيق الهدف، الأموال تُحوَّل مباشرة للمستشفى." : "Once goal is reached, funds are transferred directly to the hospital." },
+              { step: "1", title: fr ? "Soumission du dossier" : "Case submission", desc: fr ? "Le patient soumet ses documents médicaux (rapport, devis, pièce d'identité)." : "Patient submits medical documents (report, quote, ID)." },
+              { step: "2", title: fr ? "Vérification Ayyad" : "Ayyad verification", desc: fr ? "Notre équipe vérifie l'authenticité des documents sous 72h." : "Our team verifies document authenticity within 72h." },
+              { step: "3", title: fr ? "Validation & publication" : "Validation & publication", desc: fr ? "Le dossier validé est publié sur la plateforme et la collecte démarre." : "Validated case is published and fundraising begins." },
+              { step: "4", title: fr ? "Virement à l'hôpital" : "Hospital transfer", desc: fr ? "À l'atteinte de l'objectif, les fonds sont virés directement à l'hôpital." : "Once goal is reached, funds are transferred directly to the hospital." },
             ].map(({ step, title, desc }) => (
               <div key={step} className="flex gap-3">
                 <div className="w-7 h-7 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-black flex-shrink-0">{step}</div>
@@ -11834,14 +11909,14 @@ const ImpactPage = ({ setPage, lang }) => {
         </Section>
 
         {/* Engagements */}
-        <Section icon="🤝" title={fr ? "Nos engagements" : ar ? "التزاماتنا" : "Our commitments"}>
+        <Section icon="🤝" title={fr ? "Nos engagements" : "Our commitments"}>
           <div className="grid grid-cols-1 gap-2">
             {[
-              { icon: "🏦", text: fr ? "Fonds versés directement à l'hôpital — jamais en cash au patient" : ar ? "الأموال تُحوَّل مباشرة للمستشفى — أبداً نقداً للمريض" : "Funds paid directly to hospital — never cash to patient" },
-              { icon: "📋", text: fr ? "Vérification de chaque dossier par notre équipe avant publication" : ar ? "التحقق من كل ملف من قِبَل فريقنا قبل النشر" : "Every case verified by our team before publication" },
-              { icon: "🔄", text: fr ? "Remboursement intégral si dossier rejeté après collecte" : ar ? "استرداد كامل إذا رُفض الملف بعد الجمع" : "Full refund if case rejected after fundraising" },
-              { icon: "📊", text: fr ? "Rapport financier mensuel publié sur cette page" : ar ? "تقرير مالي شهري يُنشر على هذه الصفحة" : "Monthly financial report published on this page" },
-              { icon: "🛡️", text: fr ? "Données personnelles protégées — conformité ADPCI" : ar ? "بيانات شخصية محمية — امتثال ADPCI" : "Personal data protected — ADPCI compliance" },
+              { icon: "🏦", text: fr ? "Fonds versés directement à l'hôpital — jamais en cash au patient" : "Funds paid directly to hospital — never cash to patient" },
+              { icon: "📋", text: fr ? "Vérification de chaque dossier par notre équipe avant publication" : "Every case verified by our team before publication" },
+              { icon: "🔄", text: fr ? "Remboursement intégral si dossier rejeté après collecte" : "Full refund if case rejected after fundraising" },
+              { icon: "📊", text: fr ? "Rapport financier mensuel publié sur cette page" : "Monthly financial report published on this page" },
+              { icon: "🛡️", text: fr ? "Données personnelles protégées — conformité ADPCI" : "Personal data protected — ADPCI compliance" },
             ].map(({ icon, text }, i) => (
               <div key={i} className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
                 <span className="text-lg flex-shrink-0">{icon}</span>
@@ -11852,13 +11927,13 @@ const ImpactPage = ({ setPage, lang }) => {
         </Section>
 
         {/* Prochains jalons */}
-        <Section icon="🚀" title={fr ? "Prochains jalons" : ar ? "المعالم القادمة" : "Next milestones"}>
+        <Section icon="🚀" title={fr ? "Prochains jalons" : "Next milestones"}>
           <div className="space-y-2">
             {[
-              { q: "T2 2026", label: fr ? "Enregistrement officiel Ayyad CI" : ar ? "التسجيل الرسمي لأيد CI" : "Official Ayyad CI registration" },
-              { q: "T3 2026", label: fr ? "Intégration Wave CI API marchands" : ar ? "تكامل Wave CI API للتجار" : "Wave CI merchant API integration" },
-              { q: "T3 2026", label: fr ? "Partenariats avec 5 cliniques Abidjan" : ar ? "شراكات مع 5 عيادات في أبيدجان" : "Partnerships with 5 Abidjan clinics" },
-              { q: "T4 2026", label: fr ? "Publication rapport annuel 2026" : ar ? "نشر التقرير السنوي 2026" : "Publication of 2026 annual report" },
+              { q: "T2 2026", label: fr ? "Enregistrement officiel Ayyad CI" : "Official Ayyad CI registration" },
+              { q: "T3 2026", label: fr ? "Intégration Wave CI API marchands" : "Wave CI merchant API integration" },
+              { q: "T3 2026", label: fr ? "Partenariats avec 5 cliniques Abidjan" : "Partnerships with 5 Abidjan clinics" },
+              { q: "T4 2026", label: fr ? "Publication rapport annuel 2026" : "Publication of 2026 annual report" },
             ].map(({ q, label }) => (
               <div key={q} className="flex items-center gap-3 text-xs">
                 <span className="bg-emerald-100 text-emerald-700 font-bold px-2 py-1 rounded-lg w-16 text-center flex-shrink-0">{q}</span>
@@ -11869,7 +11944,7 @@ const ImpactPage = ({ setPage, lang }) => {
         </Section>
 
         <div className="text-center mt-4">
-          <p className="text-xs text-gray-400 mb-4">{fr ? "Pour toute question sur nos rapports : " : ar ? "لأي سؤال عن تقاريرنا: " : "For any questions about our reports: "}<a href="mailto:impact@ayyadci.com" className="text-emerald-600 font-bold">impact@ayyadci.com</a></p>
+          <p className="text-xs text-gray-400 mb-4">{fr ? "Pour toute question sur nos rapports : " : "For any questions about our reports: "}<a href="mailto:impact@ayyadci.com" className="text-emerald-600 font-bold">impact@ayyadci.com</a></p>
           <button onClick={() => setPage("home")} className="text-sm text-gray-400 hover:text-emerald-600">{fr ? "← Retour à l'accueil" : ar ? "رجوع إلى الرئيسية ←" : "← Back to home"}</button>
         </div>
       </div>
@@ -11901,23 +11976,25 @@ const BCEAOPage = ({ setPage, lang }) => {
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="text-center mb-2">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-100 rounded-2xl text-3xl mb-4">🏦</div>
-          <h1 className="text-2xl font-black text-gray-900">{fr ? "Conformité BCEAO / UEMOA" : ar ? "امتثال BCEAO / UEMOA" : "BCEAO / UEMOA Compliance"}</h1>
+          <h1 className="text-2xl font-black text-gray-900">{fr ? "Conformité BCEAO / UEMOA" : "BCEAO / UEMOA Compliance"}</h1>
           <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
-            {fr ? "Ayyad opère en conformité avec les réglementations financières de l'UEMOA et les directives de la BCEAO applicables aux plateformes de financement participatif en Côte d'Ivoire." : ar ? "أيد تعمل وفق اللوائح المالية لـ UEMOA وتعليمات BCEAO المطبقة على منصات التمويل الجماعي في كوت ديفوار." : "Ayyad operates in compliance with UEMOA financial regulations and BCEAO guidelines applicable to crowdfunding platforms in Côte d'Ivoire."}
+            {fr
+              ? "Ayyad opère en conformité avec les réglementations financières de l'UEMOA et les directives de la BCEAO applicables aux plateformes de financement participatif en Côte d'Ivoire."
+              : "Ayyad operates in compliance with UEMOA financial regulations and BCEAO guidelines applicable to crowdfunding platforms in Côte d'Ivoire."}
           </p>
           <div className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 mt-3 max-w-sm mx-auto">
-            {fr ? "⚠️ Document provisoire — à finaliser après enregistrement officiel d'Ayyad CI" : ar ? "⚠️ وثيقة مؤقتة — للتكميل بعد التسجيل الرسمي لأيد CI" : "⚠️ Provisional document — to be finalized after official Ayyad CI registration"}
+            {fr ? "⚠️ Document provisoire — à finaliser après enregistrement officiel d'Ayyad CI" : "⚠️ Provisional document — to be finalized after official Ayyad CI registration"}
           </div>
         </div>
 
         {/* Cadre réglementaire */}
-        <Section icon="📜" title={fr ? "Cadre réglementaire applicable" : ar ? "الإطار التنظيمي المطبق" : "Applicable regulatory framework"}>
+        <Section icon="📜" title={fr ? "Cadre réglementaire applicable" : "Applicable regulatory framework"}>
           <div className="space-y-2">
             {[
-              { label: fr ? "Règlement UEMOA n°15/2002" : ar ? "لائحة UEMOA رقم 15/2002" : "UEMOA Regulation n°15/2002", desc: fr ? "Systèmes de paiement et règlement dans l'espace UEMOA" : ar ? "أنظمة الدفع والتسوية في فضاء UEMOA" : "Payment and settlement systems in the UEMOA area" },
-              { label: fr ? "Instruction BCEAO n°008-05-2015" : ar ? "تعليمة BCEAO رقم 008-05-2015" : "BCEAO Instruction n°008-05-2015", desc: fr ? "Conditions et modalités d'exercice des activités des émetteurs de monnaie électronique" : ar ? "شروط وأساليب ممارسة أنشطة مصدري النقد الإلكتروني" : "Conditions for electronic money issuer activities" },
-              { label: fr ? "Loi ivoirienne n°2016-412" : ar ? "القانون الإيفواري رقم 2016-412" : "Ivorian Law n°2016-412", desc: fr ? "Lutte contre le blanchiment de capitaux et le financement du terrorisme (LBC/FT)" : ar ? "مكافحة غسيل الأموال وتمويل الإرهاب" : "Anti-money laundering and counter-terrorism financing (AML/CFT)" },
-              { label: fr ? "Loi n°2013-450 (ADPCI)" : ar ? "القانون رقم 2013-450 (ADPCI)" : "Law n°2013-450 (ADPCI)", desc: fr ? "Protection des données à caractère personnel en Côte d'Ivoire" : ar ? "حماية البيانات الشخصية في كوت ديفوار" : "Personal data protection in Côte d'Ivoire" },
+              { label: fr ? "Règlement UEMOA n°15/2002" : "UEMOA Regulation n°15/2002", desc: fr ? "Systèmes de paiement et règlement dans l'espace UEMOA" : "Payment and settlement systems in the UEMOA area" },
+              { label: fr ? "Instruction BCEAO n°008-05-2015" : "BCEAO Instruction n°008-05-2015", desc: fr ? "Conditions et modalités d'exercice des activités des émetteurs de monnaie électronique" : "Conditions for electronic money issuer activities" },
+              { label: fr ? "Loi ivoirienne n°2016-412" : "Ivorian Law n°2016-412", desc: fr ? "Lutte contre le blanchiment de capitaux et le financement du terrorisme (LBC/FT)" : "Anti-money laundering and counter-terrorism financing (AML/CFT)" },
+              { label: fr ? "Loi n°2013-450 (ADPCI)" : "Law n°2013-450 (ADPCI)", desc: fr ? "Protection des données à caractère personnel en Côte d'Ivoire" : "Personal data protection in Côte d'Ivoire" },
             ].map(({ label, desc }) => (
               <div key={label} className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
                 <span className="text-blue-500 font-black text-lg flex-shrink-0">§</span>
@@ -11931,11 +12008,11 @@ const BCEAOPage = ({ setPage, lang }) => {
         </Section>
 
         {/* Partenaires de paiement agréés */}
-        <Section icon="💳" title={fr ? "Partenaires de paiement agréés BCEAO" : ar ? "شركاء الدفع المعتمدون من BCEAO" : "BCEAO-licensed payment partners"}>
+        <Section icon="💳" title={fr ? "Partenaires de paiement agréés BCEAO" : "BCEAO-licensed payment partners"}>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { name: "Wave CI", status: fr ? "Agréé BCEAO" : ar ? "معتمد BCEAO" : "BCEAO licensed", icon: "🌊", detail: fr ? "Opérateur monnaie électronique agréé en Côte d'Ivoire" : ar ? "مشغّل نقد إلكتروني معتمد في كوت ديفوار" : "Licensed e-money operator in Côte d'Ivoire" },
-              { name: fr ? "Carte bancaire" : ar ? "بطاقة بنكية" : "Bank card", status: "Visa / Mastercard", icon: "💳", detail: fr ? "Via passerelle de paiement internationale conforme PCI-DSS" : ar ? "عبر بوابة دفع دولية متوافقة مع PCI-DSS" : "Via PCI-DSS compliant international payment gateway" },
+              { name: "Wave CI", status: fr ? "Agréé BCEAO" : "BCEAO licensed", icon: "🌊", detail: fr ? "Opérateur monnaie électronique agréé en Côte d'Ivoire" : "Licensed e-money operator in Côte d'Ivoire" },
+              { name: fr ? "Carte bancaire" : "Bank card", status: "Visa / Mastercard", icon: "💳", detail: fr ? "Via passerelle de paiement internationale conforme PCI-DSS" : "Via PCI-DSS compliant international payment gateway" },
             ].map(({ name, status, icon, detail }) => (
               <div key={name} className="bg-gray-50 rounded-xl p-4 text-center">
                 <div className="text-3xl mb-2">{icon}</div>
@@ -11948,34 +12025,44 @@ const BCEAOPage = ({ setPage, lang }) => {
         </Section>
 
         {/* Mesures LBC/FT */}
-        <Section icon="🛡️" title={fr ? "Mesures LBC/FT (Anti-blanchiment)" : ar ? "تدابير مكافحة غسيل الأموال" : "AML/CFT Measures"}>
-          <Item title={fr ? "Identification des utilisateurs (KYC)" : ar ? "التحقق من هوية المستخدمين (KYC)" : "User Identification (KYC)"}>
-            {fr ? "Tout utilisateur souhaitant soumettre un dossier doit fournir une pièce d'identité valide (CNI, passeport ou titre de séjour). Les informations sont vérifiées avant validation du dossier." : ar ? "كل مستخدم يرغب في تقديم ملف يجب أن يقدم هوية سارية. المعلومات تُتحقق منها قبل تحقق الملف." : "Any user wishing to submit a case must provide valid ID (national ID, passport or residence permit). Information is verified before case validation."}
+        <Section icon="🛡️" title={fr ? "Mesures LBC/FT (Anti-blanchiment)" : "AML/CFT Measures"}>
+          <Item title={fr ? "Identification des utilisateurs (KYC)" : "User Identification (KYC)"}>
+            {fr
+              ? "Tout utilisateur souhaitant soumettre un dossier doit fournir une pièce d'identité valide (CNI, passeport ou titre de séjour). Les informations sont vérifiées avant validation du dossier."
+              : "Any user wishing to submit a case must provide valid ID (national ID, passport or residence permit). Information is verified before case validation."}
           </Item>
-          <Item title={fr ? "Seuils de transaction" : ar ? "حدود المعاملات" : "Transaction thresholds"}>
-            {fr ? "Les transactions Wave CI sont soumises aux plafonds réglementaires BCEAO. Les objectifs de collecte supérieurs à 5 000 000 FCFA font l'objet d'une vérification renforcée. Les dons en espèces ne sont pas acceptés." : ar ? "معاملات Wave CI خاضعة لسقوف BCEAO التنظيمية. أهداف الجمع التي تتجاوز 5,000,000 فرنك تخضع لتحقق مشدد. التبرعات النقدية غير مقبولة." : "Wave CI transactions are subject to BCEAO regulatory limits. Campaign goals above 5,000,000 FCFA are subject to enhanced verification. Cash donations are not accepted."}
+          <Item title={fr ? "Seuils de transaction" : "Transaction thresholds"}>
+            {fr
+              ? "Les transactions Wave CI sont soumises aux plafonds réglementaires BCEAO. Les objectifs de collecte supérieurs à 5 000 000 FCFA font l'objet d'une vérification renforcée. Les dons en espèces ne sont pas acceptés."
+              : "Wave CI transactions are subject to BCEAO regulatory limits. Campaign goals above 5,000,000 FCFA are subject to enhanced verification. Cash donations are not accepted."}
           </Item>
-          <Item title={fr ? "Conservation des données de transactions" : ar ? "الاحتفاظ ببيانات المعاملات" : "Transaction data retention"}>
-            {fr ? "Toutes les transactions sont enregistrées et conservées pendant 10 ans conformément à la réglementation UEMOA. Les données incluent : montant, date, identité du donateur (si non anonyme), établissement bénéficiaire." : ar ? "جميع المعاملات مسجلة ومحفوظة لمدة 10 سنوات وفق لائحة UEMOA." : "All transactions are recorded and retained for 10 years in accordance with UEMOA regulations. Data includes: amount, date, donor identity (if non-anonymous), beneficiary institution."}
+          <Item title={fr ? "Conservation des données de transactions" : "Transaction data retention"}>
+            {fr
+              ? "Toutes les transactions sont enregistrées et conservées pendant 10 ans conformément à la réglementation UEMOA. Les données incluent : montant, date, identité du donateur (si non anonyme), établissement bénéficiaire."
+              : "All transactions are recorded and retained for 10 years in accordance with UEMOA regulations. Data includes: amount, date, donor identity (if non-anonymous), beneficiary institution."}
           </Item>
-          <Item title={fr ? "Détection des activités suspectes" : ar ? "اكتشاف الأنشطة المشبوهة" : "Suspicious activity detection"}>
-            {fr ? "Ayyad dispose d'un système de surveillance des transactions inhabituelles. Toute activité suspecte est signalée à la CENTIF-CI (Cellule Nationale de Traitement des Informations Financières)." : ar ? "أيد لديها نظام مراقبة للمعاملات غير الاعتيادية. كل نشاط مشبوه يُبلَّغ عنه لـ CENTIF-CI." : "Ayyad has a system for monitoring unusual transactions. Any suspicious activity is reported to CENTIF-CI (National Financial Intelligence Unit)."}
+          <Item title={fr ? "Détection des activités suspectes" : "Suspicious activity detection"}>
+            {fr
+              ? "Ayyad dispose d'un système de surveillance des transactions inhabituelles. Toute activité suspecte est signalée à la CENTIF-CI (Cellule Nationale de Traitement des Informations Financières)."
+              : "Ayyad has a system for monitoring unusual transactions. Any suspicious activity is reported to CENTIF-CI (National Financial Intelligence Unit)."}
           </Item>
         </Section>
 
         {/* Statut réglementaire */}
-        <Section icon="📋" title={fr ? "Statut réglementaire d'Ayyad" : ar ? "الوضع التنظيمي لأيد" : "Ayyad's regulatory status"}>
+        <Section icon="📋" title={fr ? "Statut réglementaire d'Ayyad" : "Ayyad's regulatory status"}>
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
             <p className="text-xs text-amber-700 leading-relaxed">
-              {fr ? "⚠️ Ayyad CI est actuellement en phase de démarrage. L'enregistrement officiel auprès du RCCM d'Abidjan et la déclaration à la BCEAO en tant que plateforme de financement participatif sont en cours. Pendant cette phase, les volumes de collecte restent limités conformément aux seuils réglementaires." : ar ? "⚠️ أيد CI حالياً في مرحلة الإطلاق. التسجيل الرسمي لدى RCCM أبيدجان والإفصاح لـ BCEAO قيد التنفيذ." : "⚠️ Ayyad CI is currently in its startup phase. Official registration with Abidjan's RCCM and declaration to BCEAO as a crowdfunding platform are in progress. During this phase, fundraising volumes remain limited in accordance with regulatory thresholds."}
+              {fr
+                ? "⚠️ Ayyad CI est actuellement en phase de démarrage. L'enregistrement officiel auprès du RCCM d'Abidjan et la déclaration à la BCEAO en tant que plateforme de financement participatif sont en cours. Pendant cette phase, les volumes de collecte restent limités conformément aux seuils réglementaires."
+                : "⚠️ Ayyad CI is currently in its startup phase. Official registration with Abidjan's RCCM and declaration to BCEAO as a crowdfunding platform are in progress. During this phase, fundraising volumes remain limited in accordance with regulatory thresholds."}
             </p>
           </div>
           <div className="space-y-2">
             {[
-              { label: "RCCM", value: fr ? "En cours d'enregistrement" : ar ? "قيد التسجيل" : "Registration in progress", ok: false },
-              { label: fr ? "Déclaration BCEAO" : ar ? "إفصاح BCEAO" : "BCEAO declaration", value: fr ? "À soumettre après RCCM" : ar ? "للتقديم بعد RCCM" : "To submit after RCCM", ok: false },
-              { label: "ADPCI", value: fr ? "Conformité assurée — données hébergées sur Supabase (Singapore)" : ar ? "امتثال مضمون — بيانات مستضافة على Supabase (سنغافورة)" : "Compliance ensured — data hosted on Supabase (Singapore)", ok: true },
-              { label: "SSL / TLS", value: fr ? "Certificat actif — connexions chiffrées HTTPS" : ar ? "شهادة نشطة — اتصالات مشفرة HTTPS" : "Active certificate — HTTPS encrypted connections", ok: true },
+              { label: "RCCM", value: fr ? "En cours d'enregistrement" : "Registration in progress", ok: false },
+              { label: fr ? "Déclaration BCEAO" : "BCEAO declaration", value: fr ? "À soumettre après RCCM" : "To submit after RCCM", ok: false },
+              { label: "ADPCI", value: fr ? "Conformité assurée — données hébergées sur Supabase (Singapore)" : "Compliance ensured — data hosted on Supabase (Singapore)", ok: true },
+              { label: "SSL / TLS", value: fr ? "Certificat actif — connexions chiffrées HTTPS" : "Active certificate — HTTPS encrypted connections", ok: true },
             ].map(({ label, value, ok }) => (
               <div key={label} className="flex items-start gap-3 text-xs">
                 <span className={`font-black flex-shrink-0 ${ok ? "text-emerald-600" : "text-amber-500"}`}>{ok ? "✓" : "⏳"}</span>
@@ -11991,11 +12078,13 @@ const BCEAOPage = ({ setPage, lang }) => {
         {/* Contact */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center">
           <p className="text-xs text-gray-600 mb-3">
-            {fr ? "Pour toute question relative à notre conformité réglementaire ou pour signaler une activité suspecte :" : ar ? "لأي سؤال عن امتثالنا التنظيمي أو للإبلاغ عن نشاط مشبوه:" : "For any questions about our regulatory compliance or to report suspicious activity:"}
+            {fr
+              ? "Pour toute question relative à notre conformité réglementaire ou pour signaler une activité suspecte :"
+              : "For any questions about our regulatory compliance or to report suspicious activity:"}
           </p>
           <a href="mailto:compliance@ayyadci.com" className="text-emerald-600 text-sm font-bold">compliance@ayyadci.com</a>
           <p className="text-[11px] text-gray-400 mt-3">
-            {fr ? "Autorité de supervision : BCEAO — Siège Dakar, Sénégal · bceao.int" : ar ? "جهة الإشراف: BCEAO — المقر داكار، السنغال · bceao.int" : "Supervisory authority: BCEAO — HQ Dakar, Senegal · bceao.int"}
+            {fr ? "Autorité de supervision : BCEAO — Siège Dakar, Sénégal · bceao.int" : "Supervisory authority: BCEAO — HQ Dakar, Senegal · bceao.int"}
           </p>
         </div>
 
@@ -12056,7 +12145,9 @@ const ChatWidget = ({ lang }) => {
 
   const openWhatsApp = () => {
     setOpen(false);
-    const msg = fr ? "Bonjour Ayyad, j'ai une question concernant " : ar ? "مرحباً أيد، لدي سؤال حول " : "Hello Ayyad, I have a question about ";
+    const msg = fr
+      ? "Bonjour Ayyad, j'ai une question concernant "
+      : "Hello Ayyad, I have a question about ";
     const url = `https://wa.me/${CHAT_CONFIG.whatsappNumber}?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank", "noopener,noreferrer");
   };
@@ -12067,14 +12158,14 @@ const ChatWidget = ({ lang }) => {
       {open && (
         <div
           role="dialog"
-          aria-label={fr ? "Choisir un moyen de contact" : ar ? "اختر طريقة تواصل" : "Choose how to contact us"}
+          aria-label={fr ? "Choisir un moyen de contact" : "Choose how to contact us"}
           className="fixed bottom-24 right-4 sm:right-6 z-[9999] w-[calc(100vw-2rem)] sm:w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
           style={{ animation: "fadeInUp .2s ease-out" }}
         >
           <div style={{ background: "#0d5c2e" }} className="text-white px-5 py-4">
-            <div className="font-extrabold text-base">{fr ? "💬 Parlons !" : ar ? "💬 دعنا نتحدث!" : "💬 Let's chat!"}</div>
+            <div className="font-extrabold text-base">{fr ? "💬 Parlons !" : "💬 Let's chat!"}</div>
             <div className="text-xs mt-1" style={{ color: "#a7f3d0" }}>
-              {fr ? "Comment souhaitez-vous nous contacter ?" : ar ? "كيف تريد التواصل معنا؟" : "How would you like to reach us?"}
+              {fr ? "Comment souhaitez-vous nous contacter ?" : "How would you like to reach us?"}
             </div>
           </div>
           <div className="p-3 space-y-2">
@@ -12090,10 +12181,10 @@ const ChatWidget = ({ lang }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm text-gray-900">
-                  {fr ? "Chat en direct" : ar ? "دردشة مباشرة" : "Live chat"}
+                  {fr ? "Chat en direct" : "Live chat"}
                 </div>
                 <div className="text-xs text-gray-500">
-                  {fr ? "Notre équipe répond rapidement" : ar ? "فريقنا يرد بسرعة" : "Our team replies quickly"}
+                  {fr ? "Notre équipe répond rapidement" : "Our team replies quickly"}
                 </div>
               </div>
             </button>
@@ -12110,13 +12201,13 @@ const ChatWidget = ({ lang }) => {
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm text-gray-900">WhatsApp</div>
                 <div className="text-xs text-gray-500">
-                  {fr ? "Discutez sur WhatsApp" : ar ? "تحدث على WhatsApp" : "Chat on WhatsApp"}
+                  {fr ? "Discutez sur WhatsApp" : "Chat on WhatsApp"}
                 </div>
               </div>
             </button>
           </div>
           <div className="px-4 pb-3 text-[10px] text-gray-400 text-center">
-            {fr ? "Ayyad · Financement médical solidaire" : ar ? "أيد · تمويل طبي تضامني" : "Ayyad · Solidarity medical funding"}
+            {fr ? "Ayyad · Financement médical solidaire" : "Ayyad · Solidarity medical funding"}
           </div>
         </div>
       )}
@@ -12125,7 +12216,7 @@ const ChatWidget = ({ lang }) => {
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        aria-label={fr ? "Ouvrir le chat" : ar ? "فتح الدردشة" : "Open chat"}
+        aria-label={fr ? "Ouvrir le chat" : "Open chat"}
         className="fixed bottom-5 right-4 sm:right-6 z-[9999] w-14 h-14 rounded-full text-white shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
         style={{ background: "#0d5c2e" }}
       >
@@ -12571,25 +12662,27 @@ const DunyaReturnPage = ({ setPage, lang }) => {
       {status === "loading" && (
         <div className="space-y-4">
           <div className="w-16 h-16 mx-auto rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin" />
-          <h2 className="text-xl font-black text-gray-900">{fr ? "Vérification du paiement…" : ar ? "جارٍ التحقق من الدفع…" : "Verifying payment…"}</h2>
-          <p className="text-sm text-gray-500">{fr ? "Cela peut prendre quelques secondes." : ar ? "قد يستغرق بضع ثوانٍ." : "This may take a few seconds."}</p>
-          <p className="text-xs text-gray-400">{fr ? "Tentative " : ar ? "محاولة " : "Attempt "}{pollCount}/15</p>
+          <h2 className="text-xl font-black text-gray-900">{fr ? "Vérification du paiement…" : "Verifying payment…"}</h2>
+          <p className="text-sm text-gray-500">{fr ? "Cela peut prendre quelques secondes." : "This may take a few seconds."}</p>
+          <p className="text-xs text-gray-400">{fr ? "Tentative " : "Attempt "}{pollCount}/15</p>
         </div>
       )}
 
       {status === "confirmed" && (
         <div className="space-y-4">
           <div className="w-20 h-20 mx-auto bg-emerald-100 rounded-full flex items-center justify-center text-4xl">🎉</div>
-          <h2 className="text-2xl font-black text-gray-900">{fr ? "Paiement confirmé !" : ar ? "تم تأكيد الدفع!" : "Payment confirmed!"}</h2>
-          <p className="text-base text-gray-600">{fr ? "Merci pour votre don 💚" : ar ? "شكراً على تبرعك 💚" : "Thank you for your donation 💚"}</p>
+          <h2 className="text-2xl font-black text-gray-900">{fr ? "Paiement confirmé !" : "Payment confirmed!"}</h2>
+          <p className="text-base text-gray-600">{fr ? "Merci pour votre don 💚" : "Thank you for your donation 💚"}</p>
           {amount && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-              <p className="text-xs text-emerald-700">{fr ? "Montant débité" : ar ? "المبلغ المخصوم" : "Amount charged"}</p>
+              <p className="text-xs text-emerald-700">{fr ? "Montant débité" : "Amount charged"}</p>
               <p className="text-2xl font-black text-emerald-700">{Math.round(amount).toLocaleString("fr-FR")} FCFA</p>
             </div>
           )}
           <p className="text-sm text-gray-500 leading-relaxed">
-            {fr ? "Un email de confirmation vient de vous être envoyé. Les fonds seront versés directement à l'hôpital partenaire." : ar ? "تم إرسال بريد تأكيد. ستُحوَّل الأموال مباشرة للمستشفى الشريك." : "A confirmation email has just been sent to you. The funds will be transferred directly to the partner hospital."}
+            {fr
+              ? "Un email de confirmation vient de vous être envoyé. Les fonds seront versés directement à l'hôpital partenaire."
+              : "A confirmation email has just been sent to you. The funds will be transferred directly to the partner hospital."}
           </p>
           <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
             {fr ? "← Retour à l'accueil" : ar ? "رجوع إلى الرئيسية ←" : "← Back to home"}
@@ -12600,12 +12693,14 @@ const DunyaReturnPage = ({ setPage, lang }) => {
       {status === "pending" && (
         <div className="space-y-4">
           <div className="w-20 h-20 mx-auto bg-amber-100 rounded-full flex items-center justify-center text-4xl">⏳</div>
-          <h2 className="text-xl font-black text-gray-900">{fr ? "Paiement en cours de traitement" : ar ? "الدفع قيد المعالجة" : "Payment being processed"}</h2>
+          <h2 className="text-xl font-black text-gray-900">{fr ? "Paiement en cours de traitement" : "Payment being processed"}</h2>
           <p className="text-sm text-gray-600 leading-relaxed">
-            {fr ? "Votre paiement met un peu plus de temps que prévu à se confirmer. Pas d'inquiétude : si le débit a réussi, votre don sera validé automatiquement dans quelques minutes." : ar ? "دفعتك تأخذ وقتاً أطول من المعتاد للتأكيد. لا قلق: إذا نجح الخصم، سيُؤكَّد تبرعك تلقائياً خلال دقائق." : "Your payment is taking longer than expected to confirm. Don't worry: if the debit succeeded, your donation will be validated automatically in a few minutes."}
+            {fr
+              ? "Votre paiement met un peu plus de temps que prévu à se confirmer. Pas d'inquiétude : si le débit a réussi, votre don sera validé automatiquement dans quelques minutes."
+              : "Your payment is taking longer than expected to confirm. Don't worry: if the debit succeeded, your donation will be validated automatically in a few minutes."}
           </p>
           <p className="text-xs text-gray-400">
-            {fr ? "Vous recevrez un email dès que c'est validé." : ar ? "ستتلقى بريداً فور التأكيد." : "You'll receive an email as soon as it's validated."}
+            {fr ? "Vous recevrez un email dès que c'est validé." : "You'll receive an email as soon as it's validated."}
           </p>
           <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
             {fr ? "← Retour à l'accueil" : ar ? "رجوع إلى الرئيسية ←" : "← Back to home"}
@@ -12616,9 +12711,9 @@ const DunyaReturnPage = ({ setPage, lang }) => {
       {status === "cancelled" && (
         <div className="space-y-4">
           <div className="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center text-4xl">❌</div>
-          <h2 className="text-xl font-black text-gray-900">{fr ? "Paiement annulé" : ar ? "تم إلغاء الدفع" : "Payment cancelled"}</h2>
+          <h2 className="text-xl font-black text-gray-900">{fr ? "Paiement annulé" : "Payment cancelled"}</h2>
           <p className="text-sm text-gray-600">
-            {fr ? "Le paiement n'a pas été effectué. Vous n'avez pas été débité." : ar ? "لم يُنفَّذ الدفع. لم يُخصم منك أي مبلغ." : "The payment was not completed. You have not been charged."}
+            {fr ? "Le paiement n'a pas été effectué. Vous n'avez pas été débité." : "The payment was not completed. You have not been charged."}
           </p>
           <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
             {fr ? "← Retour à l'accueil" : ar ? "رجوع إلى الرئيسية ←" : "← Back to home"}
@@ -12629,9 +12724,11 @@ const DunyaReturnPage = ({ setPage, lang }) => {
       {status === "error" && (
         <div className="space-y-4">
           <div className="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center text-4xl">⚠️</div>
-          <h2 className="text-xl font-black text-gray-900">{fr ? "Erreur" : ar ? "خطأ" : "Error"}</h2>
+          <h2 className="text-xl font-black text-gray-900">{fr ? "Erreur" : "Error"}</h2>
           <p className="text-sm text-gray-600">
-            {fr ? "Impossible de vérifier l'état du paiement. Si vous avez été débité, contactez-nous : contact@ayyadci.com" : ar ? "تعذّر التحقق من حالة الدفع. إذا تم الخصم، تواصل معنا: contact@ayyadci.com" : "Unable to verify payment status. If you were charged, contact us at contact@ayyadci.com"}
+            {fr
+              ? "Impossible de vérifier l'état du paiement. Si vous avez été débité, contactez-nous : contact@ayyadci.com"
+              : "Unable to verify payment status. If you were charged, contact us at contact@ayyadci.com"}
           </p>
           <button onClick={() => setPage("home")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm">
             {fr ? "← Retour à l'accueil" : ar ? "رجوع إلى الرئيسية ←" : "← Back to home"}
@@ -13235,7 +13332,7 @@ const DonatePage = ({ c, lang, user, setPage }) => {
   const fr = lang === "fr";
   const ar = lang === "ar";
   const WAVE_LINK = "https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/";
-  const [currency, setCurrency] = React.useState(fr ? "FCFA" : ar ? "فرنك أفريقي" : "USD");
+  const [currency, setCurrency] = React.useState(fr ? "FCFA" : "USD");
   const DONATE_RATES = { FCFA: 1, EUR: 655.957, USD: 600, GBP: 787 };
   const DONATE_PRESETS = { FCFA: [500,1000,2000,5000], EUR: [1,2,5,10], USD: [1,2,5,10], GBP: [1,2,5,10] };
   const CURRENCY_SYMBOL = { FCFA: "FCFA", EUR: "€", USD: "$", GBP: "£" };
@@ -13247,18 +13344,18 @@ const DonatePage = ({ c, lang, user, setPage }) => {
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState("");
   const [done, setDone] = React.useState(false);
-  const benefName = c?.beneficiary || c?.full_name || (fr ? "Bénéficiaire" : ar ? "المستفيد" : "Beneficiary");
+  const benefName = c?.beneficiary || c?.full_name || (fr ? "Bénéficiaire" : "Beneficiary");
   const amountNum = parseInt(amount) || 0;
   const amountInFcfa = currency === "FCFA" ? amountNum : Math.round(amountNum * DONATE_RATES[currency]);
   const amountFmt = currency === "FCFA"
     ? amountNum.toLocaleString("fr-FR") + " FCFA"
     : (currency === "EUR" ? "€" : currency === "GBP" ? "£" : "$") + amountNum.toLocaleString("fr-FR");
   const METHODS = [
-    { id:"WAVE",     label:"Wave CI",       icon:"🟦", sub: fr ? "Paiement instantané" : ar ? "دفع فوري" : "Instant payment",    color:"#1A73E8" },
-    { id:"OM",       label:"Orange Money",  icon:"🟧", sub: fr ? "Réseau Orange CI" : ar ? "شبكة Orange CI" : "Orange CI network",     color:"#FF6600" },
-    { id:"MTN",      label:"MTN MoMo",      icon:"🟨", sub: fr ? "Réseau MTN CI" : ar ? "شبكة MTN CI" : "MTN CI network",           color:"#F59E0B" },
-    { id:"SENDWAVE", label:"Sendwave",      icon:"🌍", sub: fr ? "Depuis la diaspora" : ar ? "من المهجر" : "From the diaspora",   color:"#7C3AED" },
-    { id:"CARD",     label: fr?"Carte bancaire":ar?"بطاقة بنكية":"Bank card", icon:"💳", sub: fr ? "Bientôt disponible" : ar ? "قريباً" : "Coming soon", color:"#9CA3AF", disabled:true },
+    { id:"WAVE",     label:"Wave CI",       icon:"🟦", sub: fr?"Paiement instantané":"Instant payment",    color:"#1A73E8" },
+    { id:"OM",       label:"Orange Money",  icon:"🟧", sub: fr?"Réseau Orange CI":"Orange CI network",     color:"#FF6600" },
+    { id:"MTN",      label:"MTN MoMo",      icon:"🟨", sub: fr?"Réseau MTN CI":"MTN CI network",           color:"#F59E0B" },
+    { id:"SENDWAVE", label:"Sendwave",      icon:"🌍", sub: fr?"Depuis la diaspora":"From the diaspora",   color:"#7C3AED" },
+    { id:"CARD",     label: fr?"Carte bancaire":"Bank card", icon:"💳", sub: fr?"Bientôt disponible":"Coming soon", color:"#9CA3AF", disabled:true },
   ];
   const handleConfirm = async () => {
     if (!amountNum || !method) return;
@@ -13273,23 +13370,23 @@ const DonatePage = ({ c, lang, user, setPage }) => {
       if (method === "WAVE") window.open(WAVE_LINK, "_blank");
       if (method === "SENDWAVE") window.open("https://www.sendwave.com", "_blank");
       setDone(true);
-    } catch(e) { setError(fr ? "Erreur réseau." : ar ? "خطأ في الشبكة." : "Network error."); setSubmitting(false); }
+    } catch(e) { setError(fr ? "Erreur réseau." : "Network error."); setSubmitting(false); }
   };
   if (done) return (
     <div style={{minHeight:"100vh",background:"#f8fafb",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
       <div style={{maxWidth:440,width:"100%",textAlign:"center"}}>
         <div style={{fontSize:72,marginBottom:16}}>💚</div>
-        <h2 style={{fontSize:26,fontWeight:900,color:"#059669",marginBottom:8}}>{fr ? "Merci infiniment !" : ar ? "شكراً جزيلاً!" : "Thank you so much!"}</h2>
+        <h2 style={{fontSize:26,fontWeight:900,color:"#059669",marginBottom:8}}>{fr?"Merci infiniment !":"Thank you so much!"}</h2>
         <p style={{color:"#374151",fontSize:15,lineHeight:1.6,marginBottom:8}}>
           {fr?`Votre don de ${amountFmt} pour ${benefName} a bien été enregistré.`:`Your donation of ${amountFmt} for ${benefName} has been recorded.`}
         </p>
         {(method==="WAVE"||method==="SENDWAVE") && (
           <p style={{color:"#6B7280",fontSize:13,marginBottom:20}}>
-            {fr ? "Votre paiement a été ouvert dans un nouvel onglet." : ar ? "تم فتح دفعتك في تبويب جديد." : "Your payment was opened in a new tab."}
+            {fr?"Votre paiement a été ouvert dans un nouvel onglet.":"Your payment was opened in a new tab."}
           </p>
         )}
         <button onClick={()=>setPage("case")} style={{background:"#059669",color:"#fff",border:"none",borderRadius:12,padding:"14px 28px",fontSize:15,fontWeight:700,cursor:"pointer"}}>
-          ← {fr ? "Retour au dossier" : ar ? "العودة للملف" : "Back to case"}
+          ← {fr?"Retour au dossier":"Back to case"}
         </button>
       </div>
     </div>
@@ -13299,13 +13396,13 @@ const DonatePage = ({ c, lang, user, setPage }) => {
       <div style={{background:"#fff",borderBottom:"1px solid #E5E7EB",padding:"14px 20px",display:"flex",alignItems:"center",gap:12,position:"sticky",top:0,zIndex:10}}>
         <button onClick={()=>setPage("case")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#374151",lineHeight:1,padding:"0 4px"}}>←</button>
         <div>
-          <div style={{fontWeight:800,fontSize:15,color:"#111827"}}>{fr ? "Faire un don" : ar ? "تبرع" : "Make a donation"}</div>
+          <div style={{fontWeight:800,fontSize:15,color:"#111827"}}>{fr?"Faire un don":"Make a donation"}</div>
           <div style={{fontSize:12,color:"#6B7280"}}>{benefName}</div>
         </div>
       </div>
       <div style={{maxWidth:520,margin:"0 auto",padding:"20px 16px"}}>
         <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:14,boxShadow:"0 1px 8px rgba(0,0,0,0.06)"}}>
-          <div style={{fontWeight:700,fontSize:12,color:"#6B7280",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>{fr ? "Montant du don" : ar ? "مبلغ التبرع" : "Donation amount"}</div>
+          <div style={{fontWeight:700,fontSize:12,color:"#6B7280",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>{fr?"Montant du don":"Donation amount"}</div>
           {/* Sélecteur de devise */}
           <div style={{display:"flex",gap:6,marginBottom:10}}>
             {["FCFA","EUR","USD","GBP"].map(cur=>(
@@ -13323,12 +13420,12 @@ const DonatePage = ({ c, lang, user, setPage }) => {
               </button>
             ))}
           </div>
-          <input type="number" placeholder={currency==="FCFA"?(fr?"Autre montant (FCFA)":lang==="ar" ? "مبلغ آخر" : "Custom amount (FCFA)"):`Custom amount (${currency})`} value={amount} onChange={e=>setAmount(e.target.value)}
+          <input type="number" placeholder={currency==="FCFA"?(fr?"Autre montant (FCFA)":"Custom amount (FCFA)"):`Custom amount (${currency})`} value={amount} onChange={e=>setAmount(e.target.value)}
             style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:10,border:"1.5px solid #E5E7EB",fontSize:14,fontWeight:600,outline:"none"}} />
           {currency!=="FCFA"&&amountNum>0&&<div style={{fontSize:11,color:"#6B7280",marginTop:4,textAlign:"center"}}>≈ {amountInFcfa.toLocaleString("fr-FR")} FCFA envoyés à l'hôpital</div>}
         </div>
         <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:14,boxShadow:"0 1px 8px rgba(0,0,0,0.06)"}}>
-          <div style={{fontWeight:700,fontSize:12,color:"#6B7280",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>{fr ? "Moyen de paiement" : ar ? "طريقة الدفع" : "Payment method"}</div>
+          <div style={{fontWeight:700,fontSize:12,color:"#6B7280",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>{fr?"Moyen de paiement":"Payment method"}</div>
           {METHODS.map(m=>(
             <div key={m.id}>
               <button onClick={()=>!m.disabled&&setMethod(method===m.id?null:m.id)} disabled={!!m.disabled}
@@ -13345,38 +13442,38 @@ const DonatePage = ({ c, lang, user, setPage }) => {
                   {m.id==="WAVE"&&(
                     <div>
                       <p style={{margin:"0 0 10px",fontSize:13,color:"#374151",lineHeight:1.6}}>
-                        {fr ? "Après avoir cliqué sur Confirmer, vous serez redirigé vers Wave pour payer " : ar ? "بعد النقر على تأكيد، ستُوجَّه إلى Wave للدفع " : "After clicking Confirm, you'll be redirected to Wave to pay "}<strong>{amountFmt}</strong>.
+                        {fr?"Après avoir cliqué sur Confirmer, vous serez redirigé vers Wave pour payer ":"After clicking Confirm, you'll be redirected to Wave to pay "}<strong>{amountFmt}</strong>.
                       </p>
-                      <div style={{fontSize:12,color:"#6B7280"}}>📱 {fr ? "L'app Wave s'ouvrira automatiquement." : ar ? "سيفتح تطبيق Wave تلقائياً." : "Wave app will open automatically."}</div>
+                      <div style={{fontSize:12,color:"#6B7280"}}>📱 {fr?"L'app Wave s'ouvrira automatiquement.":"Wave app will open automatically."}</div>
                     </div>
                   )}
                   {m.id==="OM"&&(
                     <div>
-                      <p style={{margin:"0 0 8px",fontSize:13,color:"#374151"}}>{fr ? "Envoyez " : ar ? "أرسل " : "Send "}<strong>{amountFmt}</strong>{fr ? " au numéro Orange Money :" : ar ? " إلى رقم Orange Money:" : " to this Orange Money number:"}</p>
+                      <p style={{margin:"0 0 8px",fontSize:13,color:"#374151"}}>{fr?"Envoyez ":"Send "}<strong>{amountFmt}</strong>{fr?" au numéro Orange Money :":" to this Orange Money number:"}</p>
                       <div style={{background:"#FF660018",borderRadius:8,padding:"10px 14px",fontWeight:800,fontSize:18,color:"#FF6600",letterSpacing:2,textAlign:"center",marginBottom:8}}>+225 07 48 05 61 28</div>
                       <p style={{margin:"0 0 10px",fontSize:11,color:"#6B7280"}}>{fr?"Réf. : AYYAD-"+(c?.id||"").slice(0,6).toUpperCase():"Ref.: AYYAD-"+(c?.id||"").slice(0,6).toUpperCase()}</p>
-                      <input type="text" placeholder={fr ? "Référence de transaction" : ar ? "مرجع المعاملة" : "Transaction reference"} value={payRef} onChange={e=>setPayRef(e.target.value)}
+                      <input type="text" placeholder={fr?"Référence de transaction":"Transaction reference"} value={payRef} onChange={e=>setPayRef(e.target.value)}
                         style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:8,border:"1.5px solid #E5E7EB",fontSize:13,outline:"none"}} />
                     </div>
                   )}
                   {m.id==="MTN"&&(
                     <div>
-                      <p style={{margin:"0 0 8px",fontSize:13,color:"#374151"}}>{fr ? "Envoyez " : ar ? "أرسل " : "Send "}<strong>{amountFmt}</strong>{fr ? " au numéro MTN MoMo :" : ar ? " إلى رقم MTN MoMo:" : " to this MTN MoMo number:"}</p>
+                      <p style={{margin:"0 0 8px",fontSize:13,color:"#374151"}}>{fr?"Envoyez ":"Send "}<strong>{amountFmt}</strong>{fr?" au numéro MTN MoMo :":" to this MTN MoMo number:"}</p>
                       <div style={{background:"#F59E0B18",borderRadius:8,padding:"10px 14px",fontWeight:800,fontSize:18,color:"#B45309",letterSpacing:2,textAlign:"center",marginBottom:8}}>+225 05 01 85 59 91</div>
                       <p style={{margin:"0 0 10px",fontSize:11,color:"#6B7280"}}>{fr?"Réf. : AYYAD-"+(c?.id||"").slice(0,6).toUpperCase():"Ref.: AYYAD-"+(c?.id||"").slice(0,6).toUpperCase()}</p>
-                      <input type="text" placeholder={fr ? "Référence de transaction" : ar ? "مرجع المعاملة" : "Transaction reference"} value={payRef} onChange={e=>setPayRef(e.target.value)}
+                      <input type="text" placeholder={fr?"Référence de transaction":"Transaction reference"} value={payRef} onChange={e=>setPayRef(e.target.value)}
                         style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:8,border:"1.5px solid #E5E7EB",fontSize:13,outline:"none"}} />
                     </div>
                   )}
                   {m.id==="SENDWAVE"&&(
                     <div> {/* PATCH Q */}
                       <p style={{margin:"0 0 8px",fontSize:13,color:"#374151",lineHeight:1.6}}>
-                        {fr ? "Envoyez " : ar ? "أرسل " : "Send "}<strong>{amountFmt}</strong>{fr ? " sur Sendwave au numéro Wave CI AYYAD :" : ar ? " على Sendwave إلى رقم Wave CI لأيد:" : " on Sendwave to AYYAD's Wave CI number:"}
+                        {fr?"Envoyez ":"Send "}<strong>{amountFmt}</strong>{fr?" sur Sendwave au numéro Wave CI AYYAD :":" on Sendwave to AYYAD's Wave CI number:"}
                       </p>
                       <div style={{background:"#7C3AED18",borderRadius:8,padding:"10px 14px",fontWeight:800,fontSize:18,color:"#7C3AED",letterSpacing:2,textAlign:"center",marginBottom:8}}>+225 07 48 05 61 28</div>
                       <p style={{margin:"0 0 10px",fontSize:11,color:"#6B7280"}}>{fr?"Réf. : AYYAD-"+(c?.id||"").slice(0,6).toUpperCase():"Ref.: AYYAD-"+(c?.id||"").slice(0,6).toUpperCase()}</p>
                       <a href="https://www.sendwave.com" target="_blank" rel="noopener noreferrer" style={{display:"block",textAlign:"center",background:"#7C3AED",color:"#fff",borderRadius:8,padding:"10px",fontWeight:700,fontSize:13,textDecoration:"none"}}>
-                        🌐 {fr ? "Ouvrir Sendwave" : ar ? "فتح Sendwave" : "Open Sendwave"}
+                        🌐 {fr?"Ouvrir Sendwave":"Open Sendwave"}
                       </a>
                     </div>
                   )}
@@ -13387,20 +13484,20 @@ const DonatePage = ({ c, lang, user, setPage }) => {
         </div>
         {method && method !== "CARD" && (
           <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:14,boxShadow:"0 1px 8px rgba(0,0,0,0.06)"}}>
-            <div style={{fontWeight:700,fontSize:12,color:"#6B7280",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>{fr ? "Vos informations (optionnel)" : ar ? "معلوماتك (اختياري)" : "Your information (optional)"}</div>
-            <input type="text" placeholder={fr ? "Votre prénom" : ar ? "اسمك" : "Your first name"} value={donorName} onChange={e=>setDonorName(e.target.value)}
+            <div style={{fontWeight:700,fontSize:12,color:"#6B7280",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>{fr?"Vos informations (optionnel)":"Your information (optional)"}</div>
+            <input type="text" placeholder={fr?"Votre prénom":"Your first name"} value={donorName} onChange={e=>setDonorName(e.target.value)}
               style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:9,border:"1.5px solid #E5E7EB",fontSize:13,marginBottom:8,outline:"none"}} />
-            <input type="email" placeholder={fr ? "Email (pour votre reçu)" : ar ? "البريد الإلكتروني (للإيصال)" : "Email (for your receipt)"} value={donorEmail} onChange={e=>setDonorEmail(e.target.value)}
+            <input type="email" placeholder={fr?"Email (pour votre reçu)":"Email (for your receipt)"} value={donorEmail} onChange={e=>setDonorEmail(e.target.value)}
               style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:9,border:"1.5px solid #E5E7EB",fontSize:13,outline:"none"}} />
           </div>
         )}
         {error && <div style={{color:"#DC2626",fontSize:13,marginBottom:12,padding:"10px 14px",background:"#FEF2F2",borderRadius:8}}>{error}</div>}
         <button onClick={handleConfirm} disabled={!amountNum||!method||submitting}
           style={{width:"100%",padding:"15px",borderRadius:14,border:"none",background:(!amountNum||!method||submitting)?"#9CA3AF":"#059669",color:"#fff",fontWeight:800,fontSize:16,cursor:(!amountNum||!method||submitting)?"not-allowed":"pointer",boxShadow:(!amountNum||!method||submitting)?"none":"0 4px 16px rgba(5,150,105,0.35)",transition:"all 0.2s",marginBottom:12}}>
-          {submitting?(fr ? "Enregistrement..." : ar ? "جارٍ الحفظ..." : "Saving..."):(fr?`Confirmer — ${amountFmt}`:`Confirm — ${amountFmt}`)}
+          {submitting?(fr?"Enregistrement...":"Saving..."):(fr?`Confirmer — ${amountFmt}`:`Confirm — ${amountFmt}`)}
         </button>
         <div style={{textAlign:"center",fontSize:11,color:"#9CA3AF",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-          🔒 {fr ? "Paiement sécurisé · Aucuns frais cachés" : ar ? "دفع آمن · بدون رسوم خفية" : "Secure payment · No hidden fees"}
+          🔒 {fr?"Paiement sécurisé · Aucuns frais cachés":"Secure payment · No hidden fees"}
         </div>
       </div>
     </div>
@@ -13655,7 +13752,7 @@ export default function AyyadApp() {
           <div>
             <div className="bg-gradient-to-br from-emerald-700 to-teal-700 text-white">
               <div className="max-w-7xl mx-auto px-4 py-12 text-center">
-                <button onClick={() => setPage("home")} className="text-emerald-100 hover:text-white text-sm mb-4 inline-flex items-center gap-1">← {lang==="fr"?"Retour à l'accueil":lang==="ar"?"العودة للرئيسية":"Back to home"}</button>
+                <button onClick={() => setPage("home")} className="text-emerald-100 hover:text-white text-sm mb-4 inline-flex items-center gap-1">← {lang==="fr"?"Retour à l'accueil":"Back to home"}</button>
                 <h1 className="text-3xl sm:text-5xl font-black mb-3">{lang==="fr" ? "Soutenir Ayyad directement" : "Support Ayyad directly"}</h1>
                 <p className="text-emerald-100 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
                   {lang==="fr"
