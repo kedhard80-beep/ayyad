@@ -4325,6 +4325,7 @@ const QR_OM   = "iVBORw0KGgoAAAANSUhEUgAAAJEAAACRAQAAAADro2eOAAABYUlEQVR4nN1WMW7
 // ─── DonateModal — bottom sheet GoFundMe style ───────────────────────────────
 const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   const WAVE_LINK  = "https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/";
+  const MTN_LINK   = "https://appbiz.momo.africa/momo/request-momo/2250501855991";
   const SW_TEL = "+2250748056128";   // Sendwave + TapTap
   const SW_NUM = "+225 07 48 05 61 28";
   const OM_TEL = "+2250748056128";   // Orange Money
@@ -4341,21 +4342,70 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
   const [submitting, setSubmitting] = useState(false);
   const [intlOpen, setIntlOpen] = useState(false);
   const [intlSel, setIntlSel] = useState(null);
-  const [payRef] = useState(() => "AYD-" + Date.now().toString(36).toUpperCase().slice(-5) + "-" + Math.random().toString(36).substr(2,4).toUpperCase());
+  const [payRef,  setPayRef]  = useState("");
+  const [donationId, setDonationId] = useState(null);
+  const [payUrls,    setPayUrls]    = useState({ wave_url: null, mtn_url: null });
+  const [initiating, setInitiating] = useState(false);
 
   const finalAmt = custom ? (parseInt(custom)||0) : preset;
   const caseTitle = c.title?.[lang] || c.title?.fr || c.title || "";
 
+  // ── Appelle /api/initiate — crée le don en base et obtient les URLs de paiement
+  const initiatePayment = async () => {
+    if (initiating || finalAmt < 500) return;
+    setInitiating(true);
+    try {
+      const r = await fetch("/api/initiate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          case_id:     c._isDemo ? null : (c.id || null),
+          tracking_id: c.trackingId || c.tracking_id || null,
+          amount:      finalAmt,
+          provider,
+          donor_name:  anon ? null : donorName.trim() || null,
+          anonymous:   anon,
+        }),
+      });
+      const data = await r.json();
+      if (data.donation_id) {
+        setDonationId(data.donation_id);
+        setPayRef(data.payRef);
+        setPayUrls({ wave_url: data.wave_url, mtn_url: data.mtn_url });
+      }
+    } catch(e) {
+      // Fallback si le réseau échoue — on génère une ref locale
+      const ref = "AYD-" + Date.now().toString(36).toUpperCase().slice(-5) + "-" + Math.random().toString(36).substr(2,4).toUpperCase();
+      setPayRef(ref);
+      setPayUrls({
+        wave_url: `${WAVE_LINK}?amount=${finalAmt}&note=${encodeURIComponent("AYYAD " + (c.trackingId||"DON") + " " + ref)}`,
+        mtn_url:  `${MTN_LINK}?amount=${finalAmt}`,
+      });
+    }
+    setInitiating(false);
+    setStep("pay");
+  };
+
+  // ── Confirme le paiement après retour du donateur ─────────────────────────
   const confirmPayment = async () => {
     if (submitting) return;
     setSubmitting(true);
     try {
-      if (c.id && !c._isDemo) {
+      if (donationId) {
+        // Confirmation via API
+        await fetch("/api/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ donation_id: donationId, tx_reference: payRef }),
+        });
+      } else if (c.id && !c._isDemo) {
+        // Fallback direct Supabase si initiate n'a pas fonctionné
         await supabaseAdmin.from("donations").insert({
           case_id: c.id,
           donor_name: anon ? null : (donorName.trim()||null),
           amount_fcfa: finalAmt, amount: finalAmt,
-          provider, status: "pending", reference: payRef,
+          payment_method: provider, status: "pending",
+          reference: payRef || ("AYD-" + Date.now().toString(36).toUpperCase().slice(-5)),
           created_at: new Date().toISOString(),
         });
       }
@@ -4391,21 +4441,33 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
         {/* ── ÉTAPE 1 : Choisir ── */}
         {step==="choose"&&(
           <div style={{padding:"20px",boxSizing:"border-box",width:"100%"}}>
-            <p style={{fontSize:12,fontWeight:700,color:"#374151",margin:"0 0 10px"}}>{fr?"Montant (FCFA)":"Amount (FCFA)"}</p>
+            {/* Bandeau urgence */}
+            {c.urgent&&<div style={{background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"#fff",borderRadius:12,padding:"10px 14px",marginBottom:14,fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:8}}>
+              🚨 {fr?"Cas urgent — chaque heure compte":"Urgent case — every hour matters"}
+            </div>}
+            {/* Impact par montant */}
+            <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:12,padding:"10px 14px",marginBottom:14,fontSize:11,color:"#065f46",lineHeight:1.8}}>
+              💚 {fr?"Votre impact :":"Your impact:"}
+              {fr
+                ? <> <strong>500 F</strong> = 1 jour de médicaments · <strong>1 000 F</strong> = analyses · <strong>2 000 F</strong> = consultation · <strong>5 000 F</strong> = soins d'une semaine</>
+                : <> <strong>500 F</strong> = 1 day of medication · <strong>1,000 F</strong> = lab tests · <strong>2,000 F</strong> = consultation · <strong>5,000 F</strong> = a week of care</>}
+            </div>
+            <p style={{fontSize:12,fontWeight:700,color:"#374151",margin:"0 0 10px"}}>{fr?"Choisissez votre montant (FCFA)":"Choose your amount (FCFA)"}</p>
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:10}}>
               {[500,1000,2000,5000].map(p=>(
                 <button key={p} onClick={()=>{setPreset(p);setCustom("");}}
-                  style={{padding:"12px 4px",borderRadius:12,fontWeight:800,fontSize:13,cursor:"pointer",transition:"all .15s",
+                  style={{padding:"14px 4px",borderRadius:12,fontWeight:800,fontSize:13,cursor:"pointer",transition:"all .15s",
                     background:preset===p&&!custom?"linear-gradient(135deg,#047857,#059669)":"#f9fafb",
                     color:preset===p&&!custom?"#fff":"#374151",
-                    border:preset===p&&!custom?"2px solid #047857":"2px solid #e5e7eb"}}>
+                    border:preset===p&&!custom?"2px solid #047857":"2px solid #e5e7eb",
+                    boxShadow:preset===p&&!custom?"0 2px 8px rgba(4,120,87,0.3)":"none"}}>
                   {p>=1000?(p/1000)+"k":p}
                 </button>
               ))}
             </div>
             <input type="number" min="500" placeholder={fr?"Autre montant (min. 500 FCFA)":"Other amount (min. 500 FCFA)"}
               value={custom} onChange={e=>{setCustom(e.target.value);setPreset(0);}}
-              style={{width:"100%",border:"2px solid",borderColor:custom?"#047857":"#e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,fontWeight:600,outline:"none",boxSizing:"border-box",marginBottom:18}} />
+              style={{width:"100%",border:"2px solid",borderColor:custom?"#047857":"#e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,fontWeight:600,outline:"none",boxSizing:"border-box",marginBottom:14}} />
 
             <p style={{fontSize:12,fontWeight:700,color:"#374151",margin:"0 0 8px"}}>{fr?"Payer via":"Pay via"}</p>
 
@@ -4634,12 +4696,17 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                 {submitting?"⏳ ...":(finalAmt>=500?(fr?`✅ J'ai effectué le virement — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`✅ I've completed the transfer — ${finalAmt.toLocaleString("fr-CI")} FCFA`):(fr?"Min. 500 FCFA":"Min. 500 FCFA"))}
               </button>
             ):(
-              <button disabled={finalAmt<500} onClick={()=>{if(finalAmt>=500)setStep("pay");}}
-                style={{width:"100%",padding:"16px",borderRadius:16,border:"none",fontWeight:900,fontSize:17,cursor:finalAmt>=500?"pointer":"not-allowed",marginBottom:10,
+              <button disabled={finalAmt<500||initiating} onClick={initiatePayment}
+                style={{width:"100%",padding:"18px",borderRadius:16,border:"none",fontWeight:900,fontSize:18,cursor:finalAmt>=500&&!initiating?"pointer":"not-allowed",marginBottom:10,
                   background:finalAmt>=500?"linear-gradient(135deg,#047857,#059669)":"#e5e7eb",
                   color:finalAmt>=500?"#fff":"#9ca3af",
-                  boxShadow:finalAmt>=500?"0 6px 24px rgba(4,120,87,0.35)":"none"}}>
-                💚 {finalAmt>=500?(fr?`Continuer — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`Continue — ${finalAmt.toLocaleString("fr-CI")} FCFA`):(fr?"Entrez un montant":"Enter an amount")}
+                  boxShadow:finalAmt>=500?"0 8px 28px rgba(4,120,87,0.4)":"none",
+                  transform:finalAmt>=500&&!initiating?"scale(1.01)":"none",transition:"all .2s"}}>
+                {initiating
+                  ? (fr?"⏳ Préparation...":"⏳ Preparing...")
+                  : finalAmt>=500
+                    ? (fr ? `💚 Donner ${finalAmt.toLocaleString("fr-CI")} FCFA maintenant →` : `💚 Donate ${finalAmt.toLocaleString("fr-CI")} FCFA now →`)
+                    : (fr ? "Entrez un montant" : "Enter an amount")}
               </button>
             )}
             <p style={{textAlign:"center",fontSize:11,color:"#9ca3af",margin:0}}>🔒 {fr?"Fonds versés directement à l'hôpital · 0% frais":"Funds sent directly to hospital · 0% fees"}</p>
@@ -4658,13 +4725,32 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
             </div>
 
             {provider==="WAVE"&&(<>
-              <a href={WAVE_LINK} target="_blank" rel="noreferrer"
-                style={{display:"block",textAlign:"center",background:"#0055ff",color:"#fff",fontWeight:900,fontSize:15,padding:"15px",borderRadius:14,textDecoration:"none",marginBottom:14}}>
-                📱 {fr?"Ouvrir Wave CI":"Open Wave CI"}
-              </a>
-              <div style={{background:"#eff6ff",borderRadius:12,padding:"12px 14px",marginBottom:14,fontSize:12,color:"#1d4ed8",lineHeight:1.7}}>
-                {fr?<>1. Ouvrez Wave CI &nbsp;→&nbsp; <strong>"Payer"</strong><br/>2. Entrez exactement <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Validez et revenez ici</>
-                  :<>1. Open Wave CI &nbsp;→&nbsp; <strong>"Pay"</strong><br/>2. Enter exactly <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Confirm and come back here</>}
+              {/* QR code dynamique pour desktop (scannable avec téléphone) */}
+              {payUrls.wave_url&&(
+                <div style={{background:"#eff6ff",border:"2px solid #93c5fd",borderRadius:16,padding:"16px",marginBottom:12,textAlign:"center"}}>
+                  <div style={{fontSize:11,fontWeight:800,color:"#1d4ed8",marginBottom:10}}>
+                    📱 {fr?"Sur mobile → s'ouvre automatiquement dans Wave":"On mobile → opens directly in Wave"}
+                    <br/><span style={{fontWeight:400,color:"#3b82f6"}}>{fr?"Sur ordinateur → scannez ce QR avec votre téléphone":"On desktop → scan this QR with your phone"}</span>
+                  </div>
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(payUrls.wave_url)}`}
+                    alt="QR Wave"
+                    style={{width:150,height:150,borderRadius:12,border:"3px solid #dbeafe",marginBottom:10}}
+                  />
+                  <a href={payUrls.wave_url} target="_blank" rel="noreferrer"
+                    style={{display:"block",background:"#0055ff",color:"#fff",fontWeight:900,fontSize:15,padding:"14px",borderRadius:12,textDecoration:"none",marginBottom:6}}>
+                    📲 {fr?`Ouvrir Wave — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`Open Wave — ${finalAmt.toLocaleString("fr-CI")} FCFA`}
+                  </a>
+                  <div style={{fontSize:10,color:"#6b7280"}}>
+                    {fr?"Référence":"Ref"} : <strong style={{fontFamily:"monospace"}}>{payRef}</strong>
+                  </div>
+                </div>
+              )}
+              <div style={{background:"#dbeafe",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:11,color:"#1e40af",lineHeight:1.8}}>
+                {fr?<>✅ Le montant <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> et la référence sont <strong>pré-remplis</strong>.<br/>
+                  Ouvrez Wave → confirmez → revenez ici.</>
+                  :<>✅ Amount <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> and reference are <strong>pre-filled</strong>.<br/>
+                  Open Wave → confirm → come back here.</>}
               </div>
             </>)}
             {provider==="OM"&&(
@@ -4681,21 +4767,37 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
                 </div>
               </div>
             )}
-            {provider==="MTN"&&(
-              <div style={{background:"#fefce8",borderRadius:14,padding:"16px",marginBottom:14,lineHeight:1.7}}>
-                <div style={{fontSize:12,color:"#854d0e",marginBottom:10}}>
-                  {fr?<>Envoyez <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> par MTN MoMo au :</>:<>Send <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> via MTN MoMo to:</>}
+            {provider==="MTN"&&(<>
+              {/* QR code dynamique MTN pour desktop */}
+              {payUrls.mtn_url&&(
+                <div style={{background:"#fefce8",border:"2px solid #fde047",borderRadius:16,padding:"16px",marginBottom:12,textAlign:"center"}}>
+                  <div style={{fontSize:11,fontWeight:800,color:"#854d0e",marginBottom:10}}>
+                    📱 {fr?"Sur mobile → s'ouvre dans MTN MoMo":"On mobile → opens in MTN MoMo"}
+                    <br/><span style={{fontWeight:400,color:"#a16207"}}>{fr?"Sur ordinateur → scannez ce QR avec votre téléphone":"On desktop → scan this QR with your phone"}</span>
+                  </div>
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(payUrls.mtn_url)}`}
+                    alt="QR MTN MoMo"
+                    style={{width:150,height:150,borderRadius:12,border:"3px solid #fde047",marginBottom:10}}
+                  />
+                  <a href={payUrls.mtn_url} target="_blank" rel="noreferrer"
+                    style={{display:"block",background:"#fbbf24",color:"#78350f",fontWeight:900,fontSize:15,padding:"14px",borderRadius:12,textDecoration:"none",marginBottom:6}}>
+                    📲 {fr?`Ouvrir MTN MoMo — ${finalAmt.toLocaleString("fr-CI")} FCFA`:`Open MTN MoMo — ${finalAmt.toLocaleString("fr-CI")} FCFA`}
+                  </a>
+                  <div style={{fontSize:10,color:"#6b7280"}}>
+                    {fr?"Référence":"Ref"} : <strong style={{fontFamily:"monospace"}}>{payRef}</strong>
+                  </div>
                 </div>
-                <a href={"tel:"+MTN_TEL} style={{display:"block",textAlign:"center",background:"#ca8a04",color:"#fff",fontWeight:900,fontSize:18,padding:"13px",borderRadius:12,textDecoration:"none",marginBottom:10,letterSpacing:"0.5px"}}>
-                  📞 {MTN_NUM}
-                </a>
-                <div style={{fontSize:11,color:"#713f12",textAlign:"center"}}>
-                  {fr?"Ouvrez l'app MTN MoMo → Envoyer de l'argent → entrez ce numéro":"Open MTN MoMo app → Send money → enter this number"}
-                  <br/>{fr?"Ou composez ":"Or dial "}<strong>*133#</strong>
-                  <br/>{fr?"Ou Paiement marchand → choisir AYYAD":"Or Merchant payment → select AYYAD"}
-                </div>
+              )}
+              <div style={{background:"#fef9c3",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:11,color:"#713f12",lineHeight:1.8}}>
+                {fr?<>✅ Le montant <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> est <strong>pré-rempli</strong>.<br/>
+                  Ouvrez MTN MoMo → confirmez → revenez ici.<br/>
+                  {!payUrls.mtn_url&&<>Ou composez <strong>*133#</strong> → Paiement marchand</>}</>
+                  :<>✅ Amount <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong> is <strong>pre-filled</strong>.<br/>
+                  Open MTN MoMo → confirm → come back here.<br/>
+                  {!payUrls.mtn_url&&<>Or dial <strong>*133#</strong> → Merchant payment</>}</>}
               </div>
-            )}
+            </>)}
             {(provider==="SENDWAVE"||provider==="TAPTAP")&&(
               <div style={{background:"#f0f4ff",borderRadius:14,padding:"16px",marginBottom:14,fontSize:12,color:"#4338ca",lineHeight:1.8}}>
                 <div style={{fontWeight:800,fontSize:13,marginBottom:10,color:"#312e81"}}>
@@ -5380,6 +5482,16 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 {percent>=100&&(
                   <div className="mt-3 text-center text-sm text-emerald-700 font-black bg-emerald-50 rounded-xl px-4 py-2 border border-emerald-200">
                     🎉 {lang==="fr"?"Objectif atteint ! Merci infiniment.":"Goal reached! Thank you so much."}
+                  </div>
+                )}
+                {/* Banner "premier don" quand 0 donateurs */}
+                {(liveDonors===0||liveDonors==="0")&&percent<100&&(
+                  <div className="mt-3 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                    <span className="text-2xl">🌟</span>
+                    <div>
+                      <div className="font-black text-amber-800 text-sm">{lang==="fr"?"Soyez le premier à donner !":"Be the first to donate!"}</div>
+                      <div className="text-xs text-amber-600">{lang==="fr"?"Votre don lance la collecte et encourage d'autres personnes.":"Your donation starts the campaign and encourages others."}</div>
+                    </div>
                   </div>
                 )}
                 {/* Stats */}
