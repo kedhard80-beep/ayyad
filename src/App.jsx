@@ -982,7 +982,7 @@ const CaseCard = ({ c, lang, t, onClick }) => {
             onMouseEnter={e=>{ e.currentTarget.style.transform = "translateY(-1px)"; }}
             onMouseLeave={e=>{ e.currentTarget.style.transform = "translateY(0)"; }}
             >
-              {funded ? (fr ? "Voir" : "View") : (fr ? "Soutenir" : "Support")} →
+              {funded ? (fr ? "Voir" : "View") : (fr ? "Soutenir" : ar ? "دعم" : "Support")} →
             </span>
           </div>
         </div>
@@ -2475,15 +2475,15 @@ const PartnersBanner = ({ lang }) => {
       <div className="ayyad-container">
         <div style={{ textAlign:"center", maxWidth: 720, margin:"0 auto 20px" }}>
           <span className="ayyad-eyebrow" style={{ color:"var(--ayyad-amber)", background:"rgba(245,158,11,0.10)", borderColor:"rgba(245,158,11,0.30)" }}>
-            {fr ? "🏥 Établissements partenaires" : "🏥 Partner establishments"}
+            {fr ? "🏥 Établissements partenaires" : ar ? "🏥 المؤسسات الشريكة" : "🏥 Partner establishments"}
           </span>
           <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.6rem, 3vw, 2.4rem)", marginTop: 12, marginBottom: 10 }}>
-            {fr ? <>Nos <em>établissements partenaires.</em></> : <>Our <em>partner facilities.</em></>}
+            {fr ? <>Nos <em>établissements partenaires.</em></> : ar ? <>مؤسساتنا <em>الشريكة.</em></> : <>Our <em>partner facilities.</em></>}
           </h2>
           <p style={{ color:"var(--ink-500)", fontSize:14, lineHeight:1.6 }}>
             {fr
               ? "Ayyad travaille à la finalisation de partenariats officiels avec ces hôpitaux et cliniques de référence en Côte d'Ivoire. En attendant, les fonds sont versés directement à l'établissement qui prend en charge le patient."
-              : "Ayyad is finalising official partnerships with these leading hospitals and clinics in Côte d'Ivoire. In the meantime, funds are transferred directly to the facility caring for the patient."}
+              : ar ? "تعمل أياد على إتمام شراكات رسمية مع هذه المستشفيات والعيادات في كوت ديفوار. في الوقت الراهن، تُحوَّل الأموال مباشرة إلى المؤسسة التي ترعى المريض." : "Ayyad is finalising official partnerships with these leading hospitals and clinics in Côte d'Ivoire. In the meantime, funds are transferred directly to the facility caring for the patient."}
           </p>
         </div>
       </div>
@@ -2548,7 +2548,7 @@ const PartnersBanner = ({ lang }) => {
         <p style={{ textAlign:"center", fontSize:12, color:"var(--ink-400)", marginTop: 24, fontStyle:"italic", maxWidth: 720, margin:"24px auto 0" }}>
           {fr
             ? "Ces établissements accueillent les patients AYYAD. Les fonds sont versés directement à l'hôpital concerné, jamais en espèces."
-            : "These institutions welcome AYYAD patients. Funds are transferred directly to the hospital, never in cash."}
+            : ar ? "هذه المؤسسات تستقبل مرضى أياد. تُحوَّل الأموال مباشرة إلى المستشفى وليس نقداً." : "These institutions welcome AYYAD patients. Funds are transferred directly to the hospital, never in cash."}
         </p>
       </div>
     </section>
@@ -2780,7 +2780,7 @@ const ProcessStrip = ({ lang, setPage }) => {
         </div>
         <div style={{ textAlign:"center" }}>
           <button onClick={()=>setPage("how")} style={{ background:"transparent", border:"1.5px solid rgba(13,92,46,0.22)", color:"var(--ayyad-deep)", fontWeight:700, fontSize:14, padding:"12px 28px", borderRadius:9999, cursor:"pointer", transition:"all .2s" }}>
-            {fr ? "En savoir plus sur notre démarche →" : "Learn more about our approach →"}
+            {fr ? "En savoir plus sur notre démarche →" : ar ? "اعرف المزيد عن نهجنا ←" : "Learn more about our approach →"}
           </button>
         </div>
       </div>
@@ -2937,7 +2937,7 @@ const DjanaSuccessSection = ({ lang, setPage }) => {
             onClick={() => setPage("collectesactives")}
             style={{ background:"var(--ayyad-deep)", color:"#fff", fontWeight:800, fontSize:15, padding:"14px 36px", borderRadius:99, border:"none", cursor:"pointer", boxShadow:"0 4px 20px rgba(13,92,46,0.25)" }}
           >
-            {fr ? "Soutenir les patients actuels →" : "Support current patients →"}
+            {fr ? "Soutenir les patients actuels →" : ar ? "ادعم المرضى الآن ←" : "Support current patients →"}
           </button>
         </div>
       </div>
@@ -3881,7 +3881,7 @@ const CollectesPage = ({ setPage, lang }) => {
         {/* Tabs */}
         <div className="flex gap-2 mb-8 bg-white rounded-2xl p-1.5 shadow-sm border border-gray-100 w-fit mx-auto">
           <button onClick={() => setTab("testimonials")} className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab==="testimonials" ? "bg-emerald-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
-            💬 {lang==="fr" ? "Témoignages" : "Testimonials"}
+            💬 {lang==="fr" ? "Témoignages" : lang==="ar" ? "الشهادات" : "Testimonials"}
           </button>
           <button onClick={() => setTab("funded")} className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab==="funded" ? "bg-emerald-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
             ✅ {lang==="fr" ? "Collectes terminées" : "Completed campaigns"}
@@ -4021,7 +4021,7 @@ const MissionPage = ({ lang, setPage }) => (
     <div style={{ background:"linear-gradient(135deg,#064e3b,#047857)", padding:"clamp(40px,5vw,72px) clamp(20px,4vw,40px) clamp(32px,4vw,56px)", textAlign:"center", color:"#fff" }}>
       <button onClick={()=>setPage("home")} style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:999, padding:"7px 16px", color:"rgba(255,255,255,0.85)", fontWeight:600, fontSize:13, cursor:"pointer", marginBottom:24, display:"inline-flex", alignItems:"center", gap:6 }}>← {lang==="fr" ? "Retour" : lang==="ar" ? "رجوع" : "Back"}</button>
       <h1 style={{ fontSize:"clamp(2rem,4vw,3rem)", fontWeight:900, margin:"0 0 14px", lineHeight:1.15 }}>
-        {lang==="fr" ? "Notre mission" : "Our mission"}
+        {lang==="fr" ? "Notre mission" : lang==="ar" ? "مهمتنا" : "Our mission"}
       </h1>
       <p style={{ color:"rgba(255,255,255,0.80)", fontSize:17, maxWidth:640, margin:"0 auto", lineHeight:1.65 }}>
         {lang==="fr"
@@ -4049,7 +4049,7 @@ const TemoignagesPage = ({ lang, setPage }) => (
     <div style={{ background:"linear-gradient(135deg,#064e3b,#047857)", padding:"clamp(40px,5vw,72px) clamp(20px,4vw,40px) clamp(32px,4vw,56px)", textAlign:"center", color:"#fff" }}>
       <button onClick={()=>setPage("home")} style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:999, padding:"7px 16px", color:"rgba(255,255,255,0.85)", fontWeight:600, fontSize:13, cursor:"pointer", marginBottom:24, display:"inline-flex", alignItems:"center", gap:6 }}>← {lang==="fr" ? "Retour" : lang==="ar" ? "رجوع" : "Back"}</button>
       <h1 style={{ fontSize:"clamp(2rem,4vw,3rem)", fontWeight:900, margin:"0 0 14px", lineHeight:1.15 }}>
-        {lang==="fr" ? "Témoignages" : "Testimonials"}
+        {lang==="fr" ? "Témoignages" : lang==="ar" ? "الشهادات" : "Testimonials"}
       </h1>
       <p style={{ color:"rgba(255,255,255,0.80)", fontSize:17, maxWidth:640, margin:"0 auto", lineHeight:1.65 }}>
         {lang==="fr"
@@ -4146,7 +4146,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       <div className="lg:hidden" style={{background:"linear-gradient(160deg,#064e3b 0%,#047857 55%,#0f766e 100%)",color:"#fff",padding:"28px 16px 24px"}}>
         <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.12)",borderRadius:99,padding:"4px 14px",fontSize:11,fontWeight:700,marginBottom:16,letterSpacing:"0.5px",textTransform:"uppercase"}}>
           <span style={{width:6,height:6,background:"#6ee7b7",borderRadius:"50%",display:"inline-block"}}/>
-          {lang==="fr" ? "100% vérifié · 0% frais" : "100% verified · 0% fees"}
+          {lang==="fr" ? "100% vérifié · 0% frais" : lang==="ar" ? "موثّق 100% · 0% رسوم" : "100% verified · 0% fees"}
         </div>
         <h1 style={{fontSize:28,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,textAlign:"left"}}>
           {lang==="fr" ? "Financer la santé" : lang==="ar" ? "تمويل الصحة" : "Fund healthcare"}<br/>
@@ -4163,7 +4163,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
             </div>
           ))}
         </div>
-        <button onClick={()=>{const el=document.getElementById('collectes');if(el)el.scrollIntoView({behavior:'smooth'});else setPage('collectesactives');}} style={{background:"#fff",color:"#047857",fontWeight:900,fontSize:17,padding:"16px",borderRadius:16,border:"none",cursor:"pointer",width:"100%",boxShadow:"0 6px 24px rgba(0,0,0,0.22)",marginBottom:10,letterSpacing:"-0.2px"}}>💚 {lang==="fr" ? "Soutenir un patient" : "Support a patient"}</button>
+        <button onClick={()=>{const el=document.getElementById('collectes');if(el)el.scrollIntoView({behavior:'smooth'});else setPage('collectesactives');}} style={{background:"#fff",color:"#047857",fontWeight:900,fontSize:17,padding:"16px",borderRadius:16,border:"none",cursor:"pointer",width:"100%",boxShadow:"0 6px 24px rgba(0,0,0,0.22)",marginBottom:10,letterSpacing:"-0.2px"}}>💚 {lang==="fr" ? "Soutenir un patient" : lang==="ar" ? "ادعم مريضاً" : "Support a patient"}</button>
         <button onClick={()=>setPage('submit')} style={{background:"rgba(255,255,255,0.10)",border:"1.5px solid rgba(255,255,255,0.25)",color:"#fff",fontWeight:600,fontSize:14,padding:"12px",borderRadius:12,cursor:"pointer",width:"100%"}}>{lang==="fr" ? "Soumettre un dossier médical →" : "Submit a medical case →"}</button>
         <p style={{fontSize:11,color:"rgba(255,255,255,0.5)",textAlign:"center",margin:"12px 0 0",letterSpacing:"0.2px"}}>🔒 {lang==="fr" ? "Fonds versés directement à l'hôpital · Aucuns frais" : "Funds sent directly to hospital · No fees"}</p>
       </div>
@@ -4230,14 +4230,14 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           {/* Header section éditorial */}
           <div style={{ display:"flex", flexDirection:"column", gap:16, marginBottom: 24 }}>
             <div style={{ textAlign:"center" }}>
-              <span className="ayyad-eyebrow">{lang==="fr" ? "Campagnes vérifiées" : "Verified campaigns"}</span>
+              <span className="ayyad-eyebrow">{lang==="fr" ? "Campagnes vérifiées" : lang==="ar" ? "حملات موثّقة" : lang==="ar" ? "حملات موثّقة" : "Verified campaigns"}</span>
               <h2 className="ayyad-h-display" style={{ fontSize:"clamp(2rem, 3.6vw, 3rem)", marginTop: 18, marginBottom: 14 }}>
                 {lang==="fr" ? <>Soutenez des patients <em>aujourd'hui.</em></> : lang==="ar" ? <>ادعم المرضى <em>اليوم.</em></> : <>Support patients <em>today.</em></>}
               </h2>
               <p style={{ color:"var(--ink-500)", fontSize:16, maxWidth: 620, margin:"0 auto", lineHeight:1.65 }}>
                 {lang==="fr"
                   ? `${getDisplayCases().filter(c=>c.status==="COLLECTING").length + dbCases.length} dossiers actifs · 100% vérifiés par notre équipe et un hôpital partenaire`
-                  : `${getDisplayCases().filter(c=>c.status==="COLLECTING").length + dbCases.length} active cases · 100% verified by our team and a partner hospital`}
+                  : `${getDisplayCases().filter(c=>c.status==="COLLECTING").length + dbCases.length} ${lang==="ar" ? "ملفات نشطة · 100% موثّقة من فريقنا ومستشفى شريك" : "active cases · 100% verified by our team and a partner hospital"}`}
               </p>
             </div>
 
@@ -4252,7 +4252,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
               <div className="ayyad-cats" style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                 {catMap.map((c,i) => {
                   const active = (filter==="all"&&i===0)||filter===c;
-                  const _ico = {"Tous":"✨","All":"✨","Cardiologie":"🫀","Cardiology":"🫀","Oncologie":"🎗️","Oncology":"🎗️","Pédiatrie":"👶","Pediatrics":"👶","Néphrologie":"🫘","Nephrology":"🫘","Orthopédie":"🦴","Orthopedics":"🦴"}[c]||"🏥";
+                  const _ico = {"Tous":"✨","All":"✨","الكل":"✨","Cardiologie":"🫀","Cardiology":"🫀","أمراض القلب":"🫀","Oncologie":"🎗️","Oncology":"🎗️","الأورام":"🎗️","Pédiatrie":"👶","Pediatrics":"👶","طب الأطفال":"👶","Néphrologie":"🫘","Nephrology":"🫘","الكلى":"🫘","Orthopédie":"🦴","Orthopedics":"🦴","العظام":"🦴","العلاج الكيميائي":"🎗️"}[c]||"🏥";
                   return (
                     <button key={c} onClick={() => setFilter(i===0?"all":c)} style={{
                       padding:"8px 18px", borderRadius: 9999,
@@ -4273,7 +4273,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
                   type="text"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder={lang === "fr" ? "Rechercher par nom, hôpital, ville…" : "Search by name, hospital, city…"}
+                  placeholder={lang === "fr" ? "Rechercher par nom, hôpital, ville…" : lang==="ar" ? "...ابحث بالاسم، المستشفى، المدينة" : "Search by name, hospital, city…"}
                   style={{
                     width:"100%", padding:"11px 16px 11px 42px",
                     background:"#fff",
@@ -4342,14 +4342,14 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
       <section style={{ background:"var(--paper)", padding:"clamp(24px,4vw,48px) clamp(16px,4vw,40px)" }}>
         <div style={{ maxWidth:900, margin:"0 auto" }}>
           <p style={{ textAlign:"center", fontWeight:700, fontSize:11, letterSpacing:2, color:"var(--ink-400)", textTransform:"uppercase", marginBottom:20 }}>
-            {lang==="fr" ? "En savoir plus sur AYYAD" : "Learn more about AYYAD"}
+            {lang==="fr" ? "En savoir plus sur AYYAD" : lang==="ar" ? "اعرف المزيد عن أياد" : "Learn more about AYYAD"}
           </p>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:12 }}>
             {[
-              { icon:"🌍", title: lang==="fr" ? "Notre mission" : "Our mission", sub: lang==="fr" ? "Qui sommes-nous et pourquoi AYYAD existe" : "Who we are and why AYYAD exists", page:"mission" },
-              { icon:"🔒", title: lang==="fr" ? "Pourquoi nous faire confiance ?" : "Why trust us?", sub: lang==="fr" ? "Transparence, zéro intermédiaire, audit public" : "Transparency, zero intermediary, public audit", page:"how" },
-              { icon:"💚", title: lang==="fr" ? "Cas financés" : "Funded cases", sub: lang==="fr" ? "Les vies que nous avons sauvées ensemble" : "Lives we saved together", page:"collectes" },
-              { icon:"🎤", title: lang==="fr" ? "Témoignages" : "Testimonials", sub: lang==="fr" ? "Avant et après l'aide — en photos et vidéos" : "Before and after help — in photos & videos", page:"temoignages" },
+              { icon:"🌍", title: lang==="fr" ? "Notre mission" : lang==="ar" ? "مهمتنا" : "Our mission", sub: lang==="fr" ? "Qui sommes-nous et pourquoi AYYAD existe" : lang==="ar" ? "من نحن ولماذا تأسست أياد" : "Who we are and why AYYAD exists", page:"mission" },
+              { icon:"🔒", title: lang==="fr" ? "Pourquoi nous faire confiance ?" : lang==="ar" ? "لماذا تثق بنا؟" : "Why trust us?", sub: lang==="fr" ? "Transparence, zéro intermédiaire, audit public" : lang==="ar" ? "شفافية، بدون وسيط، تدقيق علني" : "Transparency, zero intermediary, public audit", page:"how" },
+              { icon:"💚", title: lang==="fr" ? "Cas financés" : lang==="ar" ? "الحالات الممولة" : "Funded cases", sub: lang==="fr" ? "Les vies que nous avons sauvées ensemble" : lang==="ar" ? "الأرواح التي أنقذناها معاً" : "Lives we saved together", page:"collectes" },
+              { icon:"🎤", title: lang==="fr" ? "Témoignages" : lang==="ar" ? "الشهادات" : "Testimonials", sub: lang==="fr" ? "Avant et après l'aide — en photos et vidéos" : lang==="ar" ? "قبل وبعد المساعدة — بالصور والفيديوهات" : "Before and after help — in photos & videos", page:"temoignages" },
             ].map(c => (
               <button key={c.page} onClick={()=>setPage(c.page)} style={{
                 display:"flex", alignItems:"flex-start", gap:12, padding:"16px 18px",
@@ -4385,7 +4385,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
             <div>
               <span className="ayyad-eyebrow">{lang==="fr" ? "Soutenir la plateforme" : lang==="ar" ? "دعم المنصة" : "Support the platform"}</span>
               <h3 className="ayyad-h-display" style={{ fontSize:"clamp(1.6rem, 2.6vw, 2.2rem)", marginTop: 14, marginBottom: 14 }}>
-                {lang==="fr" ? <>Aider Ayyad à <em>grandir.</em></> : <>Help Ayyad <em>grow.</em></>}
+                {lang==="fr" ? <>Aider Ayyad à <em>grandir.</em></> : lang==="ar" ? <>ساعد أياد على <em>النمو.</em></> : <>Help Ayyad <em>grow.</em></>}
               </h3>
               <p style={{ color:"var(--ink-500)", fontSize:15, lineHeight:1.65 }}>
                 {lang==="fr"
@@ -4395,10 +4395,10 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
             </div>
             <div style={{ textAlign:"center" }}>
               <button onClick={() => setPage("support-ayyad")} className="ayyad-btn-gold" style={{ fontSize:14, padding:"15px 30px" }}>
-                💚 {lang==="fr" ? "Soutenir Ayyad" : "Support Ayyad"} →
+                💚 {lang==="fr" ? "Soutenir Ayyad" : lang==="ar" ? "ادعم أياد" : "Support Ayyad"} →
               </button>
               <div style={{ fontSize:12, color:"var(--ink-400)", marginTop:14, fontWeight:600 }}>
-                {lang==="fr" ? "Don 100% dédié au fonctionnement de la plateforme" : "100% dedicated to platform operations"}
+                {lang==="fr" ? "Don 100% dédié au fonctionnement de la plateforme" : lang==="ar" ? "100% مخصص لعمليات المنصة" : "100% dedicated to platform operations"}
               </div>
             </div>
           </div>
