@@ -6425,21 +6425,27 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 {sbProvider==="OM"&&(
                   <div style={{background:"#fff7ed",border:"1.5px solid #fdba74",borderRadius:14,padding:"14px",marginBottom:12}}>
                     <div style={{fontWeight:800,fontSize:12,color:"#c2410c",marginBottom:10}}>🟠 {lang==="fr"?"Comment payer via Orange Money :":"How to pay via Orange Money:"}</div>
-                    {/* QR centré */}
-                    <div style={{background:"#ffedd5",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-                      <p style={{fontSize:11,color:"#9a3412",fontWeight:700,textAlign:"center",margin:"0 0 4px"}}>
-                        👆 {lang==="fr"?"Scannez le QR Code depuis votre application Orange Money":"Scan the QR Code from your Orange Money app"}
-                      </p>
-                      <img src="/qr_om_real.jpg" alt="QR Orange Money" style={{width:130,height:130,borderRadius:12,border:"3px solid #f97316",display:"block",boxShadow:"0 2px 10px #f9731633"}}
-                        onError={e=>{e.target.style.display="none";}} />
-                      <div style={{textAlign:"center"}}>
-                        <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:2}}>{lang==="fr"?"Numéro Orange Money AYYAD :":"AYYAD Orange Money number:"}</div>
-                        <div style={{fontWeight:900,fontSize:15,color:"#c2410c",fontFamily:"monospace",whiteSpace:"nowrap"}}>+2250748056128</div>
+                    {/* Carte Orange Money branded */}
+                    <div style={{background:"linear-gradient(135deg,#f97316 0%,#ea580c 100%)",borderRadius:14,padding:"20px 16px",marginBottom:12,display:"flex",flexDirection:"column",alignItems:"center",gap:12,boxShadow:"0 4px 16px #f9731644"}}>
+                      {/* Logo / icône */}
+                      <div style={{fontSize:48,lineHeight:1}}>🟠</div>
+                      <div style={{color:"#fff",fontWeight:900,fontSize:18,textAlign:"center",letterSpacing:0.5}}>Orange Money</div>
+                      {/* Numéro mis en valeur */}
+                      <div style={{background:"rgba(255,255,255,0.18)",borderRadius:12,padding:"14px 20px",width:"100%",textAlign:"center",border:"2px solid rgba(255,255,255,0.4)"}}>
+                        <div style={{color:"rgba(255,255,255,0.85)",fontSize:10,fontWeight:700,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>
+                          {lang==="fr"?"Numéro AYYAD CI":"AYYAD CI Number"}
+                        </div>
+                        <div style={{color:"#fff",fontWeight:900,fontSize:20,fontFamily:"monospace",letterSpacing:1,whiteSpace:"nowrap"}}>+225 07 48 05 61 28</div>
+                      </div>
+                      <div style={{color:"rgba(255,255,255,0.9)",fontSize:11,textAlign:"center",lineHeight:1.6}}>
+                        📱 {lang==="fr"?"Ouvrez Orange Money → Envoyer de l'argent":"Open Orange Money → Send money"}<br/>
+                        📞 {lang==="fr"?"Ou composez":"Or dial"} <strong>#144#</strong>
                       </div>
                     </div>
-                    <div style={{fontSize:11,color:"#9a3412",lineHeight:1.9}}>
-                      {lang==="fr"?<>1. App <strong>Orange Money</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>#144#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
-                        :<>1. <strong>Orange Money</strong> → Send → scan or enter number<br/>2. Amount: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>#144#</strong><br/>4. Come back → "I've completed payment"</>}
+                    <div style={{fontSize:11,color:"#9a3412",lineHeight:2,background:"#ffedd5",borderRadius:10,padding:"10px 12px"}}>
+                      {lang==="fr"
+                        ?<>1. App <strong>Orange Money</strong> → <strong>Envoyer</strong> → entrez le numéro<br/>2. Montant : <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Validez et revenez ici → "J'ai effectué le paiement"</>
+                        :<>1. <strong>Orange Money</strong> app → <strong>Send</strong> → enter the number<br/>2. Amount: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Confirm and come back → "I've completed payment"</>}
                     </div>
                   </div>
                 )}
