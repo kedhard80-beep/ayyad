@@ -4616,69 +4616,77 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
         <div className="ayyad-container">
           <div style={{
             display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
-            gap:"clamp(20px, 3vw, 32px)", alignItems:"center",
+            gap:"clamp(20px, 3vw, 48px)", alignItems:"center",
           }}>
+            {/* ── Colonne gauche : texte + bouton ── */}
             <div>
               <span className="ayyad-eyebrow">{lang==="fr" ? "Soutenir la plateforme" : lang==="ar" ? "دعم المنصة" : "Support the platform"}</span>
               <h3 className="ayyad-h-display" style={{ fontSize:"clamp(1.6rem, 2.6vw, 2.2rem)", marginTop: 14, marginBottom: 14 }}>
                 {lang==="fr" ? <>Aider Ayyad à <em>grandir.</em></> : <>Help Ayyad <em>grow.</em></>}
               </h3>
-              <p style={{ color:"var(--ink-500)", fontSize:15, lineHeight:1.65 }}>
+              <p style={{ color:"var(--ink-500)", fontSize:15, lineHeight:1.65, marginBottom:24 }}>
                 {lang==="fr"
                   ? "Votre soutien finance la vérification des dossiers médicaux, les partenariats hospitaliers et l'accompagnement personnalisé des patients."
                   : "Your support funds medical case verification, hospital partnerships and personalized patient guidance."}
               </p>
-              {/* ── Compteur dons plateforme ── */}
-              <div style={{ marginTop: 20, display:"flex", flexDirection:"column", gap:6 }}>
-                <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase", color:"var(--ink-400)" }}>
-                  {lang==="fr" ? "Total des dons direct reçus par Ayyad" : lang==="ar" ? "إجمالي التبرعات المباشرة المستلمة" : "Total direct donations received by Ayyad"}
-                </div>
-                <div style={{ display:"flex", alignItems:"baseline", gap:10 }}>
-                  <span style={{ fontSize:"clamp(2rem, 4vw, 2.8rem)", fontWeight:900, color:"var(--gold)", fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em" }}>
-                    {platformCurrency === "USD" && <span style={{fontSize:"0.7em",verticalAlign:"middle",marginRight:2}}>$</span>}
-                    {platformCurrency === "EUR" && <span style={{fontSize:"0.7em",verticalAlign:"middle",marginRight:2}}>€</span>}
-                    {fmtPlatform(platformTotal)}
-                  </span>
-                  {platformCurrency === "XOF" && <span style={{ fontSize:14, fontWeight:700, color:"var(--ink-500)" }}>FCFA</span>}
-                </div>
-                {/* Switch devise */}
-                <div style={{ display:"flex", gap:4, marginTop:2 }}>
-                  {["XOF","EUR","USD"].map(c => (
-                    <button key={c} onClick={() => setPlatformCurrency(c)} style={{
-                      padding:"3px 10px", borderRadius:9999, fontSize:11, fontWeight:700, cursor:"pointer", border:"1.5px solid",
-                      background: platformCurrency===c ? "var(--gold)" : "transparent",
-                      color: platformCurrency===c ? "#fff" : "var(--ink-400)",
-                      borderColor: platformCurrency===c ? "var(--gold)" : "var(--ink-200)",
-                      transition:"all .18s"
-                    }}>
-                      {c === "XOF" ? "FCFA" : c}
-                    </button>
-                  ))}
-                </div>
-                {/* Liste donateurs plateforme */}
-                {platformDonors.length > 0 && (
-                  <div style={{ marginTop:12, width:"100%", maxHeight:160, overflowY:"auto", borderRadius:10, border:"1px solid var(--ink-200)", background:"var(--surface)", padding:"6px 0" }}>
+              <button onClick={() => setPage("support-ayyad")} className="ayyad-btn-gold" style={{ fontSize:14, padding:"15px 30px" }}>
+                💚 {lang==="fr" ? "Soutenir Ayyad" : lang==="ar" ? "ادعم أيد" : "Support Ayyad"} →
+              </button>
+              <div style={{ fontSize:12, color:"var(--ink-400)", marginTop:12, fontWeight:600 }}>
+                {lang==="fr" ? "Don 100% dédié au fonctionnement de la plateforme" : lang==="ar" ? "100% مخصص لتشغيل المنصة" : "100% dedicated to platform operations"}
+              </div>
+            </div>
+            {/* ── Colonne droite : compteur + liste donateurs ── */}
+            <div style={{ background:"#fff", borderRadius:16, border:"1px solid rgba(201,168,76,0.25)", padding:"clamp(16px,2.5vw,28px)", boxShadow:"0 2px 16px rgba(0,0,0,0.05)" }}>
+              <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase", color:"var(--ink-400)", marginBottom:8 }}>
+                {lang==="fr" ? "Total des dons direct reçus par Ayyad" : lang==="ar" ? "إجمالي التبرعات المباشرة المستلمة" : "Total direct donations received by Ayyad"}
+              </div>
+              <div style={{ display:"flex", alignItems:"baseline", gap:10, marginBottom:8 }}>
+                <span style={{ fontSize:"clamp(2rem, 4vw, 2.8rem)", fontWeight:900, color:"var(--gold)", fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em" }}>
+                  {platformCurrency === "USD" && <span style={{fontSize:"0.7em",verticalAlign:"middle",marginRight:2}}>$</span>}
+                  {platformCurrency === "EUR" && <span style={{fontSize:"0.7em",verticalAlign:"middle",marginRight:2}}>€</span>}
+                  {fmtPlatform(platformTotal)}
+                </span>
+                {platformCurrency === "XOF" && <span style={{ fontSize:14, fontWeight:700, color:"var(--ink-500)" }}>FCFA</span>}
+              </div>
+              {/* Switch devise */}
+              <div style={{ display:"flex", gap:4, marginBottom:14 }}>
+                {["XOF","EUR","USD"].map(c => (
+                  <button key={c} onClick={() => setPlatformCurrency(c)} style={{
+                    padding:"3px 10px", borderRadius:9999, fontSize:11, fontWeight:700, cursor:"pointer", border:"1.5px solid",
+                    background: platformCurrency===c ? "var(--gold)" : "transparent",
+                    color: platformCurrency===c ? "#fff" : "var(--ink-400)",
+                    borderColor: platformCurrency===c ? "var(--gold)" : "var(--ink-200)",
+                    transition:"all .18s"
+                  }}>
+                    {c === "XOF" ? "FCFA" : c}
+                  </button>
+                ))}
+              </div>
+              {/* Liste donateurs plateforme */}
+              {platformDonors.length > 0 ? (
+                <div style={{ borderTop:"1px solid var(--ink-100)", paddingTop:10 }}>
+                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"var(--ink-400)", marginBottom:6 }}>
+                    {lang==="fr" ? "Donateurs" : lang==="ar" ? "المتبرعون" : "Donors"}
+                  </div>
+                  <div style={{ maxHeight:160, overflowY:"auto", display:"flex", flexDirection:"column", gap:0 }}>
                     {platformDonors.map((d, i) => (
-                      <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 12px", borderBottom: i < platformDonors.length-1 ? "1px solid var(--ink-100)" : "none" }}>
-                        <span style={{ fontSize:12, fontWeight:600, color:"var(--ink-700)", maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 0", borderBottom: i < platformDonors.length-1 ? "1px solid var(--ink-100)" : "none" }}>
+                        <span style={{ fontSize:13, fontWeight:600, color:"var(--ink-700)", maxWidth:"55%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                           {d.name.length > 1 ? d.name.charAt(0).toUpperCase() + d.name.slice(1) : d.name}
                         </span>
-                        <span style={{ fontSize:12, fontWeight:800, color:"var(--gold)", whiteSpace:"nowrap" }}>
+                        <span style={{ fontSize:13, fontWeight:800, color:"var(--gold)", whiteSpace:"nowrap" }}>
                           {platformCurrency === "USD" && "$"}{platformCurrency === "EUR" && "€"}{Math.round(d.amount * RATES[platformCurrency]).toLocaleString("fr-FR")}{platformCurrency === "XOF" && " FCFA"}
                         </span>
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-            </div>
-            <div style={{ textAlign:"center" }}>
-              <button onClick={() => setPage("support-ayyad")} className="ayyad-btn-gold" style={{ fontSize:14, padding:"15px 30px" }}>
-                💚 {lang==="fr" ? "Soutenir Ayyad" : lang==="ar" ? "ادعم أيد" : "Support Ayyad"} →
-              </button>
-              <div style={{ fontSize:12, color:"var(--ink-400)", marginTop:14, fontWeight:600 }}>
-                {lang==="fr" ? "Don 100% dédié au fonctionnement de la plateforme" : lang==="ar" ? "100% مخصص لتشغيل المنصة" : "100% dedicated to platform operations"}
-              </div>
+                </div>
+              ) : (
+                <div style={{ fontSize:13, color:"var(--ink-300)", fontStyle:"italic", paddingTop:4 }}>
+                  {lang==="fr" ? "Soyez le premier à soutenir Ayyad ✨" : "Be the first to support Ayyad ✨"}
+                </div>
+              )}
             </div>
           </div>
         </div>
