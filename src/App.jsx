@@ -3318,6 +3318,9 @@ const TestimonialsCarousel = ({ lang }) => {
   const [isMuted, setIsMuted] = useState(true);
   const [videoError, setVideoError] = useState(false);
   const [selectedBenef, setSelectedBenef] = useState(null); // null = premier du tableau
+  const [blockIdx, setBlockIdx] = useState({}); // carousel index par bloc: { "AYD-xxx-avant": 0, "AYD-xxx-apres": 0 }
+  const bIdxGet = (key) => blockIdx[key] || 0;
+  const bIdxSet = (key, fn) => setBlockIdx(prev => { const cur = prev[key] || 0; const next = typeof fn === "function" ? fn(cur) : fn; return { ...prev, [key]: next }; });
 
   // Entrées permanentes Djana — vidéo + photos avant + photos après opération
   const DJANA_ENTRIES = [
@@ -3388,17 +3391,65 @@ const TestimonialsCarousel = ({ lang }) => {
     },
   ];
 
-  // Charge les médias depuis la DB + toujours inclure Djana en premier
+  // Charge les médias depuis la DB + enrichit l'AVANT depuis la table cases
   useEffect(() => {
-    supabase.from("testimonial_media")
-      .select("*").eq("status", "approved")
+    // 1. Médias témoignages approuvés (pour APRÈS)
+    supabase.from("testimonial_media").select("*").eq("status", "approved")
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        // Inclure TOUS les médias approuvés — les statiques Djana s'ajoutent uniquement si pas déjà en DB
-        const dbItems = data || [];
-        const djanaInDb = dbItems.some(m => m.case_tracking_id === "AYD-2026-06-001");
-        const base = djanaInDb ? [] : DJANA_ENTRIES;
-        setMedias([...base, ...dbItems]);
+      .then(({ data: tmData }) => {
+        const dbItems = tmData || [];
+
+        // 2. Dossiers actifs → médias AVANT automatiques
+        supabase.from("cases")
+          .select("tracking_id, title, photo_url, photos, video_url, video_urls, status")
+          .not("status", "in", "(PENDING,REJECTED)")
+          .order("created_at", { ascending: false })
+          .limit(50)
+          .then(({ data: casesData }) => {
+            const autoAvant = [];
+            (casesData || []).forEach(c => {
+              const tid = c.tracking_id || c.trackingId;
+              if (!tid) return;
+              const name = typeof c.title === "object" ? (c.title?.fr || c.title?.en || tid) : (c.title || tid);
+              // photos
+              const allPhotos = [...new Set([
+                ...(c.photo_url ? [c.photo_url] : []),
+                ...(Array.isArray(c.photos) ? c.photos : []),
+              ])];
+              allPhotos.forEach((url, i) => autoAvant.push({
+                id: `${tid}-case-photo-${i}`,
+                beneficiary_name: name,
+                case_tracking_id: tid,
+                file_url: url,
+                file_type: "photo",
+                status: "approved",
+                _phase: "avant",
+              }));
+              // videos
+              let vurls = [];
+              if (Array.isArray(c.video_urls) && c.video_urls.length > 0) vurls = c.video_urls;
+              else if (c.video_url) {
+                try { const p = JSON.parse(c.video_url); vurls = Array.isArray(p) ? p : [c.video_url]; }
+                catch { vurls = [c.video_url]; }
+              }
+              vurls.forEach((url, i) => autoAvant.push({
+                id: `${tid}-case-video-${i}`,
+                beneficiary_name: name,
+                case_tracking_id: tid,
+                file_url: url,
+                file_type: "video",
+                status: "approved",
+                _phase: "avant",
+              }));
+            });
+
+            // Djana : inclure entrées statiques si pas de médias auto pour elle
+            const djanaAutoAvant = autoAvant.filter(m => m.case_tracking_id === "AYD-2026-06-001");
+            const djanaInDb = dbItems.some(m => m.case_tracking_id === "AYD-2026-06-001");
+            const djanaFallback = (djanaAutoAvant.length === 0 && !djanaInDb) ? DJANA_ENTRIES : [];
+
+            setMedias([...djanaFallback, ...autoAvant, ...dbItems]);
+          });
       });
   }, []);
 
@@ -3567,68 +3618,78 @@ const TestimonialsCarousel = ({ lang }) => {
                       {/* 2 colonnes AVANT / APRÈS */}
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, alignItems:"start" }}>
 
-                        {/* ── AVANT AIDE ── */}
-                        <div>
-                          <div style={{
-                            background:"rgba(239,68,68,0.15)", border:"1px solid rgba(239,68,68,0.35)",
-                            borderRadius:10, padding:"7px 14px", marginBottom:12,
-                            display:"flex", alignItems:"center", gap:7,
-                          }}>
-                            <span style={{ fontSize:15 }}>🔴</span>
-                            <span style={{ fontWeight:800, fontSize:12, color:"#fca5a5", letterSpacing:1 }}>
-                              {fr ? "AVANT AIDE" : ar ? "قبل المساعدة" : "BEFORE HELP"}
-                            </span>
-                          </div>
-                          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                            {g.avant.length > 0
-                              ? g.avant.map(m => (
-                                  <div key={m.id} style={{ borderRadius:12, overflow:"hidden", background:"rgba(0,0,0,0.4)" }}>
-                                    {renderMedia(m)}
-                                    {m.label && (
-                                      <div style={{ padding:"6px 10px", fontSize:11, color:"rgba(255,255,255,0.6)", fontWeight:600 }}>
-                                        {m.label[fr ? "fr" : ar ? "ar" : "en"]}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))
-                              : <div style={{ color:"rgba(255,255,255,0.30)", fontSize:13, padding:"20px 0", textAlign:"center" }}>—</div>
-                            }
-                          </div>
-                        </div>
-
-                        {/* ── APRÈS AIDE ── */}
-                        <div>
-                          <div style={{
-                            background:"rgba(16,185,129,0.15)", border:"1px solid rgba(16,185,129,0.35)",
-                            borderRadius:10, padding:"7px 14px", marginBottom:12,
-                            display:"flex", alignItems:"center", gap:7,
-                          }}>
-                            <span style={{ fontSize:15 }}>✅</span>
-                            <span style={{ fontWeight:800, fontSize:12, color:"#6ee7b7", letterSpacing:1 }}>
-                              {fr ? "APRÈS AIDE" : ar ? "بعد المساعدة" : "AFTER HELP"}
-                            </span>
-                          </div>
-                          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                            {g.apres.length > 0
-                              ? g.apres.map(m => (
-                                  <div key={m.id} style={{ borderRadius:12, overflow:"hidden", background:"rgba(0,0,0,0.4)" }}>
-                                    {renderMedia(m)}
-                                    {m.label && (
-                                      <div style={{ padding:"6px 10px", fontSize:11, color:"rgba(255,255,255,0.6)", fontWeight:600 }}>
-                                        {m.label[fr ? "fr" : ar ? "ar" : "en"]}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))
-                              : (
-                                <div style={{ color:"rgba(255,255,255,0.25)", fontSize:13, padding:"20px 12px", textAlign:"center",
-                                  background:"rgba(255,255,255,0.04)", borderRadius:12, border:"1px dashed rgba(255,255,255,0.12)" }}>
-                                  {fr ? "Photos/vidéos après aide à venir" : ar ? "صور/فيديوهات ما بعد المساعدة قريباً" : "Post-help photos/videos coming soon"}
+                        {/* ── Carousel helper ── */}
+                        {[
+                          { phase:"avant", items:g.avant, label:fr?"AVANT AIDE":ar?"قبل المساعدة":"BEFORE HELP", emoji:"🔴", bg:"rgba(239,68,68,0.15)", border:"rgba(239,68,68,0.35)", color:"#fca5a5", empty:fr?"Photos/vidéos avant aide à venir":ar?"صور/فيديوهات ما قبل المساعدة قريباً":"Pre-help photos/videos coming soon" },
+                          { phase:"apres", items:g.apres, label:fr?"APRÈS AIDE":ar?"بعد المساعدة":"AFTER HELP", emoji:"✅", bg:"rgba(16,185,129,0.15)", border:"rgba(16,185,129,0.35)", color:"#6ee7b7", empty:fr?"Photos/vidéos après aide à venir":ar?"صور/فيديوهات ما بعد المساعدة قريباً":"Post-help photos/videos coming soon" },
+                        ].map(({ phase, items, label, emoji, bg, border, color, empty }) => {
+                          const bKey = `${activeKey}-${phase}`;
+                          const ci = bIdxGet(bKey) % Math.max(items.length, 1);
+                          const cur = items[ci];
+                          return (
+                            <div key={phase}>
+                              {/* En-tête bloc */}
+                              <div style={{ background:bg, border:`1px solid ${border}`, borderRadius:10, padding:"7px 14px", marginBottom:12, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                                <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                                  <span style={{ fontSize:15 }}>{emoji}</span>
+                                  <span style={{ fontWeight:800, fontSize:12, color, letterSpacing:1 }}>{label}</span>
                                 </div>
-                              )
-                            }
-                          </div>
-                        </div>
+                                {items.length > 1 && (
+                                  <span style={{ fontSize:11, color:"rgba(255,255,255,0.45)", fontWeight:600 }}>{ci+1} / {items.length}</span>
+                                )}
+                              </div>
+                              {/* Média courant */}
+                              {cur ? (
+                                <div style={{ position:"relative" }}>
+                                  <div style={{ borderRadius:12, overflow:"hidden", background:"rgba(0,0,0,0.4)" }}>
+                                    {renderMedia(cur)}
+                                    {cur.label && (
+                                      <div style={{ padding:"6px 10px", fontSize:11, color:"rgba(255,255,255,0.6)", fontWeight:600 }}>
+                                        {cur.label[fr?"fr":ar?"ar":"en"] || cur.label.fr}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {/* Flèches carousel */}
+                                  {items.length > 1 && (
+                                    <>
+                                      <button onClick={() => bIdxSet(bKey, i => (i - 1 + items.length) % items.length)} style={{
+                                        position:"absolute", left:-14, top:"50%", transform:"translateY(-50%)",
+                                        width:30, height:30, borderRadius:"50%", border:"none",
+                                        background:"rgba(255,255,255,0.18)", backdropFilter:"blur(4px)",
+                                        color:"#fff", fontSize:18, fontWeight:900, cursor:"pointer",
+                                        display:"flex", alignItems:"center", justifyContent:"center",
+                                        boxShadow:"0 2px 8px rgba(0,0,0,0.25)", lineHeight:1,
+                                      }}>‹</button>
+                                      <button onClick={() => bIdxSet(bKey, i => (i + 1) % items.length)} style={{
+                                        position:"absolute", right:-14, top:"50%", transform:"translateY(-50%)",
+                                        width:30, height:30, borderRadius:"50%", border:"none",
+                                        background:"rgba(255,255,255,0.18)", backdropFilter:"blur(4px)",
+                                        color:"#fff", fontSize:18, fontWeight:900, cursor:"pointer",
+                                        display:"flex", alignItems:"center", justifyContent:"center",
+                                        boxShadow:"0 2px 8px rgba(0,0,0,0.25)", lineHeight:1,
+                                      }}>›</button>
+                                      {/* Pastilles */}
+                                      <div style={{ display:"flex", justifyContent:"center", gap:5, marginTop:8 }}>
+                                        {items.map((_,i) => (
+                                          <button key={i} onClick={() => bIdxSet(bKey, i)} style={{
+                                            width: i===ci ? 18 : 6, height:6, borderRadius:999, border:"none", cursor:"pointer",
+                                            background: i===ci ? color : "rgba(255,255,255,0.25)",
+                                            transition:"all .2s", padding:0,
+                                          }} />
+                                        ))}
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              ) : (
+                                <div style={{ color:"rgba(255,255,255,0.25)", fontSize:13, padding:"24px 12px", textAlign:"center",
+                                  background:"rgba(255,255,255,0.04)", borderRadius:12, border:"1px dashed rgba(255,255,255,0.12)" }}>
+                                  {empty}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
 
                       </div>
 
