@@ -3323,6 +3323,7 @@ const TestimonialsCarousel = ({ lang }) => {
   const bIdxSet = (key, fn) => setBlockIdx(prev => { const cur = prev[key] || 0; const next = typeof fn === "function" ? fn(cur) : fn; return { ...prev, [key]: next }; });
 
   // Entrées permanentes Djana — vidéo + photos avant + photos après opération
+  const SB = "https://xodgubvgvsnbpheusggm.supabase.co/storage/v1/object/public/testimonials";
   const DJANA_ENTRIES = [
     // ── AVANT ──────────────────────────────────────────────────
     {
@@ -3333,6 +3334,15 @@ const TestimonialsCarousel = ({ lang }) => {
       file_type: "video",
       status: "approved",
       label: { fr: "🎤 Djana demande de l'aide", en: "🎤 Djana asks for help" },
+    },
+    {
+      id: "djana-static-avant-new-video",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: `${SB}/djana/djana_avant3.mp4`,
+      file_type: "video",
+      status: "approved",
+      label: { fr: "🔴 Djana — appel vidéo avant opération", en: "🔴 Djana — video call before surgery" },
     },
     {
       id: "djana-static-avant-1",
@@ -3352,6 +3362,15 @@ const TestimonialsCarousel = ({ lang }) => {
       status: "approved",
       label: { fr: "🔴 Djana avec sa stomie", en: "🔴 Djana with her stoma" },
     },
+    {
+      id: "djana-static-avant-new-photo",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: `${SB}/djana/djana_avant_photo.jpeg`,
+      file_type: "photo",
+      status: "approved",
+      label: { fr: "🔴 Djana avec sa stomie — face et profil", en: "🔴 Djana with her stoma — front and side" },
+    },
     // ── APRÈS ──────────────────────────────────────────────────
     {
       id: "djana-static-apres-video",
@@ -3363,6 +3382,24 @@ const TestimonialsCarousel = ({ lang }) => {
       label: { fr: "✅ Djana après son opération — guérie !", en: "✅ Djana after surgery — healed!" },
     },
     {
+      id: "djana-static-apres-new-video1",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: `${SB}/djana/apres/djana_apres_video1.mp4`,
+      file_type: "video",
+      status: "approved",
+      label: { fr: "✅ Djana après opération — en bonne santé !", en: "✅ Djana post-surgery — healthy!" },
+    },
+    {
+      id: "djana-static-apres-new-video2",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: `${SB}/djana/apres/djana_apres_video2.mp4`,
+      file_type: "video",
+      status: "approved",
+      label: { fr: "✅ Djana guérie — message de sa famille", en: "✅ Djana healed — message from her family" },
+    },
+    {
       id: "djana-static-apres-1",
       beneficiary_name: "Djana Coulibaly",
       case_tracking_id: "AYD-2026-06-001",
@@ -3370,6 +3407,33 @@ const TestimonialsCarousel = ({ lang }) => {
       file_type: "photo",
       status: "approved",
       label: { fr: "✅ Djana guérie — plus de stomie", en: "✅ Djana healed — stoma-free" },
+    },
+    {
+      id: "djana-static-apres-new-1",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: `${SB}/djana/apres/djana_apres_photo1.jpeg`,
+      file_type: "photo",
+      status: "approved",
+      label: { fr: "✅ Djana avec sa maman — cicatrice refermée", en: "✅ Djana with her mom — healed scar" },
+    },
+    {
+      id: "djana-static-apres-new-2",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: `${SB}/djana/apres/djana_apres_photo2.jpeg`,
+      file_type: "photo",
+      status: "approved",
+      label: { fr: "✅ Djana à la clinique — consultation de suivi", en: "✅ Djana at clinic — follow-up visit" },
+    },
+    {
+      id: "djana-static-apres-new-3",
+      beneficiary_name: "Djana Coulibaly",
+      case_tracking_id: "AYD-2026-06-001",
+      file_url: `${SB}/djana/apres/djana_apres_photo3.jpeg`,
+      file_type: "photo",
+      status: "approved",
+      label: { fr: "✅ Djana souriante — merci à tous les donateurs", en: "✅ Djana smiling — thank you to all donors" },
     },
     {
       id: "djana-static-apres-2",
