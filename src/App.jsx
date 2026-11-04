@@ -1371,36 +1371,49 @@ const MTN_LINK     = "https://appbiz.momo.africa/momo/request-momo/2250501855991
 // gardé pour compatibilité
 const WAVE_DEEPLINK = WAVE_LINK;
 
-// Composant QR générique — utilise la vraie image et le vrai lien du provider
+// Composant paiement mobile-first :
+// - Sur mobile  → UNIQUEMENT un grand bouton (pas de QR, inutile sur son propre écran)
+// - Sur desktop → QR scannable + bouton en dessous
 const PayQRCode = ({ link, imgSrc, label, size = 200 }) => {
-  const borderColor = label?.includes("MTN") ? "border-yellow-400 hover:border-yellow-600" : "border-blue-200 hover:border-blue-500";
-  const btnColor    = label?.includes("MTN") ? "bg-yellow-500 hover:bg-yellow-600 text-gray-900" : "bg-blue-600 hover:bg-blue-700 text-white";
+  const isMTN     = label?.includes("MTN");
+  const btnBg     = isMTN ? "bg-yellow-400 hover:bg-yellow-500 active:bg-yellow-600 text-gray-900"
+                           : "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white";
+  const borderCol = isMTN ? "border-yellow-400" : "border-blue-300";
+  const emoji     = isMTN ? "📲" : "🌊";
+
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center gap-3 w-full">
+
+      {/* ── MOBILE : grand bouton direct, pas de QR ── */}
       <a
         href={link}
         target="_blank"
         rel="noopener noreferrer"
-        className={`block rounded-2xl overflow-hidden border-4 ${borderColor} hover:scale-105 transition-all cursor-pointer shadow-lg`}
-        title={`Scannez ou cliquez pour payer via ${label}`}
+        className={`sm:hidden w-full ${btnBg} font-black text-base py-5 rounded-2xl text-center shadow-xl flex items-center justify-center gap-3`}
       >
-        <img
-          src={imgSrc}
-          alt={`QR Code ${label} — Scannez pour payer`}
-          width={size}
-          height={size}
-          className="block object-cover"
-          style={{ width: size, height: size }}
-        />
+        <span className="text-2xl">{emoji}</span>
+        <span>Appuyez ici pour payer<br/><span className="font-normal text-sm opacity-90">via {label}</span></span>
       </a>
-      <p className="text-xs text-gray-500 text-center">📷 Scannez avec l'app {label}</p>
+      <p className="sm:hidden text-xs text-gray-400 text-center">👆 Ce bouton ouvre directement {label} sur votre téléphone</p>
+
+      {/* ── DESKTOP : QR + bouton ── */}
       <a
         href={link}
         target="_blank"
         rel="noopener noreferrer"
-        className={`w-full font-bold py-3 rounded-xl text-sm text-center transition-colors shadow-md ${btnColor}`}
+        className={`hidden sm:block rounded-2xl overflow-hidden border-4 ${borderCol} hover:scale-105 transition-all cursor-pointer shadow-lg`}
+        title={`Scannez pour payer via ${label}`}
       >
-        📱 Ouvrir {label} et payer
+        <img src={imgSrc} alt={`QR Code ${label}`} width={size} height={size} className="block object-cover" style={{width:size,height:size}} />
+      </a>
+      <p className="hidden sm:block text-xs text-gray-500 text-center">📷 Scannez ce QR avec l'app {label} sur votre téléphone</p>
+      <a
+        href={link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`hidden sm:flex w-full ${btnBg} font-bold py-3 rounded-xl text-sm text-center transition-colors shadow-md items-center justify-center gap-2`}
+      >
+        {emoji} Ouvrir {label} et payer
       </a>
     </div>
   );
