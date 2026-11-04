@@ -6402,19 +6402,13 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 {sbProvider==="WAVE"&&(
                   <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:14,padding:"14px",marginBottom:12}}>
                     <div style={{fontWeight:800,fontSize:12,color:"#1d4ed8",marginBottom:10}}>〰️ {lang==="fr"?"Comment payer via Wave :":"How to pay via Wave:"}</div>
-                    {/* BOUTON PRINCIPAL cliquable */}
-                    <a href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/" target="_blank" rel="noopener noreferrer"
-                      style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:"#2563eb",color:"#fff",fontWeight:900,fontSize:15,borderRadius:14,padding:"14px 16px",marginBottom:12,textDecoration:"none",boxShadow:"0 4px 12px #2563eb55"}}>
-                      🌊 {lang==="fr"?"Appuyez ici pour payer":"Tap here to pay"}
-                    </a>
-                    <p style={{fontSize:10,color:"#6b7280",textAlign:"center",marginBottom:10}}>👆 {lang==="fr"?"Ce bouton ouvre Wave directement sur votre téléphone":"This button opens Wave directly on your phone"}</p>
-                    {/* QR cliquable centré */}
-                    <div style={{background:"#dbeafe",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-                      <p style={{fontSize:11,color:"#1e40af",fontWeight:700,textAlign:"center",margin:"0 0 4px"}}>
+                    {/* QR cliquable centré — grand */}
+                    <div style={{background:"#dbeafe",borderRadius:10,padding:"16px",marginBottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
+                      <p style={{fontSize:12,color:"#1e40af",fontWeight:700,textAlign:"center",margin:"0 0 4px"}}>
                         👆 {lang==="fr"?"Cliquez sur le QR Code pour donner si vous êtes sur mobile ou ordinateur":"Click the QR Code to donate from mobile or computer"}
                       </p>
                       <a href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/" target="_blank" rel="noopener noreferrer">
-                        <img src="/qr_wave_real.jpg" alt="QR Wave" style={{width:130,height:130,borderRadius:12,border:"3px solid #2563eb",display:"block",boxShadow:"0 2px 10px #2563eb33"}} />
+                        <img src="/qr_wave_real.jpg" alt="QR Wave" style={{width:200,height:200,borderRadius:14,border:"4px solid #2563eb",display:"block",boxShadow:"0 4px 16px #2563eb44"}} />
                       </a>
                       <div style={{textAlign:"center"}}>
                         <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:2}}>{lang==="fr"?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
