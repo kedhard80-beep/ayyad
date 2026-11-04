@@ -6445,19 +6445,13 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 {sbProvider==="MTN"&&(
                   <div style={{background:"#fefce8",border:"1.5px solid #fde047",borderRadius:14,padding:"14px",marginBottom:12}}>
                     <div style={{fontWeight:800,fontSize:12,color:"#854d0e",marginBottom:10}}>🟡 {lang==="fr"?"Comment payer via MTN MoMo :":"How to pay via MTN MoMo:"}</div>
-                    {/* BOUTON PRINCIPAL cliquable */}
-                    <a href="https://appbiz.momo.africa/momo/request-momo/2250501855991" target="_blank" rel="noopener noreferrer"
-                      style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:"#eab308",color:"#1c1917",fontWeight:900,fontSize:15,borderRadius:14,padding:"14px 16px",marginBottom:12,textDecoration:"none",boxShadow:"0 4px 12px #eab30855"}}>
-                      📲 {lang==="fr"?"Appuyez ici pour payer MTN MoMo":"Tap here to pay MTN MoMo"}
-                    </a>
-                    <p style={{fontSize:10,color:"#6b7280",textAlign:"center",marginBottom:10}}>👆 {lang==="fr"?"Ce bouton ouvre MTN MoMo directement sur votre téléphone":"This button opens MTN MoMo directly on your phone"}</p>
-                    {/* QR cliquable centré */}
-                    <div style={{background:"#fef9c3",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-                      <p style={{fontSize:11,color:"#854d0e",fontWeight:700,textAlign:"center",margin:"0 0 4px"}}>
+                    {/* QR cliquable centré — grand */}
+                    <div style={{background:"#fef9c3",borderRadius:10,padding:"16px",marginBottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
+                      <p style={{fontSize:12,color:"#854d0e",fontWeight:700,textAlign:"center",margin:"0 0 4px"}}>
                         👆 {lang==="fr"?"Cliquez sur le QR Code pour donner si vous êtes sur mobile ou ordinateur":"Click the QR Code to donate from mobile or computer"}
                       </p>
-                      <a href="https://appbiz.momo.africa/momo/request-momo/2250501855991" target="_blank" rel="noopener noreferrer">
-                        <img src="/qr_mtn_real.jpg" alt="QR MTN MoMo" style={{width:130,height:130,borderRadius:12,border:"3px solid #eab308",display:"block",boxShadow:"0 2px 10px #eab30833"}} />
+                      <a href="https://appbiz.momo.africa/momo/request-momo/2250501855991" target="_blank" rel="noopener noreferrer" style={{width:"100%",display:"block"}}>
+                        <img src="/qr_mtn_real.jpg" alt="QR MTN MoMo" style={{width:"100%",height:"auto",borderRadius:14,border:"4px solid #eab308",display:"block",boxShadow:"0 4px 16px #eab30844"}} />
                       </a>
                       <div style={{textAlign:"center"}}>
                         <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:2}}>{lang==="fr"?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
