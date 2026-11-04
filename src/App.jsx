@@ -6407,8 +6407,8 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       <p style={{fontSize:12,color:"#1e40af",fontWeight:700,textAlign:"center",margin:"0 0 4px"}}>
                         👆 {lang==="fr"?"Cliquez sur le QR Code pour donner si vous êtes sur mobile ou ordinateur":"Click the QR Code to donate from mobile or computer"}
                       </p>
-                      <a href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/" target="_blank" rel="noopener noreferrer">
-                        <img src="/qr_wave_real.jpg" alt="QR Wave" style={{width:200,height:200,borderRadius:14,border:"4px solid #2563eb",display:"block",boxShadow:"0 4px 16px #2563eb44"}} />
+                      <a href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/" target="_blank" rel="noopener noreferrer" style={{width:"100%",display:"block"}}>
+                        <img src="/qr_wave_real.jpg" alt="QR Wave" style={{width:"100%",height:"auto",borderRadius:14,border:"4px solid #2563eb",display:"block",boxShadow:"0 4px 16px #2563eb44"}} />
                       </a>
                       <div style={{textAlign:"center"}}>
                         <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:2}}>{lang==="fr"?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
