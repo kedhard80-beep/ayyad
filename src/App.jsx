@@ -2224,20 +2224,8 @@ const SupportAyyadSection = ({ lang }) => {
           {/* ── ÉTAPE 2: QR Wave + instructions Sendwave pour l'étranger ── */}
           {step === "wave_qr" && (
             <div className="flex flex-col items-center gap-3">
-              <div className="text-sm font-black">📱 {fr ? "Scannez pour payer via Wave CI" : ar ? "امسح للدفع عبر Wave CI" : "Scan to pay with Wave CI"}</div>
-              <a
-                href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block"
-              >
-                <img src="/wave_qr.png" alt="QR Wave Ayyad" width={200} height={200}
-                  className="rounded-2xl border-4 border-white/30 bg-white shadow-xl p-2"
-                  onError={e => { e.target.style.display="none"; }} />
-              </a>
-              <div className="text-[11px] font-semibold text-white/80 bg-white/10 px-3 py-1.5 rounded-full">
-                👆 {fr ? "Touchez le QR sur mobile" : ar ? "المس رمز QR على الجوال" : "Tap the QR on mobile"}
-              </div>
+
+              {/* Montant */}
               <div className="w-full bg-white rounded-xl p-3 text-gray-900">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-500">{fr?"Montant à envoyer :":ar?"المبلغ المراد إرساله:":"Amount to send:"}</span>
@@ -2248,6 +2236,33 @@ const SupportAyyadSection = ({ lang }) => {
                   </span>
                 </div>
               </div>
+
+              {/* BOUTON PRINCIPAL — grand et cliquable */}
+              <a
+                href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-white text-blue-700 font-black text-lg py-4 rounded-2xl text-center shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
+              >
+                🌊 {fr ? "Payer avec Wave CI" : ar ? "الدفع عبر Wave CI" : "Pay with Wave CI"}
+              </a>
+              <p className="text-xs text-white/70 text-center">
+                👆 {fr ? "Appuyez pour ouvrir Wave directement" : ar ? "انقر لفتح Wave مباشرة" : "Tap to open Wave directly"}
+              </p>
+
+              {/* QR code — cliquable, pour ceux qui veulent scanner */}
+              <div className="text-xs text-white/60 text-center mt-1">{fr?"— ou scannez le QR ci-dessous —":ar?"— أو امسح رمز QR أدناه —":"— or scan the QR below —"}</div>
+              <a
+                href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <img src="/qr_wave_real.jpg" alt="QR Wave AYYAD" width={180} height={180}
+                  className="rounded-2xl border-4 border-white bg-white shadow-xl"
+                  onError={e => { e.target.parentElement.style.display="none"; }} />
+              </a>
+
               <div className="text-xs text-emerald-100 text-center leading-relaxed">
                 {fr
                   ? <>Ouvrez <strong className="text-white">Wave CI</strong> → <strong className="text-white">Scanner</strong> → saisissez <strong className="text-white">{amountFCFA.toLocaleString("fr-FR")} FCFA</strong> → validez</>
@@ -6387,29 +6402,40 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 {sbProvider==="WAVE"&&(
                   <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:14,padding:"14px",marginBottom:12}}>
                     <div style={{fontWeight:800,fontSize:12,color:"#1d4ed8",marginBottom:10}}>〰️ {lang==="fr"?"Comment payer via Wave :":"How to pay via Wave:"}</div>
+                    {/* BOUTON PRINCIPAL cliquable */}
+                    <a href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/" target="_blank" rel="noopener noreferrer"
+                      style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:"#2563eb",color:"#fff",fontWeight:900,fontSize:15,borderRadius:14,padding:"14px 16px",marginBottom:12,textDecoration:"none",boxShadow:"0 4px 12px #2563eb55"}}>
+                      🌊 {lang==="fr"?"Appuyez ici pour payer":"Tap here to pay"}
+                    </a>
+                    <p style={{fontSize:10,color:"#6b7280",textAlign:"center",marginBottom:10}}>👆 {lang==="fr"?"Ce bouton ouvre Wave directement sur votre téléphone":"This button opens Wave directly on your phone"}</p>
+                    {/* QR cliquable pour ceux qui veulent scanner */}
                     <div style={{background:"#dbeafe",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
-                      <img src={`data:image/png;base64,${QR_WAVE}`} alt="QR Wave" style={{width:76,height:76,flexShrink:0,borderRadius:8,border:"2px solid #bfdbfe"}} />
+                      <a href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/" target="_blank" rel="noopener noreferrer" style={{flexShrink:0}}>
+                        <img src="/qr_wave_real.jpg" alt="QR Wave" style={{width:80,height:80,borderRadius:8,border:"3px solid #2563eb",display:"block"}} />
+                      </a>
                       <div>
                         <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
-                        <div style={{fontWeight:900,fontSize:16,color:"#1d4ed8",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
-                        <div style={{fontSize:10,color:"#6366f1",marginTop:4}}>📷 {lang==="fr"?"Scannez ou entrez le numéro":"Scan or enter number"}</div>
+                        <div style={{fontWeight:900,fontSize:15,color:"#1d4ed8",fontFamily:"monospace"}}>+225 07 48 05 61 28</div>
+                        <div style={{fontSize:10,color:"#6366f1",marginTop:4}}>📷 {lang==="fr"?"Ou scannez le QR":"Or scan the QR"}</div>
                       </div>
                     </div>
                     <div style={{fontSize:11,color:"#3730a3",lineHeight:1.9}}>
-                      {lang==="fr"?<>1. App <strong>Wave</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Revenez ici → "J'ai effectué le paiement"</>
-                        :<>1. <strong>Wave</strong> app → Send → scan or enter number<br/>2. Amount: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Come back → "I've completed payment"</>}
+                      {lang==="fr"?<>Montant à envoyer : <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>Puis revenez ici → "J'ai effectué le paiement"</>
+                        :<>Amount to send: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>Then come back → "I've completed payment"</>}
                     </div>
                   </div>
                 )}
                 {sbProvider==="OM"&&(
                   <div style={{background:"#fff7ed",border:"1.5px solid #fdba74",borderRadius:14,padding:"14px",marginBottom:12}}>
                     <div style={{fontWeight:800,fontSize:12,color:"#c2410c",marginBottom:10}}>🟠 {lang==="fr"?"Comment payer via Orange Money :":"How to pay via Orange Money:"}</div>
-                    <div style={{background:"#ffedd5",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
-                      <img src={`data:image/png;base64,${QR_OM}`} alt="QR Orange Money" style={{width:76,height:76,flexShrink:0,borderRadius:8,border:"2px solid #fdba74"}} />
-                      <div>
+                    {/* QR cliquable centré */}
+                    <div style={{background:"#ffedd5",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+                      <img src="/qr_om_real.jpg" alt="QR Orange Money" style={{width:140,height:140,borderRadius:12,border:"3px solid #f97316",display:"block",boxShadow:"0 2px 10px #f9731633"}}
+                        onError={e=>{e.target.style.display="none";}} />
+                      <div style={{textAlign:"center"}}>
                         <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro Orange Money AYYAD :":"AYYAD Orange Money number:"}</div>
-                        <div style={{fontWeight:900,fontSize:16,color:"#c2410c",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
-                        <div style={{fontSize:10,color:"#ea580c",marginTop:4}}>📷 {lang==="fr"?"Scannez ou entrez le numéro":"Scan or enter number"}</div>
+                        <div style={{fontWeight:900,fontSize:17,color:"#c2410c",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
+                        <div style={{fontSize:10,color:"#ea580c",marginTop:4}}>📷 {lang==="fr"?"Scannez le QR ou entrez le numéro":"Scan the QR or enter the number"}</div>
                       </div>
                     </div>
                     <div style={{fontSize:11,color:"#9a3412",lineHeight:1.9}}>
@@ -6421,17 +6447,26 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 {sbProvider==="MTN"&&(
                   <div style={{background:"#fefce8",border:"1.5px solid #fde047",borderRadius:14,padding:"14px",marginBottom:12}}>
                     <div style={{fontWeight:800,fontSize:12,color:"#854d0e",marginBottom:10}}>🟡 {lang==="fr"?"Comment payer via MTN MoMo :":"How to pay via MTN MoMo:"}</div>
+                    {/* BOUTON PRINCIPAL cliquable */}
+                    <a href="https://appbiz.momo.africa/momo/request-momo/2250501855991" target="_blank" rel="noopener noreferrer"
+                      style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:"#eab308",color:"#1c1917",fontWeight:900,fontSize:15,borderRadius:14,padding:"14px 16px",marginBottom:12,textDecoration:"none",boxShadow:"0 4px 12px #eab30855"}}>
+                      📲 {lang==="fr"?"Appuyez ici pour payer MTN MoMo":"Tap here to pay MTN MoMo"}
+                    </a>
+                    <p style={{fontSize:10,color:"#6b7280",textAlign:"center",marginBottom:10}}>👆 {lang==="fr"?"Ce bouton ouvre MTN MoMo directement sur votre téléphone":"This button opens MTN MoMo directly on your phone"}</p>
+                    {/* QR cliquable */}
                     <div style={{background:"#fef9c3",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
-                      <img src={`data:image/png;base64,${QR_MTN}`} alt="QR MTN MoMo" style={{width:76,height:76,flexShrink:0,borderRadius:8,border:"2px solid #fde047"}} />
+                      <a href="https://appbiz.momo.africa/momo/request-momo/2250501855991" target="_blank" rel="noopener noreferrer" style={{flexShrink:0}}>
+                        <img src="/qr_mtn_real.jpg" alt="QR MTN MoMo" style={{width:80,height:80,borderRadius:8,border:"3px solid #eab308",display:"block"}} />
+                      </a>
                       <div>
                         <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
-                        <div style={{fontWeight:900,fontSize:16,color:"#ca8a04",fontFamily:"monospace",letterSpacing:"1px"}}>+225 05 01 85 59 91</div>
-                        <div style={{fontSize:10,color:"#854d0e",marginTop:4}}>📷 {lang==="fr"?"Scannez ou entrez le numéro":"Scan or enter number"}</div>
+                        <div style={{fontWeight:900,fontSize:15,color:"#ca8a04",fontFamily:"monospace"}}>+225 05 01 85 59 91</div>
+                        <div style={{fontSize:10,color:"#854d0e",marginTop:4}}>📷 {lang==="fr"?"Ou scannez le QR":"Or scan the QR"}</div>
                       </div>
                     </div>
                     <div style={{fontSize:11,color:"#713f12",lineHeight:1.9}}>
-                      {lang==="fr"?<>1. App <strong>MTN MoMo</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>*133#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
-                        :<>1. <strong>MTN MoMo</strong> → Send → scan or enter number<br/>2. Amount: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>*133#</strong><br/>4. Come back → "I've completed payment"</>}
+                      {lang==="fr"?<>Montant à envoyer : <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>Puis revenez ici → "J'ai effectué le paiement"</>
+                        :<>Amount to send: <strong>{sbAmtFcfa.toLocaleString("fr-CI")} FCFA</strong><br/>Then come back → "I've completed payment"</>}
                     </div>
                   </div>
                 )}
