@@ -6404,8 +6404,9 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     <div style={{fontWeight:800,fontSize:12,color:"#1d4ed8",marginBottom:10}}>〰️ {lang==="fr"?"Comment payer via Wave :":"How to pay via Wave:"}</div>
                     {/* QR cliquable centré — grand */}
                     <div style={{background:"#dbeafe",borderRadius:10,padding:"16px",marginBottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
-                      <p style={{fontSize:12,color:"#1e40af",fontWeight:700,textAlign:"center",margin:"0 0 4px"}}>
-                        👆 {lang==="fr"?"Cliquez sur le QR Code pour donner si vous êtes sur mobile ou ordinateur":"Click the QR Code to donate from mobile or computer"}
+                      <p style={{fontSize:11,color:"#1e40af",fontWeight:700,textAlign:"center",margin:"0 0 4px",lineHeight:1.6}}>
+                        📱 {lang==="fr"?"Sur mobile : touchez le QR pour payer directement":"On mobile: tap the QR to pay directly"}<br/>
+                        💻 {lang==="fr"?"Sur ordinateur : scannez le QR avec votre téléphone":"On computer: scan the QR with your phone"}
                       </p>
                       <a href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/" target="_blank" rel="noopener noreferrer" style={{width:"100%",display:"block"}}>
                         <img src="/qr_wave_real.jpg" alt="QR Wave" style={{width:"100%",height:"auto",borderRadius:14,border:"4px solid #2563eb",display:"block",boxShadow:"0 4px 16px #2563eb44"}} />
@@ -6447,8 +6448,9 @@ const CasePage = ({ c, setPage, lang, user }) => {
                     <div style={{fontWeight:800,fontSize:12,color:"#854d0e",marginBottom:10}}>🟡 {lang==="fr"?"Comment payer via MTN MoMo :":"How to pay via MTN MoMo:"}</div>
                     {/* QR cliquable centré — grand */}
                     <div style={{background:"#fef9c3",borderRadius:10,padding:"16px",marginBottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
-                      <p style={{fontSize:12,color:"#854d0e",fontWeight:700,textAlign:"center",margin:"0 0 4px"}}>
-                        👆 {lang==="fr"?"Cliquez sur le QR Code pour donner si vous êtes sur mobile ou ordinateur":"Click the QR Code to donate from mobile or computer"}
+                      <p style={{fontSize:11,color:"#854d0e",fontWeight:700,textAlign:"center",margin:"0 0 4px",lineHeight:1.6}}>
+                        📱 {lang==="fr"?"Sur mobile : touchez le QR pour payer directement":"On mobile: tap the QR to pay directly"}<br/>
+                        💻 {lang==="fr"?"Sur ordinateur : scannez le QR avec votre téléphone":"On computer: scan the QR with your phone"}
                       </p>
                       <a href="https://appbiz.momo.africa/momo/request-momo/2250501855991" target="_blank" rel="noopener noreferrer" style={{width:"100%",display:"block"}}>
                         <img src="/qr_mtn_real.jpg" alt="QR MTN MoMo" style={{width:"100%",height:"auto",borderRadius:14,border:"4px solid #eab308",display:"block",boxShadow:"0 4px 16px #eab30844"}} />
