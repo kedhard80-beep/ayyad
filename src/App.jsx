@@ -4280,6 +4280,24 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [heroStats, setHeroStats] = useState({ patients: "0", collected: "0", hospitals: "18", funded: "0" });
+  const [platformTotal, setPlatformTotal] = useState(0); // total dons plateforme en FCFA
+  const [platformCurrency, setPlatformCurrency] = useState("XOF"); // XOF | EUR | USD
+  const RATES = { XOF: 1, EUR: 1 / 655.957, USD: 1 / 600 };
+  const SYMBOLS = { XOF: "FCFA", EUR: "€", USD: "$" };
+  const fmtPlatform = (xof) => {
+    const val = Math.round(xof * RATES[platformCurrency]);
+    if (platformCurrency === "XOF") return val.toLocaleString("fr-FR");
+    return val.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  };
+  useEffect(() => {
+    supabase.from("donations").select("amount_fcfa, amount").is("case_id", null).eq("status", "confirmed")
+      .then(({ data }) => {
+        if (data) {
+          const total = data.reduce((s, d) => s + Number(d.amount_fcfa || d.amount || 0), 0);
+          setPlatformTotal(total);
+        }
+      });
+  }, []);
   useEffect(() => {
     const loadStats = async () => {
       try {
@@ -4604,6 +4622,34 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
                   ? "Votre soutien finance la vérification des dossiers médicaux, les partenariats hospitaliers et l'accompagnement personnalisé des patients."
                   : "Your support funds medical case verification, hospital partnerships and personalized patient guidance."}
               </p>
+              {/* ── Compteur dons plateforme ── */}
+              <div style={{ marginTop: 20, display:"flex", flexDirection:"column", gap:6 }}>
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase", color:"var(--ink-400)" }}>
+                  {lang==="fr" ? "Total des dons reçus par Ayyad" : lang==="ar" ? "إجمالي التبرعات المستلمة" : "Total donations received by Ayyad"}
+                </div>
+                <div style={{ display:"flex", alignItems:"baseline", gap:10 }}>
+                  <span style={{ fontSize:"clamp(2rem, 4vw, 2.8rem)", fontWeight:900, color:"var(--gold)", fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em" }}>
+                    {platformCurrency === "USD" && <span style={{fontSize:"0.7em",verticalAlign:"middle",marginRight:2}}>$</span>}
+                    {platformCurrency === "EUR" && <span style={{fontSize:"0.7em",verticalAlign:"middle",marginRight:2}}>€</span>}
+                    {fmtPlatform(platformTotal)}
+                  </span>
+                  {platformCurrency === "XOF" && <span style={{ fontSize:14, fontWeight:700, color:"var(--ink-500)" }}>FCFA</span>}
+                </div>
+                {/* Switch devise */}
+                <div style={{ display:"flex", gap:4, marginTop:2 }}>
+                  {["XOF","EUR","USD"].map(c => (
+                    <button key={c} onClick={() => setPlatformCurrency(c)} style={{
+                      padding:"3px 10px", borderRadius:9999, fontSize:11, fontWeight:700, cursor:"pointer", border:"1.5px solid",
+                      background: platformCurrency===c ? "var(--gold)" : "transparent",
+                      color: platformCurrency===c ? "#fff" : "var(--ink-400)",
+                      borderColor: platformCurrency===c ? "var(--gold)" : "var(--ink-200)",
+                      transition:"all .18s"
+                    }}>
+                      {c === "XOF" ? "FCFA" : c}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
             <div style={{ textAlign:"center" }}>
               <button onClick={() => setPage("support-ayyad")} className="ayyad-btn-gold" style={{ fontSize:14, padding:"15px 30px" }}>
@@ -5270,9 +5316,16 @@ const CasePage = ({ c, setPage, lang, user }) => {
   const [message, setMessage] = useState("");
   // Edit mode (owner seulement)
   // State local pour cumuler les vidéos sans dépendre du prop c (qui ne se met pas à jour)
-  const [localVideoUrls, setLocalVideoUrls] = useState(
-    c.video_urls && c.video_urls.length > 0 ? c.video_urls : (c.video_url ? [c.video_url] : [])
-  );
+  const [localVideoUrls, setLocalVideoUrls] = useState(() => {
+    if (c.video_urls && Array.isArray(c.video_urls) && c.video_urls.length > 0) return c.video_urls;
+    const val = c.video_url;
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    if (typeof val === "string" && val.trim().startsWith("[")) {
+      try { const parsed = JSON.parse(val); return Array.isArray(parsed) ? parsed : [val]; } catch { return [val]; }
+    }
+    return [val];
+  });
   const [localPhotos, setLocalPhotos] = useState(
     [...new Set([...(c.photo_url ? [c.photo_url] : []), ...(c.photos || [])])]
   );
