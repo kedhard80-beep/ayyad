@@ -4283,6 +4283,26 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const [platformTotal, setPlatformTotal] = useState(0); // total dons plateforme en FCFA
   const [platformCurrency, setPlatformCurrency] = useState("XOF"); // XOF | EUR | USD
   const [platformDonors, setPlatformDonors] = useState([]); // liste donateurs plateforme
+  const DONOR_MSGS_FR = [
+    "Continuez, même si les gens ne vous aident pas. Ne baissez jamais les bras !",
+    "Dieu vous bénisse pour tout ce que vous faites. Continuez, vous êtes une lumière !",
+    "Un jour, Ayyad sera la plateforme que tout le monde visitera. Je le crois !",
+    "Ne vous découragez pas si les gens ne réagissent pas — votre mission est noble.",
+    "Ce que vous faites est très bien. Le monde a besoin d'Ayyad, continuez !",
+    "Ne baissez jamais les bras. Chaque vie sauvée compte et vous y contribuez.",
+    "Même si la route est longue, chaque pas compte. Ayyad va grandir, j'en suis sûr·e.",
+  ];
+  const DONOR_MSGS_EN = [
+    "Keep going, even when others don't help. Never give up!",
+    "God bless you for everything you do for these families. Keep it up!",
+    "One day, Ayyad will be the platform everyone visits. I believe it!",
+    "Don't be discouraged if people don't react — your mission is noble.",
+    "What you do is excellent. The world needs Ayyad, keep going!",
+    "Never give up. Every life saved counts and you contribute to it.",
+    "Even if the road is long, every step counts. Ayyad will grow!",
+  ];
+  const donorAvatarColors = ["#C9A84C","#2D6A4F","#5C3D2E","#1A5276","#6C3483","#1B4F72"];
+  const donorInitials = (name) => name === "Anonyme" ? "?" : name.split(" ").map(p=>p[0]?.toUpperCase()||"").join("").slice(0,2);
   const RATES = { XOF: 1, EUR: 1 / 655.957, USD: 1 / 600 };
   const SYMBOLS = { XOF: "FCFA", EUR: "€", USD: "$" };
   const fmtPlatform = (xof) => {
@@ -4622,11 +4642,13 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
             <div>
               <span className="ayyad-eyebrow">{lang==="fr" ? "Soutenir la plateforme" : lang==="ar" ? "دعم المنصة" : "Support the platform"}</span>
               <h3 className="ayyad-h-display" style={{ fontSize:"clamp(1.6rem, 2.6vw, 2.2rem)", marginTop: 14, marginBottom: 14 }}>
-                {lang==="fr" ? <>Aider Ayyad à <em>grandir.</em></> : <>Help Ayyad <em>grow.</em></>}
+                {lang==="fr" ? <>Aider Ayyad à <em>grandir.</em></> : lang==="ar" ? <>ساعد أيد على <em>النمو.</em></> : <>Help Ayyad <em>grow.</em></>}
               </h3>
               <p style={{ color:"var(--ink-500)", fontSize:15, lineHeight:1.65, marginBottom:24 }}>
                 {lang==="fr"
                   ? "Votre soutien finance la vérification des dossiers médicaux, les partenariats hospitaliers et l'accompagnement personnalisé des patients."
+                  : lang==="ar"
+                  ? "دعمك يموّل التحقق من الملفات الطبية، والشراكات مع المستشفيات، ومرافقة المرضى بشكل شخصي."
                   : "Your support funds medical case verification, hospital partnerships and personalized patient guidance."}
               </p>
               <button onClick={() => setPage("support-ayyad")} className="ayyad-btn-gold" style={{ fontSize:14, padding:"15px 30px" }}>
