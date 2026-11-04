@@ -4636,58 +4636,111 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
                 {lang==="fr" ? "Don 100% dédié au fonctionnement de la plateforme" : lang==="ar" ? "100% مخصص لتشغيل المنصة" : "100% dedicated to platform operations"}
               </div>
             </div>
-            {/* ── Colonne droite : compteur + liste donateurs ── */}
-            <div style={{ background:"#fff", borderRadius:16, border:"1px solid rgba(201,168,76,0.25)", padding:"clamp(16px,2.5vw,28px)", boxShadow:"0 2px 16px rgba(0,0,0,0.05)" }}>
-              <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase", color:"var(--ink-400)", marginBottom:8 }}>
-                {lang==="fr" ? "Total des dons direct reçus par Ayyad" : lang==="ar" ? "إجمالي التبرعات المباشرة المستلمة" : "Total direct donations received by Ayyad"}
-              </div>
-              <div style={{ display:"flex", alignItems:"baseline", gap:10, marginBottom:8 }}>
-                <span style={{ fontSize:"clamp(2rem, 4vw, 2.8rem)", fontWeight:900, color:"var(--gold)", fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em" }}>
-                  {platformCurrency === "USD" && <span style={{fontSize:"0.7em",verticalAlign:"middle",marginRight:2}}>$</span>}
-                  {platformCurrency === "EUR" && <span style={{fontSize:"0.7em",verticalAlign:"middle",marginRight:2}}>€</span>}
-                  {fmtPlatform(platformTotal)}
-                </span>
-                {platformCurrency === "XOF" && <span style={{ fontSize:14, fontWeight:700, color:"var(--ink-500)" }}>FCFA</span>}
-              </div>
-              {/* Switch devise */}
-              <div style={{ display:"flex", gap:4, marginBottom:14 }}>
-                {["XOF","EUR","USD"].map(c => (
-                  <button key={c} onClick={() => setPlatformCurrency(c)} style={{
-                    padding:"3px 10px", borderRadius:9999, fontSize:11, fontWeight:700, cursor:"pointer", border:"1.5px solid",
-                    background: platformCurrency===c ? "var(--gold)" : "transparent",
-                    color: platformCurrency===c ? "#fff" : "var(--ink-400)",
-                    borderColor: platformCurrency===c ? "var(--gold)" : "var(--ink-200)",
-                    transition:"all .18s"
-                  }}>
-                    {c === "XOF" ? "FCFA" : c}
-                  </button>
-                ))}
-              </div>
-              {/* Liste donateurs plateforme */}
-              {platformDonors.length > 0 ? (
-                <div style={{ borderTop:"1px solid var(--ink-100)", paddingTop:10 }}>
-                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"var(--ink-400)", marginBottom:6 }}>
-                    {lang==="fr" ? "Donateurs" : lang==="ar" ? "المتبرعون" : "Donors"}
+            {/* ── Colonne droite : compteur premium + liste donateurs ── */}
+            {(() => {
+              const DONOR_MSGS_FR = [
+                "Continuez, même si les gens ne vous aident pas. Ne baissez jamais les bras !",
+                "Dieu vous bénisse pour tout ce que vous faites pour ces familles. Continuez !",
+                "Un jour, Ayyad sera la plateforme que tout le monde visitera. Je le crois !",
+                "Ne vous découragez pas si les gens ne réagissent pas — votre mission est noble.",
+                "Ce que vous faites est très bien. Le monde a besoin d'Ayyad, continuez !",
+                "Ne baissez jamais les bras. Chaque vie sauvée compte et vous y contribuez.",
+                "Même si la route est longue, chaque pas compte. Ayyad va grandir, j'en suis sûr·e.",
+              ];
+              const DONOR_MSGS_EN = [
+                "Keep going, even when others don't help. Never give up!",
+                "God bless you for everything you do for these families. Keep it up!",
+                "One day, Ayyad will be the platform everyone visits. I believe it!",
+                "Don't be discouraged if people don't react — your mission is noble.",
+                "What you do is excellent. The world needs Ayyad, keep going!",
+                "Never give up. Every life saved counts and you contribute to it.",
+                "Even if the road is long, every step counts. Ayyad will grow!",
+              ];
+              const msgs = lang === "en" ? DONOR_MSGS_EN : DONOR_MSGS_FR;
+              const initials = (name) => name === "Anonyme" ? "?" : name.split(" ").map(p=>p[0]?.toUpperCase()||"").join("").slice(0,2);
+              const avatarColors = ["#C9A84C","#2D6A4F","#5C3D2E","#1A5276","#6C3483","#1B4F72"];
+              return (
+                <div style={{ background:"linear-gradient(145deg,#ffffff 0%,#fdfbf5 100%)", borderRadius:20, border:"1.5px solid rgba(201,168,76,0.30)", padding:"clamp(18px,2.8vw,32px)", boxShadow:"0 4px 32px rgba(201,168,76,0.10), 0 1px 4px rgba(0,0,0,0.04)", position:"relative", overflow:"hidden" }}>
+                  {/* Décoration dorée coin */}
+                  <div style={{ position:"absolute", top:0, right:0, width:80, height:80, background:"radial-gradient(circle at top right, rgba(201,168,76,0.12) 0%, transparent 70%)", borderRadius:"0 20px 0 0", pointerEvents:"none" }} />
+                  {/* Label + total */}
+                  <div style={{ fontSize:10, fontWeight:800, letterSpacing:"0.14em", textTransform:"uppercase", color:"var(--gold)", marginBottom:6, opacity:0.85 }}>
+                    {lang==="fr" ? "✦ Total des dons directs reçus par Ayyad" : lang==="ar" ? "✦ إجمالي التبرعات المباشرة" : "✦ Total direct donations received by Ayyad"}
                   </div>
-                  <div style={{ maxHeight:160, overflowY:"auto", display:"flex", flexDirection:"column", gap:0 }}>
-                    {platformDonors.map((d, i) => (
-                      <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 0", borderBottom: i < platformDonors.length-1 ? "1px solid var(--ink-100)" : "none" }}>
-                        <span style={{ fontSize:13, fontWeight:600, color:"var(--ink-700)", maxWidth:"55%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                          {d.name.length > 1 ? d.name.charAt(0).toUpperCase() + d.name.slice(1) : d.name}
-                        </span>
-                        <span style={{ fontSize:13, fontWeight:800, color:"var(--gold)", whiteSpace:"nowrap" }}>
-                          {platformCurrency === "USD" && "$"}{platformCurrency === "EUR" && "€"}{Math.round(d.amount * RATES[platformCurrency]).toLocaleString("fr-FR")}{platformCurrency === "XOF" && " FCFA"}
-                        </span>
-                      </div>
+                  <div style={{ display:"flex", alignItems:"baseline", gap:10, marginBottom:10 }}>
+                    <span style={{ fontSize:"clamp(2.2rem, 4.5vw, 3rem)", fontWeight:900, color:"var(--forest)", fontVariantNumeric:"tabular-nums", letterSpacing:"-0.03em", lineHeight:1 }}>
+                      {platformCurrency === "USD" && <span style={{fontSize:"0.65em",verticalAlign:"middle",marginRight:3,color:"var(--gold)"}}>$</span>}
+                      {platformCurrency === "EUR" && <span style={{fontSize:"0.65em",verticalAlign:"middle",marginRight:3,color:"var(--gold)"}}>€</span>}
+                      {fmtPlatform(platformTotal)}
+                    </span>
+                    {platformCurrency === "XOF" && <span style={{ fontSize:15, fontWeight:800, color:"var(--gold)" }}>FCFA</span>}
+                  </div>
+                  {/* Switch devise */}
+                  <div style={{ display:"flex", gap:5, marginBottom:18 }}>
+                    {["XOF","EUR","USD"].map(c => (
+                      <button key={c} onClick={() => setPlatformCurrency(c)} style={{
+                        padding:"4px 12px", borderRadius:9999, fontSize:11, fontWeight:800, cursor:"pointer", border:"1.5px solid",
+                        background: platformCurrency===c ? "linear-gradient(135deg,#C9A84C,#e4c06e)" : "transparent",
+                        color: platformCurrency===c ? "#fff" : "var(--ink-400)",
+                        borderColor: platformCurrency===c ? "#C9A84C" : "var(--ink-200)",
+                        boxShadow: platformCurrency===c ? "0 2px 8px rgba(201,168,76,0.30)" : "none",
+                        transition:"all .2s"
+                      }}>
+                        {c === "XOF" ? "FCFA" : c}
+                      </button>
                     ))}
                   </div>
+                  {/* Séparateur */}
+                  <div style={{ height:1, background:"linear-gradient(90deg,rgba(201,168,76,0.3) 0%,transparent 100%)", marginBottom:16 }} />
+                  {/* Titre donateurs */}
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+                    <span style={{ fontSize:11, fontWeight:800, letterSpacing:"0.12em", textTransform:"uppercase", color:"var(--ink-400)" }}>
+                      {lang==="fr" ? "Ils ont soutenu Ayyad" : lang==="ar" ? "دعموا أيد" : "They supported Ayyad"}
+                    </span>
+                    {platformDonors.length > 0 && (
+                      <span style={{ background:"rgba(201,168,76,0.15)", color:"var(--gold)", fontSize:10, fontWeight:800, borderRadius:9999, padding:"2px 8px" }}>
+                        {platformDonors.length}
+                      </span>
+                    )}
+                  </div>
+                  {/* Liste */}
+                  {platformDonors.length > 0 ? (
+                    <div style={{ maxHeight:220, overflowY:"auto", display:"flex", flexDirection:"column", gap:10,
+                      scrollbarWidth:"thin", scrollbarColor:"rgba(201,168,76,0.3) transparent" }}>
+                      {platformDonors.map((d, i) => (
+                        <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start", background: i%2===0?"rgba(201,168,76,0.04)":"transparent", borderRadius:12, padding:"10px 12px", border:"1px solid rgba(201,168,76,0.08)" }}>
+                          {/* Avatar initiales */}
+                          <div style={{ flexShrink:0, width:38, height:38, borderRadius:"50%", background:avatarColors[i % avatarColors.length], display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:900, color:"#fff", boxShadow:"0 2px 8px rgba(0,0,0,0.12)" }}>
+                            {initials(d.name)}
+                          </div>
+                          {/* Nom + message */}
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8, marginBottom:3 }}>
+                              <span style={{ fontSize:13, fontWeight:700, color:"var(--forest)", maxWidth:"60%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                                {d.name.length > 1 ? d.name.charAt(0).toUpperCase() + d.name.slice(1) : d.name}
+                              </span>
+                              <span style={{ fontSize:13, fontWeight:900, color:"var(--gold)", whiteSpace:"nowrap", letterSpacing:"-0.01em" }}>
+                                {platformCurrency==="USD"&&"$"}{platformCurrency==="EUR"&&"€"}{Math.round(d.amount*RATES[platformCurrency]).toLocaleString("fr-FR")}{platformCurrency==="XOF"&&" FCFA"}
+                              </span>
+                            </div>
+                            <p style={{ fontSize:11.5, color:"var(--ink-500)", fontStyle:"italic", lineHeight:1.5, margin:0, opacity:0.85 }}>
+                              « {msgs[i % msgs.length]} »
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign:"center", padding:"24px 0", color:"var(--ink-300)" }}>
+                      <div style={{ fontSize:28, marginBottom:8 }}>✨</div>
+                      <div style={{ fontSize:13, fontStyle:"italic", lineHeight:1.6 }}>
+                        {lang==="fr" ? "Soyez le premier à soutenir Ayyad\net laissez votre message d'espoir." : "Be the first to support Ayyad\nand leave your message of hope."}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div style={{ fontSize:13, color:"var(--ink-300)", fontStyle:"italic", paddingTop:4 }}>
-                  {lang==="fr" ? "Soyez le premier à soutenir Ayyad ✨" : "Be the first to support Ayyad ✨"}
-                </div>
-              )}
-            </div>
+              );
+            })()}
           </div>
         </div>
       </section>
