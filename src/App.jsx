@@ -4625,7 +4625,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
               {/* ── Compteur dons plateforme ── */}
               <div style={{ marginTop: 20, display:"flex", flexDirection:"column", gap:6 }}>
                 <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase", color:"var(--ink-400)" }}>
-                  {lang==="fr" ? "Total des dons reçus par Ayyad" : lang==="ar" ? "إجمالي التبرعات المستلمة" : "Total donations received by Ayyad"}
+                  {lang==="fr" ? "Total des dons direct reçus par Ayyad" : lang==="ar" ? "إجمالي التبرعات المباشرة المستلمة" : "Total direct donations received by Ayyad"}
                 </div>
                 <div style={{ display:"flex", alignItems:"baseline", gap:10 }}>
                   <span style={{ fontSize:"clamp(2rem, 4vw, 2.8rem)", fontWeight:900, color:"var(--gold)", fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em" }}>
