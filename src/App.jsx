@@ -4282,6 +4282,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
   const [heroStats, setHeroStats] = useState({ patients: "0", collected: "0", hospitals: "18", funded: "0" });
   const [platformTotal, setPlatformTotal] = useState(0); // total dons plateforme en FCFA
   const [platformCurrency, setPlatformCurrency] = useState("XOF"); // XOF | EUR | USD
+  const [platformDonors, setPlatformDonors] = useState([]); // liste donateurs plateforme
   const RATES = { XOF: 1, EUR: 1 / 655.957, USD: 1 / 600 };
   const SYMBOLS = { XOF: "FCFA", EUR: "€", USD: "$" };
   const fmtPlatform = (xof) => {
@@ -4290,11 +4291,16 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
     return val.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   };
   useEffect(() => {
-    supabase.from("donations").select("amount_fcfa, amount").is("case_id", null).eq("status", "confirmed")
+    supabase.from("donations").select("amount_fcfa, amount, donor_name, donor_email, created_at")
+      .is("case_id", null).eq("status", "confirmed").order("created_at", { ascending: false })
       .then(({ data }) => {
         if (data) {
           const total = data.reduce((s, d) => s + Number(d.amount_fcfa || d.amount || 0), 0);
           setPlatformTotal(total);
+          setPlatformDonors(data.map(d => ({
+            name: d.donor_name || d.donor_email || "Anonyme",
+            amount: Number(d.amount_fcfa || d.amount || 0),
+          })));
         }
       });
   }, []);
@@ -4649,6 +4655,21 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
                     </button>
                   ))}
                 </div>
+                {/* Liste donateurs plateforme */}
+                {platformDonors.length > 0 && (
+                  <div style={{ marginTop:12, width:"100%", maxHeight:160, overflowY:"auto", borderRadius:10, border:"1px solid var(--ink-200)", background:"var(--surface)", padding:"6px 0" }}>
+                    {platformDonors.map((d, i) => (
+                      <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 12px", borderBottom: i < platformDonors.length-1 ? "1px solid var(--ink-100)" : "none" }}>
+                        <span style={{ fontSize:12, fontWeight:600, color:"var(--ink-700)", maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                          {d.name.length > 1 ? d.name.charAt(0).toUpperCase() + d.name.slice(1) : d.name}
+                        </span>
+                        <span style={{ fontSize:12, fontWeight:800, color:"var(--gold)", whiteSpace:"nowrap" }}>
+                          {platformCurrency === "USD" && "$"}{platformCurrency === "EUR" && "€"}{Math.round(d.amount * RATES[platformCurrency]).toLocaleString("fr-FR")}{platformCurrency === "XOF" && " FCFA"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <div style={{ textAlign:"center" }}>
