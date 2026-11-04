@@ -6408,15 +6408,17 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       🌊 {lang==="fr"?"Appuyez ici pour payer":"Tap here to pay"}
                     </a>
                     <p style={{fontSize:10,color:"#6b7280",textAlign:"center",marginBottom:10}}>👆 {lang==="fr"?"Ce bouton ouvre Wave directement sur votre téléphone":"This button opens Wave directly on your phone"}</p>
-                    {/* QR cliquable pour ceux qui veulent scanner */}
-                    <div style={{background:"#dbeafe",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
-                      <a href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/" target="_blank" rel="noopener noreferrer" style={{flexShrink:0}}>
-                        <img src="/qr_wave_real.jpg" alt="QR Wave" style={{width:80,height:80,borderRadius:8,border:"3px solid #2563eb",display:"block"}} />
+                    {/* QR cliquable centré */}
+                    <div style={{background:"#dbeafe",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+                      <p style={{fontSize:11,color:"#1e40af",fontWeight:700,textAlign:"center",margin:"0 0 4px"}}>
+                        👆 {lang==="fr"?"Cliquez sur le QR Code pour donner si vous êtes sur mobile ou ordinateur":"Click the QR Code to donate from mobile or computer"}
+                      </p>
+                      <a href="https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/" target="_blank" rel="noopener noreferrer">
+                        <img src="/qr_wave_real.jpg" alt="QR Wave" style={{width:130,height:130,borderRadius:12,border:"3px solid #2563eb",display:"block",boxShadow:"0 2px 10px #2563eb33"}} />
                       </a>
-                      <div>
-                        <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
-                        <div style={{fontWeight:900,fontSize:15,color:"#1d4ed8",fontFamily:"monospace"}}>+225 07 48 05 61 28</div>
-                        <div style={{fontSize:10,color:"#6366f1",marginTop:4}}>📷 {lang==="fr"?"Ou scannez le QR":"Or scan the QR"}</div>
+                      <div style={{textAlign:"center"}}>
+                        <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:2}}>{lang==="fr"?"Numéro Wave AYYAD :":"AYYAD Wave number:"}</div>
+                        <div style={{fontWeight:900,fontSize:15,color:"#1d4ed8",fontFamily:"monospace",whiteSpace:"nowrap"}}>+2250748056128</div>
                       </div>
                     </div>
                     <div style={{fontSize:11,color:"#3730a3",lineHeight:1.9}}>
@@ -6428,14 +6430,16 @@ const CasePage = ({ c, setPage, lang, user }) => {
                 {sbProvider==="OM"&&(
                   <div style={{background:"#fff7ed",border:"1.5px solid #fdba74",borderRadius:14,padding:"14px",marginBottom:12}}>
                     <div style={{fontWeight:800,fontSize:12,color:"#c2410c",marginBottom:10}}>🟠 {lang==="fr"?"Comment payer via Orange Money :":"How to pay via Orange Money:"}</div>
-                    {/* QR cliquable centré */}
+                    {/* QR centré */}
                     <div style={{background:"#ffedd5",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-                      <img src="/qr_om_real.jpg" alt="QR Orange Money" style={{width:140,height:140,borderRadius:12,border:"3px solid #f97316",display:"block",boxShadow:"0 2px 10px #f9731633"}}
+                      <p style={{fontSize:11,color:"#9a3412",fontWeight:700,textAlign:"center",margin:"0 0 4px"}}>
+                        👆 {lang==="fr"?"Scannez le QR Code depuis votre application Orange Money":"Scan the QR Code from your Orange Money app"}
+                      </p>
+                      <img src="/qr_om_real.jpg" alt="QR Orange Money" style={{width:130,height:130,borderRadius:12,border:"3px solid #f97316",display:"block",boxShadow:"0 2px 10px #f9731633"}}
                         onError={e=>{e.target.style.display="none";}} />
                       <div style={{textAlign:"center"}}>
-                        <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro Orange Money AYYAD :":"AYYAD Orange Money number:"}</div>
-                        <div style={{fontWeight:900,fontSize:17,color:"#c2410c",fontFamily:"monospace",letterSpacing:"1px"}}>+225 07 48 05 61 28</div>
-                        <div style={{fontSize:10,color:"#ea580c",marginTop:4}}>📷 {lang==="fr"?"Scannez le QR ou entrez le numéro":"Scan the QR or enter the number"}</div>
+                        <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:2}}>{lang==="fr"?"Numéro Orange Money AYYAD :":"AYYAD Orange Money number:"}</div>
+                        <div style={{fontWeight:900,fontSize:15,color:"#c2410c",fontFamily:"monospace",whiteSpace:"nowrap"}}>+2250748056128</div>
                       </div>
                     </div>
                     <div style={{fontSize:11,color:"#9a3412",lineHeight:1.9}}>
@@ -6453,15 +6457,17 @@ const CasePage = ({ c, setPage, lang, user }) => {
                       📲 {lang==="fr"?"Appuyez ici pour payer MTN MoMo":"Tap here to pay MTN MoMo"}
                     </a>
                     <p style={{fontSize:10,color:"#6b7280",textAlign:"center",marginBottom:10}}>👆 {lang==="fr"?"Ce bouton ouvre MTN MoMo directement sur votre téléphone":"This button opens MTN MoMo directly on your phone"}</p>
-                    {/* QR cliquable */}
-                    <div style={{background:"#fef9c3",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
-                      <a href="https://appbiz.momo.africa/momo/request-momo/2250501855991" target="_blank" rel="noopener noreferrer" style={{flexShrink:0}}>
-                        <img src="/qr_mtn_real.jpg" alt="QR MTN MoMo" style={{width:80,height:80,borderRadius:8,border:"3px solid #eab308",display:"block"}} />
+                    {/* QR cliquable centré */}
+                    <div style={{background:"#fef9c3",borderRadius:10,padding:"12px",marginBottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+                      <p style={{fontSize:11,color:"#854d0e",fontWeight:700,textAlign:"center",margin:"0 0 4px"}}>
+                        👆 {lang==="fr"?"Cliquez sur le QR Code pour donner si vous êtes sur mobile ou ordinateur":"Click the QR Code to donate from mobile or computer"}
+                      </p>
+                      <a href="https://appbiz.momo.africa/momo/request-momo/2250501855991" target="_blank" rel="noopener noreferrer">
+                        <img src="/qr_mtn_real.jpg" alt="QR MTN MoMo" style={{width:130,height:130,borderRadius:12,border:"3px solid #eab308",display:"block",boxShadow:"0 2px 10px #eab30833"}} />
                       </a>
-                      <div>
-                        <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:3}}>{lang==="fr"?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
-                        <div style={{fontWeight:900,fontSize:15,color:"#ca8a04",fontFamily:"monospace"}}>+225 05 01 85 59 91</div>
-                        <div style={{fontSize:10,color:"#854d0e",marginTop:4}}>📷 {lang==="fr"?"Ou scannez le QR":"Or scan the QR"}</div>
+                      <div style={{textAlign:"center"}}>
+                        <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:2}}>{lang==="fr"?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
+                        <div style={{fontWeight:900,fontSize:15,color:"#ca8a04",fontFamily:"monospace",whiteSpace:"nowrap"}}>+2250501855991</div>
                       </div>
                     </div>
                     <div style={{fontSize:11,color:"#713f12",lineHeight:1.9}}>
