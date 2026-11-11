@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- Page d'accueil -->
+  <url>
+    <loc>https://www.ayyadci.com/</loc>
+    <lastmod>2026-11-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.ayyadci.com/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://www.ayyadci.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.ayyadci.com/"/>
+  </url>
+
+  <!-- Collectes actives -->
+  <url>
+    <loc>https://www.ayyadci.com/collectes</loc>
+    <lastmod>2026-11-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Témoignages -->
+  <url>
+    <loc>https://www.ayyadci.com/temoignages</loc>
+    <lastmod>2026-11-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Mission -->
+  <url>
+    <loc>https://www.ayyadci.com/mission</loc>
+    <lastmod>2026-11-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Soumettre un dossier -->
+  <url>
+    <loc>https://www.ayyadci.com/soumettre</loc>
+    <lastmod>2026-11-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Soutenir Ayyad -->
+  <url>
+    <loc>https://www.ayyadci.com/soutenir</loc>
+    <lastmod>2026-11-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Hôpitaux partenaires -->
+  <url>
+    <loc>https://www.ayyadci.com/hopitaux</loc>
+    <lastmod>2026-11-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- FAQ -->
+  <url>
+    <loc>https://www.ayyadci.com/faq</loc>
+    <lastmod>2026-11-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Rapport d'impact -->
+  <url>
+    <loc>https://www.ayyadci.com/impact</loc>
+    <lastmod>2026-11-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Conformité BCEAO -->
+  <url>
+    <loc>https://www.ayyadci.com/conformite</loc>
+    <lastmod>2026-11-04</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+</urlset>

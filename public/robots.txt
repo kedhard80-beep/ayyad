@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://www.ayyadci.com/sitemap.xml
+
+# Disallow admin paths
+Disallow: /api/
+Disallow: /admin/
