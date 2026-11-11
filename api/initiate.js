@@ -69,7 +69,7 @@ export default async function handler(req, res) {
       amount_fcfa:    amt,
       amount:         amt,
       payment_method: prov,
-      status:         "pending",   // en attente de confirmation
+      status:         "initiated",   // pas encore payé
       reference:      payRef,
       created_at:     new Date().toISOString(),
     })
