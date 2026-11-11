@@ -1365,7 +1365,7 @@ const AYYAD_ACCOUNTS = {
 
 // ── QR Codes officiels AYYAD ──────────────────────────────
 const WAVE_QR_IMG  = "/qr_wave_real.jpg";
-const MTN_QR_IMG   = "/qr_mtn_real.jpg";
+const MTN_QR_IMG   = "/qr_mtn.png";
 const WAVE_LINK    = "https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/";
 const MTN_LINK     = "https://appbiz.momo.africa/momo/request-momo/2250501855991";
 // gardé pour compatibilité
@@ -2875,7 +2875,7 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
         <div style={{ textAlign:"center", marginBottom: 28 }}>
           <span className="ayyad-eyebrow">{fr ? "Notre impact" : ar ? "أثرنا" : "Our impact"}</span>
           <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.8rem, 3.4vw, 2.8rem)", marginTop: 14, marginBottom: 10 }}>
-            {fr ? <>Des chiffres qui <em>changent des vies.</em></> : <>Numbers that <em>change lives.</em></>}
+            {fr ? <>Des chiffres qui <em>changent des vies.</em></> : ar ? <>أرقام <em>تغيّر حياة.</em></> : <>Numbers that <em>change lives.</em></>}
           </h2>
           <p style={{ color:"var(--ink-500)", fontSize:15, maxWidth: 600, margin:"0 auto", lineHeight:1.55 }}>
             {fr ? "Chaque don est tracé, chaque virement est audité, chaque patient est suivi." : ar ? "كل تبرع مُتتبَّع، كل تحويل مدقّق، كل مريض مُتابَع." : "Every donation is tracked, every transfer is audited, every patient is followed up."}
@@ -2936,7 +2936,7 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
                 {fr ? "Engagement Ayyad" : ar ? "التزام أيد" : "Ayyad commitment"}
               </span>
               <h3 className="ayyad-h-display" style={{ color:"#fff", fontSize:"clamp(1.6rem, 2.6vw, 2.4rem)", marginTop: 18, marginBottom: 16 }}>
-                {fr ? <>La confiance n'est pas un mot, <em style={{ color:"#e9d59a" }}>c'est une preuve.</em></> : <>Trust isn't a word, <em style={{ color:"#e9d59a" }}>it's a proof.</em></>}
+                {fr ? <>La confiance n'est pas un mot, <em style={{ color:"#e9d59a" }}>c'est une preuve.</em></> : ar ? <>الثقة ليست كلمة، <em style={{ color:"#e9d59a" }}>إنها دليل.</em></> : <>Trust isn't a word, <em style={{ color:"#e9d59a" }}>it's a proof.</em></>}
               </h3>
               <p style={{ color:"rgba(255,255,255,0.85)", lineHeight:1.7, fontSize:15 }}>
                 {fr ? "Nous publions chaque mois nos rapports d'impact, nos virements aux hôpitaux et notre commission. Aucune intermédiation cash, aucun frais caché : ce que vous donnez arrive intégralement à l'établissement de santé." : ar ? "ننشر شهرياً تقارير أثرنا وتحويلاتنا للمستشفيات وعمولتنا. بدون وسيط نقدي، بدون رسوم خفية: ما تتبرع به يصل كاملاً إلى المنشأة الصحية." : "Each month we publish our impact reports, hospital transfers and commission. No cash intermediation, no hidden fees: what you give arrives in full to the healthcare facility."}
@@ -2991,6 +2991,10 @@ const ProcessStrip = ({ lang, setPage }) => {
     { n:"01", icon:"📋", title:"Dossier soumis & vérifié", desc:"Le patient soumet son dossier médical. Notre équipe le vérifie avec un hôpital partenaire en 48h." },
     { n:"02", icon:"💚", title:"Campagne lancée publiquement", desc:"La collecte est publiée sur la plateforme. Chaque centime reçu est tracé en temps réel." },
     { n:"03", icon:"🏥", title:"Fonds versés à l'hôpital", desc:"L'argent va directement à l'hôpital. Zéro intermédiaire. Zéro frais cachés." },
+  ] : ar ? [
+    { n:"01", icon:"📋", title:"الملف مُقدَّم وموثَّق", desc:"يقدّم المريض ملفه الطبي. يتحقق فريقنا منه مع مستشفى شريك خلال 48 ساعة." },
+    { n:"02", icon:"💚", title:"الحملة تُطلق علنياً", desc:"تُنشر الحملة على المنصة. كل سنتيم مُستلَم يُتابَع في الوقت الفعلي." },
+    { n:"03", icon:"🏥", title:"الأموال تُحوَّل للمستشفى", desc:"المال يذهب مباشرةً للمستشفى. لا وسيط. لا رسوم مخفية." },
   ] : [
     { n:"01", icon:"📋", title:"Case submitted & verified", desc:"The patient submits their medical file. Our team verifies it with a partner hospital within 48h." },
     { n:"02", icon:"💚", title:"Campaign launched publicly", desc:"The campaign is published on the platform. Every cent received is tracked in real time." },
@@ -3041,6 +3045,11 @@ const WhyAyyadSection = ({ lang }) => {
     { icon:"🔒", title:"Zéro intermédiaire. Vraiment.", desc:"L'argent va DIRECTEMENT à l'hôpital partenaire. Aucun cash ne transite par nos mains. Le virement est documenté et public." },
     { icon:"📊", title:"100% transparent", desc:"Chaque virement hospitalier est publié dans nos rapports. Vous pouvez vérifier chaque franc collecté, euro par euro, FCFA par FCFA." },
     { icon:"🌍", title:"Conçu pour l'Afrique", desc:"Paiez via Wave CI, Orange Money, MTN Money ou virement bancaire. Dossiers traités en français. Fondé en Côte d'Ivoire, pensé pour la diaspora." },
+  ] : ar ? [
+    { icon:"🏥", title:"التحقق الطبي في 48 ساعة", desc:"كل ملف يُراجَع من فريقنا ويُؤكَّد من مستشفى شريك. لا تبدأ أي حملة بدون موافقة المستشفى." },
+    { icon:"🔒", title:"لا وسيط. حقاً.", desc:"المال يذهب مباشرةً للمستشفى الشريك. لا نقد يمر عبر أيدينا. كل تحويل موثَّق وعلني." },
+    { icon:"📊", title:"شفافية 100%", desc:"كل تحويل مستشفى يُنشَر في تقاريرنا. يمكنك التحقق من كل فرنك جُمع، يورو بيورو، فرنك بفرنك." },
+    { icon:"🌍", title:"مصمَّم لأفريقيا", desc:"ادفع عبر Wave CI أو Orange Money أو MTN Money أو تحويل بنكي. مؤسَّس في كوت ديفوار، مصمَّم للمغتربين." },
   ] : [
     { icon:"🏥", title:"Medical verification in 48h", desc:"Every case is reviewed by our team AND confirmed by a partner hospital. No campaign starts without hospital validation." },
     { icon:"🔒", title:"Zero intermediary. Really.", desc:"Money goes DIRECTLY to the partner hospital. No cash passes through our hands. Every transfer is documented and public." },
@@ -3055,6 +3064,7 @@ const WhyAyyadSection = ({ lang }) => {
           <h2 className="ayyad-h-display" style={{ fontSize:"clamp(1.7rem, 3.2vw, 2.6rem)", marginTop: 14, marginBottom: 10 }}>
             {fr
               ? <>La confiance ne se promet pas.<br/><em>Elle se démontre.</em></>
+              : ar ? <>الثقة لا تُوعَد،<br/><em>بل تُثبَت.</em></>
               : <>Trust is not promised.<br/><em>It is demonstrated.</em></>}
           </h2>
           <p style={{ color:"var(--ink-500)", fontSize:15, maxWidth:540, margin:"0 auto", lineHeight:1.6 }}>
@@ -3244,6 +3254,7 @@ const VisionSection = ({ lang, setPage }) => {
             <h2 className="ayyad-h-display" style={{ fontSize:"clamp(2rem, 3.6vw, 3.2rem)", marginTop: 18, marginBottom: 24 }}>
               {fr
                 ? <>Un accès aux soins <em>sans condition,</em> sans détour.</>
+                : ar ? <>وصول إلى الرعاية الصحية <em>بلا قيود،</em> بلا تعقيد.</>
                 : <>Healthcare access <em>without condition,</em> without detour.</>}
             </h2>
             <p style={{ color:"var(--ink-700)", fontSize:17, lineHeight:1.75, marginBottom: 20 }}>
@@ -3319,6 +3330,8 @@ const TestimonialsCarousel = ({ lang }) => {
   const [videoError, setVideoError] = useState(false);
   const [selectedBenef, setSelectedBenef] = useState(null); // null = premier du tableau
   const [blockIdx, setBlockIdx] = useState({}); // carousel index par bloc: { "AYD-xxx-avant": 0, "AYD-xxx-apres": 0 }
+  const [mobilePhaseTab, setMobilePhaseTab] = useState("avant"); // onglet mobile AVANT/APRÈS
+  const isMobileView = typeof window !== "undefined" && window.innerWidth < 640;
   const bIdxGet = (key) => blockIdx[key] || 0;
   const bIdxSet = (key, fn) => setBlockIdx(prev => { const cur = prev[key] || 0; const next = typeof fn === "function" ? fn(cur) : fn; return { ...prev, [key]: next }; });
 
@@ -3348,7 +3361,7 @@ const TestimonialsCarousel = ({ lang }) => {
       id: "djana-static-avant-1",
       beneficiary_name: "Djana Coulibaly",
       case_tracking_id: "AYD-2026-06-001",
-      file_url: "/djana_avant1.jpg",
+      file_url: `${SB}/djana/djana_avant1.jpeg`,
       file_type: "photo",
       status: "approved",
       label: { fr: "🔴 Stomie — avant l'opération", en: "🔴 Stoma — before surgery" },
@@ -3357,7 +3370,7 @@ const TestimonialsCarousel = ({ lang }) => {
       id: "djana-static-avant-2",
       beneficiary_name: "Djana Coulibaly",
       case_tracking_id: "AYD-2026-06-001",
-      file_url: "/djana_avant2.jpg",
+      file_url: `${SB}/djana/djana_avant2.jpeg`,
       file_type: "photo",
       status: "approved",
       label: { fr: "🔴 Djana avec sa stomie", en: "🔴 Djana with her stoma" },
@@ -3391,22 +3404,13 @@ const TestimonialsCarousel = ({ lang }) => {
       label: { fr: "✅ Djana après opération — en bonne santé !", en: "✅ Djana post-surgery — healthy!" },
     },
     {
-      id: "djana-static-apres-new-video2",
+      id: "djana-static-avant-infected-video",
       beneficiary_name: "Djana Coulibaly",
       case_tracking_id: "AYD-2026-06-001",
       file_url: `${SB}/djana/apres/djana_apres_video2.mp4`,
       file_type: "video",
       status: "approved",
-      label: { fr: "✅ Djana guérie — message de sa famille", en: "✅ Djana healed — message from her family" },
-    },
-    {
-      id: "djana-static-apres-1",
-      beneficiary_name: "Djana Coulibaly",
-      case_tracking_id: "AYD-2026-06-001",
-      file_url: "/djana_apres1.jpg",
-      file_type: "photo",
-      status: "approved",
-      label: { fr: "✅ Djana guérie — plus de stomie", en: "✅ Djana healed — stoma-free" },
+      label: { fr: "🔴 Djana — stomie infectée (avant l'opération)", en: "🔴 Djana — infected stoma (before surgery)" },
     },
     {
       id: "djana-static-apres-new-1",
@@ -3435,38 +3439,21 @@ const TestimonialsCarousel = ({ lang }) => {
       status: "approved",
       label: { fr: "✅ Djana souriante — merci à tous les donateurs", en: "✅ Djana smiling — thank you to all donors" },
     },
-    {
-      id: "djana-static-apres-2",
-      beneficiary_name: "Djana Coulibaly",
-      case_tracking_id: "AYD-2026-06-001",
-      file_url: "/djana_apres2.jpg",
-      file_type: "photo",
-      status: "approved",
-      label: { fr: "✅ Djana à la clinique, en pleine santé", en: "✅ Djana at the clinic, in good health" },
-    },
-    {
-      id: "djana-static-apres-3",
-      beneficiary_name: "Djana Coulibaly",
-      case_tracking_id: "AYD-2026-06-001",
-      file_url: "/djana_apres3.jpg",
-      file_type: "photo",
-      status: "approved",
-      label: { fr: "✅ Djana et sa famille — merci à vous", en: "✅ Djana and her family — thank you" },
-    },
   ];
 
   // Charge les médias depuis la DB + enrichit l'AVANT depuis la table cases
   useEffect(() => {
-    // 1. Médias témoignages approuvés (pour APRÈS)
+    // 1. Médias témoignages approuvés en DB (pour APRÈS des autres cas)
     supabase.from("testimonial_media").select("*").eq("status", "approved")
       .order("created_at", { ascending: false })
       .then(({ data: tmData }) => {
-        const dbItems = tmData || [];
+        const dbItems = (tmData || []).filter(m => m.case_tracking_id !== "AYD-2026-06-001");
 
-        // 2. Dossiers actifs → médias AVANT automatiques
+        // 2. Seulement les dossiers avec témoignage publié (show_testimonial = true), sauf Djana
         supabase.from("cases")
           .select("tracking_id, title, photo_url, photos, video_url, video_urls, status")
-          .not("status", "in", "(PENDING,REJECTED)")
+          .eq("show_testimonial", true)
+          .neq("tracking_id", "AYD-2026-06-001")
           .order("created_at", { ascending: false })
           .limit(50)
           .then(({ data: casesData }) => {
@@ -3474,8 +3461,10 @@ const TestimonialsCarousel = ({ lang }) => {
             (casesData || []).forEach(c => {
               const tid = c.tracking_id || c.trackingId;
               if (!tid) return;
-              const name = typeof c.title === "object" ? (c.title?.fr || c.title?.en || tid) : (c.title || tid);
-              // photos
+              // Parse JSON title si stocké comme string JSON
+              let titleObj = c.title;
+              if (typeof c.title === "string") { try { titleObj = JSON.parse(c.title); } catch {} }
+              const name = typeof titleObj === "object" && titleObj !== null ? (titleObj?.fr || titleObj?.en || tid) : (c.title || tid);
               const allPhotos = [...new Set([
                 ...(c.photo_url ? [c.photo_url] : []),
                 ...(Array.isArray(c.photos) ? c.photos : []),
@@ -3489,7 +3478,6 @@ const TestimonialsCarousel = ({ lang }) => {
                 status: "approved",
                 _phase: "avant",
               }));
-              // videos
               let vurls = [];
               if (Array.isArray(c.video_urls) && c.video_urls.length > 0) vurls = c.video_urls;
               else if (c.video_url) {
@@ -3507,12 +3495,8 @@ const TestimonialsCarousel = ({ lang }) => {
               }));
             });
 
-            // Djana : inclure entrées statiques si pas de médias auto pour elle
-            const djanaAutoAvant = autoAvant.filter(m => m.case_tracking_id === "AYD-2026-06-001");
-            const djanaInDb = dbItems.some(m => m.case_tracking_id === "AYD-2026-06-001");
-            const djanaFallback = (djanaAutoAvant.length === 0 && !djanaInDb) ? DJANA_ENTRIES : [];
-
-            setMedias([...djanaFallback, ...autoAvant, ...dbItems]);
+            // DJANA_ENTRIES toujours incluses (médias statiques permanents pour Djana)
+            setMedias([...DJANA_ENTRIES, ...autoAvant, ...dbItems]);
           });
       });
   }, []);
@@ -3630,7 +3614,7 @@ const TestimonialsCarousel = ({ lang }) => {
                   const key = m.case_tracking_id || m.beneficiary_name || "x";
                   if (!groups[key]) { groups[key] = { name: m.beneficiary_name, trackingId: m.case_tracking_id, avant: [], apres: [] }; groupOrder.push(key); }
                   const lbl = ((m.label && (m.label.fr || m.label.en)) || "").toLowerCase();
-                  const isApres = lbl.includes("après") || lbl.includes("apres") || lbl.includes("guér") || lbl.startsWith("✅") || (typeof m.id === "string" && m.id.includes("apres"));
+                  const isApres = m._phase === "apres" || (m._phase !== "avant" && (lbl.includes("après") || lbl.includes("apres") || lbl.includes("guér") || lbl.startsWith("✅") || (typeof m.id === "string" && m.id.includes("apres"))));
                   if (isApres) groups[key].apres.push(m);
                   else groups[key].avant.push(m);
                 });
@@ -3647,9 +3631,9 @@ const TestimonialsCarousel = ({ lang }) => {
                     if (ytMatch) {
                       return <iframe key={m.id} src={`https://www.youtube.com/embed/${ytMatch[1]}?rel=0`} allow="encrypted-media; fullscreen" allowFullScreen style={{ width:"100%", aspectRatio:"16/9", border:"none", borderRadius:12, display:"block" }} />;
                     }
-                    return <video key={m.id} controls playsInline src={m.file_url} style={{ width:"100%", aspectRatio:"16/9", borderRadius:12, background:"#000", display:"block", objectFit:"contain" }} />;
+                    return <video key={m.id} controls autoPlay muted playsInline src={m.file_url} onError={(e)=>{e.target.style.display="none";}} style={{ width:"100%", aspectRatio:"16/9", borderRadius:12, background:"#000", display:"block", objectFit:"contain" }} />;
                   }
-                  return <img key={m.id} src={m.file_url} alt={m.beneficiary_name} style={{ width:"100%", borderRadius:12, display:"block", objectFit:"cover", maxHeight:260 }} />;
+                  return <img key={m.id} src={m.file_url} alt={m.beneficiary_name} style={{ width:"100%", borderRadius:12, display:"block", objectFit:"cover", maxHeight: isMobileView ? 340 : 260 }} />;
                 };
 
                 return (
@@ -3679,14 +3663,29 @@ const TestimonialsCarousel = ({ lang }) => {
                         {g.trackingId && <span style={{ color:"rgba(255,255,255,0.45)", fontSize:12, marginLeft:10 }}>• Dossier {g.trackingId}</span>}
                       </div>
 
-                      {/* 2 colonnes AVANT / APRÈS */}
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, alignItems:"start" }}>
+                      {/* Onglets mobile AVANT / APRÈS */}
+                      <div style={{ display:"flex", gap:0, marginBottom:16, borderRadius:12, overflow:"hidden", border:"1px solid rgba(255,255,255,0.15)" }} className="sm:hidden">
+                        {[
+                          { phase:"avant", label:fr?"🔴 AVANT":ar?"🔴 قبل":"🔴 BEFORE", bg:"rgba(239,68,68,0.25)", activeBg:"rgba(239,68,68,0.55)" },
+                          { phase:"apres", label:fr?"✅ APRÈS":ar?"✅ بعد":"✅ AFTER", bg:"rgba(16,185,129,0.15)", activeBg:"rgba(16,185,129,0.50)" },
+                        ].map(t => (
+                          <button key={t.phase} onClick={() => setMobilePhaseTab(t.phase)} style={{
+                            flex:1, padding:"11px 8px", fontWeight:800, fontSize:13, border:"none", cursor:"pointer",
+                            background: mobilePhaseTab === t.phase ? t.activeBg : "rgba(255,255,255,0.06)",
+                            color: mobilePhaseTab === t.phase ? "#fff" : "rgba(255,255,255,0.5)",
+                            transition:"all .2s",
+                          }}>{t.label}</button>
+                        ))}
+                      </div>
+
+                      {/* 2 colonnes AVANT / APRÈS (desktop) / 1 colonne (mobile) */}
+                      <div style={{ display:"grid", gridTemplateColumns: isMobileView ? "1fr" : "1fr 1fr", gap:20, alignItems:"start" }}>
 
                         {/* ── Carousel helper ── */}
                         {[
                           { phase:"avant", items:g.avant, label:fr?"AVANT AIDE":ar?"قبل المساعدة":"BEFORE HELP", emoji:"🔴", bg:"rgba(239,68,68,0.15)", border:"rgba(239,68,68,0.35)", color:"#fca5a5", empty:fr?"Photos/vidéos avant aide à venir":ar?"صور/فيديوهات ما قبل المساعدة قريباً":"Pre-help photos/videos coming soon" },
                           { phase:"apres", items:g.apres, label:fr?"APRÈS AIDE":ar?"بعد المساعدة":"AFTER HELP", emoji:"✅", bg:"rgba(16,185,129,0.15)", border:"rgba(16,185,129,0.35)", color:"#6ee7b7", empty:fr?"Photos/vidéos après aide à venir":ar?"صور/فيديوهات ما بعد المساعدة قريباً":"Post-help photos/videos coming soon" },
-                        ].map(({ phase, items, label, emoji, bg, border, color, empty }) => {
+                        ].filter(({ phase }) => isMobileView ? phase === mobilePhaseTab : true).map(({ phase, items, label, emoji, bg, border, color, empty }) => {
                           const bKey = `${activeKey}-${phase}`;
                           const ci = bIdxGet(bKey) % Math.max(items.length, 1);
                           const cur = items[ci];
@@ -4040,7 +4039,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-br from-emerald-700 to-teal-600 text-white py-10 px-4">
         <div className="max-w-5xl mx-auto">
-          <button onClick={() => setPage("collectesactives")} className="flex items-center gap-1 text-emerald-200 hover:text-white text-sm mb-5">← {lang==="fr" ? "Toutes les spécialités" : "All specialties"}</button>
+          <button onClick={() => setPage("collectesactives")} className="flex items-center gap-1 text-emerald-200 hover:text-white text-sm mb-5">← {lang==="fr" ? "Toutes les spécialités" : lang==="ar" ? "جميع التخصصات" : "All specialties"}</button>
           <div className="flex items-center gap-3">
             <span className="text-4xl">{CAT_ICONS[specialite] || "🏥"}</span>
             <div>
@@ -4054,7 +4053,7 @@ const SpecialitePage = ({ setPage, setSelectedCase, lang, specialite }) => {
         {cases.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
             <div className="text-5xl mb-4">{CAT_ICONS[specialite] || "🏥"}</div>
-            <div>{lang==="fr" ? "Aucune collecte active dans cette spécialité." : "No active campaigns in this specialty."}</div>
+            <div>{lang==="fr" ? "Aucune collecte active dans cette spécialité." : lang==="ar" ? "لا توجد حملات نشطة في هذا التخصص." : "No active campaigns in this specialty."}</div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -4511,7 +4510,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
     });
   }, []);
 
-  const catMap = lang==="fr" ? ["Tous","Cardiologie","Oncologie","Pédiatrie","Néphrologie","Orthopédie"] : [lang==="ar" ? "الكل" : "All","Cardiology","Oncology","Pediatrics","Nephrology","Orthopedics"];
+  const catMap = lang==="fr" ? ["Tous","Cardiologie","Oncologie","Pédiatrie","Néphrologie","Orthopédie"] : lang==="ar" ? ["الكل","قلبية","أورام","أطفال","كلوية","عظمية"] : ["All","Cardiology","Oncology","Pediatrics","Nephrology","Orthopedics"];
   const allCases = dbCases.length > 0 ? [...dbCases, ...getDisplayCases().filter(c => c.status !== "FUNDED")] : getDisplayCases();
   // Helper: extracts string from title/category whether stored as string or {fr,en} object
   const gs = (val) => typeof val === "object" && val !== null ? (val[lang] || val.fr || val.en || "") : (val || "");
@@ -4630,7 +4629,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
               <div className="ayyad-cats" style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                 {catMap.map((c,i) => {
                   const active = (filter==="all"&&i===0)||filter===c;
-                  const _ico = {"Tous":"✨","All":"✨","الكل":"✨","Cardiologie":"🫀","Cardiology":"🫀","Oncologie":"🎗️","Oncology":"🎗️","Pédiatrie":"👶","Pediatrics":"👶","Néphrologie":"🫘","Nephrology":"🫘","Orthopédie":"🦴","Orthopedics":"🦴"}[c]||"🏥";
+                  const _ico = {"Tous":"✨","All":"✨","الكل":"✨","Cardiologie":"🫀","Cardiology":"🫀","قلبية":"🫀","Oncologie":"🎗️","Oncology":"🎗️","أورام":"🎗️","Pédiatrie":"👶","Pediatrics":"👶","أطفال":"👶","Néphrologie":"🫘","Nephrology":"🫘","كلوية":"🫘","Orthopédie":"🦴","Orthopedics":"🦴","عظمية":"🦴"}[c]||"🏥";
                   return (
                     <button key={c} onClick={() => setFilter(i===0?"all":c)} style={{
                       padding:"8px 18px", borderRadius: 9999,
@@ -6717,7 +6716,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         <div style={{color:"rgba(255,255,255,0.85)",fontSize:10,fontWeight:700,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>
                           {lang==="fr"?"Numéro AYYAD CI":"AYYAD CI Number"}
                         </div>
-                        <div style={{color:"#fff",fontWeight:900,fontSize:20,fontFamily:"monospace",letterSpacing:1,whiteSpace:"nowrap"}}>+225 07 48 05 61 28</div>
+                        <div style={{color:"#fff",fontWeight:900,fontSize:16,fontFamily:"monospace",letterSpacing:0.5,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"100%"}}>+225 07 48 05 61 28</div>
                       </div>
                       <div style={{color:"rgba(255,255,255,0.9)",fontSize:11,textAlign:"center",lineHeight:1.6}}>
                         📱 {lang==="fr"?"Ouvrez Orange Money → Envoyer de l'argent":"Open Orange Money → Send money"}<br/>
@@ -6741,7 +6740,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
                         💻 {lang==="fr"?"Sur ordinateur : scannez le QR avec votre téléphone":"On computer: scan the QR with your phone"}
                       </p>
                       <a href="https://appbiz.momo.africa/momo/request-momo/2250501855991" target="_blank" rel="noopener noreferrer" style={{width:"100%",display:"block"}}>
-                        <img src="/qr_mtn_real.jpg" alt="QR MTN MoMo" style={{width:"100%",height:"auto",borderRadius:14,border:"4px solid #eab308",display:"block",boxShadow:"0 4px 16px #eab30844"}} />
+                        <img src="/qr_mtn.png" alt="QR MTN MoMo" style={{width:"100%",height:"auto",borderRadius:14,border:"4px solid #eab308",display:"block",boxShadow:"0 4px 16px #eab30844"}} />
                       </a>
                       <div style={{textAlign:"center"}}>
                         <div style={{fontSize:10,color:"#713f12",fontWeight:700,marginBottom:2}}>{lang==="fr"?"Numéro MTN MoMo AYYAD :":"AYYAD MTN MoMo number:"}</div>
@@ -9048,7 +9047,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
         <div style={{ fontSize:22, flexShrink:0 }}>⚠️</div>
         <div style={{ minWidth:0, flex:1 }}>
           <div style={{ fontWeight:800, fontSize:14, color:"#92400e", marginBottom:4 }}>
-            {lang==="fr" ? "Avant de soumettre : règle importante" : "Before submitting: important rule"}
+            {lang==="fr" ? "Avant de soumettre : règle importante" : lang==="ar" ? "قبل الإرسال: قاعدة مهمة" : "Before submitting: important rule"}
           </div>
           <div style={{ fontSize:13, color:"#78350f", lineHeight:1.55 }}>
             {lang==="fr"
@@ -9071,7 +9070,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
           {/* === PHOTO BÉNÉFICIAIRE === */}
           <div>
             <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-              📷 {lang==="fr" ? "Photo du bénéficiaire" : "Beneficiary photo"}
+              📷 {lang==="fr" ? "Photo du bénéficiaire" : lang==="ar" ? "صورة المستفيد" : "Beneficiary photo"}
               <span className="text-red-400 ml-1">*</span>
             </label>
             <p className="text-[11px] text-gray-400 mb-3">
@@ -9115,13 +9114,13 @@ const SubmitPage = ({ setPage, user, lang }) => {
           {/* Lien vidéo YouTube ou TikTok (optionnel) */}
           <div>
             <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-              🎥 {lang==="fr" ? "Lien vidéo YouTube ou TikTok" : "YouTube or TikTok video link"}
-              <span className="text-gray-400 font-normal ml-2">({lang==="fr" ? "optionnel" : "optional"})</span>
+              🎥 {lang==="fr" ? "Lien vidéo YouTube ou TikTok" : lang==="ar" ? "رابط فيديو YouTube أو TikTok" : "YouTube or TikTok video link"}
+              <span className="text-gray-400 font-normal ml-2">({lang==="fr" ? "optionnel" : lang==="ar" ? "اختياري" : "optional"})</span>
             </label>
             <p className="text-[11px] text-gray-400 mb-2">
               {lang==="fr"
                 ? "Collez le lien de votre vidéo YouTube ou TikTok. Elle sera visible sur votre page de collecte et augmente les dons."
-                : "Paste your YouTube or TikTok video link. It will appear on your campaign page and increases donations."}
+                : lang==="ar" ? "الصق رابط فيديو YouTube أو TikTok. سيظهر على صفحة حملتك ويزيد التبرعات." : "Paste your YouTube or TikTok video link. It will appear on your campaign page and increases donations."}
             </p>
             <div className="flex gap-2 mb-2">
               <span className="text-[11px] bg-red-50 text-red-600 border border-red-100 rounded-full px-2 py-0.5 font-medium">▶ YouTube</span>
@@ -9161,7 +9160,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
                 const h = CI_HOPITAUX.find(x => x.nom === e.target.value);
                 setForm({...form, hospital: e.target.value, city: h?.ville || form.city});
               }} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                <option value="">— Choisir un hôpital —</option>
+                <option value="">{lang==="ar" ? "— اختر مستشفى —" : "— Choisir un hôpital —"}</option>
                 <optgroup label="🏛 CHU (Centres Hospitaliers Universitaires)">
                   {CI_HOPITAUX.filter(h => h.type === "CHU").map(h => <option key={h.nom} value={h.nom}>{h.nom}</option>)}
                 </optgroup>
@@ -9179,7 +9178,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
             <div>
               <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t.cityField}</label>
               <select value={form.city} onChange={e => setForm({...form, city: e.target.value})} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                <option value="">— Choisir une ville —</option>
+                <option value="">{lang==="ar" ? "— اختر مدينة —" : "— Choisir une ville —"}</option>
                 {CI_VILLES.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
             </div>
@@ -9208,7 +9207,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
             </div>
             <div>
               <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-                📱 {lang==="fr" ? "Téléphone mobile money" : "Mobile money phone"}
+                📱 {lang==="fr" ? "Téléphone mobile money" : lang==="ar" ? "هاتف المحفظة الإلكترونية" : "Mobile money phone"}
               </label>
               <div className="flex gap-1.5">
                 <span className="bg-gray-100 border border-gray-200 rounded-xl px-3 py-3 text-xs text-gray-500 font-mono flex-shrink-0">+225</span>
@@ -9221,7 +9220,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
                   className="flex-1 border border-gray-200 rounded-xl px-3 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
                 />
               </div>
-              <p className="text-[11px] text-gray-400 mt-1">{lang==="fr" ? "Pour recevoir un éventuel surplus" : "To receive any surplus"}</p>
+              <p className="text-[11px] text-gray-400 mt-1">{lang==="fr" ? "Pour recevoir un éventuel surplus" : lang==="ar" ? "لاستلام أي فائض محتمل" : "To receive any surplus"}</p>
             </div>
           </div>
 
@@ -9242,7 +9241,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
                   onClick={() => setForm({...form, category: cat.key, categoryOther: ""})}
                   className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all ${form.category===cat.key ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm" : "border-gray-200 hover:border-gray-300 text-gray-500 hover:bg-gray-50"}`}>
                   <span className="text-xl">{cat.icon}</span>
-                  <span className="text-xs text-center leading-tight font-medium">{lang==="fr" ? cat.key : cat.enKey}</span>
+                  <span className="text-xs text-center leading-tight font-medium">{lang==="fr" ? cat.key : lang==="ar" ? (CATS_AR[cat.key]||cat.enKey) : cat.enKey}</span>
                 </button>
               ))}
             </div>
@@ -9259,7 +9258,7 @@ const SubmitPage = ({ setPage, user, lang }) => {
             disabled={!form.title||!form.description||!form.hospital||!form.amount||!photoPreview}
             className="w-full bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">
             {!photoPreview
-              ? (lang==="fr" ? "⚠️ Ajoutez une photo pour continuer" : "⚠️ Add a photo to continue")
+              ? (lang==="fr" ? "⚠️ Ajoutez une photo pour continuer" : lang==="ar" ? "⚠️ أضف صورة للمتابعة" : "⚠️ Add a photo to continue")
               : t.next}
           </button>
         </div>}
@@ -10423,6 +10422,20 @@ const AdminPage = ({ user, setPage, lang }) => {
                             }}
                             className={`text-xs px-2.5 py-1 rounded-full font-bold border transition-all flex-shrink-0 ${c.urgent ? "bg-red-100 text-red-600 border-red-200 hover:bg-red-200" : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200"}`}>
                             {c.urgent ? "🔕 Retirer urgent" : "🚨 Marquer urgent"}
+                          </button>
+                        )}
+                        {/* Bouton Publier témoignage — rend le bloc visible sur /temoignages */}
+                        {!c._isDemo && (
+                          <button
+                            onClick={async () => {
+                              const newVal = !c.show_testimonial;
+                              await supabase.from("cases").update({ show_testimonial: newVal }).eq("id", c.id);
+                              setCases(prev => prev.map(x => x.id === c.id ? {...x, show_testimonial: newVal} : x));
+                              auditLog(user, newVal ? "CASE_TESTIMONIAL_SHOWN" : "CASE_TESTIMONIAL_HIDDEN", getField(c,"title",lang) || c.id);
+                            }}
+                            title={c.show_testimonial ? "Masquer le témoignage de ce dossier" : "Publier le témoignage (photos/vidéos de guérison)"}
+                            className={`text-xs px-2.5 py-1 rounded-full font-bold border transition-all flex-shrink-0 ${c.show_testimonial ? "bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200" : "bg-gray-100 text-gray-500 border-gray-200 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200"}`}>
+                            {c.show_testimonial ? "🏆 Témoignage visible" : "🏆 Publier témoignage"}
                           </button>
                         )}
                         {/* Bouton Modifier montant + hôpital */}
@@ -12714,7 +12727,7 @@ const Footer = ({ setPage, lang }) => {
     <footer className="bg-gray-950 text-white mt-16">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
-          <div className="col-span-2 md:col-span-1"><div className="flex items-center gap-2 mb-4"><svg width="36" height="36" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="35" cy="35" r="33" fill="#1a6b3a"/><circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" strokeWidth="2.5"/><rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/><rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/><path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/></svg><span className="font-black text-xl" style={{fontFamily:"Georgia, serif", letterSpacing:"1px"}}>AYYAD</span></div><p className="text-gray-400 text-xs leading-relaxed">{t.tagline}</p></div>
+          <div className="col-span-2 md:col-span-1"><div className="flex items-center gap-2 mb-4"><svg width="36" height="36" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="35" cy="35" r="33" fill="#1a6b3a"/><circle cx="35" cy="35" r="33" fill="none" stroke="#C9A84C" strokeWidth="2.5"/><rect x="29" y="18" width="12" height="34" rx="3" fill="#C9A84C"/><rect x="18" y="29" width="34" height="12" rx="3" fill="#C9A84C"/><path d="M31 32 C31 30.5, 32.5 29.5, 35 31.5 C37.5 29.5, 39 30.5, 39 32 C39 34, 35 37, 35 37 C35 37, 31 34, 31 32Z" fill="#0d5c2e"/></svg><span className="font-black text-xl" style={{fontFamily:"Georgia, serif", letterSpacing:"1px"}}>AYYAD CI</span></div><p className="text-gray-400 text-xs leading-relaxed">{t.tagline}</p></div>
           {[[t.platform, t.platformLinks, ["collectesactives","how","submit"]], [t.trust, t.trustLinks, ["how","hopitaux","impact"]], [t.legal, t.legalLinks, ["legal","faq","bceao"]]].map(([title, links, pages]) =>
             <div key={title}>
               <div className="font-bold text-sm mb-4 text-gray-300">{title}</div>
@@ -14211,10 +14224,11 @@ export default function AyyadApp() {
             <div className="bg-gradient-to-br from-emerald-700 to-teal-700 text-white">
               <div className="max-w-7xl mx-auto px-4 py-12 text-center">
                 <button onClick={() => setPage("home")} className="text-emerald-100 hover:text-white text-sm mb-4 inline-flex items-center gap-1">← {lang==="fr"?"Retour à l'accueil":lang==="ar"?"العودة للرئيسية":"Back to home"}</button>
-                <h1 className="text-3xl sm:text-5xl font-black mb-3">{lang==="fr" ? "Soutenir Ayyad directement" : "Support Ayyad directly"}</h1>
+                <h1 className="text-3xl sm:text-5xl font-black mb-3">{lang==="fr" ? "Soutenir Ayyad directement" : lang==="ar" ? "ادعم أيد مباشرة" : "Support Ayyad directly"}</h1>
                 <p className="text-emerald-100 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
                   {lang==="fr"
                     ? "Votre don aide à financer les opérations de la plateforme : vérification médicale des dossiers, partenariats hospitaliers, infrastructure, et accompagnement des patients tout au long de leur collecte."
+                    : lang==="ar" ? "تبرعك يساعد في تمويل عمليات المنصة: التحقق الطبي من الملفات، الشراكات المستشفياتية، البنية التحتية، ودعم المرضى طوال فترة حملتهم."
                     : "Your donation helps fund platform operations: medical case verification, hospital partnerships, infrastructure, and patient support throughout their campaign."}
                 </p>
               </div>
