@@ -2944,7 +2944,6 @@ const ImpactSection = ({ lang, heroStats, setPage }) => {
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap: 12 }}>
               {[
-                { icon:"🔒", t: fr ? "Conformité BCEAO" : ar ? "امتثال BCEAO" : "BCEAO compliance",      s: fr ? "Plateforme déclarée et auditée" : ar ? "منصة مُعلنة ومدقّقة" : "Declared and audited platform",   target: "how" },
                 { icon:"📊", t: fr ? "Rapports trimestriels" : ar ? "تقارير ربع سنوية" : "Quarterly reports", s: fr ? "Transparence totale sur les fonds" : ar ? "شفافية كاملة على الأموال" : "Full transparency on funds", target: "how" },
                 { icon:"🏥", t: fr ? "Versement direct hôpital" : ar ? "دفع مباشر للمستشفى" : "Direct to hospital", s: fr ? "Jamais en espèces, toujours tracé" : ar ? "أبداً نقداً، دائماً مُتتبَّع" : "Never cash, always traceable", target: "how" },
               ].map((b, i) => (
@@ -4545,6 +4544,49 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
         <p style={{fontSize:11,color:"rgba(255,255,255,0.5)",textAlign:"center",margin:"12px 0 0",letterSpacing:"0.2px"}}>🔒 {lang==="fr" ? "Fonds versés directement à l'hôpital · Aucuns frais" : lang==="ar" ? "الأموال تُحوَّل مباشرة للمستشفى · بدون رسوم" : "Funds sent directly to hospital · No fees"}</p>
       </div>
       <div className="hidden lg:block"><HeroSlider lang={lang} setPage={setPage} t={t} heroStats={heroStats} /></div>
+
+      {/* ── Moyens de don visibles dès l'accueil ── */}
+      {(()=>{
+        let loc=""; let tz=""; try{ loc=sessionStorage.getItem("ayyadLocale")||""; tz=Intl.DateTimeFormat().resolvedOptions().timeZone||""; }catch(e){}
+        const abroad = loc!=="" || (tz!=="" && tz!=="Africa/Abidjan" && !/^Africa\//.test(tz));
+        const T={
+          fr:{h:"Donnez comme vous voulez, d'où que vous soyez",s:"Mobile money en Côte d'Ivoire · Crypto depuis le monde entier · Cartes et virements bientôt",crypto:"Crypto",soon:"Bientôt disponible",card:"Carte bancaire",wire:"Virement bancaire",note:"Choisissez votre moyen de paiement sur la page de chaque patient · 0% de frais",ci:"Côte d'Ivoire"},
+          en:{h:"Give your way, from anywhere in the world",s:"Crypto from anywhere · Mobile money in Ivory Coast · Cards and bank transfers coming soon",crypto:"Crypto",soon:"Coming soon",card:"Bank card",wire:"Bank transfer",note:"Choose your payment method on each patient's page · 0% fees",ci:"Ivory Coast"},
+          ar:{h:"تبرّع بالطريقة التي تناسبك، من أي مكان",s:"المحافظ الإلكترونية في كوت ديفوار · العملات المشفرة من كل أنحاء العالم · البطاقات والتحويلات قريباً",crypto:"عملات مشفرة",soon:"قريباً",card:"بطاقة مصرفية",wire:"تحويل مصرفي",note:"اختر وسيلة الدفع في صفحة كل مريض · بدون رسوم",ci:"كوت ديفوار"},
+          de:{h:"Spenden Sie, wie Sie möchten – von überall auf der Welt",s:"Krypto von überall · Mobile Money in der Elfenbeinküste · Karten und Überweisungen bald verfügbar",crypto:"Krypto",soon:"Bald verfügbar",card:"Bankkarte",wire:"Banküberweisung",note:"Zahlungsmethode auf der Seite jedes Patienten wählen · 0 % Gebühren",ci:"Elfenbeinküste"},
+          nl:{h:"Doneer zoals u wilt, vanaf elke plek ter wereld",s:"Crypto van overal · Mobile money in Ivoorkust · Kaarten en bankoverschrijvingen binnenkort",crypto:"Crypto",soon:"Binnenkort beschikbaar",card:"Bankkaart",wire:"Bankoverschrijving",note:"Kies uw betaalmethode op de pagina van elke patiënt · 0% kosten",ci:"Ivoorkust"},
+          sv:{h:"Ge på ditt sätt, varifrån du än är",s:"Krypto från hela världen · Mobile money i Elfenbenskusten · Kort och banköverföring snart",crypto:"Krypto",soon:"Kommer snart",card:"Bankkort",wire:"Banköverföring",note:"Välj betalningssätt på varje patients sida · 0 % avgifter",ci:"Elfenbenskusten"},
+        };
+        const k = loc || lang; const x = T[k]||T.en;
+        const mm=[
+          {e:"〰️",n:"Wave CI",d:x.ci,on:true},
+          {e:"🟠",n:"Orange Money",d:x.ci,on:true},
+          {e:"🟡",n:"MTN MoMo",d:x.ci,on:true},
+        ];
+        const cr={e:"₿",n:x.crypto,d:"BTC · ETH · USDT · USDC · BNB",on:true};
+        const soon=[{e:"💳",n:x.card,d:x.soon,on:false},{e:"🏦",n:x.wire,d:x.soon,on:false}];
+        const methods = abroad ? [cr,...mm,...soon] : [...mm,cr,...soon];
+        return (
+          <div dir={lang==="ar"?"rtl":"ltr"} style={{background:"#fff",padding:"20px 16px",borderBottom:"1px solid #e5e7eb"}}>
+            <div style={{maxWidth:980,margin:"0 auto"}}>
+              <div style={{textAlign:"center",fontWeight:900,fontSize:17,color:"#064e3b",marginBottom:4}}>💚 {x.h}</div>
+              <div style={{textAlign:"center",fontSize:12.5,color:"#6b7280",marginBottom:14,lineHeight:1.5}}>{abroad && k==="fr" ? "Crypto depuis le monde entier · Mobile money en Côte d'Ivoire · Cartes et virements bientôt" : x.s}</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8}}>
+                {methods.map((m,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:12,border:m.on?"1.5px solid #6ee7b7":"1.5px dashed #d1d5db",background:m.on?"#ecfdf5":"#f9fafb",opacity:m.on?1:0.78}}>
+                    <span style={{fontSize:22}}>{m.e}</span>
+                    <span style={{minWidth:0}}>
+                      <span style={{display:"block",fontWeight:800,fontSize:13,color:m.on?"#064e3b":"#6b7280"}}>{m.n}</span>
+                      <span style={{display:"block",fontSize:10.5,color:m.on?"#047857":"#9ca3af",fontWeight:600}}>{m.on?"✓ ":"⏳ "}{m.d}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div style={{textAlign:"center",fontSize:11,color:"#9ca3af",marginTop:10}}>🔒 {x.note}</div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Ancienne section gradient supprimée — son contenu a été intégré dans HeroSlider */}
       <div className="hidden">
@@ -12409,7 +12451,7 @@ const ImpactPage = ({ setPage, lang }) => {
               { icon: "📋", text: fr ? "Vérification de chaque dossier par notre équipe avant publication" : ar ? "التحقق من كل ملف من قِبَل فريقنا قبل النشر" : "Every case verified by our team before publication" },
               { icon: "🔄", text: fr ? "Remboursement intégral si dossier rejeté après collecte" : ar ? "استرداد كامل إذا رُفض الملف بعد الجمع" : "Full refund if case rejected after fundraising" },
               { icon: "📊", text: fr ? "Rapport financier mensuel publié sur cette page" : ar ? "تقرير مالي شهري يُنشر على هذه الصفحة" : "Monthly financial report published on this page" },
-              { icon: "🛡️", text: fr ? "Données personnelles protégées — conformité ADPCI" : ar ? "بيانات شخصية محمية — امتثال ADPCI" : "Personal data protected — ADPCI compliance" },
+              { icon: "🛡️", text: fr ? "Données personnelles protégées et jamais revendues" : ar ? "بيانات شخصية محمية ولا تُباع أبداً" : "Personal data protected and never sold" },
             ].map(({ icon, text }, i) => (
               <div key={i} className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
                 <span className="text-lg flex-shrink-0">{icon}</span>
@@ -12732,7 +12774,7 @@ const Footer = ({ setPage, lang }) => {
             <div key={title}>
               <div className="font-bold text-sm mb-4 text-gray-300">{title}</div>
               <ul className="space-y-2.5">
-                {links.map((l, i) => (
+                {links.map((l, i) => pages[i]==="bceao" ? null : (
                   <li key={l}>
                     <button onClick={() => setPage(pages[i])} className="text-gray-500 text-xs hover:text-emerald-400 transition-colors text-left">
                       {l}
@@ -12745,7 +12787,7 @@ const Footer = ({ setPage, lang }) => {
         </div>
         <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-gray-500 text-xs">{t.rights}</p>
-          <div className="flex items-center gap-4 text-xs text-gray-600"><span>🔒 SSL</span><span>·</span><span>🏦 BCEAO</span><span>·</span><span>🛡️ ADPCI</span></div>
+          <div className="flex items-center gap-4 text-xs text-gray-600"><span>🔒 SSL</span></div>
         </div>
       </div>
     </footer>
@@ -14007,7 +14049,22 @@ export default function AyyadApp() {
     return (oldP && valid.includes(oldP)) ? oldP : "home";
   });
   // ── IMPORTANT: declare all state BEFORE any useEffect that references them ──
-  const [lang, setLang] = useState(sessionStorage.getItem("ayyadLang") || "fr");
+  const [lang, setLang] = useState(() => {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      const ql = (q.get("lang")||"").toLowerCase();
+      const src = q.get("src"); if (src) sessionStorage.setItem("ayyadSrc", src);
+      if (["de","nl","sv"].includes(ql)) { sessionStorage.setItem("ayyadLocale", ql); sessionStorage.setItem("ayyadLang","en"); return "en"; }
+      if (["fr","en","ar"].includes(ql)) { sessionStorage.setItem("ayyadLang", ql); sessionStorage.removeItem("ayyadLocale"); return ql; }
+      const saved = sessionStorage.getItem("ayyadLang"); if (saved) return saved;
+      const nl = (navigator.language||"fr").toLowerCase();
+      const tz = (Intl.DateTimeFormat().resolvedOptions().timeZone||"");
+      if (nl.startsWith("de")||nl.startsWith("nl")||nl.startsWith("sv")) { sessionStorage.setItem("ayyadLocale", nl.slice(0,2)); return "en"; }
+      if (nl.startsWith("ar")) return "ar";
+      if (nl.startsWith("fr") || tz==="Africa/Abidjan") return "fr";
+      return "en";
+    } catch(e) { return "fr"; }
+  });
 
   // ── RTL pour l'arabe ──
   React.useEffect(()=>{
