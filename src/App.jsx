@@ -4565,26 +4565,27 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           {e:"🟠",n:"Orange Money",d:x.ci,on:true},
           {e:"🟡",n:"MTN MoMo",d:x.ci,on:true},
         ];
-        const cr={e:"₿",n:x.crypto,d:"BTC · ETH · USDT · USDC · BNB",on:true};
+        const cr={e:"₿",n:x.crypto,d:"BTC · ETH · USDT…",on:true};
         const soon=[{e:"💳",n:x.card,d:x.soon,on:false},{e:"🏦",n:x.wire,d:x.soon,on:false}];
         const methods = abroad ? [cr,...mm,...soon] : [...mm,cr,...soon];
+        const mob = typeof window!=="undefined" && window.innerWidth<640;
         return (
-          <div dir={lang==="ar"?"rtl":"ltr"} style={{background:"#fff",padding:"20px 16px",borderBottom:"1px solid #e5e7eb"}}>
+          <div dir={lang==="ar"?"rtl":"ltr"} style={{background:"#fff",padding:mob?"12px 12px 10px":"20px 16px",borderBottom:"1px solid #e5e7eb"}}>
             <div style={{maxWidth:980,margin:"0 auto"}}>
-              <div style={{textAlign:"center",fontWeight:900,fontSize:17,color:"#064e3b",marginBottom:4}}>💚 {x.h}</div>
-              <div style={{textAlign:"center",fontSize:12.5,color:"#6b7280",marginBottom:14,lineHeight:1.5}}>{abroad && k==="fr" ? "Crypto depuis le monde entier · Mobile money en Côte d'Ivoire · Cartes et virements bientôt" : x.s}</div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8}}>
+              <div style={{textAlign:"center",fontWeight:900,fontSize:mob?14:17,color:"#064e3b",marginBottom:mob?8:4,lineHeight:1.3}}>💚 {x.h}</div>
+              {!mob && <div style={{textAlign:"center",fontSize:12.5,color:"#6b7280",marginBottom:14,lineHeight:1.5}}>{abroad && k==="fr" ? "Crypto depuis le monde entier · Mobile money en Côte d'Ivoire · Cartes et virements bientôt" : x.s}</div>}
+              <div style={{display:"grid",gridTemplateColumns:mob?"repeat(2,minmax(0,1fr))":"repeat(auto-fit,minmax(150px,1fr))",gap:mob?6:8}}>
                 {methods.map((m,i)=>(
-                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:12,border:m.on?"1.5px solid #6ee7b7":"1.5px dashed #d1d5db",background:m.on?"#ecfdf5":"#f9fafb",opacity:m.on?1:0.78}}>
-                    <span style={{fontSize:22}}>{m.e}</span>
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:mob?7:10,padding:mob?"7px 8px":"10px 12px",borderRadius:10,minWidth:0,border:m.on?"1.5px solid #6ee7b7":"1.5px dashed #d1d5db",background:m.on?"#ecfdf5":"#f9fafb",opacity:m.on?1:0.78}}>
+                    <span style={{fontSize:mob?17:22}}>{m.e}</span>
                     <span style={{minWidth:0}}>
-                      <span style={{display:"block",fontWeight:800,fontSize:13,color:m.on?"#064e3b":"#6b7280"}}>{m.n}</span>
-                      <span style={{display:"block",fontSize:10.5,color:m.on?"#047857":"#9ca3af",fontWeight:600}}>{m.on?"✓ ":"⏳ "}{m.d}</span>
+                      <span style={{display:"block",fontWeight:800,fontSize:mob?12:13,lineHeight:1.2,color:m.on?"#064e3b":"#6b7280"}}>{m.n}</span>
+                      <span style={{display:"block",fontSize:mob?9.5:10.5,lineHeight:1.25,color:m.on?"#047857":"#9ca3af",fontWeight:600}}>{m.on?"✓ ":"⏳ "}{m.d}</span>
                     </span>
                   </div>
                 ))}
               </div>
-              <div style={{textAlign:"center",fontSize:11,color:"#9ca3af",marginTop:10}}>🔒 {x.note}</div>
+              {!mob && <div style={{textAlign:"center",fontSize:11,color:"#9ca3af",marginTop:10}}>🔒 {x.note}</div>}
             </div>
           </div>
         );
