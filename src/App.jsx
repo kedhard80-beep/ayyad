@@ -4559,7 +4559,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           nl:{h:"Doneer zoals u wilt, vanaf elke plek ter wereld",s:"Crypto van overal · Mobile money in Ivoorkust · Kaarten en bankoverschrijvingen binnenkort",crypto:"Crypto",soon:"Binnenkort beschikbaar",card:"Bankkaart",wire:"Bankoverschrijving",note:"Kies uw betaalmethode op de pagina van elke patiënt · 0% kosten",ci:"Ivoorkust"},
           sv:{h:"Ge på ditt sätt, varifrån du än är",s:"Krypto från hela världen · Mobile money i Elfenbenskusten · Kort och banköverföring snart",crypto:"Krypto",soon:"Kommer snart",card:"Bankkort",wire:"Banköverföring",note:"Välj betalningssätt på varje patients sida · 0 % avgifter",ci:"Elfenbenskusten"},
         };
-        const k = loc || lang; const x = T[k]||T.en;
+        const k = lang; const x = T[k]||T.en;
         const mm=[
           {e:"〰️",n:"Wave CI",d:x.ci,on:true},
           {e:"🟠",n:"Orange Money",d:x.ci,on:true},
