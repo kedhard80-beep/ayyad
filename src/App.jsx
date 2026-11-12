@@ -87,6 +87,8 @@ function buildPaymentRef(caseObj) {
 // null/""               → "Anonyme" / "Anonymous" (selon lang)
 // Utilisé sur les surfaces publiques (ticker, fiche collecte). L'admin voit la
 // donnée brute pour pouvoir matcher avec les notifs Wave Business.
+// Nom masqué (jamais d'email, ni l'identité admin) → affichage "Anonyme"
+const _hideDonor = (n) => /@/.test(String(n||"")) || /^\s*ked?(hard)?80/i.test(String(n||""));
 function publicDonorName(rawName, lang) {
   const fr = lang !== "en";
   const ar = lang === "ar";
@@ -94,7 +96,7 @@ function publicDonorName(rawName, lang) {
   const s = String(rawName).trim();
   if (!s) return ar ? "مجهول" : fr ? "Anonyme" : "Anonymous";
   // Si ça ressemble à un email, on garde juste la partie avant @
-  if (s.includes("@")) return s.split("@")[0];
+  if (_hideDonor(s)) return ar ? "مجهول" : fr ? "Anonyme" : "Anonymous";
   return s;
 }
 
@@ -4441,7 +4443,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
           const total = data.reduce((s, d) => s + Number(d.amount_fcfa || d.amount || 0), 0);
           setPlatformTotal(total);
           setPlatformDonors(data.map(d => ({
-            name: d.donor_name || d.donor_email || "Anonyme",
+            name: publicDonorName(d.donor_name, "fr"),
             amount: Number(d.amount_fcfa || d.amount || 0),
           })));
         }
@@ -4996,8 +4998,8 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
           tracking_id: c.trackingId || c.tracking_id || null,
           amount:      finalAmt,
           provider,
-          donor_name:  anon ? null : donorName.trim() || null,
-          anonymous:   anon,
+          donor_name:  (anon || user?.isAdmin || _hideDonor(donorName)) ? null : donorName.trim() || null,
+          anonymous:   (anon || !!user?.isAdmin),
         }),
       });
       const data = await r.json();
@@ -5035,7 +5037,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose }) => {
         // Fallback direct Supabase si initiate n'a pas fonctionné
         await supabaseAdmin.from("donations").insert({
           case_id: c.id,
-          donor_name: anon ? null : (donorName.trim()||null),
+          donor_name: (anon || user?.isAdmin || _hideDonor(donorName)) ? null : (donorName.trim()||null),
           amount_fcfa: finalAmt, amount: finalAmt,
           payment_method: provider, status: "pending",
           reference: payRef || ("AYD-" + Date.now().toString(36).toUpperCase().slice(-5)),
@@ -5725,7 +5727,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
             setLiveDonors(prev => prev + 1);
             setRecentDonations(prev => [d,...prev].slice(0,5));
           // PATCH Y — toast notification
-          const _dn = d.donor_name||(lang==="fr"?"Un donateur":"A donor");
+          const _dn = (d.donor_name&&!_hideDonor(d.donor_name))?d.donor_name:(lang==="fr"?"Un donateur":"A donor");
           const _da = (d.amount_fcfa||d.amount)?Number(d.amount_fcfa||d.amount).toLocaleString("fr-CI")+" FCFA":"";
           setToast(lang==="fr"?`🎉 ${_dn} vient de donner${_da?" "+_da:""} 💚`:`🎉 ${_dn} just donated${_da?" "+_da:""} 💚`);
           setTimeout(()=>setToast(null),5000);
@@ -6101,7 +6103,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
         const _md = Math.round(_mp*_mc/100);
         const _ld = recentDonations[0];
         const _tick = _ld
-          ? ((_ld.donor_name&&_ld.donor_name!=="null"&&_ld.donor_name!==null?_ld.donor_name:(lang==="ar"?"مجهول":lang==="fr"?"Anonyme":"Anonymous"))+" · "+(lang==="ar"||lang==="en"?"$"+(((_ld.amount_fcfa||_ld.amount||0))/655.957).toFixed(0):((_ld.amount_fcfa||_ld.amount||0)).toLocaleString("fr-CI")+" FCFA"))
+          ? ((_ld.donor_name&&_ld.donor_name!=="null"&&_ld.donor_name!==null&&!_hideDonor(_ld.donor_name)?_ld.donor_name:(lang==="ar"?"مجهول":lang==="fr"?"Anonyme":"Anonymous"))+" · "+(lang==="ar"||lang==="en"?"$"+(((_ld.amount_fcfa||_ld.amount||0))/655.957).toFixed(0):((_ld.amount_fcfa||_ld.amount||0)).toLocaleString("fr-CI")+" FCFA"))
           : (lang==="ar"?"كن أول من يتبرع 💚":lang==="fr"?"Soyez le premier à donner 💚":"Be the first to give 💚");
         return (
           <div className="lg:hidden" style={{background:"#fff",borderBottom:"1px solid #F3F4F6",padding:"16px 16px 14px"}}>
