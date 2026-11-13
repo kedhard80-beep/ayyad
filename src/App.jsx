@@ -2260,9 +2260,7 @@ const SupportAyyadSection = ({ lang }) => {
                 rel="noopener noreferrer"
                 className="block"
               >
-                <img src={`data:image/png;base64,${QR_WAVE}`} alt="QR Wave AYYAD" width={180} height={180}
-                  className="rounded-2xl border-4 border-white bg-white shadow-xl"
-                  onError={e => { e.target.parentElement.style.display="none"; }} />
+                <div style={{position:"relative",width:180,aspectRatio:"445 / 772",overflow:"hidden",borderRadius:20,background:"#fff"}}><img src="/qr_wave_real.jpg" alt="QR Wave" style={{position:"absolute",width:"129.44%",left:"-14.83%",top:"-36.01%",height:"auto"}} /></div>
               </a>
 
               <div className="text-xs text-emerald-100 text-center leading-relaxed">
@@ -5174,7 +5172,7 @@ const DonateModal = ({ c, lang, user, setPage, onClose, initialAmount, initialPr
               <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:14,padding:"14px",marginBottom:12}}>
                 <div style={{fontWeight:800,fontSize:13,color:"#1d4ed8",marginBottom:10}}>〰️ {fr ? "Comment payer via Wave :" : ar ? "كيفية الدفع عبر Wave:" : "How to pay via Wave:"}</div>
                 <div style={{background:"#dbeafe",borderRadius:10,padding:"14px 12px",marginBottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:10,textAlign:"center"}}>
-                  <a href={`https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/?amount=${finalAmt}`} target="_blank" rel="noopener noreferrer" title="Wave" style={{display:"block",width:"100%",maxWidth:210}}><img src={`data:image/png;base64,${QR_WAVE}`} alt="QR Wave" style={{width:"100%",maxWidth:210,height:"auto",aspectRatio:"1 / 1",flexShrink:0,borderRadius:12,background:"#fff",border:"3px solid #bfdbfe"}} /></a>
+                  <a href={`https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/?amount=${finalAmt}`} target="_blank" rel="noopener noreferrer" title="Wave" style={{display:"block",width:"100%",maxWidth:210}}><div style={{position:"relative",width:"100%",maxWidth:210,aspectRatio:"445 / 772",overflow:"hidden",borderRadius:20,background:"#fff"}}><img src="/qr_wave_real.jpg" alt="QR Wave" style={{position:"absolute",width:"129.44%",left:"-14.83%",top:"-36.01%",height:"auto"}} /></div></a>
                   <div>
                     <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:4}}>{fr ? "Numéro Wave AYYAD :" : ar ? "رقم Wave لأيد:" : "AYYAD Wave number:"}</div>
                     <div style={{fontWeight:900,fontSize:17,color:"#1d4ed8",fontFamily:"monospace",whiteSpace:"nowrap"}}>+225 07 48 05 61 28</div>
