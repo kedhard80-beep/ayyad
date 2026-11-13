@@ -5188,16 +5188,15 @@ const DonateModal = ({ c, lang, user, setPage, onClose, initialAmount, initialPr
               <div style={{background:"#fff7ed",border:"1.5px solid #fdba74",borderRadius:14,padding:"14px",marginBottom:12}}>
                 <div style={{fontWeight:800,fontSize:13,color:"#c2410c",marginBottom:10}}>🟠 {fr ? "Comment payer via Orange Money :" : ar ? "كيفية الدفع عبر Orange Money:" : "How to pay via Orange Money:"}</div>
                 <div style={{background:"#ffedd5",borderRadius:10,padding:"14px 12px",marginBottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:10,textAlign:"center"}}>
-                  <img src={`data:image/png;base64,${QR_OM}`} alt="QR Orange Money" style={{width:"100%",maxWidth:210,height:"auto",aspectRatio:"1 / 1",flexShrink:0,borderRadius:12,background:"#fff",border:"3px solid #fdba74"}} />
                   <div>
                     <div style={{fontSize:10,color:"#9a3412",fontWeight:700,marginBottom:4}}>{fr ? "Numéro Orange Money AYYAD :" : ar ? "رقم Orange Money لأيد:" : "AYYAD Orange Money number:"}</div>
                     <div style={{fontWeight:900,fontSize:17,color:"#c2410c",fontFamily:"monospace",whiteSpace:"nowrap"}}>+225 07 48 05 61 28</div>
-                    <div style={{fontSize:10,color:"#ea580c",marginTop:5}}>📷 {fr ? "Scannez le QR ou entrez le numéro" : ar ? "امسح رمز QR أو أدخل الرقم" : "Scan QR or enter the number"}</div>
+                    <div style={{fontSize:10,color:"#ea580c",marginTop:5}}>📲 {fr ? "Entrez ce numéro dans l'app Orange Money" : ar ? "أدخل هذا الرقم في تطبيق Orange Money" : "Enter this number in the Orange Money app"}</div>
                   </div>
                 </div>
                 <div style={{fontSize:11,color:"#9a3412",lineHeight:1.9}}>
-                  {fr?<>1. App <strong>Orange Money</strong> → Envoyer → scannez ou entrez le numéro<br/>2. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>#144#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
-                    :<>1. <strong>Orange Money</strong> → Send → scan QR or enter number<br/>2. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>#144#</strong><br/>4. Come back → "I've completed payment"</>}
+                  {fr?<>1. App <strong>Orange Money</strong> → Envoyer → entrez le numéro ci-dessus<br/>2. Montant : <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Ou composez <strong>#144#</strong><br/>4. Revenez ici → "J'ai effectué le paiement"</>
+                    :<>1. <strong>Orange Money</strong> → Send → enter the number above<br/>2. Amount: <strong>{finalAmt.toLocaleString("fr-CI")} FCFA</strong><br/>3. Or dial <strong>#144#</strong><br/>4. Come back → "I've completed payment"</>}
                 </div>
               </div>
             )}
