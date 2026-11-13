@@ -2260,7 +2260,7 @@ const SupportAyyadSection = ({ lang }) => {
                 rel="noopener noreferrer"
                 className="block"
               >
-                <img src="/qr_wave_real.jpg" alt="QR Wave AYYAD" width={180} height={180}
+                <img src={`data:image/png;base64,${QR_WAVE}`} alt="QR Wave AYYAD" width={180} height={180}
                   className="rounded-2xl border-4 border-white bg-white shadow-xl"
                   onError={e => { e.target.parentElement.style.display="none"; }} />
               </a>
@@ -4942,7 +4942,7 @@ const HomePage = ({ setPage, setSelectedCase, lang }) => {
 // ── Case Detail + Donation Widget ─────────────────────────────
 
 // ─── QR Codes paiement (base64 PNG) ──────────────────────────────────────────
-const QR_WAVE = "iVBORw0KGgoAAAANSUhEUgAAALkAAAC5AQAAAABc1qPxAAACHElEQVR4nOWYQW7bMBBF31gCpB3dE1BAzxHLOVYAB3YiA9n0ThWdi4gHKEDtKEDx78LNLu2q4aLlkrN4GBL8/w9NfLieNh/vw79TCGbWBqvjYmbdsp/NbFMKbpKwdKBROk5cOEpjsSOZrWPnak/wjx3wZu1fZ/yxEGzp7D6dacZPY/y20KuOzZXDZzI+LDhNaIvPzDUtVMrF4DIzXuNKe7l1/mS2LwXvJWVtz3C3BXZO0rUU/DLX0Y4aJnBNyJf5FJdC7xwFrWh0J58tVaJP1YTpVAJew/zNGwxr+92vEW3pdCnVuSTlPh2gT/iMGyaFMp2jKwffhISXUjVl3DDlvhR8dFKG46SQjtJINVEIvsFiHdsdZ7/0WyKWDr6gsfDQZUtvnQuybnncPhUzll93ProTGaC5ckAqdeyviZgtQXN1K8t9glIis+HON1Mr02Qb8M13X/t2V0xewc/3CRqllzDvOVDO1Sw9WLtzNct+XnqAWDDJzIPyZV66rG0VeI3D1DyXk9fVA3iNHG9RspSxbJANIe84Tq2lM/nO18XuHIWbh67QS9II5GKWumNFF160tFatmN5qCj01NALNSDU10snftL2YwpkkcEsHVAHcKZYal2qYt54dL5PXlx9fc2v4WEzhALjMq2+Z60ivIeRCMeq94KwDN8g9zydcoeiMgqTmSiVuw4o7+VIZ7n1i0UqGQ6SPayzlavbffov8BFUILisQj47eAAAAAElFTkSuQmCC";
+const QR_WAVE = "iVBORw0KGgoAAAANSUhEUgAAAWgAAAFoAQAAAABSnlx4AAAEGUlEQVR42u2bQW7jRhBFX5ECKCALapE9dRNqTpKjsHWT5CYUBrlDltQus2stBqAAij+LJkXJlmVpLAczdvfS/G6Tv1j16xfbJu5YCREd0REd0REd0R8J/cXMzGzFfgGaAbAxx27JIVxKJ7Tq8KsNbQt9D0BNjfd04VLvjmi74SYmtO5Cf/johEgEVrblbpHt52CgtbSxYrv4lnYTycmt+8VsuBHdtZy8w52/jF6brSD3h0WqHkJCFH8vgYNZEvl+bDYMa7fIdr8dZmCq2FSbUuwjg++JXjWzoQCLhp7mSnRy7fPvmZSwXlP+VX61/Ftk8JFoJKlHktQUPm8zddYjuUpqCqnNJElUkhQZfBDahdbn0upOOpjkKA1mKwAO2SGVAZsV7BahsUoi31fRN3ePIQ9OV5cO2VFTyOdn1yLf74Duj+HyL9QqgLIByDowCSrVkPusTUPxep/oJHeh+4+iDVC5UpLPJv4pJaklVT9mzbT36hd1XvVd6NX/WqsagJbZ81oVhNqTjdGoVEPhYZTyWKuuo90L5ebJjqEPgkp10QCk6q0PdEOuNjt2UgPfz+YQhjt7yyxqw+vo+o5aJQdQyGdtOkTDlWN6YFG5X68+7nZtkEZtUJt1pBJyUKrJB99wRRv651t+qqncW6YWE2NuDbC42MdCpbpsgEwaZqqVJPl8kO5rteot3Uzyi/L9o085Vh8o66LJfaYuFBsqNYXPPc+0gQuZ5qA56lDUhje6OtN5rZKjVEPuM3VpDzpJj+5JNkS+3+obNJjmofyoB6mGQtIwZOIVvuurvuGn6NZ/MpdR3z7jCC668EMjC3JV9A3vlg2Di25yn7XBNwzpkXtOpPhEi1cXfEL0DfdoQ33eGYW1uNzHVo6yGX1DiFdZByNB1IaHZ4MkR9GQSx2YkNxRG/pzbdD1Otifa4Pddd+K0bmkrmsH22XuIe2QyUw12+XO5hxmR9ri+/0odGWrQtqazQ8zkwK/xabwaZt2SvVs7+UFXX9iEm+7E92F/lV15/JT+lee8mymBHmbBd8gjRNWwveH+7QhzjiuKvfwqVkNw+ccY+0o6u0ik1o7XD4Jcy7ryyXMYZZ8CgYfPZtxZ3vryUwJgOI4QppmSm3WTQ1VVNeHdEp9ILcu5PPBN1RQNaUfWic0dVTTOQ4NLkPIUdanjVY8x/ED6CXQXkSHU3u7YjcH65HJUWxKvzebYQeLDL4TOv1ulsDBsVkVXxeZ9O9L2gDMZic/75nD70nk++G+YVi7vE07ZGYmra2U38/Tzkb5iAw+SBvGU3vZP3kHHX9IaqBQC6Syy18758sWLOFPjscKTrU68n0d3dwanbFTgsk3SA1A9jm/N7znbMZWk1TPmdn4xxYA8wRsPbi7+N+aER3RER3REf0p0f8Bw541ZJ2Hya8AAAAASUVORK5CYII=";
 const QR_MTN  = "iVBORw0KGgoAAAANSUhEUgAAAJEAAACRAQAAAADro2eOAAABSklEQVR4nN2WTWrjUBCEv3IE8k6+wfNFxvK1AgErjA+mJ19EuoHfTgY5NQvNKg7ZxA3D9KZ5taiiqf55Mp/jffMAwb+PZUnbvGNiKJI2ERqyzQEScLL7kNqK9lyud92O3LX9Od9DVGv6pbf0FL7vsKai6eM0Go9cJmfgxXOIhiUB9xZ4l44RfrTrFFaTwT/m+xobSofa3RvAme0Q44fkHtKt1TI9ge8x/AHUtkfaK9TZ3fM18hXcN3bdN/bcRmjYdv3BaeTAyQ6oYwOcmS/u1nfELtmQd0xbOKcZ7oqZwfb62s7WMtW/XZtDRF/1vIwcmo4ZIMKP1XNnL2mWl4QiPM+StsDU9KUj5katd7BUCZruCXxfYkV7nJxvrSpux7gbVTpquyOir/5iA+dUjjARsHdxtl3bHmd5SXZEX1kSQ9EeSkVEHfpP/qJ/AJt2o99l3f/cAAAAAElFTkSuQmCC";
 const QR_OM   = "iVBORw0KGgoAAAANSUhEUgAAAJEAAACRAQAAAADro2eOAAABYUlEQVR4nN1WMW7cMBCcORE4djzAD6B+kBdYSmW/x6UBx+HlDPhbJ+YjUudS7CjgdJMiceODq9wCQbYhMcUMF5jhLoWPtd9cQMC/jw0kfS7fWuRCcmOhQUlAcJPv8F06mvRW2EI8jDVjpf97votyv48uPPRvtVzlzZ9p/Jx22F6D7xMsaEQXEgA0qiYaIolcThEZe/KrhUYvqd5GB3RB0tlCI2NPboqGpd+trUU+oHM4xdrPjYBwgqRk0Edxk1dcWvRTArKRr6QfJQEIB1lkcAPOKz3CYYCYYOFdB/EJ5X5e+3oX2L5Vm7/4JfqMZvQoGoqJr4a5Ue3nJ2w1I24HC18hJHgEFwt3mK7Ad1mSJB3RqFKnaJOPgaQHHhmOJRnlg5LA+XWsCAnozOYgACw9nUkf7v3y2Gr4cjOSZ6td5TZux+U5LLwS30csaATntYV2iDYaf+ZgAnJxsNh9+J/sor8AR3SgNRC0s8MAAAAASUVORK5CYII=";
 
@@ -4955,7 +4955,7 @@ const CRYPTO_LIST = [
 ];
 
 // ─── DonateModal — bottom sheet GoFundMe style ───────────────────────────────
-const DonateModal = ({ c, lang, user, setPage, onClose, initialAmount }) => {
+const DonateModal = ({ c, lang, user, setPage, onClose, initialAmount, initialProvider }) => {
   const WAVE_LINK  = "https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/";
   const MTN_LINK   = "https://appbiz.momo.africa/momo/request-momo/2250501855991";
   const SW_TEL = "+2250748056128";   // Sendwave + TapTap
@@ -4969,15 +4969,15 @@ const DonateModal = ({ c, lang, user, setPage, onClose, initialAmount }) => {
   const _ia = Math.round(Number(initialAmount)||0);
   const [preset, setPreset] = useState([500,1000,2000,5000].includes(_ia)?_ia:(_ia>=500?0:1000));
   const [custom, setCustom] = useState([500,1000,2000,5000].includes(_ia)||_ia<500?"":String(_ia));
-  const [provider, setProvider] = useState("WAVE");
+  const [provider, setProvider] = useState(["WAVE","OM","MTN"].includes(initialProvider)?initialProvider:"WAVE");
   const [step, setStep] = useState("choose");
   const [donorName, setDonorName] = useState(user?.name || "");
   const [anon, setAnon] = useState(false);
   const [donorMsg, setDonorMsg] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [intlOpen, setIntlOpen] = useState(false);
+  const [intlOpen, setIntlOpen] = useState(initialProvider==="INTL");
   const [intlSel, setIntlSel] = useState(null);
-  const [cryptoOpen, setCryptoOpen] = useState(false);
+  const [cryptoOpen, setCryptoOpen] = useState(initialProvider==="CRYPTO");
   const [cryptoSel, setCryptoSel] = useState(null);
   const [cryptoCopied, setCryptoCopied] = useState(null);
   const [payRef,  setPayRef]  = useState("");
@@ -5174,11 +5174,11 @@ const DonateModal = ({ c, lang, user, setPage, onClose, initialAmount }) => {
               <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:14,padding:"14px",marginBottom:12}}>
                 <div style={{fontWeight:800,fontSize:13,color:"#1d4ed8",marginBottom:10}}>〰️ {fr ? "Comment payer via Wave :" : ar ? "كيفية الدفع عبر Wave:" : "How to pay via Wave:"}</div>
                 <div style={{background:"#dbeafe",borderRadius:10,padding:"14px 12px",marginBottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:10,textAlign:"center"}}>
-                  <img src={`data:image/png;base64,${QR_WAVE}`} alt="QR Wave" style={{width:"100%",maxWidth:210,height:"auto",aspectRatio:"1 / 1",flexShrink:0,borderRadius:12,background:"#fff",border:"3px solid #bfdbfe"}} />
+                  <a href={`https://pay.wave.com/m/M_ci_PJosg8FuvJDW/c/ci/?amount=${finalAmt}`} target="_blank" rel="noopener noreferrer" title="Wave" style={{display:"block",width:"100%",maxWidth:210}}><img src={`data:image/png;base64,${QR_WAVE}`} alt="QR Wave" style={{width:"100%",maxWidth:210,height:"auto",aspectRatio:"1 / 1",flexShrink:0,borderRadius:12,background:"#fff",border:"3px solid #bfdbfe"}} /></a>
                   <div>
                     <div style={{fontSize:10,color:"#1e40af",fontWeight:700,marginBottom:4}}>{fr ? "Numéro Wave AYYAD :" : ar ? "رقم Wave لأيد:" : "AYYAD Wave number:"}</div>
                     <div style={{fontWeight:900,fontSize:17,color:"#1d4ed8",fontFamily:"monospace",whiteSpace:"nowrap"}}>+225 07 48 05 61 28</div>
-                    <div style={{fontSize:10,color:"#6366f1",marginTop:5}}>📷 {fr ? "Scannez le QR ou entrez le numéro" : ar ? "امسح رمز QR أو أدخل الرقم" : "Scan QR or enter the number"}</div>
+                    <div style={{fontSize:10,color:"#6366f1",marginTop:5}}>📷 {fr ? "Scannez ou touchez le QR pour ouvrir Wave, ou entrez le numéro" : ar ? "امسح رمز QR أو المسه لفتح Wave، أو أدخل الرقم" : "Scan or tap the QR to open Wave, or enter the number"}</div>
                   </div>
                 </div>
                 <div style={{fontSize:11,color:"#3730a3",lineHeight:1.9}}>
@@ -6023,7 +6023,7 @@ const CasePage = ({ c, setPage, lang, user }) => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-24 lg:pb-0">
       <Confetti active={showConfetti} />
-      {showModal&&<DonateModal c={c} lang={lang} user={user} setPage={setPage} initialAmount={Math.round((parseInt(amount)||0)*({FCFA:1,EUR:655.957,USD:600,GBP:787}[currency]||1))} onClose={()=>setShowModal(false)} />}
+      {showModal&&<DonateModal c={c} lang={lang} user={user} setPage={setPage} initialAmount={Math.round((parseInt(amount)||0)*({FCFA:1,EUR:655.957,USD:600,GBP:787}[currency]||1))} initialProvider={sbProvider} onClose={()=>setShowModal(false)} />}
       <ToastNotif msg={toast} />{/* PATCH Y */}
 
       {/* ── STICKY BAR MOBILE GoFundMe ── */}
@@ -6654,13 +6654,42 @@ const CasePage = ({ c, setPage, lang, user }) => {
                   style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:9,border:"1.5px solid #E5E7EB",fontSize:13,fontWeight:600,marginBottom:12,outline:"none"}} />
                 {currency!=="FCFA"&&parseInt(amount)>0&&<div style={{fontSize:11,color:"#6B7280",textAlign:"center",marginBottom:8}}>≈ {Math.round(parseInt(amount)*({EUR:655.957,USD:600,GBP:787}[currency]||1)).toLocaleString("fr-FR")} FCFA</div>}
 
-                {/* ── Un seul parcours de don : le même formulaire (montant, moyen de paiement, prénom, message, QR) sur téléphone et ordinateur ── */}
-                <button
-                  onClick={() => setShowModal(true)}
-                  disabled={!amount||parseInt(amount)<1}
-                  style={{width:"100%",padding:"15px",borderRadius:14,border:"none",background:(!amount||parseInt(amount)<1)?"#9CA3AF":"linear-gradient(135deg,#047857,#059669)",color:"#fff",fontWeight:900,fontSize:16,cursor:(!amount||parseInt(amount)<1)?"not-allowed":"pointer",boxShadow:(!amount||parseInt(amount)<1)?"none":"0 6px 20px rgba(4,120,87,0.35)",marginBottom:10}}>
-                  💚 {lang==="fr"?"Faire un don":lang==="ar"?"تبرع":"Donate"}{parseInt(amount)>0?" · "+(currency==="FCFA"?parseInt(amount).toLocaleString("fr-FR")+" FCFA":(currency==="EUR"?"€":currency==="USD"?"$":"£")+parseInt(amount)):""} →
+                {/* ── Moyen de paiement : obligatoire pour activer « Faire un don » ── */}
+                <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:8}}>{lang==="fr"?"Payer via :":lang==="ar"?"الدفع عبر:":"Pay via:"}</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:7}}>
+                  {[
+                    {id:"WAVE",label:"Wave CI",emoji:"〰️"},
+                    {id:"OM",label:"Orange Money",emoji:"🟠"},
+                    {id:"MTN",label:"MTN MoMo",emoji:"🟡"},
+                    {id:"INTL",label:lang==="fr"?"Depuis l'étranger":lang==="ar"?"من الخارج":"From abroad",emoji:"🌍"},
+                  ].map(p=>(
+                    <button key={p.id} onClick={()=>setSbProvider(p.id)}
+                      style={{display:"flex",alignItems:"center",gap:7,padding:"10px 10px",borderRadius:12,fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s",textAlign:"left",
+                        background:sbProvider===p.id?"#f0fdf4":"#f9fafb",
+                        border:sbProvider===p.id?"2px solid #059669":"2px solid #e5e7eb",
+                        color:sbProvider===p.id?"#059669":"#374151"}}>
+                      <span style={{fontSize:18}}>{p.emoji}</span><span style={{flex:1,lineHeight:1.3}}>{p.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <button onClick={()=>setSbProvider("CRYPTO")}
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",borderRadius:12,fontWeight:700,fontSize:12,cursor:"pointer",width:"100%",marginBottom:12,boxSizing:"border-box",
+                    background:sbProvider==="CRYPTO"?"#fdf4ff":"#faf5ff",
+                    border:sbProvider==="CRYPTO"?"2px solid #9333ea":"2px solid #e9d5ff",
+                    color:sbProvider==="CRYPTO"?"#7e22ce":"#9333ea"}}>
+                  <span style={{fontSize:18}}>₿</span>
+                  <span style={{flex:1}}>Crypto (BTC/ETH/USDT…)</span>
+                  <span style={{fontSize:12}}>{sbProvider==="CRYPTO"?"✓":"›"}</span>
                 </button>
+
+                {/* ── Un seul parcours de don : le même formulaire (montant, moyen de paiement, prénom, message, QR) sur téléphone et ordinateur ── */}
+                {(()=>{const _ok=!!sbProvider&&parseInt(amount)>0;return(
+                <button
+                  onClick={() => { if(_ok) setShowModal(true); }}
+                  disabled={!_ok}
+                  style={{width:"100%",padding:"15px",borderRadius:14,border:"none",background:_ok?"linear-gradient(135deg,#047857,#059669)":"#9CA3AF",color:"#fff",fontWeight:900,fontSize:16,cursor:_ok?"pointer":"not-allowed",boxShadow:_ok?"0 6px 20px rgba(4,120,87,0.35)":"none",marginBottom:10}}>
+                  💚 {lang==="fr"?"Faire un don":lang==="ar"?"تبرع":"Donate"}{_ok?" · "+(currency==="FCFA"?parseInt(amount).toLocaleString("fr-FR")+" FCFA":(currency==="EUR"?"€":currency==="USD"?"$":"£")+parseInt(amount)):""} →
+                </button>);})()}
 
                 <div style={{textAlign:"center",fontSize:11,color:"#9CA3AF",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
                   🔒 {lang==="fr"?"Sécurisé · 0 frais cachés":lang==="ar"?"آمن · بدون رسوم خفية":"Secure · No hidden fees"}
