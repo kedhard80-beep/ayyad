@@ -33,7 +33,7 @@ export default async function handler(req, res) {
   const serviceKey   = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceKey) return err(res, 500, "Config serveur manquante");
 
-  const { case_id, tracking_id, amount, provider, donor_name, anonymous } = req.body || {};
+  const { case_id, tracking_id, amount, provider, donor_name, anonymous, message } = req.body || {};
 
   // ── Validation ────────────────────────────────────────────────────────────
   const amt = parseInt(amount, 10);
@@ -66,6 +66,7 @@ export default async function handler(req, res) {
     .insert({
       case_id:        resolvedCaseId,
       donor_name:     anonymous ? null : (donor_name?.trim() || null),
+      message:        message ? String(message).slice(0, 500) : null,
       amount_fcfa:    amt,
       amount:         amt,
       payment_method: prov,
